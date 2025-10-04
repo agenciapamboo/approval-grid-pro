@@ -10,6 +10,8 @@ import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { ClientManager } from "@/components/admin/ClientManager";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
+import { ViewAgencyDialog } from "@/components/admin/ViewAgencyDialog";
+import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
 
 interface Profile {
   id: string;
@@ -300,7 +302,7 @@ const Dashboard = () => {
               {agencies.map((agency) => (
                 <Card key={agency.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 mb-3">
                       {agency.logo_url && (
                         <img 
                           src={agency.logo_url} 
@@ -314,6 +316,10 @@ const Dashboard = () => {
                           Slug: {agency.slug}
                         </CardDescription>
                       </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <ViewAgencyDialog agency={agency} />
+                      <EditAgencyDialog agency={agency} onAgencyUpdated={checkAuth} />
                     </div>
                   </CardHeader>
                 </Card>
