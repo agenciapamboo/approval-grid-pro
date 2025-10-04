@@ -492,8 +492,9 @@ const Dashboard = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedClient(client);
-                              setMonthSelectorOpen(true);
+                              if (agency?.slug && client?.slug) {
+                                navigate(`/a/${agency.slug}/c/${client.slug}`);
+                              }
                             }}
                           >
                             <Plus className="w-4 h-4 mr-2" />
