@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
+import { CreateContentCard } from "@/components/content/CreateContentCard";
 
 interface Profile {
   id: string;
@@ -216,6 +217,13 @@ export default function ContentGrid() {
         <ContentFilters />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {profile?.role === 'agency_admin' && (
+            <CreateContentCard 
+              clientId={client!.id}
+              onContentCreated={() => loadContents(client!.id)}
+            />
+          )}
+          
           {contents.map((content) => (
             <ContentCard 
               key={content.id} 
@@ -226,7 +234,7 @@ export default function ContentGrid() {
           ))}
         </div>
 
-        {contents.length === 0 && (
+        {contents.length === 0 && profile?.role !== 'agency_admin' && (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum conteúdo encontrado
           </div>
