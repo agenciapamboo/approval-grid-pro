@@ -181,25 +181,10 @@ const Auth = () => {
           </form>
         </Card>
 
-        <div className="text-center space-y-2">
+        <div className="text-center">
           <p className="text-sm text-muted-foreground">
             Sistema profissional de aprovação de conteúdos
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCreateUsers}
-            disabled={creatingUsers}
-          >
-            {creatingUsers ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando usuários...
-              </>
-            ) : (
-              "Criar usuários de teste"
-            )}
-          </Button>
         </div>
       </div>
     </div>
