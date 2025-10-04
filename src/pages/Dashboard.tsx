@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
@@ -295,6 +296,18 @@ const Dashboard = () => {
         {/* Client User - Lista de Aprovações */}
         {profile?.role === 'client_user' && (
           <div className="space-y-6">
+            <Alert>
+              <AlertTitle>Workflow</AlertTitle>
+              <AlertDescription>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li>Todos os posts são agendados para publicação na sexta-feira (ou no último dia útil da semana).</li>
+                  <li>O prazo para indicar posts com alterações simples ou que devem ser excluídos do agendamento é até quinta às 23h59 (ou no penúltimo dia útil da semana).</li>
+                  <li>São alterações simples: correções de texto na legenda ou imagem ou a substituição de foto/imagem com o envio da mesma (por link ou arquivo).</li>
+                  <li>Posts não aprovados serão automaticamente descartados das publicações da semana e incluídos como post adicional na próxima semana.</li>
+                  <li>Todos os posts sem observações serão automaticamente aprovados para publicação.</li>
+                </ol>
+              </AlertDescription>
+            </Alert>
             {Object.entries(contentsByMonth).map(([monthKey, monthContents]) => {
               const [year, month] = monthKey.split('-');
               const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -316,32 +329,25 @@ const Dashboard = () => {
                         <CardTitle className="text-base">Aprovação Pendente</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
-                        {pendingContents.map(content => (
-                          <div 
-                            key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg"
-                          >
-                            <div>
-                              <p className="font-medium">{content.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}`, { 
-                                    state: { month: parseInt(month), year: parseInt(year) } 
-                                  });
-                                }
-                              }}
-                            >
-                              <ArrowRight className="w-4 h-4" />
-                            </Button>
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <p className="font-medium">Conteúdo pendende</p>
+                            <p className="text-sm text-muted-foreground">
+                              Você tem {pendingContents.length} para aprovar
+                            </p>
                           </div>
-                        ))}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              if (agency?.slug && client?.slug) {
+                                navigate(`/a/${agency.slug}/c/${client.slug}`);
+                              }
+                            }}
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   )}
