@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
@@ -51,6 +51,7 @@ interface Content {
 
 export default function ContentGrid() {
   const { agencySlug, clientSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -59,10 +60,14 @@ export default function ContentGrid() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
   const [showConsent, setShowConsent] = useState(false);
+  
+  // Obter mês e ano dos parâmetros da URL
+  const currentMonth = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1));
+  const currentYear = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
 
   useEffect(() => {
     checkAuthAndLoadData();
-  }, [agencySlug, clientSlug]);
+  }, [agencySlug, clientSlug, currentMonth, currentYear]);
 
   const checkAuthAndLoadData = async () => {
     try {
@@ -161,10 +166,16 @@ export default function ContentGrid() {
   };
 
   const loadContents = async (clientId: string) => {
+    // Calcular primeiro e último dia do mês
+    const firstDay = new Date(currentYear, currentMonth - 1, 1);
+    const lastDay = new Date(currentYear, currentMonth, 0);
+    
     const { data, error } = await supabase
       .from("contents")
       .select("*")
       .eq("client_id", clientId)
+      .gte("date", firstDay.toISOString().split('T')[0])
+      .lte("date", lastDay.toISOString().split('T')[0])
       .order("date", { ascending: false });
 
     if (error) {
@@ -184,6 +195,15 @@ export default function ContentGrid() {
     setShowConsent(false);
     checkAuthAndLoadData();
   };
+
+  const navigateToMonth = (monthDelta: number) => {
+    const newDate = new Date(currentYear, currentMonth - 1 + monthDelta, 1);
+    const newMonth = newDate.getMonth() + 1;
+    const newYear = newDate.getFullYear();
+    navigate(`/a/${agencySlug}/c/${clientSlug}?month=${newMonth}&year=${newYear}`);
+  };
+
+  const monthName = new Date(currentYear, currentMonth - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   if (loading) {
     return (
@@ -238,6 +258,29 @@ export default function ContentGrid() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Navegação de Mês */}
+        <div className="mb-6 flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateToMonth(-1)}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Mês Anterior
+          </Button>
+          
+          <h2 className="text-xl font-semibold capitalize">{monthName}</h2>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateToMonth(1)}
+          >
+            Próximo Mês
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
+
         <ContentFilters />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">

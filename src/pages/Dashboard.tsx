@@ -329,11 +329,11 @@ const Dashboard = () => {
                             size="icon"
                             onClick={() => {
                               if (agency?.slug && client?.slug) {
-                                navigate(`/a/${agency.slug}/c/${client.slug}`);
+                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
                               }
                             }}
                           >
-                            <ArrowRight className="w-4 h-4" />
+                            <ArrowRight className="w-4 w-4" />
                           </Button>
                         </div>
                       </CardContent>
@@ -362,13 +362,11 @@ const Dashboard = () => {
                               size="icon"
                               onClick={() => {
                                 if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}`, { 
-                                    state: { month: parseInt(month), year: parseInt(year) } 
-                                  });
+                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
                                 }
                               }}
                             >
-                              <ArrowRight className="w-4 h-4" />
+                              <ArrowRight className="w-4 w-4" />
                             </Button>
                           </div>
                         ))}
@@ -398,13 +396,11 @@ const Dashboard = () => {
                               size="icon"
                               onClick={() => {
                                 if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}`, { 
-                                    state: { month: parseInt(month), year: parseInt(year) } 
-                                  });
+                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
                                 }
                               }}
                             >
-                              <ArrowRight className="w-4 h-4" />
+                              <ArrowRight className="w-4 w-4" />
                             </Button>
                           </div>
                         ))}
