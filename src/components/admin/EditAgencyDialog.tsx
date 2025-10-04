@@ -14,10 +14,6 @@ interface Agency {
   brand_primary?: string;
   brand_secondary?: string;
   logo_url?: string;
-  email?: string;
-  whatsapp?: string;
-  plan?: string;
-  plan_renewal_date?: string;
   plan_type?: 'monthly' | 'annual' | null;
   last_payment_date?: string;
 }
@@ -38,9 +34,6 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
     brand_primary: agency.brand_primary || "#2563eb",
     brand_secondary: agency.brand_secondary || "#8b5cf6",
     logo_url: agency.logo_url || "",
-    email: agency.email || "",
-    whatsapp: agency.whatsapp || "",
-    plan: agency.plan || "free",
     plan_type: agency.plan_type || "monthly" as 'monthly' | 'annual',
     last_payment_date: agency.last_payment_date || "",
   });
@@ -58,9 +51,6 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
           brand_primary: formData.brand_primary,
           brand_secondary: formData.brand_secondary,
           logo_url: formData.logo_url || null,
-          email: formData.email || null,
-          whatsapp: formData.whatsapp || null,
-          plan: formData.plan,
           plan_type: formData.plan_type,
           last_payment_date: formData.last_payment_date || null,
         })
@@ -123,50 +113,16 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="contato@agencia.com"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input
-              id="whatsapp"
-              type="tel"
-              value={formData.whatsapp}
-              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              placeholder="+55 11 99999-9999"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="plan">Plano</Label>
-              <Input
-                id="plan"
-                value={formData.plan}
-                onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                placeholder="free"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="plan_type">Tipo de Renovação</Label>
-              <select
-                id="plan_type"
-                value={formData.plan_type}
-                onChange={(e) => setFormData({ ...formData, plan_type: e.target.value as 'monthly' | 'annual' })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="monthly">Mensal</option>
-                <option value="annual">Anual</option>
-              </select>
-            </div>
+            <Label htmlFor="plan_type">Tipo de Renovação</Label>
+            <select
+              id="plan_type"
+              value={formData.plan_type}
+              onChange={(e) => setFormData({ ...formData, plan_type: e.target.value as 'monthly' | 'annual' })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="monthly">Mensal</option>
+              <option value="annual">Anual</option>
+            </select>
           </div>
 
           <div className="space-y-2">
