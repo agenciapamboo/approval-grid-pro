@@ -50,6 +50,7 @@ interface Client {
   website?: string | null;
   whatsapp?: string | null;
   address?: string | null;
+  agencies?: Agency | null;
 }
 
 interface Content {
@@ -328,12 +329,14 @@ const Dashboard = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              if (agency?.slug && client?.slug) {
-                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                              const c = clients[0];
+                              const aSlug = c?.agencies?.slug || agencies[0]?.slug;
+                              if (aSlug && c?.slug) {
+                                navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
                               }
                             }}
                           >
-                            <ArrowRight className="w-4 w-4" />
+                            <ArrowRight className="h-4 w-4" />
                           </Button>
                         </div>
                       </CardContent>
@@ -361,12 +364,14 @@ const Dashboard = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                const c = clients[0];
+                                const aSlug = c?.agencies?.slug || agencies[0]?.slug;
+                                if (aSlug && c?.slug) {
+                                  navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
                                 }
                               }}
                             >
-                              <ArrowRight className="w-4 w-4" />
+                              <ArrowRight className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
@@ -391,17 +396,19 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
-                                }
-                              }}
-                            >
-                              <ArrowRight className="w-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const c = clients[0];
+                                  const aSlug = c?.agencies?.slug || agencies[0]?.slug;
+                                  if (aSlug && c?.slug) {
+                                    navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
+                                  }
+                                }}
+                              >
+                                <ArrowRight className="h-4 w-4" />
+                              </Button>
                           </div>
                         ))}
                       </CardContent>
@@ -452,7 +459,10 @@ const Dashboard = () => {
                       <div className="flex items-start gap-3">
                         <div 
                           className="flex-1 cursor-pointer" 
-                          onClick={() => navigate(`/a/${agency?.slug}/c/${client.slug}`)}
+                          onClick={() => {
+                            const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                            if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                          }}
                         >
                           {client.logo_url && (
                             <img 
