@@ -310,37 +310,6 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               <div className="flex items-center gap-2">
                 <Badge variant="default">Tipo: {getTypeLabel(content.type)}</Badge>
                 {getStatusBadge(content.status)}
-                {!isAgencyView && (
-                  <div className="flex flex-col gap-1">
-                    {content.status !== "approved" ? (
-                      <>
-                        <Button 
-                          size="sm"
-                          onClick={handleApprove}
-                          className="bg-orange-500 hover:bg-orange-600 text-white h-8"
-                        >
-                          Aprovar
-                        </Button>
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowRejectDialog(true)}
-                          className="h-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          Reprovar
-                        </Button>
-                      </>
-                    ) : (
-                      <Button 
-                        size="sm"
-                        className="bg-green-500 hover:bg-green-600 text-white h-8"
-                        disabled
-                      >
-                        Aprovado
-                      </Button>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
             {content.deadline && (
@@ -358,41 +327,62 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
           {/* Ações */}
           {!isAgencyView && (
-            <div className="p-4 border-t flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowComments(!showComments)}
-                className="flex-1"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Comentários
-              </Button>
-              
-              {content.status !== "approved" && (
-                <>
+            <div className="p-4 border-t">
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowComments(!showComments)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Comentários
+                </Button>
+                
+                {content.status !== "approved" && (
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setShowAdjustment(true)}
-                    className="flex-1"
                   >
                     <AlertCircle className="h-4 w-4 mr-2" />
                     Solicitar Ajuste
                   </Button>
-                  
-                  {isResponsible && (
-                    <Button 
-                      variant="default" 
-                      size="sm"
-                      onClick={handleApprove}
-                      className="flex-1"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Aprovar
-                    </Button>
-                  )}
-                </>
+                )}
+              </div>
+              
+              {content.status !== "approved" && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <Button 
+                    size="sm"
+                    onClick={handleApprove}
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Aprovar
+                  </Button>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowRejectDialog(true)}
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Reprovar
+                  </Button>
+                </div>
+              )}
+              
+              {content.status === "approved" && (
+                <div className="mt-2">
+                  <Button 
+                    size="sm"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white"
+                    disabled
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Aprovado
+                  </Button>
+                </div>
               )}
             </div>
           )}
