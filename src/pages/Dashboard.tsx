@@ -339,7 +339,7 @@ const Dashboard = () => {
                             }}
                           >
                             <Plus className="w-4 h-4 mr-2" />
-                            +Aprovar
+                            Aprovação
                           </Button>
                         </div>
                       </div>
