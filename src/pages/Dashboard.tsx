@@ -330,8 +330,8 @@ const Dashboard = () => {
                             size="icon"
                             onClick={() => {
                               const c = clients[0];
-                              const aSlug = c?.agencies?.slug || agencies[0]?.slug;
-                              if (aSlug && c?.slug) {
+                              const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                              if (c?.slug) {
                                 navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
                               }
                             }}
@@ -365,8 +365,8 @@ const Dashboard = () => {
                               size="icon"
                               onClick={() => {
                                 const c = clients[0];
-                                const aSlug = c?.agencies?.slug || agencies[0]?.slug;
-                                if (aSlug && c?.slug) {
+                                const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                                if (c?.slug) {
                                   navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
                                 }
                               }}
@@ -401,8 +401,8 @@ const Dashboard = () => {
                                 size="icon"
                                 onClick={() => {
                                   const c = clients[0];
-                                  const aSlug = c?.agencies?.slug || agencies[0]?.slug;
-                                  if (aSlug && c?.slug) {
+                                  const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                                  if (c?.slug) {
                                     navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
                                   }
                                 }}
