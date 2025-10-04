@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Instagram } from "lucide-react";
+import { createInitialUsers } from "@/lib/createUsers";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -16,6 +17,27 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [creatingUsers, setCreatingUsers] = useState(false);
+
+  const handleCreateUsers = async () => {
+    setCreatingUsers(true);
+    try {
+      const result = await createInitialUsers();
+      toast({
+        title: "Usuários criados!",
+        description: "Agora você pode fazer login com as credenciais fornecidas.",
+      });
+      console.log('Users created:', result);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar usuários",
+        description: error.message,
+      });
+    } finally {
+      setCreatingUsers(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,9 +181,26 @@ const Auth = () => {
           </form>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Sistema profissional de aprovação de conteúdos
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Sistema profissional de aprovação de conteúdos
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateUsers}
+            disabled={creatingUsers}
+          >
+            {creatingUsers ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Criando usuários...
+              </>
+            ) : (
+              "Criar usuários de teste"
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
