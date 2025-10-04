@@ -18,6 +18,8 @@ interface Agency {
   whatsapp?: string;
   plan?: string;
   plan_renewal_date?: string;
+  plan_type?: 'monthly' | 'annual' | null;
+  last_payment_date?: string;
 }
 
 interface EditAgencyDialogProps {
@@ -39,7 +41,8 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
     email: agency.email || "",
     whatsapp: agency.whatsapp || "",
     plan: agency.plan || "free",
-    plan_renewal_date: agency.plan_renewal_date || "",
+    plan_type: agency.plan_type || "monthly" as 'monthly' | 'annual',
+    last_payment_date: agency.last_payment_date || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +61,8 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
           email: formData.email || null,
           whatsapp: formData.whatsapp || null,
           plan: formData.plan,
-          plan_renewal_date: formData.plan_renewal_date || null,
+          plan_type: formData.plan_type,
+          last_payment_date: formData.last_payment_date || null,
         })
         .eq("id", agency.id);
 
@@ -152,14 +156,30 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="plan_renewal_date">Data de Renovação</Label>
-              <Input
-                id="plan_renewal_date"
-                type="date"
-                value={formData.plan_renewal_date ? formData.plan_renewal_date.split('T')[0] : ''}
-                onChange={(e) => setFormData({ ...formData, plan_renewal_date: e.target.value })}
-              />
+              <Label htmlFor="plan_type">Tipo de Renovação</Label>
+              <select
+                id="plan_type"
+                value={formData.plan_type}
+                onChange={(e) => setFormData({ ...formData, plan_type: e.target.value as 'monthly' | 'annual' })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="monthly">Mensal</option>
+                <option value="annual">Anual</option>
+              </select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="last_payment_date">Data do Último Pagamento</Label>
+            <Input
+              id="last_payment_date"
+              type="date"
+              value={formData.last_payment_date ? formData.last_payment_date.split('T')[0] : ''}
+              onChange={(e) => setFormData({ ...formData, last_payment_date: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              A data de renovação será calculada automaticamente com base no tipo de plano
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
