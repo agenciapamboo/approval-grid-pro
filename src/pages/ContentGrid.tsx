@@ -229,36 +229,39 @@ export default function ContentGrid() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header com marca branca */}
+      {/* Header with beautiful gradient */}
       <header 
-        className="border-b"
+        className="border-b backdrop-blur-sm shadow-lg relative overflow-hidden"
         style={{
           background: agency?.brand_primary 
-            ? `linear-gradient(to right, ${agency.brand_primary}, ${agency.brand_secondary || agency.brand_primary})`
-            : undefined
+            ? `linear-gradient(120deg, ${agency.brand_primary}, ${agency.brand_secondary || agency.brand_primary})`
+            : 'linear-gradient(120deg, hsl(217 91% 75%), hsl(258 90% 72%), hsl(330 70% 80%))'
         }}
       >
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite]" style={{
+          backgroundSize: '200% 100%',
+        }}></div>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/dashboard')}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 backdrop-blur-sm"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             {agency?.logo_url && (
-              <img src={agency.logo_url} alt={agency.name} className="h-10" />
+              <img src={agency.logo_url} alt={agency.name} className="h-10 drop-shadow-lg" />
             )}
-            <div className="text-white">
+            <div className="text-white drop-shadow-md">
               <h1 className="text-xl font-bold">{client?.name}</h1>
               <p className="text-sm opacity-90">{agency?.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-white text-sm">{profile?.name}</span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/20">
+            <span className="text-white text-sm drop-shadow-sm">{profile?.name}</span>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/20 backdrop-blur-sm">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

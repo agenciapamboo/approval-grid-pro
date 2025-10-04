@@ -86,23 +86,25 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-xl">
-              <Instagram className="w-8 h-8 text-white" />
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-accent to-tertiary flex items-center justify-center shadow-2xl animate-pulse">
+              <Instagram className="w-10 h-10 text-white drop-shadow-lg" />
             </div>
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Social Approval</h1>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-tertiary bg-clip-text text-transparent">
+              Social Approval
+            </h1>
+            <p className="text-muted-foreground mt-2 text-lg">
               Sistema de aprovação de conteúdos para redes sociais
             </p>
           </div>
         </div>
 
-        <Card className="shadow-xl border-2">
+        <Card className="shadow-2xl border-2 backdrop-blur-sm bg-card/95">
           <CardHeader>
             <CardTitle>{isSignUp ? "Criar conta" : "Entrar"}</CardTitle>
             <CardDescription>
