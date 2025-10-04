@@ -332,7 +332,9 @@ const Dashboard = () => {
                               size="icon"
                               onClick={() => {
                                 if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                  navigate(`/a/${agency.slug}/c/${client.slug}`, { 
+                                    state: { month: parseInt(month), year: parseInt(year) } 
+                                  });
                                 }
                               }}
                             >
@@ -366,7 +368,9 @@ const Dashboard = () => {
                               size="icon"
                               onClick={() => {
                                 if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                  navigate(`/a/${agency.slug}/c/${client.slug}`, { 
+                                    state: { month: parseInt(month), year: parseInt(year) } 
+                                  });
                                 }
                               }}
                             >
@@ -400,7 +404,9 @@ const Dashboard = () => {
                               size="icon"
                               onClick={() => {
                                 if (agency?.slug && client?.slug) {
-                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                  navigate(`/a/${agency.slug}/c/${client.slug}`, { 
+                                    state: { month: parseInt(month), year: parseInt(year) } 
+                                  });
                                 }
                               }}
                             >
