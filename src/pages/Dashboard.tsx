@@ -13,6 +13,7 @@ import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
 import { ViewClientDialog } from "@/components/admin/ViewClientDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { MonthSelectorDialog } from "@/components/admin/MonthSelectorDialog";
+import { AddClientDialog } from "@/components/admin/AddClientDialog";
 
 interface Profile {
   id: string;
@@ -186,6 +187,18 @@ const Dashboard = () => {
     return agencies.find(a => a.id === clientAgencyId);
   };
 
+  const fetchClients = async () => {
+    if (profile?.agency_id) {
+      const { data: clientsData } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("agency_id", profile.agency_id)
+        .order("name");
+      
+      if (clientsData) setClients(clientsData);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -249,9 +262,17 @@ const Dashboard = () => {
         {/* Clientes - Principal */}
         {clients.length > 0 && (
           <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5 text-primary" />
-              <h3 className="text-xl font-semibold">Clientes</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-semibold">Clientes</h3>
+              </div>
+              {profile?.role === 'agency_admin' && profile?.agency_id && (
+                <AddClientDialog 
+                  agencyId={profile.agency_id} 
+                  onClientAdded={fetchClients} 
+                />
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {clients.map((client) => {

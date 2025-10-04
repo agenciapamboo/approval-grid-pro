@@ -14,6 +14,7 @@ export function MonthSelectorDialog({ clientId, clientSlug, open, onOpenChange }
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const months = [
+    { name: "Única", value: 0 },
     { name: "Janeiro", value: 1 },
     { name: "Fevereiro", value: 2 },
     { name: "Março", value: 3 },
