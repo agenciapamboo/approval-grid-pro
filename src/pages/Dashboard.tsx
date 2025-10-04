@@ -51,6 +51,15 @@ interface Client {
   address?: string | null;
 }
 
+interface Content {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  type: string;
+  client_id: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -63,6 +72,8 @@ const Dashboard = () => {
   const [viewClientOpen, setViewClientOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
+  const [contents, setContents] = useState<Content[]>([]);
+  const [contentsByMonth, setContentsByMonth] = useState<Record<string, Content[]>>({});
 
   const checkAuth = async () => {
     setLoading(true);
@@ -149,6 +160,28 @@ const Dashboard = () => {
           if (clientData.agencies) {
             setAgencies([clientData.agencies as any]);
           }
+        }
+
+        // Buscar conteúdos do cliente
+        const { data: contentsData } = await supabase
+          .from("contents")
+          .select("*")
+          .eq("client_id", profileData.client_id)
+          .order("date", { ascending: false });
+        
+        if (contentsData) {
+          setContents(contentsData);
+          
+          // Organizar por mês
+          const grouped = contentsData.reduce((acc, content) => {
+            const date = new Date(content.date);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!acc[monthKey]) acc[monthKey] = [];
+            acc[monthKey].push(content);
+            return acc;
+          }, {} as Record<string, Content[]>);
+          
+          setContentsByMonth(grouped);
         }
       }
 
@@ -255,12 +288,89 @@ const Dashboard = () => {
           <p className="text-muted-foreground">
             {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
             {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
-            {profile?.role === 'client_user' && 'Aprove e revise conteúdos do seu cliente'}
+            {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos.'}
           </p>
         </div>
 
-        {/* Clientes - Principal */}
-        {clients.length > 0 && (
+        {/* Client User - Lista de Aprovações */}
+        {profile?.role === 'client_user' && (
+          <div className="space-y-6">
+            {Object.entries(contentsByMonth).map(([monthKey, monthContents]) => {
+              const [year, month] = monthKey.split('-');
+              const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+              
+              const pendingContents = monthContents.filter(c => c.status === 'pending' || c.status === 'draft');
+              const partialContents = monthContents.filter(c => c.status === 'revision');
+              
+              return (
+                <div key={monthKey} className="space-y-4">
+                  <h3 className="text-lg font-semibold capitalize">{monthName}</h3>
+                  
+                  {pendingContents.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Aprovação Pendente</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {pendingContents.map(content => (
+                          <div 
+                            key={content.id} 
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              const client = clients[0];
+                              const agency = getClientAgency(client?.agency_id);
+                              navigate(`/a/${agency?.slug}/c/${client?.slug}?month=${month}&year=${year}`);
+                            }}
+                          >
+                            <div>
+                              <p className="font-medium">{content.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
+                              </p>
+                            </div>
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {partialContents.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Parcialmente Aprovado</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {partialContents.map(content => (
+                          <div 
+                            key={content.id} 
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              const client = clients[0];
+                              const agency = getClientAgency(client?.agency_id);
+                              navigate(`/a/${agency?.slug}/c/${client?.slug}?month=${month}&year=${year}`);
+                            }}
+                          >
+                            <div>
+                              <p className="font-medium">{content.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
+                              </p>
+                            </div>
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Clientes - Para Admin e Agency Admin */}
+        {profile?.role !== 'client_user' && clients.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
