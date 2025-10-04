@@ -141,27 +141,33 @@ export type Database = {
       }
       comments: {
         Row: {
+          adjustment_reason: string | null
           author_user_id: string
           body: string
           content_id: string
           created_at: string
           id: string
+          is_adjustment_request: boolean | null
           version: number
         }
         Insert: {
+          adjustment_reason?: string | null
           author_user_id: string
           body: string
           content_id: string
           created_at?: string
           id?: string
+          is_adjustment_request?: boolean | null
           version: number
         }
         Update: {
+          adjustment_reason?: string | null
           author_user_id?: string
           body?: string
           content_id?: string
           created_at?: string
           id?: string
+          is_adjustment_request?: boolean | null
           version?: number
         }
         Relationships: [
@@ -355,6 +361,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lgpd_pages: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          page_type: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          page_type: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          page_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
