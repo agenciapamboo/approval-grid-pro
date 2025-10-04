@@ -25,13 +25,15 @@ interface Agency {
   id: string;
   name: string;
   slug: string;
-  brand_primary?: string;
-  brand_secondary?: string;
-  logo_url?: string;
-  email?: string;
-  whatsapp?: string;
-  plan?: string;
-  plan_renewal_date?: string;
+  brand_primary?: string | null;
+  brand_secondary?: string | null;
+  logo_url?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  plan?: string | null;
+  plan_renewal_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Client {
@@ -91,7 +93,21 @@ const Dashboard = () => {
           .select("*")
           .order("name");
         
-        if (agenciesData) setAgencies(agenciesData);
+        if (agenciesData) {
+          // Buscar email do admin para cada agência que não tem email
+          const enrichedAgencies = await Promise.all(
+            agenciesData.map(async (agency) => {
+              const agencyData = agency as Agency;
+              if (!agencyData.email) {
+                const { data: adminEmail } = await supabase
+                  .rpc('get_agency_admin_email', { agency_id_param: agencyData.id });
+                return { ...agencyData, email: adminEmail || null } as Agency;
+              }
+              return agencyData;
+            })
+          );
+          setAgencies(enrichedAgencies);
+        }
       } else if (profileData.role === 'agency_admin' && profileData.agency_id) {
         // Agency admin vê sua agência e clientes
         const { data: agencyData } = await supabase

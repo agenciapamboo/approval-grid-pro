@@ -489,7 +489,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_agency_admin_email: {
+        Args: { agency_id_param: string }
+        Returns: string
+      }
     }
     Enums: {
       content_status: "draft" | "in_review" | "changes_requested" | "approved"
