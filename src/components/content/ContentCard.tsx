@@ -25,10 +25,11 @@ interface ContentCardProps {
     version: number;
   };
   isResponsible: boolean;
+  isAgencyView?: boolean;
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
@@ -227,29 +228,36 @@ export function ContentCard({ content, isResponsible, onUpdate }: ContentCardPro
           <div className="p-4 border-b bg-muted/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={handleReplaceMedia}>
-                      <ImagePlus className="h-4 w-4 mr-2" />
-                      Substituir imagem
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => setShowDeleteDialog(true)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remover conteúdo
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <span className="font-medium">
-                  {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
-                </span>
+                {isAgencyView && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={handleReplaceMedia}>
+                        <ImagePlus className="h-4 w-4 mr-2" />
+                        Substituir imagem
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remover conteúdo
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                <div>
+                  <div className="text-xs text-muted-foreground">
+                    Previsão de postagem
+                  </div>
+                  <span className="font-medium">
+                    {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                </div>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-muted-foreground">{getTypeLabel(content.type)}</span>
               </div>
@@ -269,43 +277,45 @@ export function ContentCard({ content, isResponsible, onUpdate }: ContentCardPro
           <ContentCaption contentId={content.id} version={content.version} />
 
           {/* Ações */}
-          <div className="p-4 border-t flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowComments(!showComments)}
-              className="flex-1"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Comentários
-            </Button>
-            
-            {content.status !== "approved" && (
-              <>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowAdjustment(true)}
-                  className="flex-1"
-                >
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Solicitar Ajuste
-                </Button>
-                
-                {isResponsible && (
+          {!isAgencyView && (
+            <div className="p-4 border-t flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowComments(!showComments)}
+                className="flex-1"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Comentários
+              </Button>
+              
+              {content.status !== "approved" && (
+                <>
                   <Button 
-                    variant="default" 
+                    variant="outline" 
                     size="sm"
-                    onClick={handleApprove}
+                    onClick={() => setShowAdjustment(true)}
                     className="flex-1"
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Aprovar
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Solicitar Ajuste
                   </Button>
-                )}
-              </>
-            )}
-          </div>
+                  
+                  {isResponsible && (
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={handleApprove}
+                      className="flex-1"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Aprovar
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Comentários expandidos */}
           {showComments && (

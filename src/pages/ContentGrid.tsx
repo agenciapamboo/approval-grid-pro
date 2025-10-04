@@ -243,6 +243,7 @@ export default function ContentGrid() {
               key={content.id} 
               content={content}
               isResponsible={false}
+              isAgencyView={profile?.role === 'agency_admin'}
               onUpdate={() => loadContents(client!.id)}
             />
           ))}
