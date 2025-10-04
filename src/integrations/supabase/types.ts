@@ -58,8 +58,10 @@ export type Database = {
           brand_secondary: string | null
           created_at: string
           id: string
+          last_payment_date: string | null
           logo_url: string | null
           name: string
+          plan_type: string | null
           slug: string
           updated_at: string
         }
@@ -68,8 +70,10 @@ export type Database = {
           brand_secondary?: string | null
           created_at?: string
           id?: string
+          last_payment_date?: string | null
           logo_url?: string | null
           name: string
+          plan_type?: string | null
           slug: string
           updated_at?: string
         }
@@ -78,8 +82,10 @@ export type Database = {
           brand_secondary?: string | null
           created_at?: string
           id?: string
+          last_payment_date?: string | null
           logo_url?: string | null
           name?: string
+          plan_type?: string | null
           slug?: string
           updated_at?: string
         }
