@@ -9,6 +9,10 @@ interface Agency {
   brand_primary?: string;
   brand_secondary?: string;
   logo_url?: string;
+  email?: string;
+  whatsapp?: string;
+  plan?: string;
+  plan_renewal_date?: string;
   created_at?: string;
 }
 
@@ -40,37 +44,74 @@ export function ViewAgencyDialog({ agency }: ViewAgencyDialogProps) {
             </div>
           )}
           
-          <div className="grid gap-3">
+          <div className="space-y-6">
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Nome</label>
-              <p className="text-base">{agency.name}</p>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Slug</label>
-              <p className="text-base font-mono text-sm">{agency.slug}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Cor Primária</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <div 
-                    className="w-8 h-8 rounded border"
-                    style={{ backgroundColor: agency.brand_primary || '#2563eb' }}
-                  />
-                  <p className="text-sm font-mono">{agency.brand_primary || '#2563eb'}</p>
+              <h3 className="text-sm font-semibold mb-3">Dados Cadastrais</h3>
+              <div className="grid gap-3">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Nome</label>
+                  <p className="text-base">{agency.name}</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Slug</label>
+                  <p className="text-base font-mono text-sm">{agency.slug}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-base">{agency.email || 'Não informado'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">WhatsApp</label>
+                  <p className="text-base">{agency.whatsapp || 'Não informado'}</p>
                 </div>
               </div>
-              
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Cor Secundária</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <div 
-                    className="w-8 h-8 rounded border"
-                    style={{ backgroundColor: agency.brand_secondary || '#8b5cf6' }}
-                  />
-                  <p className="text-sm font-mono">{agency.brand_secondary || '#8b5cf6'}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Dados Financeiros</h3>
+              <div className="grid gap-3">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Plano</label>
+                  <p className="text-base capitalize">{agency.plan || 'free'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Data de Renovação</label>
+                  <p className="text-base">
+                    {agency.plan_renewal_date 
+                      ? new Date(agency.plan_renewal_date).toLocaleDateString('pt-BR')
+                      : 'Não definida'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Identidade Visual</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Cor Primária</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div 
+                      className="w-8 h-8 rounded border"
+                      style={{ backgroundColor: agency.brand_primary || '#2563eb' }}
+                    />
+                    <p className="text-sm font-mono">{agency.brand_primary || '#2563eb'}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Cor Secundária</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div 
+                      className="w-8 h-8 rounded border"
+                      style={{ backgroundColor: agency.brand_secondary || '#8b5cf6' }}
+                    />
+                    <p className="text-sm font-mono">{agency.brand_secondary || '#8b5cf6'}</p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, Settings } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, Settings, MessageSquare } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
@@ -28,6 +28,10 @@ interface Agency {
   brand_primary?: string;
   brand_secondary?: string;
   logo_url?: string;
+  email?: string;
+  whatsapp?: string;
+  plan?: string;
+  plan_renewal_date?: string;
 }
 
 interface Client {
@@ -302,24 +306,30 @@ const Dashboard = () => {
               {agencies.map((agency) => (
                 <Card key={agency.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start gap-3 mb-3">
-                      {agency.logo_url && (
-                        <img 
-                          src={agency.logo_url} 
-                          alt={agency.name}
-                          className="h-10 object-contain"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{agency.name}</CardTitle>
-                        <CardDescription className="text-xs mt-1">
-                          Slug: {agency.slug}
-                        </CardDescription>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1">
+                        {agency.logo_url && (
+                          <img 
+                            src={agency.logo_url} 
+                            alt={agency.name}
+                            className="h-10 object-contain"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{agency.name}</CardTitle>
+                          <CardDescription className="text-xs mt-1">
+                            Slug: {agency.slug}
+                          </CardDescription>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <ViewAgencyDialog agency={agency} />
-                      <EditAgencyDialog agency={agency} onAgencyUpdated={checkAuth} />
+                      <div className="flex flex-col gap-2">
+                        <ViewAgencyDialog agency={agency} />
+                        <EditAgencyDialog agency={agency} onAgencyUpdated={checkAuth} />
+                        <Button variant="outline" size="sm">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Mensagem
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                 </Card>
