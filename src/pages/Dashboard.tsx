@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, Settings, MessageSquare } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, Settings, MessageSquare, Eye, Pencil, Plus } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
@@ -12,6 +12,8 @@ import { ClientManager } from "@/components/admin/ClientManager";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { ViewAgencyDialog } from "@/components/admin/ViewAgencyDialog";
 import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
+import { ViewClientDialog } from "@/components/admin/ViewClientDialog";
+import { EditClientDialog } from "@/components/admin/EditClientDialog";
 
 interface Profile {
   id: string;
@@ -40,8 +42,13 @@ interface Client {
   id: string;
   name: string;
   slug: string;
-  logo_url?: string;
+  logo_url?: string | null;
   agency_id: string;
+  cnpj?: string | null;
+  plan_renewal_date?: string | null;
+  website?: string | null;
+  whatsapp?: string | null;
+  address?: string | null;
 }
 
 const Dashboard = () => {
@@ -52,6 +59,9 @@ const Dashboard = () => {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [viewClientOpen, setViewClientOpen] = useState(false);
+  const [editClientOpen, setEditClientOpen] = useState(false);
 
   const checkAuth = async () => {
     setLoading(true);
@@ -249,12 +259,14 @@ const Dashboard = () => {
                 return (
                   <Card 
                     key={client.id} 
-                    className="hover:shadow-lg transition-shadow cursor-pointer group"
-                    onClick={() => navigate(`/a/${agency?.slug}/c/${client.slug}`)}
+                    className="hover:shadow-lg transition-shadow"
                   >
                     <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex items-start gap-3">
+                        <div 
+                          className="flex-1 cursor-pointer" 
+                          onClick={() => navigate(`/a/${agency?.slug}/c/${client.slug}`)}
+                        >
                           {client.logo_url && (
                             <img 
                               src={client.logo_url} 
@@ -269,7 +281,45 @@ const Dashboard = () => {
                             </CardDescription>
                           )}
                         </div>
-                        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <div className="flex flex-col gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedClient(client);
+                              setViewClientOpen(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Dados
+                          </Button>
+                          {profile?.role === 'agency_admin' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedClient(client);
+                                setEditClientOpen(true);
+                              }}
+                            >
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Editar
+                            </Button>
+                          )}
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/a/${agency?.slug}/c/${client.slug}?action=create`);
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Cadastrar
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                   </Card>
@@ -364,6 +414,19 @@ const Dashboard = () => {
           </Card>
         )}
       </main>
+
+      <ViewClientDialog 
+        client={selectedClient}
+        open={viewClientOpen}
+        onOpenChange={setViewClientOpen}
+      />
+
+      <EditClientDialog 
+        client={selectedClient}
+        open={editClientOpen}
+        onOpenChange={setEditClientOpen}
+        onSuccess={checkAuth}
+      />
     </div>
   );
 };

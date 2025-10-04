@@ -87,40 +87,55 @@ export type Database = {
       }
       clients: {
         Row: {
+          address: string | null
           agency_id: string
+          cnpj: string | null
           created_at: string
           id: string
           logo_url: string | null
           name: string
+          plan_renewal_date: string | null
           responsible_user_id: string | null
           slug: string
           timezone: string | null
           updated_at: string
           webhook_url: string | null
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
+          address?: string | null
           agency_id: string
+          cnpj?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name: string
+          plan_renewal_date?: string | null
           responsible_user_id?: string | null
           slug: string
           timezone?: string | null
           updated_at?: string
           webhook_url?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
+          address?: string | null
           agency_id?: string
+          cnpj?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
           name?: string
+          plan_renewal_date?: string | null
           responsible_user_id?: string | null
           slug?: string
           timezone?: string | null
           updated_at?: string
           webhook_url?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: [
           {
