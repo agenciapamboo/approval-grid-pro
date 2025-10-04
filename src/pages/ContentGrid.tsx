@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
@@ -210,6 +210,16 @@ export default function ContentGrid() {
       >
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {profile?.role === 'agency_admin' && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/dashboard')}
+                className="text-white hover:bg-white/20"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             {agency?.logo_url && (
               <img src={agency.logo_url} alt={agency.name} className="h-10" />
             )}
@@ -220,7 +230,7 @@ export default function ContentGrid() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-white text-sm">{profile?.name}</span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-white hover:bg-white/20">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
