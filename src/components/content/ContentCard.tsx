@@ -33,7 +33,7 @@ interface ContentCardProps {
 
 export function ContentCard({ content, isResponsible, isAgencyView = false, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);

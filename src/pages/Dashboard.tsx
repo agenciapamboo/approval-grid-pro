@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -76,6 +76,7 @@ const Dashboard = () => {
   const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
   const [contents, setContents] = useState<Content[]>([]);
   const [contentsByMonth, setContentsByMonth] = useState<Record<string, Content[]>>({});
+  const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number }>>({});
 
   const checkAuth = async () => {
     setLoading(true);
@@ -148,7 +149,29 @@ const Dashboard = () => {
           .eq("agency_id", profileData.agency_id)
           .order("name");
         
-        if (clientsData) setClients(clientsData);
+        if (clientsData) {
+          setClients(clientsData);
+          
+          // Buscar notificações de conteúdo para cada cliente
+          const notifications: Record<string, { adjustments: number; approved: number; rejected: number }> = {};
+          
+          for (const client of clientsData) {
+            const { data: contentsData } = await supabase
+              .from("contents")
+              .select("status")
+              .eq("client_id", client.id);
+            
+            if (contentsData) {
+              notifications[client.id] = {
+                adjustments: contentsData.filter(c => c.status === 'changes_requested').length,
+                approved: contentsData.filter(c => c.status === 'approved').length,
+                rejected: contentsData.filter(c => c.status === 'in_review').length,
+              };
+            }
+          }
+          
+          setClientNotifications(notifications);
+        }
       } else if (profileData.role === 'client_user' && profileData.client_id) {
         // Client user vê seu cliente
         const { data: clientData } = await supabase
@@ -450,6 +473,9 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {clients.map((client) => {
                 const agency = getClientAgency(client.agency_id);
+                const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0 };
+                const hasNotifications = notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0;
+                
                 return (
                   <Card 
                     key={client.id} 
@@ -479,6 +505,34 @@ const Dashboard = () => {
                           )}
                         </div>
                         <div className="flex flex-col gap-2">
+                          {hasNotifications && (
+                            <div className="space-y-1 mb-2">
+                              {notifications.adjustments > 0 && (
+                                <Alert className="py-2 px-3">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertDescription className="text-xs">
+                                    {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''} Solicitado{notifications.adjustments > 1 ? 's' : ''}
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                              {notifications.approved > 0 && (
+                                <Alert className="py-2 px-3 border-green-500 text-green-700">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <AlertDescription className="text-xs">
+                                    {notifications.approved} Conteúdo{notifications.approved > 1 ? 's' : ''} Aprovado{notifications.approved > 1 ? 's' : ''}
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                              {notifications.rejected > 0 && (
+                                <Alert className="py-2 px-3 border-red-500 text-red-700">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertDescription className="text-xs">
+                                    {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Reprovado{notifications.rejected > 1 ? 's' : ''}
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                            </div>
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm"
