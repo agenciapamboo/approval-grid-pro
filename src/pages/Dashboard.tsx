@@ -296,18 +296,6 @@ const Dashboard = () => {
         {/* Client User - Lista de Aprovações */}
         {profile?.role === 'client_user' && (
           <div className="space-y-6">
-            <Alert>
-              <AlertTitle>Workflow</AlertTitle>
-              <AlertDescription>
-                <ol className="list-decimal pl-5 space-y-1">
-                  <li>Todos os posts são agendados para publicação na sexta-feira (ou no último dia útil da semana).</li>
-                  <li>O prazo para indicar posts com alterações simples ou que devem ser excluídos do agendamento é até quinta às 23h59 (ou no penúltimo dia útil da semana).</li>
-                  <li>São alterações simples: correções de texto na legenda ou imagem ou a substituição de foto/imagem com o envio da mesma (por link ou arquivo).</li>
-                  <li>Posts não aprovados serão automaticamente descartados das publicações da semana e incluídos como post adicional na próxima semana.</li>
-                  <li>Todos os posts sem observações serão automaticamente aprovados para publicação.</li>
-                </ol>
-              </AlertDescription>
-            </Alert>
             {Object.entries(contentsByMonth).map(([monthKey, monthContents]) => {
               const [year, month] = monthKey.split('-');
               const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -426,6 +414,18 @@ const Dashboard = () => {
                 </div>
               );
             })}
+            <Alert>
+              <AlertTitle>Workflow</AlertTitle>
+              <AlertDescription>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li>Todos os posts são agendados para publicação na sexta-feira (ou no último dia útil da semana).</li>
+                  <li>O prazo para indicar posts com alterações simples ou que devem ser excluídos do agendamento é até quinta às 23h59 (ou no penúltimo dia útil da semana).</li>
+                  <li>São alterações simples: correções de texto na legenda ou imagem ou a substituição de foto/imagem com o envio da mesma (por link ou arquivo).</li>
+                  <li>Posts não aprovados serão automaticamente descartados das publicações da semana e incluídos como post adicional na próxima semana.</li>
+                  <li>Todos os posts sem observações serão automaticamente aprovados para publicação.</li>
+                </ol>
+              </AlertDescription>
+            </Alert>
           </div>
         )}
 
