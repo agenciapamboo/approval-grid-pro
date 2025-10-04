@@ -4,8 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, Settings } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
+import { AddClientDialog } from "@/components/admin/AddClientDialog";
+import { ClientManager } from "@/components/admin/ClientManager";
 
 interface Profile {
   id: string;
@@ -41,8 +44,9 @@ const Dashboard = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const checkAuth = async () => {
+  const checkAuth = async () => {
+    setLoading(true);
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -114,9 +118,19 @@ const Dashboard = () => {
         }
       }
 
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao carregar dados do dashboard.",
+      });
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -241,12 +255,44 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Gerenciamento de Clientes - Agency Admin */}
+        {profile?.role === 'agency_admin' && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-semibold">Gerenciar Clientes</h3>
+              </div>
+              <AddClientDialog 
+                agencyId={profile.agency_id!} 
+                onClientAdded={checkAuth}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {clients.map((client) => {
+                const agency = agencies[0];
+                return (
+                  <ClientManager
+                    key={client.id}
+                    client={client}
+                    agencySlug={agency?.slug || ''}
+                    onUpdate={checkAuth}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Agências - Só para Super Admin */}
-        {profile?.role === 'super_admin' && agencies.length > 0 && (
+        {profile?.role === 'super_admin' && (
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-primary" />
-              <h3 className="text-xl font-semibold">Agências</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-semibold">Agências</h3>
+              </div>
+              <AddAgencyDialog onAgencyAdded={checkAuth} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {agencies.map((agency) => (
