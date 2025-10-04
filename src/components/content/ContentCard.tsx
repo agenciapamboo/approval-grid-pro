@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ContentMedia } from "./ContentMedia";
@@ -30,6 +32,8 @@ export function ContentCard({ content, isResponsible, onUpdate }: ContentCardPro
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
@@ -86,6 +90,135 @@ export function ContentCard({ content, isResponsible, onUpdate }: ContentCardPro
     }
   };
 
+  const handleReplaceMedia = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+
+    if (!isImage && !isVideo) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione apenas imagens ou vídeos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Buscar a mídia atual
+      const { data: mediaData } = await supabase
+        .from("content_media")
+        .select("*")
+        .eq("content_id", content.id)
+        .order("order_index")
+        .limit(1)
+        .single();
+
+      if (!mediaData) {
+        toast({
+          title: "Erro",
+          description: "Mídia não encontrada",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Upload do novo arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${content.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('content-media')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('content-media')
+        .getPublicUrl(fileName);
+
+      // Atualizar registro de mídia
+      const { error: updateError } = await supabase
+        .from("content_media")
+        .update({
+          src_url: publicUrl,
+          kind: isVideo ? 'video' : 'image',
+        })
+        .eq("id", mediaData.id);
+
+      if (updateError) throw updateError;
+
+      // Deletar arquivo antigo do storage
+      const oldPath = mediaData.src_url.split('/content-media/')[1];
+      if (oldPath) {
+        await supabase.storage.from('content-media').remove([oldPath]);
+      }
+
+      toast({
+        title: "Mídia substituída",
+        description: "A mídia foi substituída com sucesso",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao substituir mídia:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao substituir a mídia",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      // Buscar todas as mídias para deletar do storage
+      const { data: mediaData } = await supabase
+        .from("content_media")
+        .select("src_url")
+        .eq("content_id", content.id);
+
+      // Deletar conteúdo (cascade irá deletar mídias e textos)
+      const { error } = await supabase
+        .from("contents")
+        .delete()
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      // Deletar arquivos do storage
+      if (mediaData && mediaData.length > 0) {
+        const filePaths = mediaData
+          .map(m => m.src_url.split('/content-media/')[1])
+          .filter(Boolean);
+        
+        if (filePaths.length > 0) {
+          await supabase.storage.from('content-media').remove(filePaths);
+        }
+      }
+
+      toast({
+        title: "Conteúdo removido",
+        description: "O conteúdo foi removido com sucesso",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao remover conteúdo:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover o conteúdo",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -94,6 +227,26 @@ export function ContentCard({ content, isResponsible, onUpdate }: ContentCardPro
           <div className="p-4 border-b bg-muted/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={handleReplaceMedia}>
+                      <ImagePlus className="h-4 w-4 mr-2" />
+                      Substituir imagem
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remover conteúdo
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <span className="font-medium">
                   {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
                 </span>
@@ -168,6 +321,31 @@ export function ContentCard({ content, isResponsible, onUpdate }: ContentCardPro
         onOpenChange={setShowAdjustment}
         contentId={content.id}
         onSuccess={onUpdate}
+      />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar remoção</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover este conteúdo? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleFileSelect}
+        className="hidden"
       />
     </>
   );
