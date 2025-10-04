@@ -514,6 +514,30 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_events: {
         Row: {
           client_id: string
@@ -561,8 +585,20 @@ export type Database = {
         Args: { agency_id_param: string }
         Returns: string
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "super_admin" | "agency_admin" | "client_user"
       content_status: "draft" | "in_review" | "changes_requested" | "approved"
       content_type: "image" | "carousel" | "reels"
       legal_basis: "contract" | "legitimate_interest"
@@ -696,6 +732,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["super_admin", "agency_admin", "client_user"],
       content_status: ["draft", "in_review", "changes_requested", "approved"],
       content_type: ["image", "carousel", "reels"],
       legal_basis: ["contract", "legitimate_interest"],

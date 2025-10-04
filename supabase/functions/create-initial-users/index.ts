@@ -12,22 +12,24 @@ Deno.serve(async (req) => {
       }
     })
 
+    // SECURITY WARNING: These are default credentials for testing only
+    // In production, use environment variables and strong passwords
     const usersToCreate = [
       {
-        email: 'juaumluihs@gmail.com',
-        password: 'd024m002',
+        email: Deno.env.get('SUPER_ADMIN_EMAIL') || 'juaumluihs@gmail.com',
+        password: Deno.env.get('SUPER_ADMIN_PASSWORD') || 'ChangeMe123!',
         name: 'Super Admin',
         role: 'super_admin'
       },
       {
-        email: 'contato@pamboo.com.br',
-        password: 'd024m002',
+        email: Deno.env.get('AGENCY_ADMIN_EMAIL') || 'contato@pamboo.com.br',
+        password: Deno.env.get('AGENCY_ADMIN_PASSWORD') || 'ChangeMe123!',
         name: 'Agency Admin',
         role: 'agency_admin'
       },
       {
-        email: 'financeiro@pamboo.com.br',
-        password: 'd024m002',
+        email: Deno.env.get('CLIENT_USER_EMAIL') || 'financeiro@pamboo.com.br',
+        password: Deno.env.get('CLIENT_USER_PASSWORD') || 'ChangeMe123!',
         name: 'Client User',
         role: 'client_user'
       }
@@ -55,16 +57,18 @@ Deno.serve(async (req) => {
         throw createError
       }
 
-      // Inserir role na tabela user_roles
+      // Insert role in user_roles table (using security definer function)
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
           user_id: user.user!.id,
-          role: userData.role
+          role: userData.role,
+          created_by: user.user!.id
         })
 
       if (roleError && !roleError.message.includes('duplicate key')) {
         console.error('Error creating role:', roleError)
+        // Continue anyway - the profile was created successfully
       }
 
       results.push({ email: userData.email, status: 'created', id: user.user!.id })
