@@ -57,37 +57,49 @@ export type Database = {
           brand_primary: string | null
           brand_secondary: string | null
           created_at: string
+          email: string | null
           id: string
           last_payment_date: string | null
           logo_url: string | null
           name: string
+          plan: string | null
+          plan_renewal_date: string | null
           plan_type: string | null
           slug: string
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           brand_primary?: string | null
           brand_secondary?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           last_payment_date?: string | null
           logo_url?: string | null
           name: string
+          plan?: string | null
+          plan_renewal_date?: string | null
           plan_type?: string | null
           slug: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           brand_primary?: string | null
           brand_secondary?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           last_payment_date?: string | null
           logo_url?: string | null
           name?: string
+          plan?: string | null
+          plan_renewal_date?: string | null
           plan_type?: string | null
           slug?: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }
