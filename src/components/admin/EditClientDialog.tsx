@@ -13,6 +13,7 @@ interface Client {
   slug: string;
   logo_url?: string | null;
   agency_id: string;
+  email?: string | null;
   cnpj?: string | null;
   plan_renewal_date?: string | null;
   website?: string | null;
@@ -33,6 +34,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
+    email: "",
     cnpj: "",
     plan_renewal_date: "",
     website: "",
@@ -46,6 +48,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
       setFormData({
         name: client.name || "",
         slug: client.slug || "",
+        email: client.email || "",
         cnpj: client.cnpj || "",
         plan_renewal_date: client.plan_renewal_date 
           ? new Date(client.plan_renewal_date).toISOString().split('T')[0]
@@ -70,6 +73,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         .update({
           name: formData.name,
           slug: formData.slug,
+          email: formData.email || null,
           cnpj: formData.cnpj || null,
           plan_renewal_date: formData.plan_renewal_date || null,
           website: formData.website || null,
@@ -142,6 +146,21 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               placeholder="slug-do-cliente"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="contato@cliente.com.br"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Este email será usado para o cliente fazer login no sistema
+            </p>
           </div>
 
           <div className="space-y-2">

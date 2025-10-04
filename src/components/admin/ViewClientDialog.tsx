@@ -13,6 +13,7 @@ interface Client {
   slug: string;
   logo_url?: string | null;
   agency_id: string;
+  email?: string | null;
   cnpj?: string | null;
   plan_renewal_date?: string | null;
   website?: string | null;
@@ -86,6 +87,11 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
             <div className="space-y-2">
               <h3 className="font-semibold text-sm text-muted-foreground">Nome</h3>
               <p className="text-base">{client.name}</p>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Email</h3>
+              <p className="text-base">{client.email || "Não informado"}</p>
             </div>
 
             <div className="space-y-2">

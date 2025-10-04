@@ -141,6 +141,7 @@ export type Database = {
           agency_id: string
           cnpj: string | null
           created_at: string
+          email: string | null
           id: string
           logo_url: string | null
           name: string
@@ -158,6 +159,7 @@ export type Database = {
           agency_id: string
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -175,6 +177,7 @@ export type Database = {
           agency_id?: string
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           logo_url?: string | null
           name?: string
