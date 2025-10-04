@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ContentMedia } from "./ContentMedia";
@@ -34,6 +36,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
@@ -58,15 +62,6 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   };
 
   const handleApprove = async () => {
-    if (!isResponsible) {
-      toast({
-        title: "Ação não permitida",
-        description: "Apenas o responsável do cliente pode aprovar conteúdos",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from("contents")
@@ -86,6 +81,59 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       toast({
         title: "Erro",
         description: "Erro ao aprovar o conteúdo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo da reprovação",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Criar comentário com o motivo da reprovação
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error: commentError } = await supabase
+        .from("comments")
+        .insert({
+          content_id: content.id,
+          version: content.version,
+          author_user_id: user.id,
+          body: `Reprovado: ${rejectReason}`,
+          is_adjustment_request: true,
+        });
+
+      if (commentError) throw commentError;
+
+      // Atualizar status para changes_requested
+      const { error: updateError } = await supabase
+        .from("contents")
+        .update({ status: "changes_requested" })
+        .eq("id", content.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Conteúdo reprovado",
+        description: "O conteúdo foi reprovado e o motivo foi registrado",
+      });
+
+      setShowRejectDialog(false);
+      setRejectReason("");
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao reprovar:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reprovar o conteúdo",
         variant: "destructive",
       });
     }
@@ -262,6 +310,37 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               <div className="flex items-center gap-2">
                 <Badge variant="default">Tipo: {getTypeLabel(content.type)}</Badge>
                 {getStatusBadge(content.status)}
+                {!isAgencyView && (
+                  <div className="flex flex-col gap-1">
+                    {content.status !== "approved" ? (
+                      <>
+                        <Button 
+                          size="sm"
+                          onClick={handleApprove}
+                          className="bg-orange-500 hover:bg-orange-600 text-white h-8"
+                        >
+                          Aprovar
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowRejectDialog(true)}
+                          className="h-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          Reprovar
+                        </Button>
+                      </>
+                    ) : (
+                      <Button 
+                        size="sm"
+                        className="bg-green-500 hover:bg-green-600 text-white h-8"
+                        disabled
+                      >
+                        Aprovado
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             {content.deadline && (
@@ -350,6 +429,36 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reprovar Conteúdo</DialogTitle>
+            <DialogDescription>
+              Por favor, informe o motivo da reprovação deste conteúdo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Descreva o motivo da reprovação..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleReject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Reprovar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <input
         ref={fileInputRef}
