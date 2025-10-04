@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { ClientManager } from "@/components/admin/ClientManager";
+import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 
 interface Profile {
   id: string;
@@ -188,6 +189,7 @@ const Dashboard = () => {
               <p className="text-sm font-medium">{profile?.name}</p>
               <p className="text-xs text-muted-foreground">{getRoleLabel(profile?.role || "")}</p>
             </div>
+            <UserProfileDialog user={user} profile={profile} onUpdate={checkAuth} />
             <Button
               variant="ghost"
               size="icon"

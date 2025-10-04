@@ -398,6 +398,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          plan: string | null
+          plan_renewal_date: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -409,6 +411,8 @@ export type Database = {
           id: string
           is_active?: boolean
           name: string
+          plan?: string | null
+          plan_renewal_date?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -420,6 +424,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          plan?: string | null
+          plan_renewal_date?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
