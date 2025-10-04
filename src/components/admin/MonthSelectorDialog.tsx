@@ -6,11 +6,12 @@ import { useNavigate } from "react-router-dom";
 interface MonthSelectorDialogProps {
   clientId: string;
   clientSlug: string;
+  agencySlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function MonthSelectorDialog({ clientId, clientSlug, open, onOpenChange }: MonthSelectorDialogProps) {
+export function MonthSelectorDialog({ clientId, clientSlug, agencySlug, open, onOpenChange }: MonthSelectorDialogProps) {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const singleMonth = { name: "Aprovação única", value: 0 };
@@ -31,7 +32,7 @@ export function MonthSelectorDialog({ clientId, clientSlug, open, onOpenChange }
 
   const handleMonthSelect = (month: number) => {
     const year = currentYear;
-    navigate(`/${clientSlug}?month=${month}&year=${year}`);
+    navigate(`/a/${agencySlug}/c/${clientSlug}?month=${month}&year=${year}`);
     onOpenChange(false);
   };
 

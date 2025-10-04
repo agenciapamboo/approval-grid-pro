@@ -425,6 +425,7 @@ const Dashboard = () => {
       <MonthSelectorDialog
         clientId={selectedClient?.id || ""}
         clientSlug={selectedClient?.slug || ""}
+        agencySlug={getClientAgency(selectedClient?.agency_id || "")?.slug || ""}
         open={monthSelectorOpen}
         onOpenChange={setMonthSelectorOpen}
       />
