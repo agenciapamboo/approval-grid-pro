@@ -1,0 +1,157 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    console.log('Iniciando auto-aprovação de conteúdos...');
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Usar service role para bypass RLS
+    );
+
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    // 1. Enviar lembretes para conteúdos com deadline hoje
+    console.log(`Buscando conteúdos com deadline hoje (${today})...`);
+    const { data: todayContents, error: todayError } = await supabaseClient
+      .from('contents')
+      .select('*, clients(*)')
+      .eq('deadline', today)
+      .neq('status', 'approved');
+
+    if (todayError) {
+      console.error('Erro ao buscar conteúdos de hoje:', todayError);
+    } else if (todayContents && todayContents.length > 0) {
+      console.log(`Encontrados ${todayContents.length} conteúdos com deadline hoje`);
+      
+      for (const content of todayContents) {
+        // Enviar webhook de lembrete
+        try {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-webhook`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+            },
+            body: JSON.stringify({
+              event: 'content.last_day_reminder',
+              content_id: content.id,
+              client_id: content.client_id,
+            }),
+          });
+          console.log(`Lembrete enviado para conteúdo ${content.id}`);
+        } catch (error) {
+          console.error(`Erro ao enviar lembrete para ${content.id}:`, error);
+        }
+      }
+    }
+
+    // 2. Auto-aprovar conteúdos com deadline vencido
+    console.log(`Buscando conteúdos com deadline vencido (< ${today})...`);
+    const { data: expiredContents, error: expiredError } = await supabaseClient
+      .from('contents')
+      .select('*, clients(*)')
+      .lt('deadline', today)
+      .neq('status', 'approved');
+
+    if (expiredError) {
+      console.error('Erro ao buscar conteúdos vencidos:', expiredError);
+      throw expiredError;
+    }
+
+    if (!expiredContents || expiredContents.length === 0) {
+      console.log('Nenhum conteúdo para auto-aprovar');
+      return new Response(
+        JSON.stringify({ 
+          message: 'Nenhum conteúdo para auto-aprovar',
+          reminders_sent: todayContents?.length || 0,
+          approved: 0,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    console.log(`Encontrados ${expiredContents.length} conteúdos para auto-aprovar`);
+    let approvedCount = 0;
+
+    for (const content of expiredContents) {
+      try {
+        // Atualizar status para aprovado
+        const { error: updateError } = await supabaseClient
+          .from('contents')
+          .update({ status: 'approved' })
+          .eq('id', content.id);
+
+        if (updateError) {
+          console.error(`Erro ao aprovar ${content.id}:`, updateError);
+          continue;
+        }
+
+        // Registrar atividade
+        await supabaseClient
+          .from('activity_log')
+          .insert({
+            entity: 'content',
+            entity_id: content.id,
+            action: 'auto_approved',
+            metadata: {
+              deadline: content.deadline,
+              previous_status: content.status,
+            },
+          });
+
+        // Enviar webhook
+        try {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-webhook`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+            },
+            body: JSON.stringify({
+              event: 'content.auto_approved',
+              content_id: content.id,
+              client_id: content.client_id,
+            }),
+          });
+        } catch (webhookError) {
+          console.error(`Erro ao enviar webhook para ${content.id}:`, webhookError);
+        }
+
+        approvedCount++;
+        console.log(`Conteúdo ${content.id} auto-aprovado com sucesso`);
+      } catch (error) {
+        console.error(`Erro ao processar conteúdo ${content.id}:`, error);
+      }
+    }
+
+    console.log(`Auto-aprovação concluída: ${approvedCount}/${expiredContents.length} conteúdos aprovados`);
+
+    return new Response(
+      JSON.stringify({ 
+        message: 'Auto-aprovação executada com sucesso',
+        reminders_sent: todayContents?.length || 0,
+        approved: approvedCount,
+        total_expired: expiredContents.length,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    );
+  } catch (error: any) {
+    console.error('Erro na auto-aprovação:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
+  }
+});
