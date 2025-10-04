@@ -339,7 +339,7 @@ const Dashboard = () => {
                             }}
                           >
                             <Plus className="w-4 h-4 mr-2" />
-                            Cadastrar
+                            +Aprovar
                           </Button>
                         </div>
                       </div>

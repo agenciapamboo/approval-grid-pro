@@ -13,8 +13,8 @@ interface MonthSelectorDialogProps {
 export function MonthSelectorDialog({ clientId, clientSlug, open, onOpenChange }: MonthSelectorDialogProps) {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const singleMonth = { name: "Aprovação única", value: 0 };
   const months = [
-    { name: "Única", value: 0 },
     { name: "Janeiro", value: 1 },
     { name: "Fevereiro", value: 2 },
     { name: "Março", value: 3 },
@@ -41,21 +41,31 @@ export function MonthSelectorDialog({ clientId, clientSlug, open, onOpenChange }
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Selecione o Mês
+            Selecione
           </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-3 gap-3 py-4">
-          {months.map((month) => (
-            <Button
-              key={month.value}
-              variant="outline"
-              onClick={() => handleMonthSelect(month.value)}
-              className="h-auto py-4"
-            >
-              {month.name}
-            </Button>
-          ))}
+        <div className="space-y-3 py-4">
+          <Button
+            variant="outline"
+            onClick={() => handleMonthSelect(singleMonth.value)}
+            className="w-full h-auto py-4"
+          >
+            {singleMonth.name}
+          </Button>
+
+          <div className="grid grid-cols-3 gap-3">
+            {months.map((month) => (
+              <Button
+                key={month.value}
+                variant="outline"
+                onClick={() => handleMonthSelect(month.value)}
+                className="h-auto py-4"
+              >
+                {month.name}
+              </Button>
+            ))}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

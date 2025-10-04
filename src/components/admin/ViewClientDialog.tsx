@@ -88,34 +88,38 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
               <p className="text-base">{client.name}</p>
             </div>
 
-            {client.cnpj && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  CNPJ
-                </h3>
-                <p className="text-base">{client.cnpj}</p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Slug (URL)</h3>
+              <p className="text-base">{client.slug}</p>
+            </div>
 
-            {client.plan_renewal_date && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Vencimento
-                </h3>
-                <p className="text-base">
-                  {new Date(client.plan_renewal_date).toLocaleDateString('pt-BR')}
-                </p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                CNPJ
+              </h3>
+              <p className="text-base">{client.cnpj || "Não informado"}</p>
+            </div>
 
-            {client.website && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Site
-                </h3>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Data de Vencimento
+              </h3>
+              <p className="text-base">
+                {client.plan_renewal_date 
+                  ? new Date(client.plan_renewal_date).toLocaleDateString('pt-BR')
+                  : "Não informado"
+                }
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Site
+              </h3>
+              {client.website ? (
                 <a 
                   href={client.website} 
                   target="_blank" 
@@ -124,28 +128,26 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
                 >
                   {client.website}
                 </a>
-              </div>
-            )}
+              ) : (
+                <p className="text-base">Não informado</p>
+              )}
+            </div>
 
-            {client.whatsapp && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  WhatsApp
-                </h3>
-                <p className="text-base">{client.whatsapp}</p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                WhatsApp
+              </h3>
+              <p className="text-base">{client.whatsapp || "Não informado"}</p>
+            </div>
 
-            {client.address && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Endereço
-                </h3>
-                <p className="text-base">{client.address}</p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Endereço
+              </h3>
+              <p className="text-base whitespace-pre-wrap">{client.address || "Não informado"}</p>
+            </div>
 
             <Separator className="my-4" />
 
