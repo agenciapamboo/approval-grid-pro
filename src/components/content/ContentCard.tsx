@@ -227,7 +227,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           {/* Linha 1: Data e Tipo */}
           <div className="p-4 border-b bg-muted/50">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2">
                 {isAgencyView && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -251,17 +251,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   </DropdownMenu>
                 )}
                 <div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground mb-1">
                     Previsão de postagem
                   </div>
-                  <span className="font-medium">
+                  <span className="font-medium text-sm">
                     {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
                   </span>
                 </div>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-muted-foreground">{getTypeLabel(content.type)}</span>
               </div>
-              {getStatusBadge(content.status)}
+              <div className="flex items-center gap-2">
+                <Badge variant="default">Tipo: {getTypeLabel(content.type)}</Badge>
+                {getStatusBadge(content.status)}
+              </div>
             </div>
             {content.deadline && (
               <div className="text-xs text-muted-foreground mt-1">
