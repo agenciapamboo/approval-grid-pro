@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 interface Profile {
@@ -15,11 +15,30 @@ interface Profile {
   client_id: string | null;
 }
 
+interface Agency {
+  id: string;
+  name: string;
+  slug: string;
+  brand_primary?: string;
+  brand_secondary?: string;
+  logo_url?: string;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string;
+  agency_id: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [agencies, setAgencies] = useState<Agency[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,8 +66,52 @@ const Dashboard = () => {
           title: "Erro",
           description: "Não foi possível carregar o perfil.",
         });
-      } else {
-        setProfile(profileData);
+        setLoading(false);
+        return;
+      }
+
+      setProfile(profileData);
+
+      // Carregar dados baseado no role
+      if (profileData.role === 'super_admin') {
+        // Super admin vê todas agências
+        const { data: agenciesData } = await supabase
+          .from("agencies")
+          .select("*")
+          .order("name");
+        
+        if (agenciesData) setAgencies(agenciesData);
+      } else if (profileData.role === 'agency_admin' && profileData.agency_id) {
+        // Agency admin vê sua agência e clientes
+        const { data: agencyData } = await supabase
+          .from("agencies")
+          .select("*")
+          .eq("id", profileData.agency_id)
+          .single();
+        
+        if (agencyData) setAgencies([agencyData]);
+
+        const { data: clientsData } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("agency_id", profileData.agency_id)
+          .order("name");
+        
+        if (clientsData) setClients(clientsData);
+      } else if (profileData.role === 'client_user' && profileData.client_id) {
+        // Client user vê seu cliente
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("*, agencies(*)")
+          .eq("id", profileData.client_id)
+          .single();
+        
+        if (clientData) {
+          setClients([clientData]);
+          if (clientData.agencies) {
+            setAgencies([clientData.agencies as any]);
+          }
+        }
       }
 
       setLoading(false);
@@ -70,6 +133,10 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
+  };
+
+  const getClientAgency = (clientAgencyId: string) => {
+    return agencies.find(a => a.id === clientAgencyId);
   };
 
   if (loading) {
@@ -99,100 +166,123 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">Social Approval</h1>
-              <p className="text-sm text-muted-foreground">Dashboard</p>
+              <p className="text-sm text-muted-foreground">Sistema de Aprovação de Conteúdos</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium">{profile?.name}</p>
-              <p className="text-xs text-muted-foreground">{profile && getRoleLabel(profile.role)}</p>
+              <p className="text-xs text-muted-foreground">{getRoleLabel(profile?.role || "")}</p>
             </div>
-            <Button variant="outline" size="icon" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              title="Sair"
+            >
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-                <Building2 className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Agências</CardTitle>
-              <CardDescription>
-                Gerencie agências e suas configurações
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" disabled>
-                Em breve
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-3">
-                <Users className="w-6 h-6 text-accent" />
-              </div>
-              <CardTitle>Clientes</CardTitle>
-              <CardDescription>
-                Visualize e gerencie clientes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" disabled>
-                Em breve
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mb-3">
-                <FileImage className="w-6 h-6 text-success" />
-              </div>
-              <CardTitle>Conteúdos</CardTitle>
-              <CardDescription>
-                Acesse a grade de conteúdos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" disabled>
-                Em breve
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">
+            Bem-vindo, {profile?.name}!
+          </h2>
+          <p className="text-muted-foreground">
+            {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
+            {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
+            {profile?.role === 'client_user' && 'Aprove e revise conteúdos do seu cliente'}
+          </p>
         </div>
 
-        <Card className="mt-8 shadow-lg">
-          <CardHeader>
-            <CardTitle>Bem-vindo ao Social Approval!</CardTitle>
-            <CardDescription>
-              Sistema profissional de aprovação de conteúdos para redes sociais
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Este é um sistema multi-tenant completo para gerenciar o fluxo de aprovação
-              de conteúdos de redes sociais com:
-            </p>
-            <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
-              <li>Grade 3×3 estilo Instagram para visualização de conteúdos</li>
-              <li>Sistema de aprovação com comentários e solicitação de ajustes</li>
-              <li>Suporte para imagens, carrosséis e reels</li>
-              <li>Multi-tenancy (Agências → Clientes → Usuários)</li>
-              <li>Marca branca por agência</li>
-              <li>Conformidade com LGPD</li>
-            </ul>
-            <p className="text-sm font-medium text-primary">
-              As funcionalidades estão sendo construídas progressivamente.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Clientes - Principal */}
+        {clients.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="w-5 h-5 text-primary" />
+              <h3 className="text-xl font-semibold">Clientes</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clients.map((client) => {
+                const agency = getClientAgency(client.agency_id);
+                return (
+                  <Card 
+                    key={client.id} 
+                    className="hover:shadow-lg transition-shadow cursor-pointer group"
+                    onClick={() => navigate(`/a/${agency?.slug}/c/${client.slug}`)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          {client.logo_url && (
+                            <img 
+                              src={client.logo_url} 
+                              alt={client.name}
+                              className="h-12 mb-3 object-contain"
+                            />
+                          )}
+                          <CardTitle className="text-lg">{client.name}</CardTitle>
+                          {agency && (
+                            <CardDescription className="text-sm mt-1">
+                              {agency.name}
+                            </CardDescription>
+                          )}
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    </CardHeader>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Agências - Só para Super Admin */}
+        {profile?.role === 'super_admin' && agencies.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-primary" />
+              <h3 className="text-xl font-semibold">Agências</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {agencies.map((agency) => (
+                <Card key={agency.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start gap-3">
+                      {agency.logo_url && (
+                        <img 
+                          src={agency.logo_url} 
+                          alt={agency.name}
+                          className="h-10 object-contain"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">{agency.name}</CardTitle>
+                        <CardDescription className="text-xs mt-1">
+                          Slug: {agency.slug}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {clients.length === 0 && agencies.length === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">
+                Nenhum cliente ou agência encontrado
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
