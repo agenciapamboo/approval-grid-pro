@@ -12,6 +12,7 @@ import { ViewAgencyDialog } from "@/components/admin/ViewAgencyDialog";
 import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
 import { ViewClientDialog } from "@/components/admin/ViewClientDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
+import { MonthSelectorDialog } from "@/components/admin/MonthSelectorDialog";
 
 interface Profile {
   id: string;
@@ -60,6 +61,7 @@ const Dashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [viewClientOpen, setViewClientOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
+  const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
 
   const checkAuth = async () => {
     setLoading(true);
@@ -311,7 +313,8 @@ const Dashboard = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/a/${agency?.slug}/c/${client.slug}?action=create`);
+                              setSelectedClient(client);
+                              setMonthSelectorOpen(true);
                             }}
                           >
                             <Plus className="w-4 h-4 mr-2" />
@@ -396,6 +399,13 @@ const Dashboard = () => {
         open={editClientOpen}
         onOpenChange={setEditClientOpen}
         onSuccess={checkAuth}
+      />
+
+      <MonthSelectorDialog
+        clientId={selectedClient?.id || ""}
+        clientSlug={selectedClient?.slug || ""}
+        open={monthSelectorOpen}
+        onOpenChange={setMonthSelectorOpen}
       />
     </div>
   );

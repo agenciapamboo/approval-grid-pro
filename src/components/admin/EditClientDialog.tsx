@@ -38,6 +38,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     website: "",
     whatsapp: "",
     address: "",
+    note: "",
   });
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         website: client.website || "",
         whatsapp: client.whatsapp || "",
         address: client.address || "",
+        note: "",
       });
     }
   }, [client]);
@@ -62,7 +64,8 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Update client data
+      const { error: updateError } = await supabase
         .from("clients")
         .update({
           name: formData.name,
@@ -75,7 +78,23 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         })
         .eq("id", client.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Insert note if provided
+      if (formData.note.trim()) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Usuário não autenticado");
+
+        const { error: noteError } = await supabase
+          .from("client_notes")
+          .insert({
+            client_id: client.id,
+            note: formData.note.trim(),
+            created_by: user.id,
+          });
+
+        if (noteError) throw noteError;
+      }
 
       toast({
         title: "Sucesso",
@@ -175,6 +194,20 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               placeholder="Rua, número, bairro, cidade - Estado"
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="note">Nova Observação</Label>
+            <Textarea
+              id="note"
+              value={formData.note}
+              onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+              placeholder="Digite uma observação sobre o cliente..."
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              A observação será registrada com data e hora automaticamente
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

@@ -1,5 +1,11 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Building2, Calendar, Globe, Phone, MapPin, FileText } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface Client {
   id: string;
@@ -20,7 +26,43 @@ interface ViewClientDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface ClientNote {
+  id: string;
+  note: string;
+  created_at: string;
+  created_by: string;
+}
+
 export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialogProps) {
+  const [notes, setNotes] = useState<ClientNote[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (client && open) {
+      loadNotes();
+    }
+  }, [client, open]);
+
+  const loadNotes = async () => {
+    if (!client) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("client_notes")
+        .select("*")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (error) {
+      console.error("Error loading notes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!client) return null;
 
   return (
@@ -104,6 +146,35 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
                 <p className="text-base">{client.address}</p>
               </div>
             )}
+
+            <Separator className="my-4" />
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Histórico de Observações
+              </h3>
+              
+              <ScrollArea className="h-[200px] rounded-md border p-4">
+                {loading ? (
+                  <p className="text-sm text-muted-foreground">Carregando...</p>
+                ) : notes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma observação registrada</p>
+                ) : (
+                  <div className="space-y-4">
+                    {notes.map((note, index) => (
+                      <div key={note.id} className="space-y-1">
+                        <p className="text-sm">{note.note}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                        {index < notes.length - 1 && <Separator className="mt-3" />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           </div>
         </div>
       </DialogContent>
