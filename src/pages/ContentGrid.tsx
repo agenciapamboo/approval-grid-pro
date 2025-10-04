@@ -89,51 +89,65 @@ export default function ContentGrid() {
         return;
       }
 
-      // Carregar agência
-      const { data: agencyData, error: agencyError } = await supabase
-        .from("agencies")
-        .select("*")
-        .eq("slug", agencySlug)
-        .single();
+      // Carregar dados de agência/cliente com RLS em mente
+      if (profileData.role === 'client_user') {
+        // client_user não possui permissão de SELECT direto em agencies.
+        // Buscar apenas o cliente pelo slug e seguir sem carregar a agência.
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("slug", clientSlug)
+          .maybeSingle();
 
-      if (agencyError) throw agencyError;
-      setAgency(agencyData);
+        if (clientError || !clientData) {
+          toast({
+            title: "Cliente não encontrado",
+            description: "Não foi possível carregar o cliente.",
+            variant: "destructive",
+          });
+          navigate("/dashboard");
+          return;
+        }
 
-      // Carregar cliente
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("slug", clientSlug)
-        .eq("agency_id", agencyData.id)
-        .single();
+        setClient(clientData);
+        await loadContents(clientData.id);
+      } else {
+        // Para admins, podemos carregar agência e validar pertencimento
+        const { data: agencyData, error: agencyError } = await supabase
+          .from("agencies")
+          .select("*")
+          .eq("slug", agencySlug)
+          .maybeSingle();
 
-      if (clientError) throw clientError;
-      setClient(clientData);
+        if (agencyError || !agencyData) {
+          throw agencyError || new Error("Agência não encontrada");
+        }
+        setAgency(agencyData);
 
-      // Verificar permissões
-      if (profileData.role === 'client_user' && profileData.client_id !== clientData.id) {
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar este cliente",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-        return;
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("slug", clientSlug)
+          .eq("agency_id", agencyData.id)
+          .maybeSingle();
+
+        if (clientError || !clientData) {
+          throw clientError || new Error("Cliente não encontrado");
+        }
+        setClient(clientData);
+
+        if (profileData.role === 'agency_admin' && profileData.agency_id !== agencyData.id) {
+          toast({
+            title: "Acesso negado",
+            description: "Você não tem permissão para acessar esta agência",
+            variant: "destructive",
+          });
+          navigate("/dashboard");
+          return;
+        }
+
+        await loadContents(clientData.id);
       }
-
-      if (profileData.role === 'agency_admin' && profileData.agency_id !== agencyData.id) {
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar esta agência",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-        return;
-      }
-
-      // Carregar conteúdos
-      await loadContents(clientData.id);
-
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
