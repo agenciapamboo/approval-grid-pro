@@ -301,6 +301,10 @@ const Dashboard = () => {
               
               const pendingContents = monthContents.filter(c => c.status === 'pending' || c.status === 'draft');
               const partialContents = monthContents.filter(c => c.status === 'revision');
+              const approvedContents = monthContents.filter(c => c.status === 'approved');
+              
+              const client = clients[0];
+              const agency = agencies[0];
               
               return (
                 <div key={monthKey} className="space-y-4">
@@ -317,9 +321,9 @@ const Dashboard = () => {
                             key={content.id} 
                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
                             onClick={() => {
-                              const client = clients[0];
-                              const agency = getClientAgency(client?.agency_id);
-                              navigate(`/a/${agency?.slug}/c/${client?.slug}?month=${month}&year=${year}`);
+                              if (agency?.slug && client?.slug) {
+                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                              }
                             }}
                           >
                             <div>
@@ -346,9 +350,38 @@ const Dashboard = () => {
                             key={content.id} 
                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
                             onClick={() => {
-                              const client = clients[0];
-                              const agency = getClientAgency(client?.agency_id);
-                              navigate(`/a/${agency?.slug}/c/${client?.slug}?month=${month}&year=${year}`);
+                              if (agency?.slug && client?.slug) {
+                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                              }
+                            }}
+                          >
+                            <div>
+                              <p className="font-medium">{content.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
+                              </p>
+                            </div>
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {approvedContents.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Aprovado</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {approvedContents.map(content => (
+                          <div 
+                            key={content.id} 
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              if (agency?.slug && client?.slug) {
+                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                              }
                             }}
                           >
                             <div>
