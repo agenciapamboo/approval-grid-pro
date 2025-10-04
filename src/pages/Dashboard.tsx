@@ -319,12 +319,7 @@ const Dashboard = () => {
                         {pendingContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                            onClick={() => {
-                              if (agency?.slug && client?.slug) {
-                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
-                              }
-                            }}
+                            className="flex items-center justify-between p-3 border rounded-lg"
                           >
                             <div>
                               <p className="font-medium">{content.title}</p>
@@ -332,7 +327,17 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <ArrowRight className="w-4 h-4" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (agency?.slug && client?.slug) {
+                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                }
+                              }}
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
                           </div>
                         ))}
                       </CardContent>
@@ -348,12 +353,7 @@ const Dashboard = () => {
                         {partialContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                            onClick={() => {
-                              if (agency?.slug && client?.slug) {
-                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
-                              }
-                            }}
+                            className="flex items-center justify-between p-3 border rounded-lg"
                           >
                             <div>
                               <p className="font-medium">{content.title}</p>
@@ -361,7 +361,17 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <ArrowRight className="w-4 h-4" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (agency?.slug && client?.slug) {
+                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                }
+                              }}
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
                           </div>
                         ))}
                       </CardContent>
@@ -377,12 +387,7 @@ const Dashboard = () => {
                         {approvedContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer"
-                            onClick={() => {
-                              if (agency?.slug && client?.slug) {
-                                navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
-                              }
-                            }}
+                            className="flex items-center justify-between p-3 border rounded-lg"
                           >
                             <div>
                               <p className="font-medium">{content.title}</p>
@@ -390,7 +395,17 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <ArrowRight className="w-4 h-4" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (agency?.slug && client?.slug) {
+                                  navigate(`/a/${agency.slug}/c/${client.slug}?month=${month}&year=${year}`);
+                                }
+                              }}
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
                           </div>
                         ))}
                       </CardContent>
