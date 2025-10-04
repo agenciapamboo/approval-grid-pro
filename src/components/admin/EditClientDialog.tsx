@@ -32,6 +32,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     cnpj: "",
     plan_renewal_date: "",
     website: "",
@@ -43,6 +44,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     if (client) {
       setFormData({
         name: client.name || "",
+        slug: client.slug || "",
         cnpj: client.cnpj || "",
         plan_renewal_date: client.plan_renewal_date 
           ? new Date(client.plan_renewal_date).toISOString().split('T')[0]
@@ -64,6 +66,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         .from("clients")
         .update({
           name: formData.name,
+          slug: formData.slug,
           cnpj: formData.cnpj || null,
           plan_renewal_date: formData.plan_renewal_date || null,
           website: formData.website || null,
@@ -107,6 +110,17 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug (URL) *</Label>
+            <Input
+              id="slug"
+              value={formData.slug}
+              onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+              placeholder="slug-do-cliente"
               required
             />
           </div>
