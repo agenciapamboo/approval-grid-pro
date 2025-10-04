@@ -165,7 +165,7 @@ const Dashboard = () => {
               notifications[client.id] = {
                 adjustments: contentsData.filter(c => c.status === 'changes_requested').length,
                 approved: contentsData.filter(c => c.status === 'approved').length,
-                rejected: contentsData.filter(c => c.status === 'in_review').length,
+                rejected: contentsData.filter(c => c.status === 'draft').length,
               };
             }
           }

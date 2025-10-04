@@ -596,6 +596,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      sanitize_webhook_payload: {
+        Args: { payload: Json }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "super_admin" | "agency_admin" | "client_user"

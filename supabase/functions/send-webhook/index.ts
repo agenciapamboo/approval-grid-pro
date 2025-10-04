@@ -72,7 +72,7 @@ serve(async (req) => {
       throw new Error('Conteúdo não encontrado');
     }
 
-    // Criar payload do webhook
+    // Criar payload do webhook (sanitized - remove sensitive fields)
     const payload: WebhookPayload = {
       event,
       content_id: content.id,
@@ -85,13 +85,32 @@ serve(async (req) => {
       type: content.type,
     };
 
-    // Registrar evento de webhook
+    // Sanitize payload before storage - remove any sensitive keys
+    const sanitizePayload = (obj: any): any => {
+      const sensitiveKeys = ['password', 'token', 'secret', 'api_key', 'private_key', 'auth'];
+      const sanitized = { ...obj };
+      
+      for (const key of sensitiveKeys) {
+        delete sanitized[key];
+      }
+      
+      // Recursively sanitize nested objects
+      for (const key in sanitized) {
+        if (sanitized[key] && typeof sanitized[key] === 'object') {
+          sanitized[key] = sanitizePayload(sanitized[key]);
+        }
+      }
+      
+      return sanitized;
+    };
+
+    // Registrar evento de webhook com payload sanitizado
     const { error: webhookEventError } = await supabaseClient
       .from('webhook_events')
       .insert({
         client_id: client.id,
         event,
-        payload,
+        payload: sanitizePayload(payload),
         status: 'queued',
       });
 

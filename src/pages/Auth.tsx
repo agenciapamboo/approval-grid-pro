@@ -8,6 +8,29 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Instagram } from "lucide-react";
 import { createInitialUsers } from "@/lib/createUsers";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email({ message: "Email inválido" })
+    .max(255, { message: "Email muito longo" }),
+  password: z
+    .string()
+    .min(8, { message: "A senha deve ter pelo menos 8 caracteres" })
+    .max(72, { message: "A senha deve ter no máximo 72 caracteres" })
+    .regex(/[A-Z]/, { message: "A senha deve conter pelo menos uma letra maiúscula" })
+    .regex(/[a-z]/, { message: "A senha deve conter pelo menos uma letra minúscula" })
+    .regex(/[0-9]/, { message: "A senha deve conter pelo menos um número" })
+    .regex(/[^A-Za-z0-9]/, { message: "A senha deve conter pelo menos um caractere especial" }),
+  name: z
+    .string()
+    .trim()
+    .min(2, { message: "O nome deve ter pelo menos 2 caracteres" })
+    .max(100, { message: "O nome deve ter no máximo 100 caracteres" })
+    .optional(),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -44,29 +67,62 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validation = authSchema.safeParse({
+        email,
+        password,
+        name: isSignUp ? name : undefined,
+      });
+
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast({
+          variant: "destructive",
+          title: "Erro de validação",
+          description: firstError.message,
+        });
+        setLoading(false);
+        return;
+      }
+
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
           options: {
-            data: { name },
+            data: { name: validation.data.name },
             emailRedirectTo: `${window.location.origin}/`,
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // Provide user-friendly error messages
+          if (error.message.includes("already registered")) {
+            throw new Error("Este email já está cadastrado. Tente fazer login.");
+          } else if (error.message.includes("invalid")) {
+            throw new Error("Dados inválidos. Verifique suas informações.");
+          }
+          throw error;
+        }
 
         toast({
           title: "Conta criada!",
-          description: "Verifique seu e-mail para confirmar o cadastro.",
+          description: "Você já pode fazer login.",
         });
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
         });
 
-        if (error) throw error;
+        if (error) {
+          // Provide user-friendly error messages without exposing system details
+          if (error.message.includes("Invalid") || error.message.includes("credentials")) {
+            throw new Error("Email ou senha incorretos.");
+          }
+          throw new Error("Erro ao fazer login. Tente novamente.");
+        }
 
         toast({
           title: "Login realizado!",
@@ -151,7 +207,7 @@ const Auth = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  minLength={6}
+                  minLength={8}
                 />
               </div>
             </CardContent>
