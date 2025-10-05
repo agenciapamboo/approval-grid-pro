@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, CalendarIcon, Save, Loader2, X } from "lucide-react";
@@ -16,12 +18,15 @@ interface CreateContentCardProps {
   onContentCreated: () => void;
 }
 
+const CHANNELS = ['Facebook', 'Instagram', 'LinkedIn', 'TikTok', 'YouTube'] as const;
+
 export function CreateContentCard({ clientId, onContentCreated }: CreateContentCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
   const [date, setDate] = useState<Date>();
+  const [channels, setChannels] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +110,15 @@ export function CreateContentCard({ clientId, onContentCreated }: CreateContentC
     }, 1000);
   };
 
+  const toggleChannel = (channel: string) => {
+    setChannels(prev => 
+      prev.includes(channel) 
+        ? prev.filter(c => c !== channel)
+        : [...prev, channel]
+    );
+    setHasChanges(true);
+  };
+
   const handleSave = async () => {
     if (files.length === 0 || !date) {
       toast({
@@ -133,6 +147,7 @@ export function CreateContentCard({ clientId, onContentCreated }: CreateContentC
           type: contentType,
           status: 'draft' as const,
           owner_user_id: user.id,
+          channels: channels,
         }])
         .select()
         .single();
@@ -183,6 +198,7 @@ export function CreateContentCard({ clientId, onContentCreated }: CreateContentC
       setPreviews([]);
       setCaption("");
       setDate(undefined);
+      setChannels([]);
       setHasChanges(false);
       onContentCreated();
 
@@ -291,6 +307,27 @@ export function CreateContentCard({ clientId, onContentCreated }: CreateContentC
           onChange={(e) => handleCaptionChange(e.target.value)}
           className="min-h-[100px]"
         />
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Canais de publicação</Label>
+          <div className="grid grid-cols-2 gap-3">
+            {CHANNELS.map((channel) => (
+              <div key={channel} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`channel-${channel}`}
+                  checked={channels.includes(channel)}
+                  onCheckedChange={() => toggleChannel(channel)}
+                />
+                <Label
+                  htmlFor={`channel-${channel}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {channel}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {hasChanges && (
           <Button

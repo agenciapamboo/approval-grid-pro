@@ -375,6 +375,7 @@ export type Database = {
       }
       contents: {
         Row: {
+          channels: string[] | null
           client_id: string
           created_at: string
           date: string
@@ -388,6 +389,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          channels?: string[] | null
           client_id: string
           created_at?: string
           date: string
@@ -401,6 +403,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          channels?: string[] | null
           client_id?: string
           created_at?: string
           date?: string

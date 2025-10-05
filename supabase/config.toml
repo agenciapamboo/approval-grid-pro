@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.auto-approve-contents]
 verify_jwt = false
+
+[functions.force-reset-all-passwords]
+verify_jwt = false
