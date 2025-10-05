@@ -26,8 +26,19 @@ const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useState(() => {
+    const getUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    getUserEmail();
+  });
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +100,19 @@ const ResetPassword = () => {
         </div>
 
         <form onSubmit={handleResetPassword} className="space-y-4">
+          {userEmail && (
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={userEmail}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="password">Nova Senha</Label>
             <Input
