@@ -1,14 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, ArrowLeft } from "lucide-react";
 
 export default function AdminPasswordReset() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const navigate = useNavigate();
 
   const handleResetAllPasswords = async () => {
     if (!confirm("Tem certeza que deseja redefinir a senha de TODOS os usuários para 'D024m002*'? Esta ação não pode ser desfeita.")) {
@@ -42,8 +44,24 @@ export default function AdminPasswordReset() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <Card>
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="bg-gradient-to-r from-primary to-secondary border-b border-primary/20">
+        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/dashboard')}
+            className="text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <h1 className="font-poppins text-xl font-bold text-white">Aprova Criativos</h1>
+        </div>
+      </header>
+
+      <main className="flex-1 container mx-auto p-6 max-w-4xl">
+        <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Reset de Senhas - Administração</CardTitle>
           <CardDescription>
@@ -115,6 +133,25 @@ export default function AdminPasswordReset() {
           )}
         </CardContent>
       </Card>
+      </main>
+
+      <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
+        <div className="container mx-auto px-4 py-6">
+          <p className="text-center font-poppins text-sm">
+            <span className="font-normal">Desenvolvido com </span>
+            <span className="text-[#FFD700]">💛</span>
+            <span className="font-normal"> por </span>
+            <a 
+              href="https://agenciapamboo.com.br" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-bold hover:underline"
+            >
+              Pamboo Criativos
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
