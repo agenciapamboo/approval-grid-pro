@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Instagram } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { createInitialUsers } from "@/lib/createUsers";
 import { z } from "zod";
 
@@ -146,16 +146,15 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-accent to-tertiary flex items-center justify-center shadow-2xl animate-pulse">
-              <Instagram className="w-10 h-10 text-white drop-shadow-lg" />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-3xl blur-xl opacity-50" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)' }} />
+              <CheckCircle2 className="w-16 h-16 relative" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }} />
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary via-accent to-tertiary bg-clip-text text-transparent">
-              Social Approval
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight">Aprova Criativos</h1>
             <p className="text-muted-foreground mt-2 text-lg">
-              Sistema de aprovação de conteúdos para redes sociais
+              Automatize o fluxo de aprovação de criativos.
             </p>
           </div>
         </div>
@@ -210,6 +209,13 @@ const Auth = () => {
                   minLength={8}
                 />
               </div>
+              {!isSignUp && (
+                <div className="text-right">
+                  <Link to="/auth/forgot-password" className="text-sm text-primary story-link">
+                    Esqueci minha senha
+                  </Link>
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex-col gap-4">
               <Button type="submit" className="w-full" disabled={loading}>
