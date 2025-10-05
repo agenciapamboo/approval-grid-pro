@@ -228,7 +228,7 @@ export default function ContentGrid() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header with beautiful gradient */}
       <header 
         className="border-b backdrop-blur-sm shadow-lg relative overflow-hidden"
@@ -255,8 +255,8 @@ export default function ContentGrid() {
               <img src={agency.logo_url} alt={agency.name} className="h-10 drop-shadow-lg" />
             )}
             <div className="text-white drop-shadow-md">
-              <h1 className="text-xl font-bold">{client?.name}</h1>
-              <p className="text-sm opacity-90">{agency?.name}</p>
+              <h1 className="font-poppins text-xl font-bold">Aprova Criativos</h1>
+              <p className="text-sm opacity-90">{client?.name} - {agency?.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -327,6 +327,24 @@ export default function ContentGrid() {
           </div>
         )}
       </main>
+
+      <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
+        <div className="container mx-auto px-4 py-6">
+          <p className="text-center font-poppins text-sm">
+            <span className="font-normal">Desenvolvido com </span>
+            <span className="text-[#FFD700]">💛</span>
+            <span className="font-normal"> por </span>
+            <a 
+              href="https://agenciapamboo.com.br" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-bold hover:underline"
+            >
+              Pamboo Criativos
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

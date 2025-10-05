@@ -142,31 +142,26 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <div className="w-full max-w-md space-y-8 relative z-10">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-3xl blur-xl opacity-50" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)' }} />
-              <CheckCircle2 className="w-16 h-16 relative" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }} />
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4 relative">
+        <div className="w-full max-w-md space-y-8 relative z-10">
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10 text-white" />
+                </div>
+              </div>
+            </div>
+            <div>
+              <h1 className="font-poppins text-4xl font-bold tracking-tight">
+                Aprova Criativos
+              </h1>
+              <p className="text-muted-foreground mt-2 text-lg">
+                Automatize o fluxo de aprovação de criativos.
+              </p>
             </div>
           </div>
-          <div>
-            <h1 
-              className="text-4xl font-bold tracking-tight" 
-              style={{ 
-                fontFamily: '"Poppins", sans-serif', 
-                fontWeight: 700,
-                fontDisplay: 'swap'
-              }}
-            >
-              Aprova Criativos
-            </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Automatize o fluxo de aprovação de criativos.
-            </p>
-          </div>
-        </div>
 
         <Card className="shadow-2xl border-2 backdrop-blur-sm bg-card/95">
           <CardHeader>
@@ -254,12 +249,31 @@ const Auth = () => {
           </form>
         </Card>
 
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            Sistema profissional de aprovação de conteúdos
-          </p>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Sistema profissional de aprovação de conteúdos
+            </p>
+          </div>
         </div>
       </div>
+      
+      <footer className="border-t bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-6">
+          <p className="text-center font-poppins text-sm">
+            <span className="font-normal">Desenvolvido com </span>
+            <span className="text-[#FFD700]">💛</span>
+            <span className="font-normal"> por </span>
+            <a 
+              href="https://agenciapamboo.com.br" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-bold hover:underline"
+            >
+              Pamboo Criativos
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

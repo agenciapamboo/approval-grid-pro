@@ -95,7 +95,7 @@ const ResetPassword = () => {
               }} />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Aprova Criativos</h1>
+          <h1 className="font-poppins text-3xl font-bold tracking-tight">Aprova Criativos</h1>
           <p className="text-muted-foreground mt-2">Defina sua nova senha</p>
         </div>
 
