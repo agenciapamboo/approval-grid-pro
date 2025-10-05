@@ -144,14 +144,12 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
       <div className="w-full max-w-md space-y-8 relative z-10">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
+        <div className="text-center">
+          <div className="flex flex-col items-center space-y-2">
             <div className="relative">
               <div className="absolute inset-0 rounded-3xl blur-xl opacity-50" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)' }} />
               <CheckCircle2 className="w-16 h-16 relative" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }} />
             </div>
-          </div>
-          <div>
             <h1 
               className="text-4xl font-bold tracking-tight" 
               style={{ 
@@ -162,7 +160,7 @@ const Auth = () => {
             >
               Aprova Criativos
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
+            <p className="text-muted-foreground text-lg">
               Automatize o fluxo de aprovação de criativos.
             </p>
           </div>
