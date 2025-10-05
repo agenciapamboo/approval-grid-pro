@@ -143,6 +143,14 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <header className="bg-gradient-to-r from-primary to-secondary border-b border-primary/20">
+        <div className="container mx-auto px-4 py-4">
+          <h1 className="font-poppins font-bold text-2xl tracking-tight text-white">
+            Aprova Criativos
+          </h1>
+        </div>
+      </header>
+      
       <div className="flex-1 flex items-center justify-center p-4 relative">
         <div className="w-full max-w-md space-y-8 relative z-10">
           <div className="text-center space-y-4">
@@ -154,9 +162,6 @@ const Auth = () => {
               </div>
             </div>
             <div>
-              <h1 className="font-poppins text-4xl font-bold tracking-tight">
-                Aprova Criativos
-              </h1>
               <p className="text-muted-foreground mt-2 text-lg">
                 Automatize o fluxo de aprovação de criativos.
               </p>

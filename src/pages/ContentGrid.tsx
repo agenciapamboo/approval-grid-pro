@@ -230,18 +230,8 @@ export default function ContentGrid() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header with beautiful gradient */}
-      <header 
-        className="border-b backdrop-blur-sm shadow-lg relative overflow-hidden"
-        style={{
-          background: agency?.brand_primary 
-            ? `linear-gradient(120deg, ${agency.brand_primary}, ${agency.brand_secondary || agency.brand_primary})`
-            : 'linear-gradient(120deg, hsl(217 91% 75%), hsl(258 90% 72%), hsl(330 70% 80%))'
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite]" style={{
-          backgroundSize: '200% 100%',
-        }}></div>
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between relative z-10">
+      <header className="bg-gradient-to-r from-primary to-secondary border-b border-primary/20 shadow-lg">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -256,7 +246,7 @@ export default function ContentGrid() {
             )}
             <div className="text-white drop-shadow-md">
               <h1 className="font-poppins text-xl font-bold">Aprova Criativos</h1>
-              <p className="text-sm opacity-90">{client?.name} - {agency?.name}</p>
+              <p className="text-sm opacity-90">{client?.name} {agency?.name ? `- ${agency.name}` : ''}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">

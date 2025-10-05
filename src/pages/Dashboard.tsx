@@ -276,21 +276,21 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background flex flex-col">
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="bg-gradient-to-r from-primary to-secondary border-b border-primary/20 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <FileImage className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-poppins text-xl font-bold">Aprova Criativos</h1>
-              <p className="text-sm text-muted-foreground">Sistema de Aprovação de Conteúdos</p>
+              <h1 className="font-poppins text-xl font-bold text-white">Aprova Criativos</h1>
+              <p className="text-sm text-white/80">Sistema de Aprovação de Conteúdos</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium">{profile?.name}</p>
-              <p className="text-xs text-muted-foreground">{getRoleLabel(profile?.role || "")}</p>
+              <p className="text-sm font-medium text-white">{profile?.name}</p>
+              <p className="text-xs text-white/70">{getRoleLabel(profile?.role || "")}</p>
             </div>
             <UserProfileDialog user={user} profile={profile} onUpdate={checkAuth} />
             <Button
@@ -298,6 +298,7 @@ const Dashboard = () => {
               size="icon"
               onClick={handleSignOut}
               title="Sair"
+              className="text-white hover:bg-white/20"
             >
               <LogOut className="w-4 h-4" />
             </Button>
