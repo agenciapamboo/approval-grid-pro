@@ -163,6 +163,11 @@ All colors MUST be HSL.
     @apply bg-background text-foreground relative;
   }
 
+  /* Garantir que a fonte Poppins seja aplicada */
+  .font-poppins, h1 {
+    font-family: 'Poppins', sans-serif !important;
+  }
+
   body::before {
     content: '';
     position: fixed;

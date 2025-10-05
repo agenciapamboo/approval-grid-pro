@@ -152,7 +152,16 @@ const Auth = () => {
             </div>
           </div>
           <div>
-            <h1 className="text-4xl font-bold tracking-tight font-poppins">Aprova Criativos</h1>
+            <h1 
+              className="text-4xl font-bold tracking-tight" 
+              style={{ 
+                fontFamily: '"Poppins", sans-serif', 
+                fontWeight: 700,
+                fontDisplay: 'swap'
+              }}
+            >
+              Aprova Criativos
+            </h1>
             <p className="text-muted-foreground mt-2 text-lg">
               Automatize o fluxo de aprovação de criativos.
             </p>
