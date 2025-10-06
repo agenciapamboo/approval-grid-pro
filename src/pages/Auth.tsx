@@ -252,31 +252,12 @@ const Auth = () => {
           </form>
         </Card>
 
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Sistema profissional de aprovação de conteúdos
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      <footer className="border-t bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6">
-          <p className="text-center font-poppins text-sm">
-            <span className="font-normal">Desenvolvido com </span>
-            <span className="text-[#FFD700]">💛</span>
-            <span className="font-normal"> por </span>
-            <a 
-              href="https://agenciapamboo.com.br" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="font-bold hover:underline"
-            >
-              Pamboo Criativos
-            </a>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            Sistema profissional de aprovação de conteúdos
           </p>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };

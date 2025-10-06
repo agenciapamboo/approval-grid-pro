@@ -58,27 +58,23 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-gradient-to-r from-primary to-secondary border-b border-primary/20">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="font-poppins font-bold text-2xl tracking-tight text-white">
-            Aprova Criativos
-          </h1>
-        </div>
-      </header>
-      
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
-                  <CheckCircle2 className="w-10 h-10 text-white" />
-                </div>
-              </div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#00B878] to-[#0072CE] rounded-full blur-xl opacity-50" />
+              <CheckCircle2 className="h-16 w-16 relative" style={{
+                background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }} />
             </div>
-            <p className="text-muted-foreground mt-2">Recuperar senha</p>
           </div>
+          <h1 className="text-3xl font-bold tracking-tight">Aprova Criativos</h1>
+          <p className="text-muted-foreground mt-2">Recuperar senha</p>
+        </div>
 
         {!sent ? (
           <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -126,26 +122,7 @@ const ForgotPassword = () => {
             </Link>
           </div>
         )}
-        </div>
       </div>
-      
-      <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
-        <div className="container mx-auto px-4 py-6">
-          <p className="text-center font-poppins text-sm">
-            <span className="font-normal">Desenvolvido com </span>
-            <span className="text-[#FFD700]">💛</span>
-            <span className="font-normal"> por </span>
-            <a 
-              href="https://agenciapamboo.com.br" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="font-bold hover:underline"
-            >
-              Pamboo Criativos
-            </a>
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };

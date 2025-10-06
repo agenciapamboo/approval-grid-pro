@@ -228,10 +228,20 @@ export default function ContentGrid() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       {/* Header with beautiful gradient */}
-      <header className="bg-gradient-to-r from-primary to-secondary border-b border-primary/20 shadow-lg">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header 
+        className="border-b backdrop-blur-sm shadow-lg relative overflow-hidden"
+        style={{
+          background: agency?.brand_primary 
+            ? `linear-gradient(120deg, ${agency.brand_primary}, ${agency.brand_secondary || agency.brand_primary})`
+            : 'linear-gradient(120deg, hsl(217 91% 75%), hsl(258 90% 72%), hsl(330 70% 80%))'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite]" style={{
+          backgroundSize: '200% 100%',
+        }}></div>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -245,8 +255,8 @@ export default function ContentGrid() {
               <img src={agency.logo_url} alt={agency.name} className="h-10 drop-shadow-lg" />
             )}
             <div className="text-white drop-shadow-md">
-              <h1 className="font-poppins text-xl font-bold">Aprova Criativos</h1>
-              <p className="text-sm opacity-90">{client?.name} {agency?.name ? `- ${agency.name}` : ''}</p>
+              <h1 className="text-xl font-bold">{client?.name}</h1>
+              <p className="text-sm opacity-90">{agency?.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -317,24 +327,6 @@ export default function ContentGrid() {
           </div>
         )}
       </main>
-
-      <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
-        <div className="container mx-auto px-4 py-6">
-          <p className="text-center font-poppins text-sm">
-            <span className="font-normal">Desenvolvido com </span>
-            <span className="text-[#FFD700]">💛</span>
-            <span className="font-normal"> por </span>
-            <a 
-              href="https://agenciapamboo.com.br" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="font-bold hover:underline"
-            >
-              Pamboo Criativos
-            </a>
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
