@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { createInitialUsers } from "@/lib/createUsers";
 import { z } from "zod";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 const authSchema = z.object({
   email: z
@@ -142,22 +143,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <div className="w-full max-w-md space-y-8 relative z-10">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      <div className="w-full max-w-md space-y-8 relative z-10 flex-grow flex flex-col justify-center">
         <div className="text-center">
           <div className="flex flex-col items-center space-y-2">
             <div className="relative">
               <div className="absolute inset-0 rounded-3xl blur-xl opacity-50" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)' }} />
               <CheckCircle2 className="w-16 h-16 relative" style={{ background: 'linear-gradient(135deg, #00B878 0%, #0072CE 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }} />
             </div>
-            <h1 
-              className="text-4xl font-bold tracking-tight" 
-              style={{ 
-                fontFamily: '"Poppins", sans-serif', 
-                fontWeight: 700,
-                fontDisplay: 'swap'
-              }}
-            >
+            <h1 className="text-4xl font-bold tracking-tight font-poppins">
               Aprova Criativos
             </h1>
             <p className="text-muted-foreground text-lg">
@@ -258,6 +252,8 @@ const Auth = () => {
           </p>
         </div>
       </div>
+      
+      <AppFooter />
     </div>
   );
 };

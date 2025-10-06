@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 const emailSchema = z.object({
   email: z.string().email({ message: "E-mail inválido" }),
@@ -58,8 +59,8 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8 flex-grow flex flex-col justify-center">
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <div className="relative">
@@ -72,7 +73,7 @@ const ForgotPassword = () => {
               }} />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Aprova Criativos</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-poppins">Aprova Criativos</h1>
           <p className="text-muted-foreground mt-2">Recuperar senha</p>
         </div>
 
@@ -123,6 +124,8 @@ const ForgotPassword = () => {
           </div>
         )}
       </div>
+      
+      <AppFooter />
     </div>
   );
 };

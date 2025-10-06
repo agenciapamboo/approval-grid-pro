@@ -5,6 +5,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 export default function AdminPasswordReset() {
   const [loading, setLoading] = useState(false);
@@ -42,8 +44,11 @@ export default function AdminPasswordReset() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <Card>
+    <div className="min-h-screen flex flex-col">
+      <AppHeader />
+      
+      <div className="container mx-auto p-6 max-w-4xl flex-grow">
+        <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Reset de Senhas - Administração</CardTitle>
           <CardDescription>
@@ -115,6 +120,9 @@ export default function AdminPasswordReset() {
           )}
         </CardContent>
       </Card>
+      </div>
+      
+      <AppFooter />
     </div>
   );
 }

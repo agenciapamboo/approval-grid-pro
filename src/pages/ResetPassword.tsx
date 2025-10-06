@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 const passwordSchema = z.object({
   password: z
@@ -81,8 +82,8 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8 flex-grow flex flex-col justify-center">
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <div className="relative">
@@ -95,7 +96,7 @@ const ResetPassword = () => {
               }} />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Aprova Criativos</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-poppins">Aprova Criativos</h1>
           <p className="text-muted-foreground mt-2">Defina sua nova senha</p>
         </div>
 
@@ -151,6 +152,8 @@ const ResetPassword = () => {
           </Button>
         </form>
       </div>
+      
+      <AppFooter />
     </div>
   );
 };

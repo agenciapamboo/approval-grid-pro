@@ -15,6 +15,8 @@ import { ViewClientDialog } from "@/components/admin/ViewClientDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { MonthSelectorDialog } from "@/components/admin/MonthSelectorDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 interface Profile {
   id: string;
@@ -275,35 +277,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <FileImage className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Social Approval</h1>
-              <p className="text-sm text-muted-foreground">Sistema de Aprovação de Conteúdos</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium">{profile?.name}</p>
-              <p className="text-xs text-muted-foreground">{getRoleLabel(profile?.role || "")}</p>
-            </div>
-            <UserProfileDialog user={user} profile={profile} onUpdate={checkAuth} />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              title="Sair"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background flex flex-col">
+      <AppHeader>
+        <div className="text-right hidden sm:block text-white">
+          <p className="text-sm font-medium">{profile?.name}</p>
+          <p className="text-xs opacity-90">{getRoleLabel(profile?.role || "")}</p>
         </div>
-      </header>
+        <UserProfileDialog user={user} profile={profile} onUpdate={checkAuth} />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleSignOut}
+          title="Sair"
+          className="text-white hover:bg-white/20"
+        >
+          <LogOut className="w-4 h-4" />
+        </Button>
+      </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -659,6 +649,8 @@ const Dashboard = () => {
         open={monthSelectorOpen}
         onOpenChange={setMonthSelectorOpen}
       />
+      
+      <AppFooter />
     </div>
   );
 };
