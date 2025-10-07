@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus } from "lucide-react";
+import { Plus, Eye, EyeOff } from "lucide-react";
 
 interface AddClientDialogProps {
   agencyId: string;
@@ -15,10 +15,13 @@ interface AddClientDialogProps {
 export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
+    email: "",
+    password: "",
     logo_url: "",
     webhook_url: "",
     timezone: "America/Sao_Paulo",
@@ -29,23 +32,68 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Create client first
+      const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .insert([{
-          ...formData,
+          name: formData.name,
+          slug: formData.slug,
+          logo_url: formData.logo_url,
+          webhook_url: formData.webhook_url,
+          timezone: formData.timezone,
+          email: formData.email,
           agency_id: agencyId,
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (clientError) throw clientError;
+
+      // Create client user
+      if (formData.email && formData.password) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: { name: formData.name },
+          },
+        });
+
+        if (authError) throw authError;
+
+        // Update the profile with client_id and set role to client_user
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ 
+              client_id: clientData.id,
+              agency_id: agencyId,
+              role: 'client_user'
+            })
+            .eq("id", authData.user.id);
+
+          if (profileError) throw profileError;
+
+          // Update user_roles table
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .update({ role: 'client_user' })
+            .eq("user_id", authData.user.id);
+
+          if (roleError) throw roleError;
+        }
+      }
 
       toast({
         title: "Sucesso",
-        description: "Cliente cadastrado com sucesso!",
+        description: "Cliente e usuário cadastrados com sucesso!",
       });
 
       setFormData({
         name: "",
         slug: "",
+        email: "",
+        password: "",
         logo_url: "",
         webhook_url: "",
         timezone: "America/Sao_Paulo",
@@ -99,6 +147,43 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
             <p className="text-xs text-muted-foreground">
               Será usado na URL: /a/[agencia]/c/{formData.slug || 'slug-do-cliente'}
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+              placeholder="cliente@empresa.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha *</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={8}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">

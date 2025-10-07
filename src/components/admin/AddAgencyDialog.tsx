@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus } from "lucide-react";
+import { Plus, Eye, EyeOff } from "lucide-react";
 
 interface AddAgencyDialogProps {
   onAgencyAdded: () => void;
@@ -14,12 +14,15 @@ interface AddAgencyDialogProps {
 export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
-    brand_primary: "#2563eb",
-    brand_secondary: "#8b5cf6",
+    email: "",
+    password: "",
+    brand_primary: "#00B878",
+    brand_secondary: "#0072CE",
     logo_url: "",
   });
 
@@ -28,22 +31,57 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Create agency first
+      const { data: agencyData, error: agencyError } = await supabase
         .from("agencies")
-        .insert([formData]);
+        .insert([{
+          name: formData.name,
+          slug: formData.slug,
+          brand_primary: formData.brand_primary,
+          brand_secondary: formData.brand_secondary,
+          logo_url: formData.logo_url,
+          email: formData.email,
+        }])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (agencyError) throw agencyError;
+
+      // Create agency admin user
+      if (formData.email && formData.password) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: { name: formData.name },
+          },
+        });
+
+        if (authError) throw authError;
+
+        // Update the profile with agency_id
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ agency_id: agencyData.id })
+            .eq("id", authData.user.id);
+
+          if (profileError) throw profileError;
+        }
+      }
 
       toast({
         title: "Sucesso",
-        description: "Agência cadastrada com sucesso!",
+        description: "Agência e usuário admin cadastrados com sucesso!",
       });
 
       setFormData({
         name: "",
         slug: "",
-        brand_primary: "#2563eb",
-        brand_secondary: "#8b5cf6",
+        email: "",
+        password: "",
+        brand_primary: "#00B878",
+        brand_secondary: "#0072CE",
         logo_url: "",
       });
       setOpen(false);
@@ -95,6 +133,43 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
             <p className="text-xs text-muted-foreground">
               Será usado na URL: /a/{formData.slug || 'slug-da-agencia'}
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email do Admin *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+              placeholder="admin@agencia.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha *</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={8}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
