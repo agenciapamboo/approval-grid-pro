@@ -1,7 +1,7 @@
 export function AppFooter() {
   return (
-    <footer className="mt-auto py-6 border-t bg-card/50 w-full">
-      <div className="container mx-auto px-4 text-center w-full">
+    <footer className="mt-auto border-t bg-card/50 w-full">
+      <div className="container mx-auto px-4 py-4 text-center w-full">
         <p className="text-sm font-poppins">
           <span className="font-normal">Desenvolvido com </span>
           <span className="text-[#FFD700]">💛</span>
