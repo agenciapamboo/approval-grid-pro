@@ -446,7 +446,7 @@ const Dashboard = () => {
         )}
 
         {/* Clientes - Para Admin e Agency Admin */}
-        {profile?.role !== 'client_user' && clients.length > 0 && (
+        {profile?.role !== 'client_user' && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -460,114 +460,130 @@ const Dashboard = () => {
                 />
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {clients.map((client) => {
-                const agency = getClientAgency(client.agency_id);
-                const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0 };
-                const hasNotifications = notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0;
-                
-                return (
-                  <Card 
-                    key={client.id} 
-                    className="hover:shadow-lg transition-shadow"
-                  >
-                    <CardHeader>
-                      <div className="flex items-start gap-3">
-                        <div 
-                          className="flex-1 cursor-pointer" 
-                          onClick={() => {
-                            const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                            if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
-                          }}
-                        >
-                          {client.logo_url && (
-                            <img 
-                              src={client.logo_url} 
-                              alt={client.name}
-                              className="h-12 mb-3 object-contain"
-                            />
-                          )}
-                          <CardTitle className="text-lg">{client.name}</CardTitle>
-                          {agency && (
-                            <CardDescription className="text-sm mt-1">
-                              {agency.name}
-                            </CardDescription>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {hasNotifications && (
-                            <div className="space-y-1 mb-2">
-                              {notifications.adjustments > 0 && (
-                                <Alert className="py-2 px-3">
-                                  <AlertCircle className="h-4 w-4" />
-                                  <AlertDescription className="text-xs">
-                                    {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''} Solicitado{notifications.adjustments > 1 ? 's' : ''}
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                              {notifications.approved > 0 && (
-                                <Alert className="py-2 px-3 border-green-500 text-green-700">
-                                  <CheckCircle className="h-4 w-4" />
-                                  <AlertDescription className="text-xs">
-                                    {notifications.approved} Conteúdo{notifications.approved > 1 ? 's' : ''} Aprovado{notifications.approved > 1 ? 's' : ''}
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                              {notifications.rejected > 0 && (
-                                <Alert className="py-2 px-3 border-red-500 text-red-700">
-                                  <AlertCircle className="h-4 w-4" />
-                                  <AlertDescription className="text-xs">
-                                    {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Reprovado{notifications.rejected > 1 ? 's' : ''}
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                            </div>
-                          )}
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedClient(client);
-                              setViewClientOpen(true);
+            {clients.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    Você ainda não tem clientes. Adicione o primeiro para começar a cadastrar conteúdos.
+                  </p>
+                  {profile?.role === 'agency_admin' && profile?.agency_id && (
+                    <AddClientDialog 
+                      agencyId={profile.agency_id} 
+                      onClientAdded={fetchClients} 
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clients.map((client) => {
+                  const agency = getClientAgency(client.agency_id);
+                  const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0 };
+                  const hasNotifications = notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0;
+                  
+                  return (
+                    <Card 
+                      key={client.id} 
+                      className="hover:shadow-lg transition-shadow"
+                    >
+                      <CardHeader>
+                        <div className="flex items-start gap-3">
+                          <div 
+                            className="flex-1 cursor-pointer" 
+                            onClick={() => {
+                              const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                              if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
                             }}
                           >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Dados
-                          </Button>
-                          {profile?.role === 'agency_admin' && (
+                            {client.logo_url && (
+                              <img 
+                                src={client.logo_url} 
+                                alt={client.name}
+                                className="h-12 mb-3 object-contain"
+                              />
+                            )}
+                            <CardTitle className="text-lg">{client.name}</CardTitle>
+                            {agency && (
+                              <CardDescription className="text-sm mt-1">
+                                {agency.name}
+                              </CardDescription>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {hasNotifications && (
+                              <div className="space-y-1 mb-2">
+                                {notifications.adjustments > 0 && (
+                                  <Alert className="py-2 px-3">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription className="text-xs">
+                                      {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''} Solicitado{notifications.adjustments > 1 ? 's' : ''}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                                {notifications.approved > 0 && (
+                                  <Alert className="py-2 px-3 border-green-500 text-green-700">
+                                    <CheckCircle className="h-4 w-4" />
+                                    <AlertDescription className="text-xs">
+                                      {notifications.approved} Conteúdo{notifications.approved > 1 ? 's' : ''} Aprovado{notifications.approved > 1 ? 's' : ''}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                                {notifications.rejected > 0 && (
+                                  <Alert className="py-2 px-3 border-red-500 text-red-700">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertDescription className="text-xs">
+                                      {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Reprovado{notifications.rejected > 1 ? 's' : ''}
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                              </div>
+                            )}
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedClient(client);
-                                setEditClientOpen(true);
+                                setViewClientOpen(true);
                               }}
                             >
-                              <Pencil className="w-4 h-4 mr-2" />
-                              Editar
+                              <Eye className="w-4 h-4 mr-2" />
+                              Dados
                             </Button>
-                          )}
-                          <Button 
-                            variant="default" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedClient(client);
-                              setMonthSelectorOpen(true);
-                            }}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Aprovação
-                          </Button>
+                            {profile?.role === 'agency_admin' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedClient(client);
+                                  setEditClientOpen(true);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Editar
+                              </Button>
+                            )}
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedClient(client);
+                                setMonthSelectorOpen(true);
+                              }}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Aprovação
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                );
-              })}
-            </div>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
