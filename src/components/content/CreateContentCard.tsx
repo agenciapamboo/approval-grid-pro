@@ -218,7 +218,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
   return (
     <Card className="overflow-hidden">
-      <div className="aspect-square bg-muted/30 relative">
+      <div className="w-full aspect-[4/5] bg-muted/30 relative">
         {files.length === 0 ? (
           <div
             onDragOver={handleDragOver}
