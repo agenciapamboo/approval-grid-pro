@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, CalendarIcon, Save, Loader2, X } from "lucide-react";
@@ -13,33 +12,26 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-interface CreateContentCardProps {
+interface CreateAvulsoCardProps {
   clientId: string;
   onContentCreated: () => void;
-  category?: 'social' | 'avulso';
 }
 
-const CHANNELS = ['Facebook', 'Instagram', 'LinkedIn', 'TikTok', 'YouTube'] as const;
-
-export function CreateContentCard({ clientId, onContentCreated, category = 'social' }: CreateContentCardProps) {
+export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [caption, setCaption] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [date, setDate] = useState<Date>();
-  const [channels, setChannels] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     return () => {
       previews.forEach(url => URL.revokeObjectURL(url));
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
     };
   }, []);
 
@@ -98,33 +90,11 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     setHasChanges(true);
   };
 
-  const handleCaptionChange = (value: string) => {
-    setCaption(value);
-    setHasChanges(true);
-    
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    saveTimeoutRef.current = setTimeout(() => {
-      console.log("Legenda salva automaticamente:", value);
-    }, 1000);
-  };
-
-  const toggleChannel = (channel: string) => {
-    setChannels(prev => 
-      prev.includes(channel) 
-        ? prev.filter(c => c !== channel)
-        : [...prev, channel]
-    );
-    setHasChanges(true);
-  };
-
   const handleSave = async () => {
-    if (files.length === 0 || !date) {
+    if (!title || !date) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, adicione pelo menos uma mídia e selecione uma data",
+        description: "Por favor, preencha o título e selecione uma data",
         variant: "destructive",
       });
       return;
@@ -136,71 +106,70 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const contentType = files.length > 1 ? 'carousel' : 
-                         files[0].type.startsWith('video/') ? 'reels' : 'image';
-
       const { data: content, error: contentError } = await supabase
         .from("contents")
         .insert([{
           client_id: clientId,
-          title: `Conteúdo ${format(date, "dd/MM/yyyy")}`,
+          title: title,
           date: format(date, "yyyy-MM-dd"),
-          type: contentType,
+          type: 'image',
           status: 'draft' as const,
           owner_user_id: user.id,
-          channels: channels,
-          category: category,
+          category: 'avulso',
+          channels: [],
         }])
         .select()
         .single();
 
       if (contentError) throw contentError;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${content.id}/${Date.now()}-${i}.${fileExt}`;
+      if (files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${content.id}/${Date.now()}-${i}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('content-media')
-          .upload(fileName, file);
+          const { error: uploadError } = await supabase.storage
+            .from('content-media')
+            .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+          if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('content-media')
-          .getPublicUrl(fileName);
+          const { data: { publicUrl } } = supabase.storage
+            .from('content-media')
+            .getPublicUrl(fileName);
 
-        await supabase
-          .from("content_media")
-          .insert({
-            content_id: content.id,
-            src_url: publicUrl,
-            kind: file.type.startsWith('video/') ? 'video' : 'image',
-            order_index: i,
-          });
+          await supabase
+            .from("content_media")
+            .insert({
+              content_id: content.id,
+              src_url: publicUrl,
+              kind: file.type.startsWith('video/') ? 'video' : 'image',
+              order_index: i,
+            });
+        }
       }
 
-      if (caption) {
+      if (description) {
         await supabase
           .from("content_texts")
           .insert({
             content_id: content.id,
-            caption: caption,
+            caption: description,
             version: 1,
           });
       }
 
       toast({
         title: "Conteúdo criado",
-        description: "O conteúdo foi criado com sucesso",
+        description: "O conteúdo avulso foi criado com sucesso",
       });
 
       setFiles([]);
       setPreviews([]);
-      setCaption("");
+      setTitle("");
+      setDescription("");
       setDate(undefined);
-      setChannels([]);
       setHasChanges(false);
       onContentCreated();
 
@@ -232,10 +201,10 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           >
             <Upload className="h-12 w-12 text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground text-center px-4">
-              Clique ou arraste arquivos aqui
+              Mídia opcional
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Imagens ou vídeos
+              Clique ou arraste arquivos
             </p>
           </div>
         ) : (
@@ -276,6 +245,15 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       </div>
 
       <div className="p-4 space-y-3">
+        <Input
+          placeholder="Título do conteúdo *"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setHasChanges(true);
+          }}
+        />
+
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -286,7 +264,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP", { locale: ptBR }) : "Selecionar data"}
+              {date ? format(date, "PPP", { locale: ptBR }) : "Selecionar data *"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
@@ -304,32 +282,14 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         </Popover>
 
         <Textarea
-          placeholder="Escreva a legenda..."
-          value={caption}
-          onChange={(e) => handleCaptionChange(e.target.value)}
+          placeholder="Descrição ou observações..."
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            setHasChanges(true);
+          }}
           className="min-h-[100px]"
         />
-
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Canais de publicação</Label>
-          <div className="grid grid-cols-2 gap-3">
-            {CHANNELS.map((channel) => (
-              <div key={channel} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`channel-${channel}`}
-                  checked={channels.includes(channel)}
-                  onCheckedChange={() => toggleChannel(channel)}
-                />
-                <Label
-                  htmlFor={`channel-${channel}`}
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  {channel}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {hasChanges && (
           <Button

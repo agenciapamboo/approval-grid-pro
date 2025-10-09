@@ -375,6 +375,7 @@ export type Database = {
       }
       contents: {
         Row: {
+          category: string | null
           channels: string[] | null
           client_id: string
           created_at: string
@@ -389,6 +390,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          category?: string | null
           channels?: string[] | null
           client_id: string
           created_at?: string
@@ -403,6 +405,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          category?: string | null
           channels?: string[] | null
           client_id?: string
           created_at?: string

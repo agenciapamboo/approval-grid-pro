@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
-import { CreateContentCard } from "@/components/content/CreateContentCard";
+import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 
@@ -53,7 +53,6 @@ interface Content {
 
 export default function ContentGrid() {
   const { agencySlug, clientSlug } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -62,16 +61,11 @@ export default function ContentGrid() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
   const [showConsent, setShowConsent] = useState(false);
-  
-  // Obter mês e ano dos parâmetros da URL (null se não especificado)
-  const monthParam = searchParams.get('month');
-  const yearParam = searchParams.get('year');
-  const currentMonth = monthParam ? parseInt(monthParam) : null;
-  const currentYear = yearParam ? parseInt(yearParam) : null;
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoadData();
-  }, [agencySlug, clientSlug, currentMonth, currentYear]);
+  }, [agencySlug, clientSlug]);
 
   const checkAuthAndLoadData = async () => {
     try {
@@ -170,21 +164,11 @@ export default function ContentGrid() {
   };
 
   const loadContents = async (clientId: string) => {
-    let query = supabase
+    const { data, error } = await supabase
       .from("contents")
       .select("*")
-      .eq("client_id", clientId);
-
-    // Aplicar filtro de mês apenas se mês/ano estiverem especificados
-    if (currentMonth && currentYear) {
-      const firstDay = new Date(currentYear, currentMonth - 1, 1);
-      const lastDay = new Date(currentYear, currentMonth, 0);
-      query = query
-        .gte("date", firstDay.toISOString().split('T')[0])
-        .lte("date", lastDay.toISOString().split('T')[0]);
-    }
-
-    const { data, error } = await query.order("date", { ascending: false });
+      .eq("client_id", clientId)
+      .order("date", { ascending: false });
 
     if (error) {
       console.error("Erro ao carregar conteúdos:", error);
@@ -204,18 +188,18 @@ export default function ContentGrid() {
     checkAuthAndLoadData();
   };
 
-  const navigateToMonth = (monthDelta: number) => {
-    if (!currentMonth || !currentYear) return;
-    
-    const newDate = new Date(currentYear, currentMonth - 1 + monthDelta, 1);
-    const newMonth = newDate.getMonth() + 1;
-    const newYear = newDate.getFullYear();
-    navigate(`/a/${agencySlug}/c/${clientSlug}?month=${newMonth}&year=${newYear}`);
-  };
+  // Agrupar conteúdos por mês
+  const groupedContents = contents.reduce((groups, content) => {
+    const date = new Date(content.date);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(content);
+    return groups;
+  }, {} as Record<string, Content[]>);
 
-  const monthName = currentMonth && currentYear 
-    ? new Date(currentYear, currentMonth - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-    : "Todos os conteúdos";
+  const sortedMonthKeys = Object.keys(groupedContents).sort((a, b) => b.localeCompare(a));
 
   if (loading) {
     return (
@@ -244,61 +228,59 @@ export default function ContentGrid() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Navegação de Mês - apenas se tiver mês selecionado */}
-        {currentMonth && currentYear && (
-          <div className="mb-6 flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateToMonth(-1)}
-            >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Mês Anterior
-            </Button>
-            
-            <h2 className="text-xl font-semibold capitalize">{monthName}</h2>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateToMonth(1)}
-            >
-              Próximo Mês
-              <ChevronRight className="h-4 w-4 ml-2" />
+        {profile?.role === 'agency_admin' && (
+          <div className="mb-6">
+            <Button onClick={() => setShowCreateDialog(true)}>
+              + Aprovação
             </Button>
           </div>
         )}
 
-        {!currentMonth && !currentYear && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold">{monthName}</h2>
-          </div>
+        {showCreateDialog && (
+          <CreateContentWrapper
+            clientId={client!.id}
+            onContentCreated={() => {
+              setShowCreateDialog(false);
+              loadContents(client!.id);
+            }}
+          />
         )}
 
         <ContentFilters />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {profile?.role === 'agency_admin' && (
-            <CreateContentCard 
-              clientId={client!.id}
-              onContentCreated={() => loadContents(client!.id)}
-            />
-          )}
-          
-          {contents.map((content) => (
-            <ContentCard 
-              key={content.id} 
-              content={content}
-              isResponsible={false}
-              isAgencyView={profile?.role === 'agency_admin'}
-              onUpdate={() => loadContents(client!.id)}
-            />
-          ))}
-        </div>
-
-        {contents.length === 0 && profile?.role !== 'agency_admin' && (
+        {sortedMonthKeys.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum conteúdo encontrado
+          </div>
+        ) : (
+          <div className="space-y-12 mt-6">
+            {sortedMonthKeys.map((monthKey) => {
+              const [year, month] = monthKey.split('-');
+              const monthDate = new Date(parseInt(year), parseInt(month) - 1);
+              const monthName = monthDate.toLocaleDateString('pt-BR', { 
+                month: 'long', 
+                year: 'numeric' 
+              });
+
+              return (
+                <div key={monthKey}>
+                  <h2 className="text-2xl font-semibold capitalize mb-4">
+                    {monthName}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {groupedContents[monthKey].map((content) => (
+                      <ContentCard 
+                        key={content.id} 
+                        content={content}
+                        isResponsible={false}
+                        isAgencyView={profile?.role === 'agency_admin'}
+                        onUpdate={() => loadContents(client!.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </main>
