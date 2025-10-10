@@ -59,8 +59,8 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8 flex-grow flex flex-col justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="w-full max-w-md space-y-8 flex-grow flex flex-col justify-center px-4">
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <div className="relative">
