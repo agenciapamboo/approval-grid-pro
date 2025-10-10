@@ -62,6 +62,7 @@ interface Content {
   status: string;
   type: string;
   client_id: string;
+  channels?: string[];
 }
 
 const Dashboard = () => {
@@ -627,6 +628,20 @@ const Dashboard = () => {
                                   Remover
                                 </Button>
                               </>
+                            )}
+                            {profile?.role === 'agency_admin' && (
+                              <Button 
+                                variant="secondary" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                  if (aSlug) navigate(`/${aSlug}/${client.slug}`);
+                                }}
+                              >
+                                <FileImage className="w-4 h-4 mr-2" />
+                                Criar Conteúdo
+                              </Button>
                             )}
                             <Button 
                               variant="default" 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,6 +27,7 @@ interface ContentCardProps {
     type: string;
     status: string;
     version: number;
+    channels?: string[];
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
@@ -65,6 +66,17 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       feed: "Feed",
     };
     return labels[type] || type;
+  };
+
+  const getSocialIcon = (channel: string) => {
+    const icons: Record<string, any> = {
+      instagram: Instagram,
+      facebook: Facebook,
+      youtube: Youtube,
+      linkedin: Linkedin,
+      twitter: Twitter,
+    };
+    return icons[channel.toLowerCase()] || null;
   };
 
   const handleApprove = async () => {
@@ -388,9 +400,25 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   </Popover>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="default">Tipo: {getTypeLabel(content.type)}</Badge>
                 {getStatusBadge(content.status)}
+                {content.channels && content.channels.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {content.channels.map((channel) => {
+                      const Icon = getSocialIcon(channel);
+                      return Icon ? (
+                        <div 
+                          key={channel}
+                          className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center"
+                          title={channel}
+                        >
+                          <Icon className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                )}
               </div>
             </div>
             {content.deadline && (

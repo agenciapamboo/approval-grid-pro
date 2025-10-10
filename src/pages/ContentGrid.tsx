@@ -49,6 +49,7 @@ interface Content {
   version: number;
   created_at: string;
   updated_at: string;
+  channels?: string[];
 }
 
 export default function ContentGrid() {
