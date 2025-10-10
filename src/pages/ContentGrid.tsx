@@ -69,30 +69,42 @@ export default function ContentGrid() {
 
   const loadPublicData = async () => {
     try {
+      console.log('=== ContentGrid loadPublicData started ===');
+      console.log('agencySlug:', agencySlug, 'clientSlug:', clientSlug);
+      
       // Verificar se há sessão ativa (opcional)
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session exists:', !!session);
       
       if (session) {
         // Carregar perfil se logado
-        const { data: profileData } = await supabase
+        console.log('Loading profile for user:', session.user.id);
+        const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", session.user.id)
           .maybeSingle();
 
-        if (profileData) {
+        if (profileError) {
+          console.error('Error loading profile:', profileError);
+        } else if (profileData) {
+          console.log('Profile loaded:', profileData);
           setProfile(profileData);
           
           // Verificar consentimento LGPD apenas para usuários logados
           if (!profileData.accepted_terms_at) {
+            console.log('User needs to accept terms');
             setShowConsent(true);
             return;
           }
+        } else {
+          console.warn('No profile found for user');
         }
       }
 
       // Carregar dados públicos da agência (se agencySlug for fornecido)
       if (agencySlug) {
+        console.log('Loading agency by slug:', agencySlug);
         const { data: agencyData, error: agencyError } = await supabase
           .from("agencies")
           .select("*")
@@ -102,18 +114,31 @@ export default function ContentGrid() {
         if (agencyError) {
           console.error("Erro ao carregar agência:", agencyError);
         } else if (agencyData) {
+          console.log('Agency loaded:', agencyData);
           setAgency(agencyData);
         }
       }
 
       // Carregar cliente pelo slug
+      console.log('Loading client by slug:', clientSlug);
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("*")
         .eq("slug", clientSlug)
         .maybeSingle();
 
-      if (clientError || !clientData) {
+      if (clientError) {
+        console.error('Error loading client:', clientError);
+        toast({
+          title: "Cliente não encontrado",
+          description: "Não foi possível carregar o cliente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!clientData) {
+        console.error('Client not found with slug:', clientSlug);
         toast({
           title: "Cliente não encontrado",
           description: "Não foi possível carregar o cliente.",
@@ -122,6 +147,7 @@ export default function ContentGrid() {
         return;
       }
 
+      console.log('Client loaded:', clientData);
       setClient(clientData);
       await loadContents(clientData.id);
     } catch (error) {
@@ -137,9 +163,12 @@ export default function ContentGrid() {
   };
 
   const loadContents = async (clientId: string) => {
+    console.log('=== loadContents started for client:', clientId);
+    
     // Se há um usuário logado, mostrar todos os conteúdos
     // Se não há usuário logado (acesso público), mostrar apenas aprovados
     const { data: { session } } = await supabase.auth.getSession();
+    console.log('Session in loadContents:', !!session);
     
     let query = supabase
       .from("contents")
@@ -148,7 +177,10 @@ export default function ContentGrid() {
     
     // Se não estiver logado, filtrar apenas aprovados
     if (!session) {
+      console.log('No session - filtering only approved contents');
       query = query.eq("status", "approved");
+    } else {
+      console.log('Session exists - loading all contents');
     }
     
     const { data, error } = await query.order("date", { ascending: false });
@@ -158,6 +190,7 @@ export default function ContentGrid() {
       return;
     }
 
+    console.log('Contents loaded:', data?.length || 0);
     setContents(data || []);
   };
 
