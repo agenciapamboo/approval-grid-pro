@@ -326,7 +326,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "w-full aspect-[3/4] flex flex-col items-center justify-center cursor-pointer transition-colors",
+              "w-full min-h-[200px] flex flex-col items-center justify-center cursor-pointer transition-colors py-8",
               isDragging ? "bg-primary/10 border-2 border-primary border-dashed" : "hover:bg-muted/50"
             )}
           >
