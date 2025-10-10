@@ -33,11 +33,11 @@ export function MonthSelectorDialog({ clientId, clientSlug, agencySlug, open, on
   const handleMonthSelect = (month: number) => {
     if (month === 0) {
       // Aprovação única - sem filtro de mês, mostrar todos
-      navigate(`/a/${agencySlug}/c/${clientSlug}`);
+      navigate(`/${agencySlug}/${clientSlug}`);
     } else {
       // Mês específico
       const year = currentYear;
-      navigate(`/a/${agencySlug}/c/${clientSlug}?month=${month}&year=${year}`);
+      navigate(`/${agencySlug}/${clientSlug}?month=${month}&year=${year}`);
     }
     onOpenChange(false);
   };

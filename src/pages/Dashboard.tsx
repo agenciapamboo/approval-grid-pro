@@ -167,7 +167,7 @@ const Dashboard = () => {
               notifications[client.id] = {
                 adjustments: contentsData.filter(c => c.status === 'changes_requested').length,
                 approved: contentsData.filter(c => c.status === 'approved').length,
-                rejected: contentsData.filter(c => c.status === 'draft').length,
+                rejected: contentsData.filter(c => c.status === 'in_review').length,
               };
             }
           }
@@ -277,6 +277,7 @@ const Dashboard = () => {
         description: `O cliente ${client.name} foi removido com sucesso.`,
       });
 
+      setClients((prev) => prev.filter((c) => c.id !== client.id));
       await fetchClients();
     } catch (error) {
       console.error("Erro ao remover cliente:", error);
@@ -343,8 +344,8 @@ const Dashboard = () => {
               const [year, month] = monthKey.split('-');
               const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
               
-              const pendingContents = monthContents.filter(c => c.status === 'pending' || c.status === 'draft');
-              const partialContents = monthContents.filter(c => c.status === 'revision');
+              const pendingContents = monthContents.filter(c => c.status === 'in_review' || c.status === 'draft');
+              const partialContents = monthContents.filter(c => c.status === 'changes_requested');
               const approvedContents = monthContents.filter(c => c.status === 'approved');
               
               const client = clients[0];
@@ -374,7 +375,7 @@ const Dashboard = () => {
                               const c = clients[0];
                               const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
                               if (c?.slug) {
-                                navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
+                                navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
                               }
                             }}
                           >
@@ -402,17 +403,17 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                const c = clients[0];
-                                const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                                if (c?.slug) {
-                                  navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
-                                }
-                              }}
-                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const c = clients[0];
+                                  const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                                  if (c?.slug) {
+                                    navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
+                                  }
+                                }}
+                              >
                               <ArrowRight className="h-4 w-4" />
                             </Button>
                           </div>
@@ -445,7 +446,7 @@ const Dashboard = () => {
                                   const c = clients[0];
                                   const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
                                   if (c?.slug) {
-                                    navigate(`/a/${aSlug}/c/${c.slug}?month=${month}&year=${year}`);
+                                    navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
                                   }
                                 }}
                               >
@@ -521,7 +522,7 @@ const Dashboard = () => {
                             className="flex-1 cursor-pointer" 
                             onClick={() => {
                               const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                              if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                              if (aSlug) navigate(`/${aSlug}/${client.slug}`);
                             }}
                           >
                             {client.logo_url && (
@@ -543,11 +544,11 @@ const Dashboard = () => {
                               <div className="space-y-1 mb-2">
                                 {notifications.adjustments > 0 && (
                                   <Alert 
-                                    className="py-2 px-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                                  className="py-2 px-3 cursor-pointer hover:bg-muted/50 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                      if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                                      if (aSlug) navigate(`/${aSlug}/${client.slug}`);
                                     }}
                                   >
                                     <AlertCircle className="h-4 w-4" />
@@ -562,7 +563,7 @@ const Dashboard = () => {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                      if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                                      if (aSlug) navigate(`/${aSlug}/${client.slug}`);
                                     }}
                                   >
                                     <CheckCircle className="h-4 w-4" />
@@ -573,16 +574,16 @@ const Dashboard = () => {
                                 )}
                                 {notifications.rejected > 0 && (
                                   <Alert 
-                                    className="py-2 px-3 border-red-500 text-red-700 cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                                    className="py-2 px-3 border-amber-500 text-amber-700 dark:text-amber-500 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                      if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                                      if (aSlug) navigate(`/${aSlug}/${client.slug}`);
                                     }}
                                   >
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertDescription className="text-xs">
-                                      {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Reprovado{notifications.rejected > 1 ? 's' : ''}
+                                      {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Pendente{notifications.rejected > 1 ? 's' : ''}
                                     </AlertDescription>
                                   </Alert>
                                 )}

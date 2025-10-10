@@ -26,7 +26,7 @@ export function ClientManager({ client, agencySlug, onUpdate }: ClientManagerPro
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
-  const clientUrl = `${window.location.origin}/a/${agencySlug}/c/${slug}`;
+  const clientUrl = `${window.location.origin}/${agencySlug}/${slug}`;
 
   const handleSaveSlug = async () => {
     if (slug === client.slug) return;

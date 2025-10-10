@@ -26,6 +26,7 @@ const App = () => (
           <Route path="/auth/forgot-password" element={<ForgotPassword />} />
           <Route path="/linkderecuperacao" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
           <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
           <Route path="/admin/reset-passwords" element={<AdminPasswordReset />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

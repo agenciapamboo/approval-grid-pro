@@ -131,7 +131,7 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
               placeholder="slug-da-agencia"
             />
             <p className="text-xs text-muted-foreground">
-              Será usado na URL: /a/{formData.slug || 'slug-da-agencia'}
+              Será usado na URL: /{formData.slug || 'slug-da-agencia'}
             </p>
           </div>
 
