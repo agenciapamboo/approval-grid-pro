@@ -2,7 +2,9 @@ import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus } from "lucide-react";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -38,6 +40,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [newDate, setNewDate] = useState<Date>(new Date(content.date));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
@@ -268,6 +272,59 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     }
   };
 
+  const handleDateChange = async (date: Date | undefined) => {
+    if (!date) return;
+    
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ date: format(date, "yyyy-MM-dd") })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Data atualizada",
+        description: "A data de postagem foi atualizada com sucesso",
+      });
+
+      setShowDatePicker(false);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar data:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar a data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkAdjustmentDone = async () => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ status: "in_review" })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Ajuste concluído",
+        description: "O conteúdo foi retornado para aprovação do cliente",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao marcar ajuste como feito:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar o status",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -288,6 +345,16 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                         <ImagePlus className="h-4 w-4 mr-2" />
                         Substituir imagem
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowDatePicker(true)}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Alterar data
+                      </DropdownMenuItem>
+                      {content.status === 'changes_requested' && (
+                        <DropdownMenuItem onClick={handleMarkAdjustmentDone}>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Ajuste feito
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem 
                         onClick={() => setShowDeleteDialog(true)}
                         className="text-destructive"
@@ -302,9 +369,21 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   <div className="text-xs text-muted-foreground mb-1">
                     Previsão de postagem
                   </div>
-                  <span className="font-medium text-sm">
-                    {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
-                  </span>
+                  <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                    <PopoverTrigger asChild>
+                      <span className="font-medium text-sm cursor-pointer hover:text-primary transition-colors">
+                        {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={newDate}
+                        onSelect={handleDateChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               <div className="flex items-center gap-2">

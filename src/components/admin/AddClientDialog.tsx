@@ -145,7 +145,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
               placeholder="slug-do-cliente"
             />
             <p className="text-xs text-muted-foreground">
-              Será usado na URL: /a/[agencia]/c/{formData.slug || 'slug-do-cliente'}
+              Acesso sem senha: https://aprova.pamboocriativos.com.br/[slug-agencia]/{formData.slug || 'slug-cliente'}
             </p>
           </div>
 

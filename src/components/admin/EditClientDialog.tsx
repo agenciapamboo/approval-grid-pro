@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Eye, EyeOff } from "lucide-react";
 
 interface Client {
   id: string;
@@ -31,6 +32,7 @@ interface EditClientDialogProps {
 export function EditClientDialog({ client, open, onOpenChange, onSuccess }: EditClientDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -41,6 +43,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     whatsapp: "",
     address: "",
     note: "",
+    password: "",
   });
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         whatsapp: client.whatsapp || "",
         address: client.address || "",
         note: "",
+        password: "",
       });
     }
   }, [client]);
@@ -83,6 +87,32 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         .eq("id", client.id);
 
       if (updateError) throw updateError;
+
+      // Update password if provided
+      if (formData.password.trim()) {
+        // Get user by email
+        const { data: userData } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("client_id", client.id)
+          .single();
+
+        if (userData) {
+          const { error: passwordError } = await supabase.auth.admin.updateUserById(
+            userData.id,
+            { password: formData.password }
+          );
+
+          if (passwordError) {
+            console.error("Erro ao atualizar senha:", passwordError);
+            toast({
+              title: "Aviso",
+              description: "Dados atualizados, mas não foi possível alterar a senha",
+              variant: "destructive",
+            });
+          }
+        }
+      }
 
       // Insert note if provided
       if (formData.note.trim()) {
@@ -146,6 +176,9 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               placeholder="slug-do-cliente"
               required
             />
+            <p className="text-xs text-muted-foreground">
+              Acesso sem senha: https://aprova.pamboocriativos.com.br/[slug-agencia]/{formData.slug || 'slug-cliente'}
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -161,6 +194,30 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
             <p className="text-xs text-muted-foreground">
               Este email será usado para o cliente fazer login no sistema
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Nova Senha (deixe em branco para manter)</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                minLength={8}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">

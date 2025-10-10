@@ -185,9 +185,42 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
     }
   };
 
+  const moveImage = (fromIndex: number, toIndex: number) => {
+    const newFiles = [...files];
+    const newPreviews = [...previews];
+    
+    const [movedFile] = newFiles.splice(fromIndex, 1);
+    const [movedPreview] = newPreviews.splice(fromIndex, 1);
+    
+    newFiles.splice(toIndex, 0, movedFile);
+    newPreviews.splice(toIndex, 0, movedPreview);
+    
+    setFiles(newFiles);
+    setPreviews(newPreviews);
+    setHasChanges(true);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+  };
+
+  const handleDragOverImage = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDropImage = (e: React.DragEvent, toIndex: number) => {
+    e.preventDefault();
+    const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
+    if (fromIndex !== toIndex) {
+      moveImage(fromIndex, toIndex);
+    }
+  };
+
   return (
     <Card className="overflow-hidden">
-      <div className="aspect-square bg-muted/30 relative">
+      <div className="bg-muted/30 relative">
         {files.length === 0 ? (
           <div
             onDragOver={handleDragOver}
@@ -195,7 +228,7 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center cursor-pointer transition-colors",
+              "aspect-video flex flex-col items-center justify-center cursor-pointer transition-colors",
               isDragging ? "bg-primary/10 border-2 border-primary border-dashed" : "hover:bg-muted/50"
             )}
           >
@@ -204,34 +237,50 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
               Mídia opcional
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Clique ou arraste arquivos
+              Até 10 imagens/vídeos
             </p>
           </div>
         ) : (
-          <div className="absolute inset-0 grid grid-cols-2 gap-1 p-2">
-            {previews.map((preview, index) => (
-              <div key={index} className="relative group">
-                {files[index].type.startsWith('video/') ? (
-                  <video src={preview} className="w-full h-full object-cover rounded" />
-                ) : (
-                  <img src={preview} alt="" className="w-full h-full object-cover rounded" />
-                )}
-                <button
-                  onClick={() => removeFile(index)}
-                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          <div className="p-3 space-y-2">
+            <div className="grid grid-cols-5 gap-2">
+              {previews.map((preview, index) => (
+                <div 
+                  key={index} 
+                  className="relative group cursor-move aspect-square"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOverImage(e, index)}
+                  onDrop={(e) => handleDropImage(e, index)}
                 >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-            {previews.length < 4 && (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-muted-foreground/30 rounded flex items-center justify-center cursor-pointer hover:bg-muted/50"
-              >
-                <Upload className="h-6 w-6 text-muted-foreground" />
-              </div>
-            )}
+                  {files[index].type.startsWith('video/') ? (
+                    <video src={preview} className="w-full h-full object-cover rounded border" />
+                  ) : (
+                    <img src={preview} alt="" className="w-full h-full object-cover rounded border" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                    {index + 1}
+                  </div>
+                </div>
+              ))}
+              {files.length < 10 && (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square border-2 border-dashed border-muted-foreground/30 rounded flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Arraste para reordenar • {files.length}/10 imagens
+            </p>
           </div>
         )}
         <input
