@@ -14,6 +14,7 @@ import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
 import { ViewClientDialog } from "@/components/admin/ViewClientDialog";
 import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { MonthSelectorDialog } from "@/components/admin/MonthSelectorDialog";
+import { ContentCategorySelector } from "@/components/content/ContentCategorySelector";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
@@ -63,6 +64,7 @@ interface Content {
   type: string;
   client_id: string;
   channels?: string[];
+  category?: string;
 }
 
 const Dashboard = () => {
@@ -640,7 +642,7 @@ const Dashboard = () => {
                                 }}
                               >
                                 <FileImage className="w-4 h-4 mr-2" />
-                                Criar Conteúdo
+                                Ver conteúdo
                               </Button>
                             )}
                             <Button 
@@ -737,14 +739,27 @@ const Dashboard = () => {
         onSuccess={checkAuth}
       />
 
-      <MonthSelectorDialog
-        clientId={selectedClient?.id || ""}
-        clientSlug={selectedClient?.slug || ""}
-        agencySlug={getClientAgency(selectedClient?.agency_id || "")?.slug || ""}
-        open={monthSelectorOpen}
-        onOpenChange={setMonthSelectorOpen}
-        isAgencyView={profile?.role === 'agency_admin'}
-      />
+      {selectedClient && profile?.role === 'agency_admin' && (
+        <ContentCategorySelector
+          open={monthSelectorOpen}
+          onOpenChange={setMonthSelectorOpen}
+          onSelect={(category) => {
+            setMonthSelectorOpen(false);
+            navigate(`/agency/client/${selectedClient.id}?category=${category}`);
+          }}
+        />
+      )}
+      
+      {selectedClient && profile?.role !== 'agency_admin' && (
+        <MonthSelectorDialog
+          clientId={selectedClient.id}
+          clientSlug={selectedClient.slug}
+          agencySlug={getClientAgency(selectedClient.agency_id)?.slug || ""}
+          open={monthSelectorOpen}
+          onOpenChange={setMonthSelectorOpen}
+          isAgencyView={false}
+        />
+      )}
       
       <AppFooter />
     </div>

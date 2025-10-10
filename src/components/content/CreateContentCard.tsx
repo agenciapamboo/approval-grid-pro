@@ -330,12 +330,12 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
               isDragging ? "bg-primary/10 border-2 border-primary border-dashed" : "hover:bg-muted/50"
             )}
           >
-            <Upload className="h-12 w-12 text-muted-foreground mb-2" />
+            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground text-center px-4">
-              Clique ou arraste arquivos aqui
+              Clique ou arraste arquivos
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Até 10 imagens/vídeos
+              Até 10 arquivos
             </p>
           </div>
         ) : (

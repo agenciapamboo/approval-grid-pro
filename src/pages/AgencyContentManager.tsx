@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
@@ -46,6 +46,7 @@ interface Content {
   created_at: string;
   updated_at: string;
   channels?: string[];
+  category?: string;
 }
 
 export default function AgencyContentManager() {
@@ -58,13 +59,21 @@ export default function AgencyContentManager() {
   const [client, setClient] = useState<Client | null>(null);
   const [agency, setAgency] = useState<Agency | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
+  const [showCreateContent, setShowCreateContent] = useState(false);
 
   const monthParam = searchParams.get("month");
   const yearParam = searchParams.get("year");
+  const categoryParam = searchParams.get("category") as 'social' | 'avulso' | null;
 
   useEffect(() => {
     checkAuthAndLoadData();
   }, [clientId, monthParam, yearParam]);
+
+  useEffect(() => {
+    if (categoryParam) {
+      setShowCreateContent(true);
+    }
+  }, [categoryParam]);
 
   const checkAuthAndLoadData = async () => {
     setLoading(true);
@@ -184,18 +193,29 @@ export default function AgencyContentManager() {
     navigate("/auth");
   };
 
-  // Agrupar conteúdos por mês
+  // Agrupar conteúdos por mês e categoria
   const groupedContents = contents.reduce((groups, content) => {
     const date = new Date(content.date);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const category = content.category || 'social';
+    const key = `${monthKey}-${category}`;
+    
     if (!groups[key]) {
-      groups[key] = [];
+      groups[key] = {
+        month: monthKey,
+        category,
+        contents: []
+      };
     }
-    groups[key].push(content);
+    groups[key].contents.push(content);
     return groups;
-  }, {} as Record<string, Content[]>);
+  }, {} as Record<string, { month: string; category: string; contents: Content[] }>);
 
-  const sortedMonthKeys = Object.keys(groupedContents).sort((a, b) => b.localeCompare(a));
+  const sortedGroupKeys = Object.keys(groupedContents).sort((a, b) => {
+    const [monthA] = a.split('-');
+    const [monthB] = b.split('-');
+    return monthB.localeCompare(monthA);
+  });
 
   if (loading) {
     return (
@@ -236,34 +256,53 @@ export default function AgencyContentManager() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        {client && (
-          <CreateContentWrapper 
-            clientId={client.id}
-            onContentCreated={() => loadContents(client.id)}
-          />
+        {client && showCreateContent && (
+          <div className="mb-6">
+            <CreateContentWrapper 
+              clientId={client.id}
+              onContentCreated={() => {
+                loadContents(client.id);
+                setShowCreateContent(false);
+              }}
+            />
+          </div>
         )}
         
-        {sortedMonthKeys.length === 0 ? (
+        {client && !showCreateContent && (
+          <div className="mb-6">
+            <Button 
+              onClick={() => setShowCreateContent(true)}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar conteúdo
+            </Button>
+          </div>
+        )}
+        
+        {sortedGroupKeys.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum conteúdo encontrado
           </div>
         ) : (
           <div className="space-y-12 mt-6">
-            {sortedMonthKeys.map((monthKey) => {
-              const [year, month] = monthKey.split('-');
+            {sortedGroupKeys.map((groupKey) => {
+              const group = groupedContents[groupKey];
+              const [year, month] = group.month.split('-');
               const monthDate = new Date(parseInt(year), parseInt(month) - 1);
               const monthName = monthDate.toLocaleDateString('pt-BR', { 
                 month: 'long', 
                 year: 'numeric' 
               });
+              const categoryLabel = group.category === 'avulso' ? 'Avulso' : 'Redes Sociais';
 
               return (
-                <div key={monthKey}>
+                <div key={groupKey}>
                   <h2 className="text-2xl font-semibold capitalize mb-4">
-                    {monthName}
+                    {monthName} - {categoryLabel}
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groupedContents[monthKey].map((content) => (
+                    {group.contents.map((content) => (
                       <ContentCard 
                         key={content.id} 
                         content={content}

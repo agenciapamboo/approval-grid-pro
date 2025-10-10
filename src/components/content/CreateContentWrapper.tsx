@@ -9,25 +9,27 @@ interface CreateContentWrapperProps {
 }
 
 export function CreateContentWrapper({ clientId, onContentCreated }: CreateContentWrapperProps) {
-  const [showSelector, setShowSelector] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<'social' | 'avulso' | null>(null);
 
   const handleCategorySelect = (category: 'social' | 'avulso') => {
     setSelectedCategory(category);
-    setShowSelector(false);
   };
 
   const handleContentCreated = () => {
     setSelectedCategory(null);
-    setShowSelector(true);
     onContentCreated();
   };
 
-  if (showSelector) {
+  const handleCancel = () => {
+    setSelectedCategory(null);
+    onContentCreated();
+  };
+
+  if (!selectedCategory) {
     return (
       <ContentCategorySelector
-        open={showSelector}
-        onOpenChange={setShowSelector}
+        open={true}
+        onOpenChange={(open) => !open && onContentCreated()}
         onSelect={handleCategorySelect}
       />
     );
