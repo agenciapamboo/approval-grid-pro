@@ -610,7 +610,7 @@ export type Database = {
     Enums: {
       app_role: "super_admin" | "agency_admin" | "client_user"
       content_status: "draft" | "in_review" | "changes_requested" | "approved"
-      content_type: "image" | "carousel" | "reels"
+      content_type: "image" | "carousel" | "reels" | "story" | "feed"
       legal_basis: "contract" | "legitimate_interest"
       media_kind: "image" | "video"
       user_role: "super_admin" | "agency_admin" | "client_user"
@@ -744,7 +744,7 @@ export const Constants = {
     Enums: {
       app_role: ["super_admin", "agency_admin", "client_user"],
       content_status: ["draft", "in_review", "changes_requested", "approved"],
-      content_type: ["image", "carousel", "reels"],
+      content_type: ["image", "carousel", "reels", "story", "feed"],
       legal_basis: ["contract", "legitimate_interest"],
       media_kind: ["image", "video"],
       user_role: ["super_admin", "agency_admin", "client_user"],

@@ -61,6 +61,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       image: "Imagem",
       carousel: "Carrossel",
       reels: "Reels",
+      story: "Story",
+      feed: "Feed",
     };
     return labels[type] || type;
   };

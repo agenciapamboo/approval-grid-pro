@@ -6,6 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, CalendarIcon, Save, Loader2, X } from "lucide-react";
@@ -30,6 +31,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   const [channels, setChannels] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [contentType, setContentType] = useState<'image' | 'carousel' | 'reels' | 'story' | 'feed'>('image');
+  const [videoTypes, setVideoTypes] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
@@ -68,7 +71,34 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     }
   };
 
-  const handleFiles = (newFiles: File[]) => {
+  const detectContentType = async (file: File): Promise<'image' | 'carousel' | 'story' | 'feed'> => {
+    return new Promise((resolve) => {
+      if (file.type.startsWith('image/')) {
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.width / img.height;
+          
+          // 9:16 (0.5625) - Story/vertical
+          if (aspectRatio >= 0.5 && aspectRatio <= 0.6) {
+            resolve('story');
+          }
+          // 4:5 (0.8) - Feed
+          else if (aspectRatio >= 0.75 && aspectRatio <= 0.85) {
+            resolve('feed');
+          }
+          // Outras proporções - Image
+          else {
+            resolve('image');
+          }
+        };
+        img.src = URL.createObjectURL(file);
+      } else {
+        resolve('image');
+      }
+    });
+  };
+
+  const handleFiles = async (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
@@ -88,6 +118,18 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
+    
+    // Detectar tipo de conteúdo automaticamente
+    if (validFiles.length > 1) {
+      setContentType('carousel');
+    } else if (validFiles[0].type.startsWith('video/')) {
+      // Vídeos permanecem sem tipo definido até o usuário escolher
+      setVideoTypes([]);
+    } else {
+      const detectedType = await detectContentType(validFiles[0]);
+      setContentType(detectedType);
+    }
+    
     setHasChanges(true);
   };
 
@@ -120,11 +162,30 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     setHasChanges(true);
   };
 
+  const toggleVideoType = (type: string) => {
+    setVideoTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+    setHasChanges(true);
+  };
+
   const handleSave = async () => {
     if (files.length === 0 || !date) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, adicione pelo menos uma mídia e selecione uma data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar tipo de vídeo se for vídeo
+    if (files.length === 1 && files[0].type.startsWith('video/') && videoTypes.length === 0) {
+      toast({
+        title: "Tipo de vídeo obrigatório",
+        description: "Por favor, selecione ao menos um tipo para o vídeo (Story, Reels ou ambos)",
         variant: "destructive",
       });
       return;
@@ -136,8 +197,12 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const contentType = files.length > 1 ? 'carousel' : 
-                         files[0].type.startsWith('video/') ? 'reels' : 'image';
+      // Determinar tipo de conteúdo
+      let finalContentType = contentType;
+      if (files.length === 1 && files[0].type.startsWith('video/')) {
+        // Para vídeos, usar o primeiro tipo selecionado
+        finalContentType = videoTypes[0] as typeof finalContentType;
+      }
 
       const { data: content, error: contentError } = await supabase
         .from("contents")
@@ -145,7 +210,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           client_id: clientId,
           title: `Conteúdo ${format(date, "dd/MM/yyyy")}`,
           date: format(date, "yyyy-MM-dd"),
-          type: contentType,
+          type: finalContentType,
           status: 'in_review' as const,
           owner_user_id: user.id,
           channels: channels,
@@ -201,6 +266,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       setCaption("");
       setDate(undefined);
       setChannels([]);
+      setContentType('image');
+      setVideoTypes([]);
       setHasChanges(false);
       onContentCreated();
 
@@ -358,6 +425,62 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           onChange={(e) => handleCaptionChange(e.target.value)}
           className="min-h-[100px]"
         />
+
+        {/* Tipo de conteúdo para imagens */}
+        {files.length === 1 && files[0] && !files[0].type.startsWith('video/') && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Tipo de conteúdo</Label>
+            <RadioGroup value={contentType} onValueChange={(value) => setContentType(value as typeof contentType)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="feed" id="type-feed" />
+                <Label htmlFor="type-feed" className="text-sm font-normal cursor-pointer">
+                  Feed (4:5)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="story" id="type-story" />
+                <Label htmlFor="type-story" className="text-sm font-normal cursor-pointer">
+                  Story (9:16)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="image" id="type-image" />
+                <Label htmlFor="type-image" className="text-sm font-normal cursor-pointer">
+                  Imagem (Outro)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+
+        {/* Tipo de vídeo - checkbox múltipla */}
+        {files.length === 1 && files[0] && files[0].type.startsWith('video/') && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Tipo de vídeo (selecione ao menos um)</Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="video-story"
+                  checked={videoTypes.includes('story')}
+                  onCheckedChange={() => toggleVideoType('story')}
+                />
+                <Label htmlFor="video-story" className="text-sm font-normal cursor-pointer">
+                  Story (9:16)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="video-reels"
+                  checked={videoTypes.includes('reels')}
+                  onCheckedChange={() => toggleVideoType('reels')}
+                />
+                <Label htmlFor="video-reels" className="text-sm font-normal cursor-pointer">
+                  Reels
+                </Label>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label className="text-sm font-medium">Canais de publicação</Label>
