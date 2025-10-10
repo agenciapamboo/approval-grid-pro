@@ -327,68 +327,70 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   return (
     <Card className="overflow-hidden">
       <div className="w-full bg-muted/30 relative">
-        {files.length === 0 ? (
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "w-full min-h-[200px] flex flex-col items-center justify-center cursor-pointer transition-colors py-8",
-              isDragging ? "bg-primary/10 border-2 border-primary border-dashed" : "hover:bg-muted/50"
-            )}
-          >
-            <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-            <p className="text-xs text-muted-foreground text-center px-4">
-              Clique ou arraste
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              Até 10 arquivos
-            </p>
-          </div>
-        ) : (
-          <div className="p-3 space-y-2">
-            <div className="grid grid-cols-5 gap-2">
-              {previews.map((preview, index) => (
-                <div 
-                  key={index} 
-                  className="relative group cursor-move aspect-square"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOverImage(e, index)}
-                  onDrop={(e) => handleDropImage(e, index)}
-                >
-                  {files[index].type.startsWith('video/') ? (
-                    <video src={preview} className="w-full h-full object-cover rounded border" />
-                  ) : (
-                    <img src={preview} alt="" className="w-full h-full object-cover rounded border" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeFile(index)}
-                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+        <div className="p-3 space-y-2">
+          {files.length > 0 ? (
+            <>
+              <div className="grid grid-cols-5 gap-2">
+                {previews.map((preview, index) => (
+                  <div 
+                    key={index} 
+                    className="relative group cursor-move aspect-square"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOverImage(e, index)}
+                    onDrop={(e) => handleDropImage(e, index)}
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                  <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                    {index + 1}
+                    {files[index].type.startsWith('video/') ? (
+                      <video src={preview} className="w-full h-full object-cover rounded border" />
+                    ) : (
+                      <img src={preview} alt="" className="w-full h-full object-cover rounded border" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                      {index + 1}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {files.length < 10 && (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square border-2 border-dashed border-muted-foreground/30 rounded flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                >
-                  <Upload className="h-6 w-6 text-muted-foreground" />
-                </div>
+                ))}
+                {files.length < 10 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square border-2 border-dashed border-muted-foreground/30 rounded flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Arraste para reordenar • {files.length}/10 imagens
+              </p>
+            </>
+          ) : (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "w-full min-h-[160px] flex flex-col items-center justify-center cursor-pointer transition-colors rounded border-2 border-dashed",
+                isDragging ? "bg-primary/10 border-primary" : "border-muted-foreground/30 hover:bg-muted/50"
               )}
+            >
+              <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+              <p className="text-xs text-muted-foreground text-center px-4">
+                Clique ou arraste
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Até 10 arquivos
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Arraste para reordenar • {files.length}/10 imagens
-            </p>
-          </div>
-        )}
+          )}
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -529,25 +531,23 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           </div>
         </div>
 
-        {hasChanges && (
-          <Button
-            onClick={handleSave}
-            disabled={uploading}
-            className="w-full"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Conteúdo
-              </>
-            )}
-          </Button>
-        )}
+        <Button
+          onClick={handleSave}
+          disabled={uploading || !hasChanges}
+          className="w-full"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar Conteúdo
+            </>
+          )}
+        </Button>
       </div>
     </Card>
   );
