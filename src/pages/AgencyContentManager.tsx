@@ -60,8 +60,6 @@ export default function AgencyContentManager() {
   const [client, setClient] = useState<Client | null>(null);
   const [agency, setAgency] = useState<Agency | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
-  const [showCreateContent, setShowCreateContent] = useState(false);
-
   const monthParam = searchParams.get("month");
   const yearParam = searchParams.get("year");
   const categoryParam = searchParams.get("category") as 'social' | 'avulso' | null;
@@ -69,13 +67,6 @@ export default function AgencyContentManager() {
   useEffect(() => {
     checkAuthAndLoadData();
   }, [clientId, monthParam, yearParam]);
-
-  useEffect(() => {
-    // Se veio com o parâmetro category, abre diretamente o formulário
-    if (categoryParam && !showCreateContent) {
-      setShowCreateContent(true);
-    }
-  }, [categoryParam]);
 
   const checkAuthAndLoadData = async () => {
     setLoading(true);
@@ -258,14 +249,13 @@ export default function AgencyContentManager() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        {client && showCreateContent && categoryParam && (
+        {client && categoryParam && (
           <div className="mb-6">
             {categoryParam === 'social' ? (
               <CreateContentCard 
                 clientId={client.id}
                 onContentCreated={() => {
                   loadContents(client.id);
-                  setShowCreateContent(false);
                   navigate(`/agency/client/${client.id}`);
                 }}
                 category="social"
@@ -275,23 +265,10 @@ export default function AgencyContentManager() {
                 clientId={client.id}
                 onContentCreated={() => {
                   loadContents(client.id);
-                  setShowCreateContent(false);
                   navigate(`/agency/client/${client.id}`);
                 }}
               />
             )}
-          </div>
-        )}
-        
-        {client && !showCreateContent && (
-          <div className="mb-6">
-            <Button 
-              onClick={() => setShowCreateContent(true)}
-              className="w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar conteúdo
-            </Button>
           </div>
         )}
         
