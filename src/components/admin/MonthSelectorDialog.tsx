@@ -9,9 +9,10 @@ interface MonthSelectorDialogProps {
   agencySlug: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isAgencyView?: boolean;
 }
 
-export function MonthSelectorDialog({ clientId, clientSlug, agencySlug, open, onOpenChange }: MonthSelectorDialogProps) {
+export function MonthSelectorDialog({ clientId, clientSlug, agencySlug, open, onOpenChange, isAgencyView = false }: MonthSelectorDialogProps) {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const singleMonth = { name: "Aprovação única", value: 0 };
@@ -31,13 +32,22 @@ export function MonthSelectorDialog({ clientId, clientSlug, agencySlug, open, on
   ];
 
   const handleMonthSelect = (month: number) => {
-    if (month === 0) {
-      // Aprovação única - sem filtro de mês, mostrar todos
-      navigate(`/${agencySlug}/${clientSlug}`);
+    if (isAgencyView) {
+      // Rota para agency admin
+      if (month === 0) {
+        navigate(`/agency/client/${clientId}`);
+      } else {
+        const year = currentYear;
+        navigate(`/agency/client/${clientId}?month=${month}&year=${year}`);
+      }
     } else {
-      // Mês específico
-      const year = currentYear;
-      navigate(`/${agencySlug}/${clientSlug}?month=${month}&year=${year}`);
+      // Rota para cliente
+      if (month === 0) {
+        navigate(`/${agencySlug}/${clientSlug}`);
+      } else {
+        const year = currentYear;
+        navigate(`/${agencySlug}/${clientSlug}?month=${month}&year=${year}`);
+      }
     }
     onOpenChange(false);
   };

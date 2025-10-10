@@ -9,6 +9,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import ContentGrid from "./pages/ContentGrid";
+import AgencyContentManager from "./pages/AgencyContentManager";
 import AdminPasswordReset from "./pages/AdminPasswordReset";
 import NotFound from "./pages/NotFound";
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth/forgot-password" element={<ForgotPassword />} />
           <Route path="/linkderecuperacao" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/agency/client/:clientId" element={<AgencyContentManager />} />
           <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
           <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
           <Route path="/admin/reset-passwords" element={<AdminPasswordReset />} />

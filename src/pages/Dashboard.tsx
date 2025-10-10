@@ -743,6 +743,7 @@ const Dashboard = () => {
         agencySlug={getClientAgency(selectedClient?.agency_id || "")?.slug || ""}
         open={monthSelectorOpen}
         onOpenChange={setMonthSelectorOpen}
+        isAgencyView={profile?.role === 'agency_admin'}
       />
       
       <AppFooter />
