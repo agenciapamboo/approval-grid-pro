@@ -64,93 +64,66 @@ export default function ContentGrid() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   useEffect(() => {
-    checkAuthAndLoadData();
+    loadPublicData();
   }, [agencySlug, clientSlug]);
 
-  const checkAuthAndLoadData = async () => {
+  const loadPublicData = async () => {
     try {
+      // Verificar se há sessão ativa (opcional)
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      // Carregar perfil
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profileError) throw profileError;
-      setProfile(profileData);
-
-      // Verificar consentimento LGPD
-      if (!profileData.accepted_terms_at) {
-        setShowConsent(true);
-        return;
-      }
-
-      // Carregar dados de agência/cliente com RLS em mente
-      if (profileData.role === 'client_user') {
-        // client_user não possui permissão de SELECT direto em agencies.
-        // Buscar apenas o cliente pelo slug e seguir sem carregar a agência.
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
+      if (session) {
+        // Carregar perfil se logado
+        const { data: profileData } = await supabase
+          .from("profiles")
           .select("*")
-          .eq("slug", clientSlug)
+          .eq("id", session.user.id)
           .maybeSingle();
 
-        if (clientError || !clientData) {
-          toast({
-            title: "Cliente não encontrado",
-            description: "Não foi possível carregar o cliente.",
-            variant: "destructive",
-          });
-          navigate("/dashboard");
-          return;
+        if (profileData) {
+          setProfile(profileData);
+          
+          // Verificar consentimento LGPD apenas para usuários logados
+          if (!profileData.accepted_terms_at) {
+            setShowConsent(true);
+            return;
+          }
         }
+      }
 
-        setClient(clientData);
-        await loadContents(clientData.id);
-      } else {
-        // Para admins, podemos carregar agência e validar pertencimento
+      // Carregar dados públicos da agência (se agencySlug for fornecido)
+      if (agencySlug) {
         const { data: agencyData, error: agencyError } = await supabase
           .from("agencies")
           .select("*")
           .eq("slug", agencySlug)
           .maybeSingle();
 
-        if (agencyError || !agencyData) {
-          throw agencyError || new Error("Agência não encontrada");
+        if (agencyError) {
+          console.error("Erro ao carregar agência:", agencyError);
+        } else if (agencyData) {
+          setAgency(agencyData);
         }
-        setAgency(agencyData);
-
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("slug", clientSlug)
-          .eq("agency_id", agencyData.id)
-          .maybeSingle();
-
-        if (clientError || !clientData) {
-          throw clientError || new Error("Cliente não encontrado");
-        }
-        setClient(clientData);
-
-        if (profileData.role === 'agency_admin' && profileData.agency_id !== agencyData.id) {
-          toast({
-            title: "Acesso negado",
-            description: "Você não tem permissão para acessar esta agência",
-            variant: "destructive",
-          });
-          navigate("/dashboard");
-          return;
-        }
-
-        await loadContents(clientData.id);
       }
+
+      // Carregar cliente pelo slug
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("slug", clientSlug)
+        .maybeSingle();
+
+      if (clientError || !clientData) {
+        toast({
+          title: "Cliente não encontrado",
+          description: "Não foi possível carregar o cliente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setClient(clientData);
+      await loadContents(clientData.id);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -164,10 +137,12 @@ export default function ContentGrid() {
   };
 
   const loadContents = async (clientId: string) => {
+    // Carregar apenas conteúdos aprovados para acesso público
     const { data, error } = await supabase
       .from("contents")
       .select("*")
       .eq("client_id", clientId)
+      .eq("status", "approved")
       .order("date", { ascending: false });
 
     if (error) {
@@ -185,7 +160,7 @@ export default function ContentGrid() {
 
   const handleConsentAccepted = () => {
     setShowConsent(false);
-    checkAuthAndLoadData();
+    loadPublicData();
   };
 
   // Agrupar conteúdos por mês
@@ -217,14 +192,16 @@ export default function ContentGrid() {
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader>
         <span className="text-white text-sm">{client?.name || 'Cliente'}</span>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={handleSignOut} 
-          className="text-white hover:bg-white/20"
-        >
-          <LogOut className="h-4 w-4" />
-        </Button>
+        {profile && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleSignOut} 
+            className="text-white hover:bg-white/20"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        )}
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
