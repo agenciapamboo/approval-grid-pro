@@ -216,7 +216,7 @@ export default function ContentGrid() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <AppHeader>
-        <span className="text-white text-sm">{profile?.name}</span>
+        <span className="text-white text-sm">{client?.name || 'Cliente'}</span>
         <Button 
           variant="ghost" 
           size="sm" 
@@ -228,24 +228,6 @@ export default function ContentGrid() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        {profile?.role === 'agency_admin' && (
-          <div className="mb-6">
-            <Button onClick={() => setShowCreateDialog(true)}>
-              + Aprovação
-            </Button>
-          </div>
-        )}
-
-        {showCreateDialog && (
-          <CreateContentWrapper
-            clientId={client!.id}
-            onContentCreated={() => {
-              setShowCreateDialog(false);
-              loadContents(client!.id);
-            }}
-          />
-        )}
-
         <ContentFilters />
         
         {sortedMonthKeys.length === 0 ? (
@@ -273,7 +255,7 @@ export default function ContentGrid() {
                         key={content.id} 
                         content={content}
                         isResponsible={false}
-                        isAgencyView={profile?.role === 'agency_admin'}
+                        isAgencyView={false}
                         onUpdate={() => loadContents(client!.id)}
                       />
                     ))}
