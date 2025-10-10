@@ -69,12 +69,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   };
 
   const getSocialIcon = (channel: string) => {
-    const icons: Record<string, any> = {
-      instagram: Instagram,
-      facebook: Facebook,
-      youtube: Youtube,
-      linkedin: Linkedin,
-      twitter: Twitter,
+    const icons: Record<string, { Icon: any; color: string }> = {
+      instagram: { Icon: Instagram, color: '#E4405F' },
+      facebook: { Icon: Facebook, color: '#1877F2' },
+      youtube: { Icon: Youtube, color: '#FF0000' },
+      linkedin: { Icon: Linkedin, color: '#0A66C2' },
+      tiktok: { Icon: Twitter, color: '#000000' },
     };
     return icons[channel.toLowerCase()] || null;
   };
@@ -406,16 +406,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                 {content.channels && content.channels.length > 0 && (
                   <div className="flex items-center gap-1">
                     {content.channels.map((channel) => {
-                      const Icon = getSocialIcon(channel);
-                      return Icon ? (
+                      const iconData = getSocialIcon(channel);
+                      if (!iconData) return null;
+                      const { Icon, color } = iconData;
+                      return (
                         <div 
                           key={channel}
-                          className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center"
+                          className="w-6 h-6 rounded-full bg-white dark:bg-gray-100 flex items-center justify-center shadow-sm"
                           title={channel}
                         >
-                          <Icon className="h-3.5 w-3.5 text-primary" />
+                          <Icon className="h-3.5 w-3.5" style={{ color }} />
                         </div>
-                      ) : null;
+                      );
                     })}
                   </div>
                 )}
