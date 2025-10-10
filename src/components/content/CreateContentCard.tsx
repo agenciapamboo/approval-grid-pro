@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, CalendarIcon, Save, Loader2, X } from "lucide-react";
+import { Upload, CalendarIcon, Save, Loader2, X, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 interface CreateContentCardProps {
   clientId: string;
@@ -28,6 +29,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
   const [date, setDate] = useState<Date>();
+  const [time, setTime] = useState("12:00");
   const [channels, setChannels] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -204,12 +206,17 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         finalContentType = videoTypes[0] as typeof finalContentType;
       }
 
+      // Criar datetime combinando data e hora
+      const [hours, minutes] = time.split(':');
+      const dateTime = new Date(date);
+      dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
       const { data: content, error: contentError } = await supabase
         .from("contents")
         .insert([{
           client_id: clientId,
-          title: `Conteúdo ${format(date, "dd/MM/yyyy")}`,
-          date: format(date, "yyyy-MM-dd"),
+          title: `Conteúdo ${format(dateTime, "dd/MM/yyyy HH:mm")}`,
+          date: dateTime.toISOString(),
           type: finalContentType,
           status: 'in_review' as const,
           owner_user_id: user.id,
@@ -265,6 +272,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       setPreviews([]);
       setCaption("");
       setDate(undefined);
+      setTime("12:00");
       setChannels([]);
       setContentType('image');
       setVideoTypes([]);
@@ -392,32 +400,50 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       </div>
 
       <div className="p-4 space-y-3">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP", { locale: ptBR }) : "Selecionar data"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(newDate) => {
-                setDate(newDate);
-                setHasChanges(true);
-              }}
-              initialFocus
-              className="pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Data e hora</Label>
+          <div className="flex gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "Data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(newDate) => {
+                    setDate(newDate);
+                    setHasChanges(true);
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <div className="relative flex-1">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="time"
+                value={time}
+                onChange={(e) => {
+                  setTime(e.target.value);
+                  setHasChanges(true);
+                }}
+                className="pl-9"
+              />
+            </div>
+          </div>
+        </div>
 
         <Textarea
           placeholder="Escreva a legenda..."
