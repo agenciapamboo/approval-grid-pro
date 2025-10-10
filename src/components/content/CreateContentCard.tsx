@@ -146,7 +146,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           title: `Conteúdo ${format(date, "dd/MM/yyyy")}`,
           date: format(date, "yyyy-MM-dd"),
           type: contentType,
-          status: 'draft' as const,
+          status: 'in_review' as const,
           owner_user_id: user.id,
           channels: channels,
           category: category,

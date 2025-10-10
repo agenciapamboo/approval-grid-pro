@@ -542,7 +542,14 @@ const Dashboard = () => {
                             {hasNotifications && (
                               <div className="space-y-1 mb-2">
                                 {notifications.adjustments > 0 && (
-                                  <Alert className="py-2 px-3">
+                                  <Alert 
+                                    className="py-2 px-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                      if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                                    }}
+                                  >
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertDescription className="text-xs">
                                       {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''} Solicitado{notifications.adjustments > 1 ? 's' : ''}
@@ -550,7 +557,14 @@ const Dashboard = () => {
                                   </Alert>
                                 )}
                                 {notifications.approved > 0 && (
-                                  <Alert className="py-2 px-3 border-green-500 text-green-700">
+                                  <Alert 
+                                    className="py-2 px-3 border-green-500 text-green-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/20 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                      if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                                    }}
+                                  >
                                     <CheckCircle className="h-4 w-4" />
                                     <AlertDescription className="text-xs">
                                       {notifications.approved} Conteúdo{notifications.approved > 1 ? 's' : ''} Aprovado{notifications.approved > 1 ? 's' : ''}
@@ -558,7 +572,14 @@ const Dashboard = () => {
                                   </Alert>
                                 )}
                                 {notifications.rejected > 0 && (
-                                  <Alert className="py-2 px-3 border-red-500 text-red-700">
+                                  <Alert 
+                                    className="py-2 px-3 border-red-500 text-red-700 cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                      if (aSlug) navigate(`/a/${aSlug}/c/${client.slug}`);
+                                    }}
+                                  >
                                     <AlertCircle className="h-4 w-4" />
                                     <AlertDescription className="text-xs">
                                       {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Reprovado{notifications.rejected > 1 ? 's' : ''}

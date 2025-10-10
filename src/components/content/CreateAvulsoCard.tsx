@@ -113,7 +113,7 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
           title: title,
           date: format(date, "yyyy-MM-dd"),
           type: 'image',
-          status: 'draft' as const,
+          status: 'in_review' as const,
           owner_user_id: user.id,
           category: 'avulso',
           channels: [],
