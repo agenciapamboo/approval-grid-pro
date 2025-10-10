@@ -412,10 +412,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                       return (
                         <div 
                           key={channel}
-                          className="w-6 h-6 rounded-full bg-white dark:bg-gray-100 flex items-center justify-center shadow-sm"
+                          className="w-6 h-6 rounded-full flex items-center justify-center shadow-sm"
+                          style={{ backgroundColor: color }}
                           title={channel}
                         >
-                          <Icon className="h-3.5 w-3.5" style={{ color }} />
+                          <Icon className="h-3.5 w-3.5 text-white" />
                         </div>
                       );
                     })}
