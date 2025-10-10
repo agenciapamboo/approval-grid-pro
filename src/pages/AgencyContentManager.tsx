@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
-import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
+import { CreateContentCard } from "@/components/content/CreateContentCard";
+import { CreateAvulsoCard } from "@/components/content/CreateAvulsoCard";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 
@@ -70,7 +71,8 @@ export default function AgencyContentManager() {
   }, [clientId, monthParam, yearParam]);
 
   useEffect(() => {
-    if (categoryParam) {
+    // Se veio com o parâmetro category, abre diretamente o formulário
+    if (categoryParam && !showCreateContent) {
       setShowCreateContent(true);
     }
   }, [categoryParam]);
@@ -256,15 +258,28 @@ export default function AgencyContentManager() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        {client && showCreateContent && (
+        {client && showCreateContent && categoryParam && (
           <div className="mb-6">
-            <CreateContentWrapper 
-              clientId={client.id}
-              onContentCreated={() => {
-                loadContents(client.id);
-                setShowCreateContent(false);
-              }}
-            />
+            {categoryParam === 'social' ? (
+              <CreateContentCard 
+                clientId={client.id}
+                onContentCreated={() => {
+                  loadContents(client.id);
+                  setShowCreateContent(false);
+                  navigate(`/agency/client/${client.id}`);
+                }}
+                category="social"
+              />
+            ) : (
+              <CreateAvulsoCard 
+                clientId={client.id}
+                onContentCreated={() => {
+                  loadContents(client.id);
+                  setShowCreateContent(false);
+                  navigate(`/agency/client/${client.id}`);
+                }}
+              />
+            )}
           </div>
         )}
         

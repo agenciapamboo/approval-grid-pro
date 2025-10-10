@@ -326,15 +326,15 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "w-full aspect-[4/5] flex flex-col items-center justify-center cursor-pointer transition-colors",
+              "w-full aspect-[3/4] flex flex-col items-center justify-center cursor-pointer transition-colors",
               isDragging ? "bg-primary/10 border-2 border-primary border-dashed" : "hover:bg-muted/50"
             )}
           >
-            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground text-center px-4">
-              Clique ou arraste arquivos
+            <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+            <p className="text-xs text-muted-foreground text-center px-4">
+              Clique ou arraste
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] text-muted-foreground mt-0.5">
               Até 10 arquivos
             </p>
           </div>
