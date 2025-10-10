@@ -137,13 +137,21 @@ export default function ContentGrid() {
   };
 
   const loadContents = async (clientId: string) => {
-    // Carregar apenas conteúdos aprovados para acesso público
-    const { data, error } = await supabase
+    // Se há um usuário logado, mostrar todos os conteúdos
+    // Se não há usuário logado (acesso público), mostrar apenas aprovados
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    let query = supabase
       .from("contents")
       .select("*")
-      .eq("client_id", clientId)
-      .eq("status", "approved")
-      .order("date", { ascending: false });
+      .eq("client_id", clientId);
+    
+    // Se não estiver logado, filtrar apenas aprovados
+    if (!session) {
+      query = query.eq("status", "approved");
+    }
+    
+    const { data, error } = await query.order("date", { ascending: false });
 
     if (error) {
       console.error("Erro ao carregar conteúdos:", error);
