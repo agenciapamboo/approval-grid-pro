@@ -216,7 +216,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         .insert([{
           client_id: clientId,
           title: `Conteúdo ${format(dateTime, "dd/MM/yyyy HH:mm")}`,
-          date: dateTime.toISOString(),
+          date: format(date, "yyyy-MM-dd"),
           type: finalContentType,
           status: 'in_review' as const,
           owner_user_id: user.id,
