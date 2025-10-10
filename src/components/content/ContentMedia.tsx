@@ -23,6 +23,8 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
     loadMedia();
@@ -58,12 +60,42 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
   const currentMedia = media[currentIndex];
 
+  // Distância mínima de swipe (em px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && type === "carousel" && media.length > 1) {
+      setCurrentIndex((prev) => (prev + 1) % media.length);
+    }
+    if (isRightSwipe && type === "carousel" && media.length > 1) {
+      setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
+    }
+  };
+
   return (
     <>
       <div 
         className="relative aspect-[4/5] bg-muted overflow-hidden group"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         {/* Imagem ou vídeo com efeito hover para conteúdos maiores */}
         <div className={`w-full h-full transition-transform duration-500 ease-out ${
@@ -162,7 +194,12 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
       {/* Modal para visualização em tamanho maior */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-4xl w-full p-0 bg-black/95">
-          <div className="relative w-full h-[80vh] flex items-center justify-center">
+          <div 
+            className="relative w-full h-[80vh] flex items-center justify-center"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
             {currentMedia.kind === "video" ? (
               <video
                 src={currentMedia.src_url}
