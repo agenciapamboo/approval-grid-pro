@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -256,6 +256,35 @@ const Dashboard = () => {
         .order("name");
       
       if (clientsData) setClients(clientsData);
+    }
+  };
+
+  const handleDeleteClient = async (client: Client) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o cliente "${client.name}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Cliente removido",
+        description: `O cliente ${client.name} foi removido com sucesso.`,
+      });
+
+      await fetchClients();
+    } catch (error) {
+      console.error("Erro ao remover cliente:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível remover o cliente.",
+      });
     }
   };
 
@@ -551,18 +580,31 @@ const Dashboard = () => {
                               Dados
                             </Button>
                             {profile?.role === 'agency_admin' && (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedClient(client);
-                                  setEditClientOpen(true);
-                                }}
-                              >
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Editar
-                              </Button>
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedClient(client);
+                                    setEditClientOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Editar
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClient(client);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Remover
+                                </Button>
+                              </>
                             )}
                             <Button 
                               variant="default" 
