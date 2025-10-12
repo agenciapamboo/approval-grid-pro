@@ -14,6 +14,7 @@ interface Agency {
   brand_primary?: string;
   brand_secondary?: string;
   logo_url?: string;
+  webhook_url?: string;
   email?: string;
   whatsapp?: string;
   plan?: string;
@@ -38,6 +39,7 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
     brand_primary: agency.brand_primary || "#2563eb",
     brand_secondary: agency.brand_secondary || "#8b5cf6",
     logo_url: agency.logo_url || "",
+    webhook_url: agency.webhook_url || "",
     email: agency.email || "",
     whatsapp: agency.whatsapp || "",
     plan: agency.plan || "free",
@@ -58,6 +60,7 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
           brand_primary: formData.brand_primary,
           brand_secondary: formData.brand_secondary,
           logo_url: formData.logo_url || null,
+          webhook_url: formData.webhook_url || null,
           email: formData.email || null,
           whatsapp: formData.whatsapp || null,
           plan: formData.plan,
@@ -231,6 +234,20 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
               onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
               placeholder="https://exemplo.com/logo.png"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="webhook_url">Webhook URL (n8n)</Label>
+            <Input
+              id="webhook_url"
+              type="url"
+              value={formData.webhook_url}
+              onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
+              placeholder="https://seu-n8n.com/webhook/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              URL do webhook n8n para notificações de mudanças de status
+            </p>
           </div>
 
           <div className="flex gap-3 pt-4">

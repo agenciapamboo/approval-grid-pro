@@ -24,6 +24,7 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
     brand_primary: "#00B878",
     brand_secondary: "#0072CE",
     logo_url: "",
+    webhook_url: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +42,7 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
           brand_secondary: formData.brand_secondary,
           logo_url: formData.logo_url,
           email: formData.email,
+          webhook_url: formData.webhook_url || null,
         }])
         .select()
         .single();
@@ -83,6 +85,7 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
         brand_primary: "#00B878",
         brand_secondary: "#0072CE",
         logo_url: "",
+        webhook_url: "",
       });
       setOpen(false);
       onAgencyAdded();
@@ -205,6 +208,20 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
               onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
               placeholder="https://exemplo.com/logo.png"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="webhook_url">Webhook URL (n8n)</Label>
+            <Input
+              id="webhook_url"
+              type="url"
+              value={formData.webhook_url}
+              onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
+              placeholder="https://seu-n8n.com/webhook/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              URL do webhook n8n para notificações de mudanças de status
+            </p>
           </div>
 
           <div className="flex justify-end gap-2">

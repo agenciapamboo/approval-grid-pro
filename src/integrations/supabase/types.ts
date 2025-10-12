@@ -67,6 +67,7 @@ export type Database = {
           plan_type: string | null
           slug: string
           updated_at: string
+          webhook_url: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -83,6 +84,7 @@ export type Database = {
           plan_type?: string | null
           slug: string
           updated_at?: string
+          webhook_url?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -99,6 +101,7 @@ export type Database = {
           plan_type?: string | null
           slug?: string
           updated_at?: string
+          webhook_url?: string | null
           whatsapp?: string | null
         }
         Relationships: []

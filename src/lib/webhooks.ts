@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 export const triggerWebhook = async (
   event: string,
   contentId: string,
-  clientId: string
+  clientId?: string,
+  agencyId?: string
 ) => {
   try {
     const { data, error } = await supabase.functions.invoke('send-webhook', {
@@ -11,6 +12,7 @@ export const triggerWebhook = async (
         event,
         content_id: contentId,
         client_id: clientId,
+        agency_id: agencyId,
       },
     });
 

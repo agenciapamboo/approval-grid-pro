@@ -17,6 +17,7 @@ import { ContentComments } from "./ContentComments";
 import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { triggerWebhook } from "@/lib/webhooks";
 
 interface ContentCardProps {
   content: {
@@ -88,6 +89,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
+      // Disparar webhook de aprovação
+      await triggerWebhook('content.approved', content.id);
+
       toast({
         title: "Conteúdo aprovado",
         description: "O conteúdo foi aprovado com sucesso",
@@ -138,6 +142,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
         .eq("id", content.id);
 
       if (updateError) throw updateError;
+
+      // Disparar webhook de reprovação
+      await triggerWebhook('content.rejected', content.id);
 
       toast({
         title: "Conteúdo reprovado",
@@ -314,6 +321,34 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     }
   };
 
+  const handleSubmitForReview = async () => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ status: "in_review" })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      // Disparar webhook de submissão para revisão
+      await triggerWebhook('content.submitted_for_review', content.id);
+
+      toast({
+        title: "Enviado para revisão",
+        description: "O conteúdo foi enviado para aprovação",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao enviar para revisão:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar para revisão",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleMarkAdjustmentDone = async () => {
     try {
       const { error } = await supabase
@@ -322,6 +357,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
         .eq("id", content.id);
 
       if (error) throw error;
+
+      // Disparar webhook de ajuste concluído
+      await triggerWebhook('content.adjustment_completed', content.id);
 
       toast({
         title: "Ajuste concluído",
@@ -440,6 +478,17 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           {/* Ações */}
           {!isAgencyView && (
             <div className="p-4 border-t">
+              {content.status === "draft" && (
+                <Button 
+                  size="sm"
+                  onClick={handleSubmitForReview}
+                  className="w-full mb-2 bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Enviar para Revisão
+                </Button>
+              )}
+              
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   variant="outline" 
@@ -450,7 +499,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   Comentários
                 </Button>
                 
-                {content.status !== "approved" && (
+                {content.status !== "approved" && content.status !== "draft" && (
                   <Button 
                     variant="outline" 
                     size="sm"
