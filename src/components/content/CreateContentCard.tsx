@@ -175,7 +175,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     setHasChanges(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (submitForReview: boolean = false) => {
     if (files.length === 0 || !date) {
       toast({
         title: "Campos obrigatórios",
@@ -220,7 +220,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           title: `Conteúdo ${format(dateTime, "dd/MM/yyyy HH:mm")}`,
           date: format(date, "yyyy-MM-dd"),
           type: finalContentType,
-          status: 'draft' as const,
+          status: submitForReview ? 'in_review' as const : 'draft' as const,
           owner_user_id: user.id,
           channels: channels,
           category: category,
@@ -265,10 +265,29 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           });
       }
 
-      toast({
-        title: "Conteúdo criado",
-        description: "O conteúdo foi criado com sucesso",
-      });
+      // Se for envio para aprovação, disparar webhook e notificação
+      if (submitForReview) {
+        await triggerWebhook('content.submitted_for_review', content.id);
+        await createNotification('content.ready_for_approval', content.id, {
+          title: content.title,
+          date: format(dateTime, "dd/MM/yyyy HH:mm"),
+          actor: {
+            name: user.user_metadata?.name || user.email || 'Usuário',
+            email: user.email,
+          },
+          channels: channels,
+        });
+        
+        toast({
+          title: "Conteúdo enviado para aprovação",
+          description: "O conteúdo foi enviado para revisão com sucesso",
+        });
+      } else {
+        toast({
+          title: "Rascunho salvo",
+          description: "O conteúdo foi salvo como rascunho",
+        });
+      }
 
       setFiles([]);
       setPreviews([]);
