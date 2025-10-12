@@ -466,6 +466,76 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          agency_id: string | null
+          channel: string | null
+          client_id: string | null
+          content_id: string | null
+          created_at: string | null
+          error_message: string | null
+          event: string
+          id: string
+          payload: Json | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          channel?: string | null
+          client_id?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event: string
+          id?: string
+          payload?: Json | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          channel?: string | null
+          client_id?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event?: string
+          id?: string
+          payload?: Json | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           accepted_terms_at: string | null
@@ -522,6 +592,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          notify_email: boolean | null
+          notify_webhook: boolean | null
+          notify_whatsapp: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notify_email?: boolean | null
+          notify_webhook?: boolean | null
+          notify_whatsapp?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notify_email?: boolean | null
+          notify_webhook?: boolean | null
+          notify_whatsapp?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -608,6 +708,17 @@ export type Database = {
       sanitize_webhook_payload: {
         Args: { payload: Json }
         Returns: Json
+      }
+      send_notification: {
+        Args: {
+          p_agency_id?: string
+          p_client_id?: string
+          p_content_id?: string
+          p_event: string
+          p_payload?: Json
+          p_user_id?: string
+        }
+        Returns: string
       }
     }
     Enums: {

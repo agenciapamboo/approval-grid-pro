@@ -18,6 +18,7 @@ import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { triggerWebhook } from "@/lib/webhooks";
+import { triggerNotification } from "@/lib/notifications";
 
 interface ContentCardProps {
   content: {
@@ -89,8 +90,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
-      // Disparar webhook de aprovação
+      // Disparar webhook e notificação de aprovação
       await triggerWebhook('content.approved', content.id);
+      await triggerNotification('content.approved', content.id);
 
       toast({
         title: "Conteúdo aprovado",
@@ -143,8 +145,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (updateError) throw updateError;
 
-      // Disparar webhook de reprovação
+      // Disparar webhook e notificação de reprovação
       await triggerWebhook('content.rejected', content.id);
+      await triggerNotification('content.revised', content.id);
 
       toast({
         title: "Conteúdo reprovado",
@@ -330,8 +333,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
-      // Disparar webhook de submissão para revisão
+      // Disparar webhook e notificação de submissão para revisão
       await triggerWebhook('content.submitted_for_review', content.id);
+      await triggerNotification('content.ready_for_approval', content.id);
 
       toast({
         title: "Enviado para revisão",
@@ -358,8 +362,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
-      // Disparar webhook de ajuste concluído
+      // Disparar webhook e notificação de ajuste concluído
       await triggerWebhook('content.adjustment_completed', content.id);
+      await triggerNotification('content.revised', content.id);
 
       toast({
         title: "Ajuste concluído",

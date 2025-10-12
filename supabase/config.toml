@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.force-reset-all-passwords]
 verify_jwt = false
+
+[functions.notify-event]
+verify_jwt = true
