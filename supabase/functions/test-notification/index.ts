@@ -50,13 +50,24 @@ serve(async (req) => {
 
     console.log('Sending test notification to n8n:', testPayload)
 
-    const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
+    // Enviar via GET com query parameters conforme configurado no n8n
+    const params = new URLSearchParams({
+      notification_id: testPayload.notification_id,
+      event: testPayload.event,
+      channel: testPayload.channel,
+      content_id: testPayload.content_id,
+      client_id: testPayload.client_id,
+      agency_id: testPayload.agency_id,
+      user_id: testPayload.user_id,
+      payload: JSON.stringify(testPayload.payload),
+      created_at: testPayload.created_at,
+    })
+
+    const n8nResponse = await fetch(`${N8N_WEBHOOK_URL}?${params.toString()}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${N8N_WEBHOOK_TOKEN}`,
       },
-      body: JSON.stringify(testPayload),
     })
 
     const responseText = await n8nResponse.text()
