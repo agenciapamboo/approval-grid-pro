@@ -175,7 +175,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     setHasChanges(true);
   };
 
-  const handleSave = async (submitForReview: boolean = false) => {
+  const handleSave = async () => {
     if (files.length === 0 || !date) {
       toast({
         title: "Campos obrigatórios",
@@ -220,7 +220,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           title: `Conteúdo ${format(dateTime, "dd/MM/yyyy HH:mm")}`,
           date: format(date, "yyyy-MM-dd"),
           type: finalContentType,
-          status: submitForReview ? 'in_review' as const : 'draft' as const,
+          status: 'draft' as const,
           owner_user_id: user.id,
           channels: channels,
           category: category,
@@ -265,29 +265,10 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           });
       }
 
-      // Se for envio para aprovação, disparar webhook e notificação
-      if (submitForReview) {
-        await triggerWebhook('content.submitted_for_review', content.id);
-        await createNotification('content.ready_for_approval', content.id, {
-          title: content.title,
-          date: format(dateTime, "dd/MM/yyyy HH:mm"),
-          actor: {
-            name: user.user_metadata?.name || user.email || 'Usuário',
-            email: user.email,
-          },
-          channels: channels,
-        });
-        
-        toast({
-          title: "Conteúdo enviado para aprovação",
-          description: "O conteúdo foi enviado para revisão com sucesso",
-        });
-      } else {
-        toast({
-          title: "Rascunho salvo",
-          description: "O conteúdo foi salvo como rascunho",
-        });
-      }
+      toast({
+        title: "Conteúdo criado",
+        description: "O conteúdo foi salvo como rascunho",
+      });
 
       setFiles([]);
       setPreviews([]);
@@ -552,40 +533,23 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleSave(false)}
-            disabled={uploading || !hasChanges}
-            className="flex-1"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar rascunho
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={() => handleSave(true)}
-            disabled={uploading || !hasChanges}
-            className="flex-1"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>Enviar para aprovação</>
-            )}
-          </Button>
-        </div>
+        <Button
+          onClick={handleSave}
+          disabled={uploading || !hasChanges}
+          className="w-full"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar Conteúdo
+            </>
+          )}
+        </Button>
       </div>
     </Card>
   );
