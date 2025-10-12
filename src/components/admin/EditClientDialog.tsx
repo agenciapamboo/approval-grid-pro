@@ -20,6 +20,7 @@ interface Client {
   website?: string | null;
   whatsapp?: string | null;
   address?: string | null;
+  webhook_url?: string | null;
 }
 
 interface EditClientDialogProps {
@@ -42,6 +43,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     website: "",
     whatsapp: "",
     address: "",
+    webhook_url: "",
     note: "",
     password: "",
   });
@@ -59,6 +61,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         website: client.website || "",
         whatsapp: client.whatsapp || "",
         address: client.address || "",
+        webhook_url: client.webhook_url || "",
         note: "",
         password: "",
       });
@@ -270,6 +273,20 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               placeholder="Rua, número, bairro, cidade - Estado"
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="webhook_url">Webhook URL (n8n)</Label>
+            <Input
+              id="webhook_url"
+              type="url"
+              value={formData.webhook_url}
+              onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
+              placeholder="https://seu-n8n.com/webhook/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              URL do webhook n8n para notificações quando conteúdo for enviado para revisão
+            </p>
           </div>
 
           <div className="space-y-2">
