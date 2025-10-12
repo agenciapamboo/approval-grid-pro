@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, ArrowLeft, Plus } from "lucide-react";
+import { LogOut, ArrowLeft, Plus, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { CreateContentCard } from "@/components/content/CreateContentCard";
 import { CreateAvulsoCard } from "@/components/content/CreateAvulsoCard";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { triggerWebhook } from "@/lib/webhooks";
+import { createNotification } from "@/lib/notifications";
+import { format } from "date-fns";
 
 interface Profile {
   id: string;
@@ -186,6 +189,70 @@ export default function AgencyContentManager() {
     navigate("/auth");
   };
 
+  const handleSendAllForReview = async () => {
+    if (!client) return;
+
+    try {
+      // Buscar todos os conteúdos em rascunho
+      const { data: draftContents, error: fetchError } = await supabase
+        .from("contents")
+        .select("*")
+        .eq("client_id", client.id)
+        .eq("status", "draft");
+
+      if (fetchError) throw fetchError;
+
+      if (!draftContents || draftContents.length === 0) {
+        toast({
+          title: "Nenhum conteúdo em rascunho",
+          description: "Não há conteúdos em rascunho para enviar",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Atualizar todos para in_review
+      const { error: updateError } = await supabase
+        .from("contents")
+        .update({ status: "in_review" })
+        .eq("client_id", client.id)
+        .eq("status", "draft");
+
+      if (updateError) throw updateError;
+
+      // Disparar webhook e notificação para cada conteúdo
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      for (const content of draftContents) {
+        await triggerWebhook('content.submitted_for_review', content.id);
+        await createNotification('content.ready_for_approval', content.id, {
+          title: content.title,
+          date: content.date,
+          actor: {
+            name: user?.user_metadata?.name || user?.email || 'Agência',
+            email: user?.email,
+          },
+          channels: content.channels || [],
+        });
+      }
+
+      toast({
+        title: "Conteúdos enviados para revisão",
+        description: `${draftContents.length} conteúdo(s) enviado(s) para aprovação do cliente`,
+      });
+
+      // Recarregar conteúdos
+      await loadContents(client.id);
+    } catch (error) {
+      console.error("Erro ao enviar conteúdos para revisão:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar conteúdos para revisão",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Agrupar conteúdos por mês e categoria
   const groupedContents = contents.reduce((groups, content) => {
     const date = new Date(content.date);
@@ -250,7 +317,7 @@ export default function AgencyContentManager() {
 
       <main className="container mx-auto px-4 py-8">
         {client && categoryParam && (
-          <div className="mb-6">
+          <div className="space-y-4 mb-6">
             {categoryParam === 'social' ? (
               <CreateContentCard 
                 clientId={client.id}
@@ -269,6 +336,16 @@ export default function AgencyContentManager() {
                 }}
               />
             )}
+            
+            <div className="flex justify-end">
+              <Button
+                onClick={handleSendAllForReview}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Todos para Revisão
+              </Button>
+            </div>
           </div>
         )}
         
