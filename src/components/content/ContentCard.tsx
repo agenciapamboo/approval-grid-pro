@@ -506,17 +506,6 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           {/* Ações */}
           {!isAgencyView && (
             <div className="p-4 border-t">
-              {content.status === "draft" && (
-                <Button 
-                  size="sm"
-                  onClick={handleSubmitForReview}
-                  className="w-full mb-2 bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Enviar para Aprovação
-                </Button>
-              )}
-              
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   variant="outline" 
