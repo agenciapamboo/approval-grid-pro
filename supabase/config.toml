@@ -13,4 +13,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.notify-event]
+verify_jwt = false
+
+[functions.notify-event]
 verify_jwt = true

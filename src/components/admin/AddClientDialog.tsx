@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Eye, EyeOff } from "lucide-react";
@@ -25,6 +26,8 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
     logo_url: "",
     webhook_url: "",
     timezone: "America/Sao_Paulo",
+    notify_email: true,
+    notify_whatsapp: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,6 +83,18 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
             .eq("user_id", authData.user.id);
 
           if (roleError) throw roleError;
+
+          // Criar preferências de notificação
+          const { error: prefError } = await supabase
+            .from("user_preferences")
+            .insert({
+              user_id: authData.user.id,
+              notify_email: formData.notify_email,
+              notify_whatsapp: formData.notify_whatsapp,
+              notify_webhook: true,
+            });
+
+          if (prefError) console.error('Erro ao criar preferências:', prefError);
         }
       }
 
@@ -96,6 +111,8 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
         logo_url: "",
         webhook_url: "",
         timezone: "America/Sao_Paulo",
+        notify_email: true,
+        notify_whatsapp: false,
       });
       setOpen(false);
       onClientAdded();
@@ -194,6 +211,41 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
               onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
               placeholder="https://exemplo.com/logo.png"
             />
+          </div>
+
+          <div className="space-y-4">
+            <Label>Preferências de Notificação</Label>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="notify_email">E-mail</Label>
+                <p className="text-xs text-muted-foreground">
+                  Receber notificações por e-mail
+                </p>
+              </div>
+              <Switch
+                id="notify_email"
+                checked={formData.notify_email}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, notify_email: checked })
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="notify_whatsapp">WhatsApp</Label>
+                <p className="text-xs text-muted-foreground">
+                  Receber notificações via WhatsApp
+                </p>
+              </div>
+              <Switch
+                id="notify_whatsapp"
+                checked={formData.notify_whatsapp}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, notify_whatsapp: checked })
+                }
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2">

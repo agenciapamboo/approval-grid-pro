@@ -18,7 +18,7 @@ import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { triggerWebhook } from "@/lib/webhooks";
-import { triggerNotification } from "@/lib/notifications";
+import { createNotification } from "@/lib/notifications";
 
 interface ContentCardProps {
   content: {
@@ -92,7 +92,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       // Disparar webhook e notificação de aprovação
       await triggerWebhook('content.approved', content.id);
-      await triggerNotification('content.approved', content.id);
+      await createNotification('content.approved', content.id, {
+        title: content.title,
+        date: content.date,
+      });
 
       toast({
         title: "Conteúdo aprovado",
@@ -147,7 +150,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       // Disparar webhook e notificação de reprovação
       await triggerWebhook('content.rejected', content.id);
-      await triggerNotification('content.revised', content.id);
+      await createNotification('content.revised', content.id, {
+        title: content.title,
+        date: content.date,
+      });
 
       toast({
         title: "Conteúdo reprovado",
@@ -335,7 +341,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       // Disparar webhook e notificação de submissão para revisão
       await triggerWebhook('content.submitted_for_review', content.id);
-      await triggerNotification('content.ready_for_approval', content.id);
+      await createNotification('content.ready_for_approval', content.id, {
+        title: content.title,
+        date: content.date,
+      });
 
       toast({
         title: "Enviado para revisão",
@@ -364,7 +373,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       // Disparar webhook e notificação de ajuste concluído
       await triggerWebhook('content.adjustment_completed', content.id);
-      await triggerNotification('content.revised', content.id);
+      await createNotification('content.revised', content.id, {
+        title: content.title,
+        date: content.date,
+      });
 
       toast({
         title: "Ajuste concluído",
