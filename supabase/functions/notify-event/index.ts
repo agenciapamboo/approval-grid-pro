@@ -29,11 +29,18 @@ serve(async (req) => {
       )
     }
 
-    // Buscar notificações pendentes
+    // Buscar notificações pendentes (deduplicação de 1 hora)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    
     const { data: pendingNotifications, error: fetchError } = await supabaseClient
       .from('notifications')
-      .select('*')
+      .select(`
+        *,
+        agencies!inner(whatsapp, email),
+        clients!inner(whatsapp, email)
+      `)
       .eq('status', 'pending')
+      .filter('created_at', 'gt', oneHourAgo)
       .order('created_at', { ascending: true })
       .limit(50)
 
@@ -46,7 +53,7 @@ serve(async (req) => {
 
     for (const notification of pendingNotifications || []) {
       try {
-        // Preparar payload para o n8n
+        // Preparar payload para o n8n com telefone
         const n8nPayload = {
           notification_id: notification.id,
           event: notification.event,
@@ -57,6 +64,10 @@ serve(async (req) => {
           user_id: notification.user_id,
           payload: notification.payload,
           created_at: notification.created_at,
+          agency_whatsapp: notification.agencies?.whatsapp,
+          agency_email: notification.agencies?.email,
+          client_whatsapp: notification.clients?.whatsapp,
+          client_email: notification.clients?.email,
         }
 
         console.log('Sending to n8n:', { event: notification.event, channel: notification.channel })

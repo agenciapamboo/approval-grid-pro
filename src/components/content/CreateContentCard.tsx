@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { triggerWebhook } from "@/lib/webhooks";
+import { createNotification } from "@/lib/notifications";
 
 interface CreateContentCardProps {
   clientId: string;
@@ -218,7 +220,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           title: `Conteúdo ${format(dateTime, "dd/MM/yyyy HH:mm")}`,
           date: format(date, "yyyy-MM-dd"),
           type: finalContentType,
-          status: 'in_review' as const,
+          status: 'draft' as const,
           owner_user_id: user.id,
           channels: channels,
           category: category,
@@ -531,23 +533,40 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           </div>
         </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={uploading || !hasChanges}
-          className="w-full"
-        >
-          {uploading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar Conteúdo
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleSave(false)}
+            disabled={uploading || !hasChanges}
+            className="flex-1"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar rascunho
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => handleSave(true)}
+            disabled={uploading || !hasChanges}
+            className="flex-1"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>Enviar para aprovação</>
+            )}
+          </Button>
+        </div>
       </div>
     </Card>
   );
