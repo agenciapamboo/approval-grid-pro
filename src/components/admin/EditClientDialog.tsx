@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
@@ -33,6 +35,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -44,6 +47,11 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     address: "",
     note: "",
     password: "",
+  });
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    notify_email: true,
+    notify_whatsapp: false,
+    notify_webhook: true,
   });
 
   useEffect(() => {
@@ -62,8 +70,43 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         note: "",
         password: "",
       });
+      loadUserIdAndPreferences();
     }
   }, [client]);
+
+  const loadUserIdAndPreferences = async () => {
+    if (!client) return;
+    
+    try {
+      // Buscar o user_id do cliente
+      const { data: userData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("client_id", client.id)
+        .single();
+
+      if (userData) {
+        setUserId(userData.id);
+
+        // Carregar preferências de notificação
+        const { data: prefsData } = await supabase
+          .from("user_preferences")
+          .select("*")
+          .eq("user_id", userData.id)
+          .maybeSingle();
+
+        if (prefsData) {
+          setNotificationPreferences({
+            notify_email: prefsData.notify_email,
+            notify_whatsapp: prefsData.notify_whatsapp,
+            notify_webhook: prefsData.notify_webhook,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar preferências:", error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +171,20 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
           });
 
         if (noteError) throw noteError;
+      }
+
+      // Update notification preferences if userId exists
+      if (userId) {
+        const { error: prefsError } = await supabase
+          .from("user_preferences")
+          .upsert({
+            user_id: userId,
+            ...notificationPreferences,
+          });
+
+        if (prefsError) {
+          console.error("Erro ao atualizar preferências:", prefsError);
+        }
       }
 
       toast({
@@ -284,6 +341,60 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
             <p className="text-xs text-muted-foreground">
               A observação será registrada com data e hora automaticamente
             </p>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div className="space-y-4">
+            <h3 className="font-semibold">Preferências de Notificação</h3>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notify_email" className="flex flex-col gap-1">
+                <span>E-mail</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Receber notificações por e-mail
+                </span>
+              </Label>
+              <Switch
+                id="notify_email"
+                checked={notificationPreferences.notify_email}
+                onCheckedChange={(checked) =>
+                  setNotificationPreferences({ ...notificationPreferences, notify_email: checked })
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notify_whatsapp" className="flex flex-col gap-1">
+                <span>WhatsApp</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Receber notificações por WhatsApp
+                </span>
+              </Label>
+              <Switch
+                id="notify_whatsapp"
+                checked={notificationPreferences.notify_whatsapp}
+                onCheckedChange={(checked) =>
+                  setNotificationPreferences({ ...notificationPreferences, notify_whatsapp: checked })
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notify_webhook" className="flex flex-col gap-1">
+                <span>Webhook</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Enviar eventos via webhook
+                </span>
+              </Label>
+              <Switch
+                id="notify_webhook"
+                checked={notificationPreferences.notify_webhook}
+                onCheckedChange={(checked) =>
+                  setNotificationPreferences({ ...notificationPreferences, notify_webhook: checked })
+                }
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
