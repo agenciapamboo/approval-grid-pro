@@ -48,37 +48,23 @@ serve(async (req) => {
       throw contentError
     }
 
-    // Determinar o webhook URL baseado no evento
-    if (event === 'content.submitted_for_review') {
-      // Para evento de submissão, enviar para o cliente
-      const { data: client } = await supabaseClient
-        .from('clients')
-        .select('webhook_url')
-        .eq('id', content.client_id)
-        .single()
-      
-      webhookUrl = client?.webhook_url
-      targetId = content.client_id
-      targetType = 'client'
-    } else {
-      // Para outros eventos (aprovado, reprovado, ajuste solicitado), enviar para a agência
-      const { data: agency } = await supabaseClient
-        .from('agencies')
-        .select('webhook_url')
-        .eq('id', content.clients.agency_id)
-        .single()
-      
-      webhookUrl = agency?.webhook_url
-      targetId = content.clients.agency_id
-      targetType = 'agency'
-    }
+    // Sempre buscar o webhook da agência para todos os eventos
+    const { data: agency } = await supabaseClient
+      .from('agencies')
+      .select('webhook_url')
+      .eq('id', content.clients.agency_id)
+      .single()
+    
+    webhookUrl = agency?.webhook_url
+    targetId = content.clients.agency_id
+    targetType = 'agency'
 
     if (!webhookUrl) {
-      console.log('No webhook URL configured for target:', targetType, targetId)
+      console.log('No webhook URL configured for agency:', targetId)
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'No webhook URL configured' 
+          message: 'No webhook URL configured for agency' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,16 +92,14 @@ serve(async (req) => {
       },
     }
 
-    // Adicionar informações da agência se for evento para agência
-    if (targetType === 'agency') {
-      const { data: agency } = await supabaseClient
-        .from('agencies')
-        .select('id, name, slug')
-        .eq('id', content.clients.agency_id)
-        .single()
-      
-      payload.agency = agency
-    }
+    // Sempre adicionar informações da agência
+    const { data: agencyData } = await supabaseClient
+      .from('agencies')
+      .select('id, name, slug')
+      .eq('id', content.clients.agency_id)
+      .single()
+    
+    payload.agency = agencyData
 
     // Sanitizar payload (remover campos sensíveis)
     const sanitizedPayload = JSON.parse(JSON.stringify(payload))

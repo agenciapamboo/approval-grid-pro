@@ -39,7 +39,6 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
           name: formData.name,
           slug: formData.slug,
           logo_url: formData.logo_url,
-          webhook_url: formData.webhook_url,
           timezone: formData.timezone,
           email: formData.email,
           agency_id: agencyId,
@@ -194,17 +193,6 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
               value={formData.logo_url}
               onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
               placeholder="https://exemplo.com/logo.png"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="webhook_url">Webhook URL</Label>
-            <Input
-              id="webhook_url"
-              type="url"
-              value={formData.webhook_url}
-              onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
-              placeholder="https://exemplo.com/webhook"
             />
           </div>
 
