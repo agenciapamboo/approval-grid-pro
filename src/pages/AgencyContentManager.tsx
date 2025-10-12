@@ -211,29 +211,21 @@ export default function AgencyContentManager() {
         return;
       }
 
-      // Atualizar todos para in_review
-      const { error: updateError } = await supabase
-        .from("contents")
-        .update({ status: "in_review" })
-        .eq("client_id", client.id)
-        .eq("status", "draft");
-
-      if (updateError) throw updateError;
-
-      // Disparar webhook e notificação para cada conteúdo
+      // Disparar notificação para cada conteúdo (sem alterar status)
       const { data: { user } } = await supabase.auth.getUser();
       
       for (const content of draftContents) {
-        await triggerWebhook('content.submitted_for_review', content.id);
-        await createNotification('content.ready_for_approval', content.id, {
+        const resBulk = await createNotification('content.ready_for_approval', content.id, {
           title: content.title,
           date: content.date,
           actor: {
             name: user?.user_metadata?.name || user?.email || 'Agência',
             email: user?.email,
+            phone: (user?.user_metadata as any)?.phone || undefined,
           },
           channels: content.channels || [],
         });
+        console.log('Disparo de notificação (bulk):', { event: 'content.ready_for_approval', content_id: content.id, ok: resBulk.success });
       }
 
       toast({

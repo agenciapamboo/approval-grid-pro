@@ -17,7 +17,6 @@ import { ContentComments } from "./ContentComments";
 import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { triggerWebhook } from "@/lib/webhooks";
 import { createNotification } from "@/lib/notifications";
 
 interface ContentCardProps {
@@ -93,17 +92,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       // Buscar dados do usuário para notificação
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Disparar webhook e notificação de aprovação
-      await triggerWebhook('content.approved', content.id);
-      await createNotification('content.approved', content.id, {
+      // Disparar notificação de aprovação (notify-event)
+      const resApprove = await createNotification('content.approved', content.id, {
         title: content.title,
         date: content.date,
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Cliente',
           email: user?.email,
+          phone: (user?.user_metadata as any)?.phone || undefined,
         },
         channels: content.channels || [],
       });
+      console.log('Disparo de notificação:', { event: 'content.approved', content_id: content.id, ok: resApprove.success });
 
       toast({
         title: "Conteúdo aprovado",
@@ -156,18 +156,19 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (updateError) throw updateError;
 
-      // Disparar webhook e notificação de reprovação
-      await triggerWebhook('content.rejected', content.id);
-      await createNotification('content.rejected', content.id, {
+      // Disparar notificação de reprovação (notify-event)
+      const resReject = await createNotification('content.rejected', content.id, {
         title: content.title,
         date: content.date,
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Cliente',
           email: user?.email,
+          phone: (user?.user_metadata as any)?.phone || undefined,
         },
         comment: rejectReason,
         channels: content.channels || [],
       });
+      console.log('Disparo de notificação:', { event: 'content.rejected', content_id: content.id, ok: resReject.success });
 
       toast({
         title: "Conteúdo reprovado",
@@ -346,27 +347,21 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
   const handleSubmitForReview = async () => {
     try {
-      const { error } = await supabase
-        .from("contents")
-        .update({ status: "in_review" })
-        .eq("id", content.id);
-
-      if (error) throw error;
-
       // Buscar dados do usuário para notificação
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Disparar webhook e notificação de submissão para revisão
-      await triggerWebhook('content.submitted_for_review', content.id);
-      await createNotification('content.ready_for_approval', content.id, {
+      // Disparar apenas o gatilho de aprovação (sem alterar status)
+      const resReady = await createNotification('content.ready_for_approval', content.id, {
         title: content.title,
         date: content.date,
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Agência',
           email: user?.email,
+          phone: (user?.user_metadata as any)?.phone || undefined,
         },
         channels: content.channels || [],
       });
+      console.log('Disparo de notificação:', { event: 'content.ready_for_approval', content_id: content.id, ok: resReady.success });
 
       toast({
         title: "Enviado para aprovação",
@@ -396,17 +391,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       // Buscar dados do usuário para notificação
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Disparar webhook e notificação de ajuste concluído
-      await triggerWebhook('content.adjustment_completed', content.id);
-      await createNotification('content.adjustment_completed', content.id, {
+      // Disparar notificação de ajuste concluído (notify-event)
+      const resAdj = await createNotification('content.adjustment_completed', content.id, {
         title: content.title,
         date: content.date,
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Agência',
           email: user?.email,
+          phone: (user?.user_metadata as any)?.phone || undefined,
         },
         channels: content.channels || [],
       });
+      console.log('Disparo de notificação:', { event: 'content.adjustment_completed', content_id: content.id, ok: resAdj.success });
 
       toast({
         title: "Ajuste concluído",

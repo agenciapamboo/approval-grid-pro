@@ -82,22 +82,22 @@ export function RequestAdjustmentDialog({
         .eq("id", contentId)
         .single();
 
-      // Importar funções de webhook e notificação
-      const { triggerWebhook } = await import("@/lib/webhooks");
+      // Importar função de notificação
       const { createNotification } = await import("@/lib/notifications");
 
-      // Disparar webhook e notificação de ajuste solicitado
-      await triggerWebhook('content.changes_requested', contentId);
-      await createNotification('content.changes_requested', contentId, {
+      // Disparar notificação de ajuste solicitado (notify-event)
+      const res = await createNotification('content.revised', contentId, {
         title: content?.title || '',
         date: content?.date || '',
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Cliente',
           email: user?.email,
+          phone: (user?.user_metadata as any)?.phone || undefined,
         },
         comment: details || reason,
         channels: content?.channels || [],
       });
+      console.log('Disparo de notificação:', { event: 'content.revised', content_id: contentId, ok: (res as any)?.success });
 
       toast({
         title: "Ajuste solicitado",
