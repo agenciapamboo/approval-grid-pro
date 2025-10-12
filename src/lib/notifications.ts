@@ -35,6 +35,36 @@ export const createNotification = async (
       return { success: false, error: contentError };
     }
 
+    // Buscar preferências de notificação do cliente
+    const { data: clientUser } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('client_id', content.client_id)
+      .limit(1)
+      .single();
+
+    let clientPreferences = {
+      email: true,
+      whatsapp: false,
+      webhook: true
+    };
+
+    if (clientUser) {
+      const { data: prefs } = await supabase
+        .from('user_preferences')
+        .select('notify_email, notify_whatsapp, notify_webhook')
+        .eq('user_id', clientUser.id)
+        .single();
+
+      if (prefs) {
+        clientPreferences = {
+          email: prefs.notify_email ?? true,
+          whatsapp: prefs.notify_whatsapp ?? false,
+          webhook: prefs.notify_webhook ?? true
+        };
+      }
+    }
+
     // Throttle: evitar duplicações por 1h para eventos específicos
     const throttleEvents = ['content.revised', 'content.rejected', 'content.approved'];
     if (throttleEvents.includes(event)) {
@@ -81,6 +111,12 @@ export const createNotification = async (
       client_whatsapp: (content as any).clients?.whatsapp,
       client_email: (content as any).clients?.email,
       client_name: (content as any).clients?.name,
+      // Preferências de notificação do cliente
+      notification_preferences: {
+        email: clientPreferences.email,
+        whatsapp: clientPreferences.whatsapp,
+        webhook: clientPreferences.webhook
+      },
       recipient: {
         type: 'client',
         id: content.client_id,
