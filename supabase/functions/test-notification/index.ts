@@ -50,7 +50,7 @@ serve(async (req) => {
 
     console.log('Sending test notification to n8n:', testPayload)
 
-    // Enviar via GET com query parameters conforme configurado no n8n
+    // Enviar via GET simples sem headers de autenticação
     const params = new URLSearchParams({
       notification_id: testPayload.notification_id,
       event: testPayload.event,
@@ -65,9 +65,6 @@ serve(async (req) => {
 
     const n8nResponse = await fetch(`${N8N_WEBHOOK_URL}?${params.toString()}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     })
 
     const responseText = await n8nResponse.text()
