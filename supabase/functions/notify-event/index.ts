@@ -70,19 +70,45 @@ serve(async (req) => {
           client_email: notification.clients?.email,
         }
 
-        console.log('Sending to n8n:', { event: notification.event, channel: notification.channel })
+        console.log('Sending to n8n (attempt POST):', { event: notification.event, channel: notification.channel })
 
-        // Enviar para o n8n
-        const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+        // Attempt 1: POST JSON (with optional bearer token)
+        let n8nResponse = await fetch(N8N_WEBHOOK_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${N8N_WEBHOOK_TOKEN}`,
+            ...(N8N_WEBHOOK_TOKEN ? { 'Authorization': `Bearer ${N8N_WEBHOOK_TOKEN}` } : {}),
           },
           body: JSON.stringify(n8nPayload),
         })
 
-        console.log('n8n response status:', n8nResponse.status)
+        console.log('n8n POST response status:', n8nResponse.status)
+
+        // Fallback: if POST fails (e.g., 404/405), try GET with query params (compatible with working test webhook)
+        if (!n8nResponse.ok) {
+          try {
+            const params = new URLSearchParams({
+              notification_id: String(notification.id),
+              event: String(notification.event),
+              channel: String(notification.channel ?? ''),
+              content_id: String(notification.content_id ?? ''),
+              client_id: String(notification.client_id ?? ''),
+              agency_id: String(notification.agency_id ?? ''),
+              user_id: String(notification.user_id ?? ''),
+              payload: JSON.stringify(notification.payload ?? {}),
+              created_at: String(notification.created_at ?? ''),
+            })
+
+            console.log('Sending to n8n (fallback GET):', `${N8N_WEBHOOK_URL}?${params.toString()}`)
+            const getResponse = await fetch(`${N8N_WEBHOOK_URL}?${params.toString()}`, {
+              method: 'GET',
+            })
+            console.log('n8n GET response status:', getResponse.status)
+            n8nResponse = getResponse
+          } catch (fallbackErr) {
+            console.error('Error on n8n GET fallback:', fallbackErr)
+          }
+        }
 
         // Atualizar status da notificação
         if (n8nResponse.ok) {
@@ -96,7 +122,7 @@ serve(async (req) => {
 
           results.push({ id: notification.id, status: 'sent' })
         } else {
-          const errorText = await n8nResponse.text()
+          const errorText = await n8nResponse.text().catch(() => '')
           await supabaseClient
             .from('notifications')
             .update({
