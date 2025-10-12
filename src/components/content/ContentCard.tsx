@@ -89,21 +89,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
-      // Buscar dados do usuário para notificação
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // Disparar notificação de aprovação (notify-event)
-      const resApprove = await createNotification('content.approved', content.id, {
+      // Disparar notificação de aprovação
+      await createNotification('content.approved', content.id, {
         title: content.title,
         date: content.date,
-        actor: {
-          name: user?.user_metadata?.name || user?.email || 'Cliente',
-          email: user?.email,
-          phone: (user?.user_metadata as any)?.phone || undefined,
-        },
         channels: content.channels || [],
       });
-      console.log('Disparo de notificação:', { event: 'content.approved', content_id: content.id, ok: resApprove.success });
 
       toast({
         title: "Conteúdo aprovado",
@@ -156,19 +147,13 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (updateError) throw updateError;
 
-      // Disparar notificação de reprovação (notify-event)
-      const resReject = await createNotification('content.rejected', content.id, {
+      // Disparar notificação de reprovação
+      await createNotification('content.rejected', content.id, {
         title: content.title,
         date: content.date,
-        actor: {
-          name: user?.user_metadata?.name || user?.email || 'Cliente',
-          email: user?.email,
-          phone: (user?.user_metadata as any)?.phone || undefined,
-        },
         comment: rejectReason,
         channels: content.channels || [],
       });
-      console.log('Disparo de notificação:', { event: 'content.rejected', content_id: content.id, ok: resReject.success });
 
       toast({
         title: "Conteúdo reprovado",

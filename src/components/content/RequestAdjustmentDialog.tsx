@@ -85,19 +85,13 @@ export function RequestAdjustmentDialog({
       // Importar função de notificação
       const { createNotification } = await import("@/lib/notifications");
 
-      // Disparar notificação de ajuste solicitado (notify-event)
-      const res = await createNotification('content.revised', contentId, {
+      // Disparar notificação de ajuste solicitado
+      await createNotification('content.revised', contentId, {
         title: content?.title || '',
         date: content?.date || '',
-        actor: {
-          name: user?.user_metadata?.name || user?.email || 'Cliente',
-          email: user?.email,
-          phone: (user?.user_metadata as any)?.phone || undefined,
-        },
         comment: details || reason,
         channels: content?.channels || [],
       });
-      console.log('Disparo de notificação:', { event: 'content.revised', content_id: contentId, ok: (res as any)?.success });
 
       toast({
         title: "Ajuste solicitado",
