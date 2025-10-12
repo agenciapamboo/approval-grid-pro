@@ -77,12 +77,24 @@ export const createNotification = async (
       title: (payload?.title as string) ?? content.title,
       date: (payload?.date as string) ?? content.date,
       channels: content.channels || [],
+      // Contatos do cliente para uso no WhatsApp/email
+      client_whatsapp: (content as any).clients?.whatsapp,
+      client_email: (content as any).clients?.email,
+      client_name: (content as any).clients?.name,
+      recipient: {
+        type: 'client',
+        id: content.client_id,
+        name: (content as any).clients?.name,
+        email: (content as any).clients?.email,
+        whatsapp: (content as any).clients?.whatsapp,
+      },
       links: {
         admin: adminLink,
         preview: previewLink,
       },
     };
 
+    console.log('createNotification payload:', finalPayload);
     // Chamar a função SQL send_notification
     const { data, error } = await supabase.rpc('send_notification', {
       p_event: event,
