@@ -237,7 +237,7 @@ export default function AgencyContentManager() {
       }
 
       toast({
-        title: "Conteúdos enviados para revisão",
+        title: "Conteúdos enviados para aprovação",
         description: `${draftContents.length} conteúdo(s) enviado(s) para aprovação do cliente`,
       });
 
@@ -343,7 +343,7 @@ export default function AgencyContentManager() {
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
                 <Send className="h-4 w-4 mr-2" />
-                Enviar Todos para Revisão
+                Enviar Todos para Aprovação
               </Button>
             </div>
           </div>

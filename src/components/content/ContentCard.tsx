@@ -90,11 +90,19 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
+      // Buscar dados do usuário para notificação
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Disparar webhook e notificação de aprovação
       await triggerWebhook('content.approved', content.id);
       await createNotification('content.approved', content.id, {
         title: content.title,
         date: content.date,
+        actor: {
+          name: user?.user_metadata?.name || user?.email || 'Cliente',
+          email: user?.email,
+        },
+        channels: content.channels || [],
       });
 
       toast({
@@ -150,9 +158,15 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       // Disparar webhook e notificação de reprovação
       await triggerWebhook('content.rejected', content.id);
-      await createNotification('content.revised', content.id, {
+      await createNotification('content.rejected', content.id, {
         title: content.title,
         date: content.date,
+        actor: {
+          name: user?.user_metadata?.name || user?.email || 'Cliente',
+          email: user?.email,
+        },
+        comment: rejectReason,
+        channels: content.channels || [],
       });
 
       toast({
@@ -339,24 +353,32 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
+      // Buscar dados do usuário para notificação
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Disparar webhook e notificação de submissão para revisão
       await triggerWebhook('content.submitted_for_review', content.id);
       await createNotification('content.ready_for_approval', content.id, {
         title: content.title,
         date: content.date,
+        actor: {
+          name: user?.user_metadata?.name || user?.email || 'Agência',
+          email: user?.email,
+        },
+        channels: content.channels || [],
       });
 
       toast({
-        title: "Enviado para revisão",
-        description: "O conteúdo foi enviado para aprovação",
+        title: "Enviado para aprovação",
+        description: "O conteúdo foi enviado para aprovação do cliente",
       });
 
       onUpdate();
     } catch (error) {
-      console.error("Erro ao enviar para revisão:", error);
+      console.error("Erro ao enviar para aprovação:", error);
       toast({
         title: "Erro",
-        description: "Erro ao enviar para revisão",
+        description: "Erro ao enviar para aprovação",
         variant: "destructive",
       });
     }
@@ -371,11 +393,19 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
+      // Buscar dados do usuário para notificação
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Disparar webhook e notificação de ajuste concluído
       await triggerWebhook('content.adjustment_completed', content.id);
-      await createNotification('content.revised', content.id, {
+      await createNotification('content.adjustment_completed', content.id, {
         title: content.title,
         date: content.date,
+        actor: {
+          name: user?.user_metadata?.name || user?.email || 'Agência',
+          email: user?.email,
+        },
+        channels: content.channels || [],
       });
 
       toast({
@@ -502,7 +532,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   className="w-full mb-2 bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Enviar para Revisão
+                  Enviar para Aprovação
                 </Button>
               )}
               

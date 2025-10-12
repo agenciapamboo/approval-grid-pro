@@ -75,6 +75,30 @@ export function RequestAdjustmentDialog({
 
       if (updateError) throw updateError;
 
+      // Buscar dados do conteúdo para notificação
+      const { data: content } = await supabase
+        .from("contents")
+        .select("title, date, channels")
+        .eq("id", contentId)
+        .single();
+
+      // Importar funções de webhook e notificação
+      const { triggerWebhook } = await import("@/lib/webhooks");
+      const { createNotification } = await import("@/lib/notifications");
+
+      // Disparar webhook e notificação de ajuste solicitado
+      await triggerWebhook('content.changes_requested', contentId);
+      await createNotification('content.changes_requested', contentId, {
+        title: content?.title || '',
+        date: content?.date || '',
+        actor: {
+          name: user?.user_metadata?.name || user?.email || 'Cliente',
+          email: user?.email,
+        },
+        comment: details || reason,
+        channels: content?.channels || [],
+      });
+
       toast({
         title: "Ajuste solicitado",
         description: "A solicitação de ajuste foi enviada com sucesso",
