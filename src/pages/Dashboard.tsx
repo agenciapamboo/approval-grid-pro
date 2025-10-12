@@ -18,6 +18,7 @@ import { ContentCategorySelector } from "@/components/content/ContentCategorySel
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
 
 interface Profile {
   id: string;
@@ -329,15 +330,20 @@ const Dashboard = () => {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">
-            Bem-vindo, {profile?.name}!
-          </h2>
-          <p className="text-muted-foreground">
-            {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
-            {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
-            {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos.'}
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">
+              Bem-vindo, {profile?.name}!
+            </h2>
+            <p className="text-muted-foreground">
+              {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
+              {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
+              {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos.'}
+            </p>
+          </div>
+          {(profile?.role === 'agency_admin' || profile?.role === 'super_admin') && (
+            <TestNotificationButton />
+          )}
         </div>
 
         {/* Client User - Lista de Aprovações */}
