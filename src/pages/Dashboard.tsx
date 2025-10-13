@@ -293,6 +293,36 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteAgency = async (agency: Agency) => {
+    if (!window.confirm(`⚠️ ATENÇÃO: Deseja excluir a agência "${agency.name}"?\n\nEsta ação irá remover:\n- A agência\n- Todos os usuários da agência\n- Todos os clientes\n- Todos os conteúdos e arquivos\n\nEsta ação NÃO pode ser desfeita!`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("agencies")
+        .delete()
+        .eq("id", agency.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Agência removida",
+        description: `A agência ${agency.name} e todos os seus dados foram removidos com sucesso.`,
+      });
+
+      setAgencies((prev) => prev.filter((a) => a.id !== agency.id));
+      await checkAuth();
+    } catch (error) {
+      console.error("Erro ao remover agência:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível remover a agência.",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -711,6 +741,17 @@ const Dashboard = () => {
                         <Button variant="outline" size="sm">
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Mensagem
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteAgency(agency);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remover
                         </Button>
                       </div>
                     </div>
