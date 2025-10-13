@@ -18,16 +18,23 @@ interface Agency {
 
 interface ViewAgencyDialogProps {
   agency: Agency;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-export function ViewAgencyDialog({ agency }: ViewAgencyDialogProps) {
+export function ViewAgencyDialog({ agency, open, onOpenChange, trigger }: ViewAgencyDialogProps) {
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Eye className="w-4 h-4 mr-2" />
-          Ver
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button variant="outline" size="sm">
+            <Eye className="w-4 h-4 mr-2" />
+            Ver
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>

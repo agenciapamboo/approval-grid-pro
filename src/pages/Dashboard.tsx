@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
+import { ExpandableTabs } from "@/components/ui/expandable-tabs";
+
 
 interface Profile {
   id: string;
@@ -83,6 +85,8 @@ const Dashboard = () => {
   const [contents, setContents] = useState<Content[]>([]);
   const [contentsByMonth, setContentsByMonth] = useState<Record<string, Content[]>>({});
   const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number }>>({});
+  const [openViewAgencyId, setOpenViewAgencyId] = useState<string | null>(null);
+  const [openEditAgencyId, setOpenEditAgencyId] = useState<string | null>(null);
 
   const checkAuth = async () => {
     setLoading(true);
@@ -740,13 +744,23 @@ const Dashboard = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2 flex-shrink-0">
-                        <ViewAgencyDialog agency={agency} />
-                        <EditAgencyDialog agency={agency} onAgencyUpdated={checkAuth} />
-                        <Button variant="outline" size="sm">
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Mensagem
-                        </Button>
+                      <div className="flex flex-col gap-3 flex-shrink-0 items-end">
+                        <ExpandableTabs
+                          tabs={[
+                            { title: "Ver", icon: Eye },
+                            { title: "Editar", icon: Pencil },
+                            { type: "separator" as const },
+                            { title: "Mensagem", icon: MessageSquare },
+                          ]}
+                          onChange={(index) => {
+                            if (index === 0) setOpenViewAgencyId(agency.id);
+                            else if (index === 1) setOpenEditAgencyId(agency.id);
+                            else if (index === 3) {
+                              toast({ title: "Mensagem", description: "Em breve" });
+                            }
+                          }}
+                          className="max-w-full"
+                        />
                         <Button 
                           variant="destructive" 
                           size="sm"
@@ -759,8 +773,21 @@ const Dashboard = () => {
                           Remover
                         </Button>
                       </div>
-                    </div>
-                  </CardHeader>
+                </CardHeader>
+                {/* Controlled dialogs for actions */}
+                <ViewAgencyDialog 
+                  agency={agency} 
+                  open={openViewAgencyId === agency.id}
+                  onOpenChange={(o) => !o && setOpenViewAgencyId(null)}
+                />
+                <EditAgencyDialog 
+                  agency={agency} 
+                  onAgencyUpdated={checkAuth}
+                  open={openEditAgencyId === agency.id}
+                  onOpenChange={(o) => {
+                    if (!o) setOpenEditAgencyId(null);
+                  }}
+                />
                 </Card>
               ))}
             </div>

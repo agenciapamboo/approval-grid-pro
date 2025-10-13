@@ -26,10 +26,15 @@ interface Agency {
 interface EditAgencyDialogProps {
   agency: Agency;
   onAgencyUpdated: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditAgencyDialog({ agency, onAgencyUpdated, open: controlledOpen, onOpenChange, trigger }: EditAgencyDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
@@ -93,10 +98,14 @@ export function EditAgencyDialog({ agency, onAgencyUpdated }: EditAgencyDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Pencil className="w-4 h-4 mr-2" />
-          Editar
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button variant="outline" size="sm">
+            <Pencil className="w-4 h-4 mr-2" />
+            Editar
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
