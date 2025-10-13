@@ -55,6 +55,7 @@ export function ExpandableTabs({
   onChange,
 }: ExpandableTabsProps) {
   const [selected, setSelected] = React.useState<number | null>(null);
+  const [hovered, setHovered] = React.useState<number | null>(null);
   const outsideClickRef = React.useRef<HTMLDivElement | null>(null);
 
   useOnClickOutside(outsideClickRef, () => {
@@ -86,14 +87,17 @@ export function ExpandableTabs({
 
         const t = tab as Tab;
         const Icon = t.icon;
+        const isExpanded = selected === index || hovered === index;
         return (
           <motion.button
             key={t.title}
             variants={buttonVariants}
             initial={false}
             animate="animate"
-            custom={selected === index}
+            custom={isExpanded}
             onClick={() => handleSelect(index)}
+            onMouseEnter={() => setHovered(index)}
+            onMouseLeave={() => setHovered(null)}
             transition={transition}
             className={cn(
               "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300",
@@ -104,7 +108,7 @@ export function ExpandableTabs({
           >
             <Icon size={18} />
             <AnimatePresence initial={false}>
-              {selected === index && (
+              {isExpanded && (
                 <motion.span
                   variants={spanVariants}
                   initial="initial"

@@ -717,7 +717,7 @@ const Dashboard = () => {
               {agencies.map((agency) => (
                 <Card key={agency.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         {agency.logo_url && (
                           <div className="mb-3">
@@ -735,11 +735,12 @@ const Dashboard = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex flex-col gap-2 flex-shrink-0">
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => setOpenViewAgencyId(agency.id)}
+                          className="w-full justify-start"
                         >
                           <Eye className="w-4 h-4 mr-2" />
                           Ver
@@ -748,6 +749,7 @@ const Dashboard = () => {
                           variant="outline" 
                           size="sm"
                           onClick={() => setOpenEditAgencyId(agency.id)}
+                          className="w-full justify-start"
                         >
                           <Pencil className="w-4 h-4 mr-2" />
                           Editar
@@ -759,6 +761,7 @@ const Dashboard = () => {
                             e.stopPropagation();
                             handleDeleteAgency(agency);
                           }}
+                          className="w-full justify-start"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Remover
@@ -766,20 +769,6 @@ const Dashboard = () => {
                       </div>
                     </div>
                 </CardHeader>
-                {/* Controlled dialogs for actions */}
-                <ViewAgencyDialog 
-                  agency={agency} 
-                  open={openViewAgencyId === agency.id}
-                  onOpenChange={(o) => !o && setOpenViewAgencyId(null)}
-                />
-                <EditAgencyDialog 
-                  agency={agency} 
-                  onAgencyUpdated={checkAuth}
-                  open={openEditAgencyId === agency.id}
-                  onOpenChange={(o) => {
-                    if (!o) setOpenEditAgencyId(null);
-                  }}
-                />
                 </Card>
               ))}
             </div>
@@ -839,6 +828,19 @@ const Dashboard = () => {
         onUpdate={checkAuth}
         open={openProfileDialog}
         onOpenChange={setOpenProfileDialog}
+      />
+
+      <ViewAgencyDialog 
+        agency={agencies.find(a => a.id === openViewAgencyId) || null}
+        open={!!openViewAgencyId}
+        onOpenChange={(o) => !o && setOpenViewAgencyId(null)}
+      />
+      
+      <EditAgencyDialog 
+        agency={agencies.find(a => a.id === openEditAgencyId) || null}
+        onAgencyUpdated={checkAuth}
+        open={!!openEditAgencyId}
+        onOpenChange={(o) => !o && setOpenEditAgencyId(null)}
       />
       
       <AppFooter />
