@@ -830,18 +830,22 @@ const Dashboard = () => {
         onOpenChange={setOpenProfileDialog}
       />
 
-      <ViewAgencyDialog 
-        agency={agencies.find(a => a.id === openViewAgencyId) || null}
-        open={!!openViewAgencyId}
-        onOpenChange={(o) => !o && setOpenViewAgencyId(null)}
-      />
+      {openViewAgencyId && agencies.find(a => a.id === openViewAgencyId) && (
+        <ViewAgencyDialog 
+          agency={agencies.find(a => a.id === openViewAgencyId)!}
+          open={true}
+          onOpenChange={(o) => !o && setOpenViewAgencyId(null)}
+        />
+      )}
       
-      <EditAgencyDialog 
-        agency={agencies.find(a => a.id === openEditAgencyId) || null}
-        onAgencyUpdated={checkAuth}
-        open={!!openEditAgencyId}
-        onOpenChange={(o) => !o && setOpenEditAgencyId(null)}
-      />
+      {openEditAgencyId && agencies.find(a => a.id === openEditAgencyId) && (
+        <EditAgencyDialog 
+          agency={agencies.find(a => a.id === openEditAgencyId)!}
+          onAgencyUpdated={checkAuth}
+          open={true}
+          onOpenChange={(o) => !o && setOpenEditAgencyId(null)}
+        />
+      )}
       
       <AppFooter />
     </div>
