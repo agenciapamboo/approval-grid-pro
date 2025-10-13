@@ -26,7 +26,7 @@ export const createNotification = async (
     // Buscar dados do conteúdo e cliente/agência
     const { data: content, error: contentError } = await supabase
       .from('contents')
-      .select('*, clients!inner(*)')
+      .select('*, clients!inner(*, agencies!inner(*))')
       .eq('id', contentId)
       .single();
 
@@ -123,6 +123,11 @@ export const createNotification = async (
         name: (content as any).clients?.name,
         email: (content as any).clients?.email,
         whatsapp: (content as any).clients?.whatsapp,
+      },
+      agency: {
+        name: (content as any).clients?.agencies?.name,
+        email: (content as any).clients?.agencies?.email,
+        whatsapp: (content as any).clients?.agencies?.whatsapp,
       },
       links: {
         admin: adminLink,
