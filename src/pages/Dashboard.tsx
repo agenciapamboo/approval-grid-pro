@@ -299,12 +299,16 @@ const Dashboard = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("agencies")
         .delete()
-        .eq("id", agency.id);
+        .eq("id", agency.id)
+        .select("id");
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Nenhuma linha deletada. Verifique permissões RLS.");
+      }
 
       toast({
         title: "Agência removida",
@@ -312,7 +316,6 @@ const Dashboard = () => {
       });
 
       setAgencies((prev) => prev.filter((a) => a.id !== agency.id));
-      await checkAuth();
     } catch (error) {
       console.error("Erro ao remover agência:", error);
       toast({
