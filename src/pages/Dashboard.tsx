@@ -723,22 +723,24 @@ const Dashboard = () => {
                 <Card key={agency.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 flex-1">
+                      <div className="flex-1 min-w-0">
                         {agency.logo_url && (
-                          <img 
-                            src={agency.logo_url} 
-                            alt={agency.name}
-                            className="h-10 object-contain"
-                          />
+                          <div className="mb-3">
+                            <img 
+                              src={agency.logo_url} 
+                              alt={agency.name}
+                              className="h-16 max-w-[200px] object-contain"
+                            />
+                          </div>
                         )}
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{agency.name}</CardTitle>
-                          <CardDescription className="text-xs mt-1">
+                        <div>
+                          <CardTitle className="text-lg truncate">{agency.name}</CardTitle>
+                          <CardDescription className="text-xs mt-1 truncate">
                             Slug: {agency.slug}
                           </CardDescription>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2 flex-shrink-0">
                         <ViewAgencyDialog agency={agency} />
                         <EditAgencyDialog agency={agency} onAgencyUpdated={checkAuth} />
                         <Button variant="outline" size="sm">
