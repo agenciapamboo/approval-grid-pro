@@ -38,9 +38,13 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
               { title: "Sair", icon: LogOut },
             ]}
             onChange={(index) => {
-              if (index === 0 && onProfileClick) onProfileClick();
-              else if (index === 1) setTheme(theme === "dark" ? "light" : "dark");
-              else if (index === 2 && onSignOut) onSignOut();
+              if (index === 0 && onProfileClick) {
+                onProfileClick();
+              } else if (index === 1) {
+                setTheme(theme === "dark" ? "light" : "dark");
+              } else if (index === 2 && onSignOut) {
+                onSignOut();
+              }
             }}
             className="bg-background/50"
           />
