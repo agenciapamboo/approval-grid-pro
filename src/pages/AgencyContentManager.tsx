@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { CreateContentCard } from "@/components/content/CreateContentCard";
 import { CreateAvulsoCard } from "@/components/content/CreateAvulsoCard";
+import { ContentFilters } from "@/components/content/ContentFilters";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { triggerWebhook } from "@/lib/webhooks";
@@ -63,6 +64,10 @@ export default function AgencyContentManager() {
   const [client, setClient] = useState<Client | null>(null);
   const [agency, setAgency] = useState<Agency | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
+  const [filteredContents, setFilteredContents] = useState<Content[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const monthParam = searchParams.get("month");
   const yearParam = searchParams.get("year");
   const categoryParam = searchParams.get("category") as 'social' | 'avulso' | null;
@@ -182,6 +187,32 @@ export default function AgencyContentManager() {
     }
 
     setContents(data || []);
+    setFilteredContents(data || []);
+  };
+
+  useEffect(() => {
+    applyFilters();
+  }, [contents, searchTerm, statusFilter, dateFilter]);
+
+  const applyFilters = () => {
+    let filtered = [...contents];
+
+    if (searchTerm) {
+      filtered = filtered.filter(content => 
+        content.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(content => content.status === statusFilter);
+    }
+
+    if (dateFilter) {
+      const filterDate = format(dateFilter, "yyyy-MM-dd");
+      filtered = filtered.filter(content => content.date === filterDate);
+    }
+
+    setFilteredContents(filtered);
   };
 
   const handleSignOut = async () => {
@@ -246,7 +277,7 @@ export default function AgencyContentManager() {
   };
 
   // Agrupar conteúdos por mês e categoria
-  const groupedContents = contents.reduce((groups, content) => {
+  const groupedContents = filteredContents.reduce((groups, content) => {
     const date = new Date(content.date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     const category = content.category || 'social';
@@ -308,26 +339,24 @@ export default function AgencyContentManager() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        {client && categoryParam && (
+        {client && (
           <div className="space-y-4 mb-6">
             {categoryParam === 'social' ? (
               <CreateContentCard 
                 clientId={client.id}
                 onContentCreated={() => {
                   loadContents(client.id);
-                  navigate(`/agency/client/${client.id}`);
                 }}
                 category="social"
               />
-            ) : (
+            ) : categoryParam === 'avulso' ? (
               <CreateAvulsoCard 
                 clientId={client.id}
                 onContentCreated={() => {
                   loadContents(client.id);
-                  navigate(`/agency/client/${client.id}`);
                 }}
               />
-            )}
+            ) : null}
             
             <div className="flex justify-end">
               <Button
@@ -340,6 +369,17 @@ export default function AgencyContentManager() {
             </div>
           </div>
         )}
+
+        <div className="mb-6">
+          <ContentFilters 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            dateFilter={dateFilter}
+            onDateChange={setDateFilter}
+          />
+        </div>
         
         {sortedGroupKeys.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">

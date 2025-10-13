@@ -247,8 +247,6 @@ export default function ContentGrid() {
       </AppHeader>
 
       <main className="container mx-auto px-4 py-8">
-        <ContentFilters />
-        
         {sortedMonthKeys.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum conteúdo encontrado

@@ -321,8 +321,11 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
               mode="single"
               selected={date}
               onSelect={(newDate) => {
-                setDate(newDate);
-                setHasChanges(true);
+                if (newDate) {
+                  const localDate = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 12, 0, 0);
+                  setDate(localDate);
+                  setHasChanges(true);
+                }
               }}
               initialFocus
               className="pointer-events-auto"

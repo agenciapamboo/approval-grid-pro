@@ -420,18 +420,21 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                   {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "Data"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(newDate) => {
-                    setDate(newDate);
-                    setHasChanges(true);
-                  }}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={(newDate) => {
+                if (newDate) {
+                  const localDate = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 12, 0, 0);
+                  setDate(localDate);
+                  setHasChanges(true);
+                }
+              }}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
             </Popover>
             
             <div className="relative flex-1">
