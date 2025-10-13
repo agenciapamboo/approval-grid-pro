@@ -11,7 +11,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: AppHeaderProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
@@ -34,14 +34,14 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
           <ExpandableTabs
             tabs={[
               { title: "Minha Conta", icon: User },
-              { title: theme === "dark" ? "Modo Claro" : "Modo Escuro", icon: theme === "dark" ? Sun : Moon },
+              { title: (resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"), icon: resolvedTheme === "dark" ? Sun : Moon },
               { title: "Sair", icon: LogOut },
             ]}
             onChange={(index) => {
               if (index === 0 && onProfileClick) {
                 onProfileClick();
               } else if (index === 1) {
-                setTheme(theme === "dark" ? "light" : "dark");
+                setTheme(resolvedTheme === "dark" ? "light" : "dark");
               } else if (index === 2 && onSignOut) {
                 onSignOut();
               }
