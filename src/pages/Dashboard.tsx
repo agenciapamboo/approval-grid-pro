@@ -19,7 +19,7 @@ import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
-import { ExpandableTabs } from "@/components/ui/expandable-tabs";
+
 
 
 interface Profile {
@@ -87,6 +87,7 @@ const Dashboard = () => {
   const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number }>>({});
   const [openViewAgencyId, setOpenViewAgencyId] = useState<string | null>(null);
   const [openEditAgencyId, setOpenEditAgencyId] = useState<string | null>(null);
+  const [openProfileDialog, setOpenProfileDialog] = useState(false);
 
   const checkAuth = async () => {
     setLoading(true);
@@ -349,22 +350,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background flex flex-col">
-      <AppHeader>
-        <div className="text-right hidden sm:block text-white">
-          <p className="text-sm font-medium">{profile?.name}</p>
-          <p className="text-xs opacity-90">{getRoleLabel(profile?.role || "")}</p>
-        </div>
-        <UserProfileDialog user={user} profile={profile} onUpdate={checkAuth} />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSignOut}
-          title="Sair"
-          className="text-white hover:bg-white/20"
-        >
-          <LogOut className="w-4 h-4" />
-        </Button>
-      </AppHeader>
+      <AppHeader 
+        userName={profile?.name}
+        userRole={getRoleLabel(profile?.role || "")}
+        onProfileClick={() => setOpenProfileDialog(true)}
+        onSignOut={handleSignOut}
+      />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-start justify-between">
@@ -744,23 +735,23 @@ const Dashboard = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-3 flex-shrink-0 items-end">
-                        <ExpandableTabs
-                          tabs={[
-                            { title: "Ver", icon: Eye },
-                            { title: "Editar", icon: Pencil },
-                            { type: "separator" as const },
-                            { title: "Mensagem", icon: MessageSquare },
-                          ]}
-                          onChange={(index) => {
-                            if (index === 0) setOpenViewAgencyId(agency.id);
-                            else if (index === 1) setOpenEditAgencyId(agency.id);
-                            else if (index === 3) {
-                              toast({ title: "Mensagem", description: "Em breve" });
-                            }
-                          }}
-                          className="max-w-full"
-                        />
+                      <div className="flex gap-2 flex-shrink-0">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setOpenViewAgencyId(agency.id)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Ver
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setOpenEditAgencyId(agency.id)}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
                         <Button 
                           variant="destructive" 
                           size="sm"
@@ -840,6 +831,15 @@ const Dashboard = () => {
           isAgencyView={false}
         />
       )}
+      
+      
+      <UserProfileDialog 
+        user={user} 
+        profile={profile} 
+        onUpdate={checkAuth}
+        open={openProfileDialog}
+        onOpenChange={setOpenProfileDialog}
+      />
       
       <AppFooter />
     </div>

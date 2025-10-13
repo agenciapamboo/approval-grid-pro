@@ -36,10 +36,16 @@ interface UserProfileDialogProps {
   user: any;
   profile: Profile | null;
   onUpdate: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-export function UserProfileDialog({ user, profile, onUpdate }: UserProfileDialogProps) {
-  const [open, setOpen] = useState(false);
+export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpen, onOpenChange: controlledOnOpenChange, trigger }: UserProfileDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange || (() => {})) : setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const { toast } = useToast();
@@ -160,9 +166,11 @@ export function UserProfileDialog({ user, profile, onUpdate }: UserProfileDialog
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" title="Minha Conta">
-          <User className="w-4 h-4" />
-        </Button>
+        {trigger || (
+          <Button variant="ghost" size="icon" title="Minha Conta">
+            <User className="w-4 h-4" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>

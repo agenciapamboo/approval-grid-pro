@@ -232,19 +232,11 @@ export default function ContentGrid() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader>
-        <span className="text-white text-sm">{client?.name || 'Cliente'}</span>
-        {profile && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleSignOut} 
-            className="text-white hover:bg-white/20"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        )}
-      </AppHeader>
+      <AppHeader 
+        userName={profile?.name}
+        userRole="Cliente"
+        onSignOut={handleSignOut}
+      />
 
       <main className="container mx-auto px-4 py-8">
         {sortedMonthKeys.length === 0 ? (

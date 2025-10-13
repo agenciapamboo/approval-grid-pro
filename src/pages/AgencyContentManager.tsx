@@ -310,33 +310,11 @@ export default function AgencyContentManager() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader>
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate("/dashboard")}
-            className="text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <span className="text-white text-sm font-medium">
-            {client?.name || 'Cliente'} - Gerenciar Conteúdos
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-white text-sm hidden sm:block">{profile?.name}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleSignOut} 
-            className="text-white hover:bg-white/20"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </AppHeader>
+      <AppHeader 
+        userName={profile?.name}
+        userRole="Administrador da Agência"
+        onSignOut={handleSignOut}
+      />
 
       <main className="container mx-auto px-4 py-8">
         {client && (

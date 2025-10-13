@@ -1,12 +1,18 @@
 import { Link } from "react-router-dom";
-import { CheckCircle2 } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { CheckCircle2, User, LogOut, Sun, Moon } from "lucide-react";
+import { ExpandableTabs } from "@/components/ui/expandable-tabs";
+import { useTheme } from "next-themes";
 
 interface AppHeaderProps {
-  children?: React.ReactNode;
+  userName?: string;
+  userRole?: string;
+  onProfileClick?: () => void;
+  onSignOut?: () => void;
 }
 
-export function AppHeader({ children }: AppHeaderProps) {
+export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: AppHeaderProps) {
+  const { theme, setTheme } = useTheme();
+
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
@@ -18,9 +24,26 @@ export function AppHeader({ children }: AppHeaderProps) {
             Aprova Criativos
           </h1>
         </Link>
-        <div className="flex items-center gap-3">
-          {children}
-          <ThemeToggle />
+        <div className="flex items-center gap-4">
+          {userName && (
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium">{userName}</p>
+              <p className="text-xs text-muted-foreground">{userRole}</p>
+            </div>
+          )}
+          <ExpandableTabs
+            tabs={[
+              { title: "Minha Conta", icon: User },
+              { title: theme === "dark" ? "Modo Claro" : "Modo Escuro", icon: theme === "dark" ? Sun : Moon },
+              { title: "Sair", icon: LogOut },
+            ]}
+            onChange={(index) => {
+              if (index === 0 && onProfileClick) onProfileClick();
+              else if (index === 1) setTheme(theme === "dark" ? "light" : "dark");
+              else if (index === 2 && onSignOut) onSignOut();
+            }}
+            className="bg-background/50"
+          />
         </div>
       </div>
     </header>
