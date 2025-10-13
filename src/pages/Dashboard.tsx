@@ -773,6 +773,7 @@ const Dashboard = () => {
                           Remover
                         </Button>
                       </div>
+                    </div>
                 </CardHeader>
                 {/* Controlled dialogs for actions */}
                 <ViewAgencyDialog 
