@@ -36,8 +36,8 @@ serve(async (req) => {
       .from('notifications')
       .select(`
         *,
-        agencies!inner(whatsapp, email),
-        clients!inner(whatsapp, email)
+        agencies!inner(name, whatsapp, email),
+        clients!inner(name, whatsapp, email)
       `)
       .eq('status', 'pending')
       .filter('created_at', 'gt', oneHourAgo)
@@ -64,10 +64,16 @@ serve(async (req) => {
           user_id: notification.user_id,
           payload: notification.payload,
           created_at: notification.created_at,
-          agency_whatsapp: notification.agencies?.whatsapp,
-          agency_email: notification.agencies?.email,
-          client_whatsapp: notification.clients?.whatsapp,
-          client_email: notification.clients?.email,
+          agency: {
+            name: notification.agencies?.name,
+            email: notification.agencies?.email,
+            whatsapp: notification.agencies?.whatsapp,
+          },
+          client: {
+            name: notification.clients?.name,
+            email: notification.clients?.email,
+            whatsapp: notification.clients?.whatsapp,
+          },
         }
 
         console.log('Sending to n8n (attempt POST):', { event: notification.event, channel: notification.channel })
