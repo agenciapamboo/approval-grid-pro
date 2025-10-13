@@ -165,13 +165,15 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="ghost" size="icon" title="Minha Conta">
-            <User className="w-4 h-4" />
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="ghost" size="icon" title="Minha Conta">
+              <User className="w-4 h-4" />
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Minha Conta</DialogTitle>
