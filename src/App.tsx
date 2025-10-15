@@ -14,6 +14,7 @@ import AgencyContentManager from "./pages/AgencyContentManager";
 import AdminPasswordReset from "./pages/AdminPasswordReset";
 import HeroDemo from "./pages/HeroDemo";
 import NotFound from "./pages/NotFound";
+import CreativeRequests from "./pages/CreativeRequests";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const App = () => (
             <Route path="/linkderecuperacao" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/agency/client/:clientId" element={<AgencyContentManager />} />
+            <Route path="/agency/creative-requests" element={<CreativeRequests />} />
+            <Route path="/agency/creative-requests/:clientId" element={<CreativeRequests />} />
             <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
             <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
             <Route path="/admin/reset-passwords" element={<AdminPasswordReset />} />

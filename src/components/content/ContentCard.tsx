@@ -306,9 +306,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     if (!date) return;
     
     try {
+      // Criar data local com timezone do usuário
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+      
       const { error } = await supabase
         .from("contents")
-        .update({ date: format(date, "yyyy-MM-dd") })
+        .update({ date: format(localDate, "yyyy-MM-dd") })
         .eq("id", content.id);
 
       if (error) throw error;

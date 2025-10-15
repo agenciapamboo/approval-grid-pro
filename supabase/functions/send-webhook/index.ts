@@ -60,16 +60,23 @@ serve(async (req) => {
         content_id,
         client_id: notification.client_id,
         agency_id: notification.agency_id,
-        creative_request: notification.payload,
+        creative_request: {
+          ...notification.payload,
+          created_at: notification.created_at,
+        },
         client: {
           id: notification.clients.id,
           name: notification.clients.name,
           slug: notification.clients.slug,
+          email: notification.clients.email,
+          whatsapp: notification.clients.whatsapp,
         },
         agency: {
           id: notification.agencies.id,
           name: notification.agencies.name,
           slug: notification.agencies.slug,
+          email: notification.agencies.email,
+          whatsapp: notification.agencies.whatsapp,
         }
       }
     } else {

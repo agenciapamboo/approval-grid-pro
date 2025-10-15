@@ -555,12 +555,22 @@ const Dashboard = () => {
                 <Building2 className="w-6 h-6 text-primary" />
                 <h3 className="text-2xl font-bold">Clientes</h3>
               </div>
-              {profile?.role === 'agency_admin' && profile?.agency_id && (
-                <AddClientDialog 
-                  agencyId={profile.agency_id} 
-                  onClientAdded={fetchClients} 
-                />
-              )}
+              <div className="flex gap-2">
+                {profile?.role === 'agency_admin' && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/agency/creative-requests')}
+                  >
+                    Ver Solicitações de Criativos
+                  </Button>
+                )}
+                {profile?.role === 'agency_admin' && profile?.agency_id && (
+                  <AddClientDialog 
+                    agencyId={profile.agency_id} 
+                    onClientAdded={fetchClients} 
+                  />
+                )}
+              </div>
             </div>
             {clients.length === 0 ? (
               <Card>
