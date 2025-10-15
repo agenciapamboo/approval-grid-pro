@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, Loader2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, Loader2, MessageSquare, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { triggerWebhook } from "@/lib/webhooks";
@@ -232,83 +233,58 @@ export default function CreativeRequests() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-                      {jobStatus === "pending" && (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
+                    <div className="pt-2" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full justify-between">
+                            Status: {statusConfig.label}
+                            <ChevronDown className="h-4 w-4 ml-2" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56 z-50">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateJobStatus(request, "pending");
+                            }}
+                          >
+                            Pendente
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
                               updateJobStatus(request, "reviewing");
                             }}
-                            disabled={actionLoading}
                           >
-                            Marcar como Em Revisão
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRequest(request);
-                              setShowInfoDialog(true);
-                            }}
-                            disabled={actionLoading}
-                          >
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Solicitar Informações
-                          </Button>
-                        </>
-                      )}
-                      {jobStatus === "reviewing" && (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
+                            Em Revisão
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
                               updateJobStatus(request, "in_production");
                             }}
-                            disabled={actionLoading}
                           >
-                            Aceitar e Iniciar Produção
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                            Em Produção
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedRequest(request);
                               setShowInfoDialog(true);
                             }}
-                            disabled={actionLoading}
                           >
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Solicitar Informações
-                          </Button>
-                        </>
-                      )}
-                      {jobStatus === "in_production" && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateJobStatus(request, "completed");
-                          }}
-                          disabled={actionLoading}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Finalizar e Enviar para Aprovação
-                        </Button>
-                      )}
-                      {jobStatus === "completed" && (
-                        <Badge variant="success" className="justify-center">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Enviado para aprovação
-                        </Badge>
-                      )}
+                            Dúvidas (+Informações)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateJobStatus(request, "completed");
+                            }}
+                          >
+                            Finalizado
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
