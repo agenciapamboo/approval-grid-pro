@@ -38,8 +38,8 @@ serve(async (req) => {
     let targetType: 'client' | 'agency'
     let payload: WebhookPayload
 
-    // Para o evento "novojob", buscar da tabela notifications
-    if (event === 'novojob') {
+    // Para eventos relacionados a jobs (novojob e job.*)
+    if (event === 'novojob' || event.startsWith('job.')) {
       const { data: notification, error: notificationError } = await supabaseClient
         .from('notifications')
         .select('*, clients!inner(*), agencies!inner(*)')
