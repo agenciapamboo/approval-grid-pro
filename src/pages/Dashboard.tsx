@@ -556,14 +556,6 @@ const Dashboard = () => {
                 <h3 className="text-2xl font-bold">Clientes</h3>
               </div>
               <div className="flex gap-2">
-                {profile?.role === 'agency_admin' && (
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate('/agency/creative-requests')}
-                  >
-                    Ver Solicitações de Criativos
-                  </Button>
-                )}
                 {profile?.role === 'agency_admin' && profile?.agency_id && (
                   <AddClientDialog 
                     agencyId={profile.agency_id} 
@@ -626,23 +618,11 @@ const Dashboard = () => {
                               <div className="flex flex-wrap gap-2 mb-3">
                                 {notifications.creatives > 0 && (
                                   <Badge 
-                                    variant="pending" 
-                                    className="cursor-pointer"
-                                    onClick={async (e) => {
+                                    variant="warning" 
+                                    className="cursor-pointer hover:opacity-80"
+                                    onClick={(e) => {
                                       e.stopPropagation();
-                                      const { data } = await supabase
-                                        .from("notifications")
-                                        .select("*")
-                                        .eq("client_id", client.id)
-                                        .eq("event", "novojob")
-                                        .eq("status", "pending")
-                                        .order("created_at", { ascending: false })
-                                        .limit(1)
-                                        .single();
-                                      if (data) {
-                                        setSelectedCreativeRequest(data);
-                                        setShowCreativeRequestDialog(true);
-                                      }
+                                      navigate(`/agency/creative-requests/${client.id}`);
                                     }}
                                   >
                                     <Sparkles className="h-3 w-3" />

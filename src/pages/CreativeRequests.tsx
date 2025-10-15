@@ -44,6 +44,7 @@ export default function CreativeRequests() {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<CreativeRequest | null>(null);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -195,7 +196,10 @@ export default function CreativeRequests() {
               const statusConfig = getStatusLabel(jobStatus);
 
               return (
-                <Card key={request.id} className="glass-hover">
+                <Card key={request.id} className="glass-hover cursor-pointer" onClick={() => {
+                  setSelectedRequest(request);
+                  setShowDetailsDialog(true);
+                }}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -228,13 +232,16 @@ export default function CreativeRequests() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 pt-2">
+                    <div className="flex flex-col gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
                       {jobStatus === "pending" && (
                         <>
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={() => updateJobStatus(request, "reviewing")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateJobStatus(request, "reviewing");
+                            }}
                             disabled={actionLoading}
                           >
                             Marcar como Em Revisão
@@ -242,7 +249,8 @@ export default function CreativeRequests() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedRequest(request);
                               setShowInfoDialog(true);
                             }}
@@ -256,9 +264,12 @@ export default function CreativeRequests() {
                       {jobStatus === "reviewing" && (
                         <>
                           <Button
-                            variant="success"
+                            variant="default"
                             size="sm"
-                            onClick={() => updateJobStatus(request, "in_production")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateJobStatus(request, "in_production");
+                            }}
                             disabled={actionLoading}
                           >
                             Aceitar e Iniciar Produção
@@ -266,7 +277,8 @@ export default function CreativeRequests() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedRequest(request);
                               setShowInfoDialog(true);
                             }}
@@ -279,9 +291,12 @@ export default function CreativeRequests() {
                       )}
                       {jobStatus === "in_production" && (
                         <Button
-                          variant="success"
+                          variant="default"
                           size="sm"
-                          onClick={() => updateJobStatus(request, "completed")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateJobStatus(request, "completed");
+                          }}
                           disabled={actionLoading}
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
@@ -337,6 +352,91 @@ export default function CreativeRequests() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Solicitação de Criativo</DialogTitle>
+            <DialogDescription>
+              Informações completas do briefing solicitado pelo cliente
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Cliente</h3>
+                <p className="text-sm">{selectedRequest.clients.name}</p>
+                <p className="text-sm text-muted-foreground">{selectedRequest.clients.email}</p>
+                {selectedRequest.clients.whatsapp && (
+                  <p className="text-sm text-muted-foreground">{selectedRequest.clients.whatsapp}</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Título</h3>
+                <p className="text-sm">{selectedRequest.payload?.title}</p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Tipo</h3>
+                <p className="text-sm">{selectedRequest.payload?.type}</p>
+              </div>
+
+              {selectedRequest.payload?.text && (
+                <div>
+                  <h3 className="font-semibold mb-2">Texto</h3>
+                  <p className="text-sm">{selectedRequest.payload.text}</p>
+                </div>
+              )}
+
+              {selectedRequest.payload?.caption && (
+                <div>
+                  <h3 className="font-semibold mb-2">Legenda</h3>
+                  <p className="text-sm">{selectedRequest.payload.caption}</p>
+                </div>
+              )}
+
+              {selectedRequest.payload?.observations && (
+                <div>
+                  <h3 className="font-semibold mb-2">Observações</h3>
+                  <p className="text-sm">{selectedRequest.payload.observations}</p>
+                </div>
+              )}
+
+              {selectedRequest.payload?.reference_files && selectedRequest.payload.reference_files.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2">Arquivos de Referência</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedRequest.payload.reference_files.map((file, index) => (
+                      <div key={index} className="border rounded p-2">
+                        {file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img src={file} alt={`Referência ${index + 1}`} className="w-full h-32 object-cover rounded" />
+                        ) : (
+                          <a href={file} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                            Ver arquivo {index + 1}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-semibold mb-2">Data da Solicitação</h3>
+                <p className="text-sm">{format(new Date(selectedRequest.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Status Atual</h3>
+                <Badge variant={getStatusLabel(selectedRequest.payload?.job_status).variant}>
+                  {getStatusLabel(selectedRequest.payload?.job_status).label}
+                </Badge>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
