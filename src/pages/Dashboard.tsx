@@ -19,6 +19,7 @@ import { ContentCategorySelector } from "@/components/content/ContentCategorySel
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
 import { CreativeRequestDialog } from "@/components/admin/CreativeRequestDialog";
+import { EditCreativeRequestDialog } from "@/components/admin/EditCreativeRequestDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
@@ -94,6 +95,9 @@ const Dashboard = () => {
   const [requestCreativeOpen, setRequestCreativeOpen] = useState(false);
   const [selectedCreativeRequest, setSelectedCreativeRequest] = useState<any>(null);
   const [showCreativeRequestDialog, setShowCreativeRequestDialog] = useState(false);
+  const [creativeRequests, setCreativeRequests] = useState<any[]>([]);
+  const [editCreativeOpen, setEditCreativeOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<any | null>(null);
 
   const checkAuth = async () => {
     setLoading(true);

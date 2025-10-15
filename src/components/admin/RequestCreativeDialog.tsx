@@ -60,7 +60,9 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }
         client_id: clientId,
         agency_id: agencyId,
         reference_files: uploadedUrls,
-        status: 'pending',
+        job_status: 'pending',
+        version: 1,
+        history: [],
       };
 
       // Store in notifications table
