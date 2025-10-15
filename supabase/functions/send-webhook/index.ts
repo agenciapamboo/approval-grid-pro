@@ -14,6 +14,7 @@ interface WebhookPayload {
   content?: any
   client?: any
   agency?: any
+  creative_request?: any
 }
 
 serve(async (req) => {
@@ -35,29 +36,89 @@ serve(async (req) => {
     let webhookUrl: string | null = null
     let targetId: string
     let targetType: 'client' | 'agency'
+    let payload: WebhookPayload
 
-    // Buscar content details
-    const { data: content, error: contentError } = await supabaseClient
-      .from('contents')
-      .select('*, clients!inner(*)')
-      .eq('id', content_id)
-      .single()
+    // Para o evento "novojob", buscar da tabela notifications
+    if (event === 'novojob') {
+      const { data: notification, error: notificationError } = await supabaseClient
+        .from('notifications')
+        .select('*, clients!inner(*), agencies!inner(*)')
+        .eq('id', content_id)
+        .single()
 
-    if (contentError) {
-      console.error('Error fetching content:', contentError)
-      throw contentError
+      if (notificationError) {
+        console.error('Error fetching notification:', notificationError)
+        throw notificationError
+      }
+
+      webhookUrl = notification.agencies.webhook_url
+      targetId = notification.agency_id
+      targetType = 'agency'
+
+      payload = {
+        event,
+        content_id,
+        client_id: notification.client_id,
+        agency_id: notification.agency_id,
+        creative_request: notification.payload,
+        client: {
+          id: notification.clients.id,
+          name: notification.clients.name,
+          slug: notification.clients.slug,
+        },
+        agency: {
+          id: notification.agencies.id,
+          name: notification.agencies.name,
+          slug: notification.agencies.slug,
+        }
+      }
+    } else {
+      // Para outros eventos, buscar da tabela contents
+      const { data: content, error: contentError } = await supabaseClient
+        .from('contents')
+        .select('*, clients!inner(*)')
+        .eq('id', content_id)
+        .single()
+
+      if (contentError) {
+        console.error('Error fetching content:', contentError)
+        throw contentError
+      }
+
+      // Sempre buscar o webhook da agência para todos os eventos
+      const { data: agency } = await supabaseClient
+        .from('agencies')
+        .select('webhook_url, id, name, slug')
+        .eq('id', content.clients.agency_id)
+        .single()
+      
+      webhookUrl = agency?.webhook_url
+      targetId = content.clients.agency_id
+      targetType = 'agency'
+
+      payload = {
+        event,
+        content_id,
+        content: {
+          id: content.id,
+          title: content.title,
+          date: content.date,
+          status: content.status,
+          type: content.type,
+          category: content.category,
+        },
+        client: {
+          id: content.clients.id,
+          name: content.clients.name,
+          slug: content.clients.slug,
+        },
+        agency: {
+          id: agency?.id,
+          name: agency?.name,
+          slug: agency?.slug,
+        }
+      }
     }
-
-    // Sempre buscar o webhook da agência para todos os eventos
-    const { data: agency } = await supabaseClient
-      .from('agencies')
-      .select('webhook_url')
-      .eq('id', content.clients.agency_id)
-      .single()
-    
-    webhookUrl = agency?.webhook_url
-    targetId = content.clients.agency_id
-    targetType = 'agency'
 
     if (!webhookUrl) {
       console.log('No webhook URL configured for agency:', targetId)
@@ -73,34 +134,6 @@ serve(async (req) => {
       )
     }
 
-    // Construir payload
-    const payload: WebhookPayload = {
-      event,
-      content_id,
-      content: {
-        id: content.id,
-        title: content.title,
-        date: content.date,
-        status: content.status,
-        type: content.type,
-        category: content.category,
-      },
-      client: {
-        id: content.clients.id,
-        name: content.clients.name,
-        slug: content.clients.slug,
-      },
-    }
-
-    // Sempre adicionar informações da agência
-    const { data: agencyData } = await supabaseClient
-      .from('agencies')
-      .select('id, name, slug')
-      .eq('id', content.clients.agency_id)
-      .single()
-    
-    payload.agency = agencyData
-
     // Sanitizar payload (remover campos sensíveis)
     const sanitizedPayload = JSON.parse(JSON.stringify(payload))
     
@@ -108,7 +141,7 @@ serve(async (req) => {
     const { data: webhookEvent, error: eventError } = await supabaseClient
       .from('webhook_events')
       .insert({
-        client_id: content.client_id,
+        client_id: client_id || payload.client?.id,
         event,
         payload: sanitizedPayload,
         status: 'queued',
