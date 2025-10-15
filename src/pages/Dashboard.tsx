@@ -237,6 +237,18 @@ const Dashboard = () => {
           
           setContentsByMonth(grouped);
         }
+
+        // Buscar solicitações criativas do cliente
+        const { data: requestsData } = await supabase
+          .from("notifications")
+          .select("*")
+          .eq("client_id", profileData.client_id)
+          .eq("event", "novojob")
+          .order("created_at", { ascending: false });
+        
+        if (requestsData) {
+          setCreativeRequests(requestsData);
+        }
       }
 
     } catch (error) {
@@ -407,6 +419,93 @@ const Dashboard = () => {
         {/* Client User - Lista de Aprovações */}
         {profile?.role === 'client_user' && (
           <div className="space-y-6">
+            {/* Solicitações Criativas */}
+            {creativeRequests.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">📋 Solicitações Criativas</h3>
+                <div className="grid gap-4">
+                  {creativeRequests.map((request) => (
+                    <Card key={request.id} className="border-l-4 border-l-primary">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-base">{request.payload?.title || 'Sem título'}</CardTitle>
+                            <CardDescription>
+                              {request.payload?.type && (
+                                <Badge variant="outline" className="mr-2 capitalize">
+                                  {request.payload.type}
+                                </Badge>
+                              )}
+                              Solicitado em {new Date(request.created_at).toLocaleDateString('pt-BR')}
+                            </CardDescription>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingRequest(request);
+                              setEditCreativeOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar solicitação
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {request.payload?.text && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Texto na arte:</p>
+                            <p className="text-sm">{request.payload.text}</p>
+                          </div>
+                        )}
+                        {request.payload?.caption && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Informações para legenda:</p>
+                            <p className="text-sm">{request.payload.caption}</p>
+                          </div>
+                        )}
+                        {request.payload?.observations && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Outras observações:</p>
+                            <p className="text-sm">{request.payload.observations}</p>
+                          </div>
+                        )}
+                        {request.payload?.reference_files?.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground mb-2">Referências:</p>
+                            <div className="grid grid-cols-4 gap-2">
+                              {request.payload.reference_files.map((url: string, i: number) => (
+                                <img key={i} src={url} alt={`ref-${i}`} className="w-full h-20 object-cover rounded" />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {request.payload?.history && request.payload.history.length > 0 && (
+                          <div className="mt-4 pt-4 border-t">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Histórico de alterações (v{request.payload.version || 1}):</p>
+                            <div className="space-y-2">
+                              {request.payload.history.map((hist: any, i: number) => (
+                                <div key={i} className="text-xs glass p-2 rounded">
+                                  <p className="font-medium">{new Date(hist.at).toLocaleString('pt-BR')}</p>
+                                  {Object.entries(hist.changes || {}).map(([key, value]: [string, any]) => {
+                                    if (!value) return null;
+                                    if (key === 'added_files') {
+                                      return <p key={key}>• {value.length} arquivo(s) adicionado(s)</p>;
+                                    }
+                                    return <p key={key}>• {key}: "{value.from}" → "{value.to}"</p>;
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
             {Object.entries(contentsByMonth).map(([monthKey, monthContents]) => {
               const [year, month] = monthKey.split('-');
               const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -881,7 +980,10 @@ const Dashboard = () => {
       {profile?.role === 'client_user' && clients[0] && agencies[0] && (
         <RequestCreativeDialog
           open={requestCreativeOpen}
-          onOpenChange={setRequestCreativeOpen}
+          onOpenChange={(open) => {
+            setRequestCreativeOpen(open);
+            if (!open) checkAuth();
+          }}
           clientId={clients[0].id}
           agencyId={agencies[0].id}
         />
@@ -891,6 +993,18 @@ const Dashboard = () => {
         open={showCreativeRequestDialog}
         onOpenChange={setShowCreativeRequestDialog}
         request={selectedCreativeRequest}
+      />
+
+      <EditCreativeRequestDialog
+        open={editCreativeOpen}
+        onOpenChange={(open) => {
+          setEditCreativeOpen(open);
+          if (!open) {
+            setEditingRequest(null);
+            checkAuth();
+          }
+        }}
+        request={editingRequest}
       />
       
       <AppFooter />
