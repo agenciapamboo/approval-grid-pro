@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -16,6 +17,7 @@ import { EditClientDialog } from "@/components/admin/EditClientDialog";
 import { MonthSelectorDialog } from "@/components/admin/MonthSelectorDialog";
 import { ContentCategorySelector } from "@/components/content/ContentCategorySelector";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
+import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
@@ -88,6 +90,7 @@ const Dashboard = () => {
   const [openViewAgencyId, setOpenViewAgencyId] = useState<string | null>(null);
   const [openEditAgencyId, setOpenEditAgencyId] = useState<string | null>(null);
   const [openProfileDialog, setOpenProfileDialog] = useState(false);
+  const [requestCreativeOpen, setRequestCreativeOpen] = useState(false);
 
   const checkAuth = async () => {
     setLoading(true);
@@ -361,17 +364,29 @@ const Dashboard = () => {
         <div className="mb-8 flex items-start justify-between">
           <div>
             <h2 className="text-3xl font-bold mb-2">
-              Bem-vindo, {profile?.name}!
+              Olá, {profile?.name} 👋
             </h2>
             <p className="text-muted-foreground">
               {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
               {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
-              {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos.'}
+              {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos'}
             </p>
           </div>
-          {(profile?.role === 'agency_admin' || profile?.role === 'super_admin') && (
-            <TestNotificationButton />
-          )}
+          <div className="flex gap-3">
+            {profile?.role === 'client_user' && clients[0] && agencies[0] && (
+              <Button 
+                variant="success" 
+                onClick={() => setRequestCreativeOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Solicitar Criativo
+              </Button>
+            )}
+            {(profile?.role === 'agency_admin' || profile?.role === 'super_admin') && (
+              <TestNotificationButton />
+            )}
+          </div>
         </div>
 
         {/* Client User - Lista de Aprovações */}
@@ -393,14 +408,17 @@ const Dashboard = () => {
                   <h3 className="text-lg font-semibold capitalize">{monthName}</h3>
                   
                   {pendingContents.length > 0 && (
-                    <Card>
+                    <Card className="border-l-4 border-l-pending">
                       <CardHeader>
-                        <CardTitle className="text-base">Aprovação Pendente</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-5 w-5 text-pending" />
+                          <CardTitle className="text-base">🕓 Aprovação Pendente</CardTitle>
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center justify-between p-3 glass rounded-lg">
                           <div>
-                            <p className="font-medium">Conteúdo pendende</p>
+                            <p className="font-medium">Conteúdo pendente</p>
                             <p className="text-sm text-muted-foreground">
                               Você tem {pendingContents.length} para aprovar
                             </p>
@@ -424,9 +442,12 @@ const Dashboard = () => {
                   )}
                   
                   {partialContents.length > 0 && (
-                    <Card>
+                    <Card className="border-l-4 border-l-warning">
                       <CardHeader>
-                        <CardTitle className="text-base">Parcialmente Aprovado</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 text-warning" />
+                          <CardTitle className="text-base">🔁 Aguardando Revisão da Agência</CardTitle>
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {partialContents.map(content => (
@@ -460,9 +481,12 @@ const Dashboard = () => {
                   )}
                   
                   {approvedContents.length > 0 && (
-                    <Card>
+                    <Card className="border-l-4 border-l-success">
                       <CardHeader>
-                        <CardTitle className="text-base">Aprovado</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-success" />
+                          <CardTitle className="text-base">✔️ Aprovado</CardTitle>
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {approvedContents.map(content => (
@@ -515,10 +539,10 @@ const Dashboard = () => {
         {/* Clientes - Para Admin e Agency Admin */}
         {profile?.role !== 'client_user' && (
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-primary" />
-                <h3 className="text-xl font-semibold">Clientes</h3>
+                <Building2 className="w-6 h-6 text-primary" />
+                <h3 className="text-2xl font-bold">Clientes</h3>
               </div>
               {profile?.role === 'agency_admin' && profile?.agency_id && (
                 <AddClientDialog 
@@ -551,7 +575,7 @@ const Dashboard = () => {
                   return (
                     <Card 
                       key={client.id} 
-                      className="hover:shadow-lg transition-shadow"
+                      className="relative overflow-hidden"
                     >
                       <CardHeader>
                         <div className="flex items-start gap-3">
@@ -578,55 +602,28 @@ const Dashboard = () => {
                           </div>
                           <div className="flex flex-col gap-2">
                             {hasNotifications && (
-                              <div className="space-y-1 mb-2">
+                              <div className="flex flex-wrap gap-2 mb-3">
                                 {notifications.adjustments > 0 && (
-                                  <Alert 
-                                  className="py-2 px-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                      if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                                    }}
-                                  >
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertDescription className="text-xs">
-                                      {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''} Solicitado{notifications.adjustments > 1 ? 's' : ''}
-                                    </AlertDescription>
-                                  </Alert>
+                                  <Badge variant="warning" className="cursor-pointer">
+                                    <AlertCircle className="h-3 w-3" />
+                                    {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''}
+                                  </Badge>
                                 )}
                                 {notifications.approved > 0 && (
-                                  <Alert 
-                                    className="py-2 px-3 border-green-500 text-green-700 cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/20 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                      if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                                    }}
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                    <AlertDescription className="text-xs">
-                                      {notifications.approved} Conteúdo{notifications.approved > 1 ? 's' : ''} Aprovado{notifications.approved > 1 ? 's' : ''}
-                                    </AlertDescription>
-                                  </Alert>
+                                  <Badge variant="success" className="cursor-pointer">
+                                    <CheckCircle className="h-3 w-3" />
+                                    {notifications.approved} Aprovado{notifications.approved > 1 ? 's' : ''}
+                                  </Badge>
                                 )}
                                 {notifications.rejected > 0 && (
-                                  <Alert 
-                                    className="py-2 px-3 border-amber-500 text-amber-700 dark:text-amber-500 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                      if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                                    }}
-                                  >
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertDescription className="text-xs">
-                                      {notifications.rejected} Conteúdo{notifications.rejected > 1 ? 's' : ''} Pendente{notifications.rejected > 1 ? 's' : ''}
-                                    </AlertDescription>
-                                  </Alert>
+                                  <Badge variant="pending" className="cursor-pointer">
+                                    <Clock className="h-3 w-3" />
+                                    {notifications.rejected} Pendente{notifications.rejected > 1 ? 's' : ''}
+                                  </Badge>
                                 )}
                               </div>
                             )}
-                            <Button 
+                            <Button
                               variant="outline" 
                               size="sm"
                               onClick={(e) => {
@@ -638,8 +635,32 @@ const Dashboard = () => {
                               <Eye className="w-4 h-4 mr-2" />
                               Dados
                             </Button>
+                            <Button 
+                              variant="success" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedClient(client);
+                                setMonthSelectorOpen(true);
+                              }}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Aprovação
+                            </Button>
                             {profile?.role === 'agency_admin' && (
                               <>
+                                <Button 
+                                  variant="secondary" 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                    if (aSlug) navigate(`/${aSlug}/${client.slug}`);
+                                  }}
+                                >
+                                  <FileImage className="w-4 h-4 mr-2" />
+                                  Ver conteúdo
+                                </Button>
                                 <Button 
                                   variant="outline" 
                                   size="sm"
@@ -660,39 +681,19 @@ const Dashboard = () => {
                                     handleDeleteClient(client);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Remover
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
                               </>
                             )}
-                            {profile?.role === 'agency_admin' && (
-                              <Button 
-                                variant="secondary" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                  if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                                }}
-                              >
-                                <FileImage className="w-4 h-4 mr-2" />
-                                Ver conteúdo
-                              </Button>
-                            )}
-                            <Button 
-                              variant="default" 
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedClient(client);
-                                setMonthSelectorOpen(true);
-                              }}
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Aprovação
-                            </Button>
                           </div>
                         </div>
+                        {client.plan_renewal_date && (
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-xs text-muted-foreground">
+                              Última atualização: {new Date(client.plan_renewal_date).toLocaleDateString('pt-BR')} às {new Date(client.plan_renewal_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        )}
                       </CardHeader>
                     </Card>
                   );
@@ -706,10 +707,10 @@ const Dashboard = () => {
         {/* Agências - Só para Super Admin */}
         {profile?.role === 'super_admin' && (
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <h3 className="text-xl font-semibold">Agências</h3>
+                <Users className="w-6 h-6 text-primary" />
+                <h3 className="text-2xl font-bold">Agências</h3>
               </div>
               <AddAgencyDialog onAgencyAdded={checkAuth} />
             </div>
@@ -844,6 +845,15 @@ const Dashboard = () => {
           onAgencyUpdated={checkAuth}
           open={true}
           onOpenChange={(o) => !o && setOpenEditAgencyId(null)}
+        />
+      )}
+
+      {profile?.role === 'client_user' && clients[0] && agencies[0] && (
+        <RequestCreativeDialog
+          open={requestCreativeOpen}
+          onOpenChange={setRequestCreativeOpen}
+          clientId={clients[0].id}
+          agencyId={agencies[0].id}
         />
       )}
       

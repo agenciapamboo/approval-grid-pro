@@ -5,12 +5,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 ease-in-out",
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glass hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
-        destructive: "bg-destructive text-destructive-foreground shadow-glass hover:bg-destructive/90 hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
+        default: "glass bg-gradient-to-r from-primary to-primary-hover text-primary-foreground shadow-glass hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
+        success: "glass bg-gradient-to-r from-primary via-primary-hover to-primary-glow text-primary-foreground shadow-glass hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
+        destructive: "glass border border-destructive/50 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-[1.02] active:scale-[0.98]",
         outline: "glass border border-border/50 hover:bg-accent/10 hover:border-accent/50 hover:scale-[1.02] active:scale-[0.98]",
         secondary: "glass bg-secondary/50 text-secondary-foreground hover:bg-secondary/70 hover:scale-[1.02] active:scale-[0.98]",
         ghost: "hover:bg-accent/10 hover:text-accent-foreground transition-colors duration-200",

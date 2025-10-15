@@ -47,14 +47,14 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      draft: { variant: "secondary", label: "Rascunho" },
-      in_review: { variant: "default", label: "Em Revisão" },
-      changes_requested: { variant: "destructive", label: "Ajustes Solicitados" },
-      approved: { variant: "outline", label: "Aprovado" },
+    const variants: Record<string, { variant: "default" | "pending" | "destructive" | "success" | "warning" | "outline", label: string }> = {
+      draft: { variant: "default", label: "Rascunho" },
+      in_review: { variant: "pending", label: "Em Revisão" },
+      changes_requested: { variant: "warning", label: "Ajustes Solicitados" },
+      approved: { variant: "success", label: "Aprovado" },
     };
     
-    const config = variants[status] || { variant: "secondary", label: status };
+    const config = variants[status] || { variant: "default", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 

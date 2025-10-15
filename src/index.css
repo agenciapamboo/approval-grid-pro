@@ -8,25 +8,25 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern Light Theme - Clean & Airy */
-    --background: 210 20% 98%;
+    /* Modern Light Theme - Clean & Airy with Glassmorphism */
+    --background: 223 13% 96%;
     --foreground: 215 25% 15%;
 
-    /* Glass effect base */
-    --glass-bg: 0 0% 100% / 0.7;
+    /* Enhanced Glass effect */
+    --glass-bg: 0 0% 100% / 0.8;
     --glass-border: 210 20% 90% / 0.8;
     
-    --card: 0 0% 100% / 0.7;
+    --card: 0 0% 100% / 0.8;
     --card-foreground: 215 25% 15%;
 
     --popover: 0 0% 100% / 0.95;
     --popover-foreground: 215 25% 15%;
 
-    /* Primary - Teal/Turquoise */
-    --primary: 175 65% 45%;
+    /* Primary - Green Brand (#00B878) */
+    --primary: 158 100% 36%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 175 65% 40%;
-    --primary-glow: 175 65% 55%;
+    --primary-hover: 158 100% 42%;
+    --primary-glow: 158 100% 48%;
 
     /* Secondary - Soft Blue */
     --secondary: 210 40% 96%;
@@ -36,10 +36,10 @@ All colors MUST be HSL.
     --muted: 210 20% 96%;
     --muted-foreground: 215 16% 46%;
 
-    /* Accent - Vivid Teal */
-    --accent: 180 70% 50%;
+    /* Accent - Blue Brand (#0072CE) */
+    --accent: 204 100% 41%;
     --accent-foreground: 0 0% 100%;
-    --accent-hover: 180 70% 45%;
+    --accent-hover: 204 100% 35%;
 
     /* Success */
     --success: 142 70% 45%;
@@ -66,9 +66,10 @@ All colors MUST be HSL.
     --shadow-glass: 0 8px 32px hsl(215 25% 15% / 0.08);
     --shadow-glass-lg: 0 16px 48px hsl(215 25% 15% / 0.12);
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(175 65% 45%) 0%, hsl(180 70% 50%) 100%);
-    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.7) 0%, hsl(0 0% 100% / 0.5) 100%);
+    /* Gradients - Brand Colors */
+    --gradient-primary: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 42%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 48%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.8) 0%, hsl(0 0% 100% / 0.6) 100%);
 
     /* Sidebar */
     --sidebar-background: 0 0% 100% / 0.7;
@@ -86,25 +87,25 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Modern Dark Theme - Deep & Neon */
-    --background: 215 30% 8%;
-    --foreground: 210 40% 98%;
+    /* Modern Dark Theme - Deep Blue (#0f172a) */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 92%;
 
-    /* Glass effect dark */
-    --glass-bg: 215 25% 12% / 0.7;
-    --glass-border: 215 20% 20% / 0.5;
+    /* Enhanced Glass effect dark */
+    --glass-bg: 0 0% 100% / 0.05;
+    --glass-border: 0 0% 100% / 0.1;
 
-    --card: 215 25% 12% / 0.7;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100% / 0.05;
+    --card-foreground: 210 40% 92%;
 
     --popover: 215 25% 12% / 0.95;
     --popover-foreground: 210 40% 98%;
 
-    /* Primary - Neon Green/Teal */
-    --primary: 165 80% 55%;
-    --primary-foreground: 215 30% 8%;
-    --primary-hover: 165 80% 60%;
-    --primary-glow: 165 80% 65%;
+    /* Primary - Green Brand (#00B878) */
+    --primary: 158 100% 36%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 158 100% 42%;
+    --primary-glow: 158 100% 48%;
 
     /* Secondary */
     --secondary: 215 20% 18%;
@@ -114,10 +115,10 @@ All colors MUST be HSL.
     --muted: 215 20% 16%;
     --muted-foreground: 215 20% 65%;
 
-    /* Accent - Bright Cyan */
-    --accent: 180 85% 60%;
-    --accent-foreground: 215 30% 8%;
-    --accent-hover: 180 85% 65%;
+    /* Accent - Blue Brand (#0072CE) */
+    --accent: 204 100% 41%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 204 100% 35%;
 
     /* Success */
     --success: 142 76% 50%;
@@ -141,9 +142,10 @@ All colors MUST be HSL.
     --shadow-glass: 0 8px 32px hsl(0 0% 0% / 0.3);
     --shadow-glass-lg: 0 16px 48px hsl(0 0% 0% / 0.4);
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(165 80% 55%) 0%, hsl(180 85% 60%) 100%);
-    --gradient-glass: linear-gradient(135deg, hsl(215 25% 12% / 0.7) 0%, hsl(215 25% 15% / 0.5) 100%);
+    /* Gradients - Brand Colors Dark */
+    --gradient-primary: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 42%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 48%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.05) 0%, hsl(0 0% 100% / 0.02) 100%);
 
     /* Sidebar */
     --sidebar-background: 215 25% 12% / 0.7;
@@ -189,12 +191,13 @@ All colors MUST be HSL.
     pointer-events: none;
   }
 
-  /* Glass utility classes */
+  /* Enhanced Glass utility classes */
   .glass {
     background: hsl(var(--glass-bg));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-glass);
   }
 
   .glass-strong {
@@ -202,6 +205,17 @@ All colors MUST be HSL.
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-glass-lg);
+  }
+
+  .glass-hover {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .glass-hover:hover {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-glass-lg);
+    transform: translateY(-2px);
   }
 }
 
