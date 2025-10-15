@@ -18,6 +18,7 @@ import { MonthSelectorDialog } from "@/components/admin/MonthSelectorDialog";
 import { ContentCategorySelector } from "@/components/content/ContentCategorySelector";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
+import { CreativeRequestDialog } from "@/components/admin/CreativeRequestDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
@@ -86,11 +87,13 @@ const Dashboard = () => {
   const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
   const [contents, setContents] = useState<Content[]>([]);
   const [contentsByMonth, setContentsByMonth] = useState<Record<string, Content[]>>({});
-  const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number }>>({});
+  const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number; creatives: number }>>({});
   const [openViewAgencyId, setOpenViewAgencyId] = useState<string | null>(null);
   const [openEditAgencyId, setOpenEditAgencyId] = useState<string | null>(null);
   const [openProfileDialog, setOpenProfileDialog] = useState(false);
   const [requestCreativeOpen, setRequestCreativeOpen] = useState(false);
+  const [selectedCreativeRequest, setSelectedCreativeRequest] = useState<any>(null);
+  const [showCreativeRequestDialog, setShowCreativeRequestDialog] = useState(false);
 
   const checkAuth = async () => {
     setLoading(true);
@@ -166,8 +169,8 @@ const Dashboard = () => {
         if (clientsData) {
           setClients(clientsData);
           
-          // Buscar notificações de conteúdo para cada cliente
-          const notifications: Record<string, { adjustments: number; approved: number; rejected: number }> = {};
+          // Buscar notificações de conteúdo e criativos para cada cliente
+          const notifications: Record<string, { adjustments: number; approved: number; rejected: number; creatives: number }> = {};
           
           for (const client of clientsData) {
             const { data: contentsData } = await supabase
@@ -175,11 +178,19 @@ const Dashboard = () => {
               .select("status")
               .eq("client_id", client.id);
             
+            const { data: creativesData } = await supabase
+              .from("notifications")
+              .select("id")
+              .eq("client_id", client.id)
+              .eq("event", "novojob")
+              .eq("status", "pending");
+            
             if (contentsData) {
               notifications[client.id] = {
                 adjustments: contentsData.filter(c => c.status === 'changes_requested').length,
                 approved: contentsData.filter(c => c.status === 'approved').length,
                 rejected: contentsData.filter(c => c.status === 'in_review').length,
+                creatives: creativesData?.length || 0,
               };
             }
           }
@@ -569,8 +580,8 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {clients.map((client) => {
                   const agency = getClientAgency(client.agency_id);
-                  const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0 };
-                  const hasNotifications = notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0;
+                  const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0, creatives: 0 };
+                  const hasNotifications = notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0 || notifications.creatives > 0;
                   
                   return (
                     <Card 
@@ -603,6 +614,31 @@ const Dashboard = () => {
                           <div className="flex flex-col gap-2">
                             {hasNotifications && (
                               <div className="flex flex-wrap gap-2 mb-3">
+                                {notifications.creatives > 0 && (
+                                  <Badge 
+                                    variant="pending" 
+                                    className="cursor-pointer"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const { data } = await supabase
+                                        .from("notifications")
+                                        .select("*")
+                                        .eq("client_id", client.id)
+                                        .eq("event", "novojob")
+                                        .eq("status", "pending")
+                                        .order("created_at", { ascending: false })
+                                        .limit(1)
+                                        .single();
+                                      if (data) {
+                                        setSelectedCreativeRequest(data);
+                                        setShowCreativeRequestDialog(true);
+                                      }
+                                    }}
+                                  >
+                                    <Sparkles className="h-3 w-3" />
+                                    {notifications.creatives} Novo criativo{notifications.creatives > 1 ? 's' : ''}
+                                  </Badge>
+                                )}
                                 {notifications.adjustments > 0 && (
                                   <Badge variant="warning" className="cursor-pointer">
                                     <AlertCircle className="h-3 w-3" />
@@ -616,9 +652,9 @@ const Dashboard = () => {
                                   </Badge>
                                 )}
                                 {notifications.rejected > 0 && (
-                                  <Badge variant="pending" className="cursor-pointer">
+                                  <Badge variant="destructive" className="cursor-pointer">
                                     <Clock className="h-3 w-3" />
-                                    {notifications.rejected} Pendente{notifications.rejected > 1 ? 's' : ''}
+                                    {notifications.rejected} Reprovado{notifications.rejected > 1 ? 's' : ''}
                                   </Badge>
                                 )}
                               </div>
@@ -856,6 +892,12 @@ const Dashboard = () => {
           agencyId={agencies[0].id}
         />
       )}
+
+      <CreativeRequestDialog
+        open={showCreativeRequestDialog}
+        onOpenChange={setShowCreativeRequestDialog}
+        request={selectedCreativeRequest}
+      />
       
       <AppFooter />
     </div>

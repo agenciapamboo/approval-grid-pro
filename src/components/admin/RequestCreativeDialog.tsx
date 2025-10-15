@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Sparkles } from "lucide-react";
+import { triggerWebhook } from "@/lib/webhooks";
 
 interface RequestCreativeDialogProps {
   open: boolean;
@@ -53,7 +54,7 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }
         uploadedUrls.push(publicUrl);
       }
 
-      // Create a creative request record (you may need to create this table)
+      // Create a creative request record
       const requestData = {
         ...formData,
         client_id: clientId,
@@ -62,15 +63,24 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }
         status: 'pending',
       };
 
-      // Trigger webhook
-      await supabase.functions.invoke('send-webhook', {
-        body: {
+      // Store in notifications table
+      const { data: notificationData, error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
           event: 'novojob',
           client_id: clientId,
           agency_id: agencyId,
-          creative_request: requestData,
-        },
-      });
+          channel: 'webhook',
+          status: 'pending',
+          payload: requestData,
+        })
+        .select()
+        .single();
+
+      if (notificationError) throw notificationError;
+
+      // Trigger webhook
+      await triggerWebhook('novojob', notificationData.id, clientId, agencyId);
 
       toast({
         title: "✅ Solicitação enviada com sucesso!",

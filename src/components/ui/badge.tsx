@@ -11,13 +11,13 @@ const badgeVariants = cva(
         default:
           "glass border-border/50 bg-primary/10 text-primary hover:bg-primary/20",
         success:
-          "glass border-primary/30 bg-gradient-to-r from-primary/20 to-primary-glow/20 text-primary shadow-sm",
+          "glass border-green-500/30 bg-green-500/20 text-green-600 dark:text-green-400 shadow-sm",
         warning:
-          "glass border-warning/30 bg-gradient-to-r from-warning/20 to-warning/10 text-warning shadow-sm",
+          "glass border-orange-500/30 bg-orange-500/20 text-orange-600 dark:text-orange-400 shadow-sm",
         destructive:
-          "glass border-destructive/30 bg-gradient-to-r from-destructive/20 to-destructive/10 text-destructive shadow-sm",
+          "glass border-red-500/30 bg-red-500/20 text-red-600 dark:text-red-400 shadow-sm",
         pending:
-          "glass border-accent/30 bg-gradient-to-r from-accent/20 to-accent/10 text-accent shadow-sm",
+          "glass border-blue-500/30 bg-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm",
         outline: "glass border-border/50 text-foreground",
       },
     },
