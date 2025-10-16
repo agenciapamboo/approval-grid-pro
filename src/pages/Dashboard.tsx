@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -90,7 +90,7 @@ const Dashboard = () => {
   const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
   const [contents, setContents] = useState<Content[]>([]);
   const [contentsByMonth, setContentsByMonth] = useState<Record<string, Content[]>>({});
-  const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number; creatives: number }>>({});
+  const [clientNotifications, setClientNotifications] = useState<Record<string, { adjustments: number; approved: number; rejected: number; creatives: number; new: number }>>({});
   const [openViewAgencyId, setOpenViewAgencyId] = useState<string | null>(null);
   const [openEditAgencyId, setOpenEditAgencyId] = useState<string | null>(null);
   const [openProfileDialog, setOpenProfileDialog] = useState(false);
@@ -176,12 +176,13 @@ const Dashboard = () => {
           setClients(clientsData);
           
           // Buscar notificações de conteúdo e criativos para cada cliente
-          const notifications: Record<string, { adjustments: number; approved: number; rejected: number; creatives: number }> = {};
+          const notifications: Record<string, { adjustments: number; approved: number; rejected: number; creatives: number; new: number }> = {};
+          const now = new Date();
           
           for (const client of clientsData) {
             const { data: contentsData } = await supabase
               .from("contents")
-              .select("status")
+              .select("status, date")
               .eq("client_id", client.id);
             
             const { data: creativesData } = await supabase
@@ -193,9 +194,10 @@ const Dashboard = () => {
             
             if (contentsData) {
               notifications[client.id] = {
-                adjustments: contentsData.filter(c => c.status === 'changes_requested').length,
-                approved: contentsData.filter(c => c.status === 'approved').length,
-                rejected: contentsData.filter(c => c.status === 'in_review').length,
+                new: contentsData.filter(c => c.status === 'draft').length,
+                adjustments: contentsData.filter(c => c.status === 'in_review').length,
+                approved: contentsData.filter(c => c.status === 'approved' && new Date(c.date) > now).length,
+                rejected: contentsData.filter(c => c.status === 'changes_requested' && new Date(c.date) > now).length,
                 creatives: creativesData?.length || 0,
               };
             }
@@ -626,8 +628,8 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {clients.map((client) => {
                   const agency = getClientAgency(client.agency_id);
-                  const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0, creatives: 0 };
-                  const hasNotifications = notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0 || notifications.creatives > 0;
+                  const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0, creatives: 0, new: 0 };
+                  const hasNotifications = notifications.new > 0 || notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0 || notifications.creatives > 0;
                   
                   return (
                     <Card 
@@ -638,35 +640,40 @@ const Dashboard = () => {
                       {hasNotifications && (
                         <div className="bg-muted/50 p-3 border-b border-border/50">
                           <div className="flex flex-wrap gap-2">
+                            {notifications.new > 0 && (
+                              <Badge className="gap-1.5 bg-blue-600 text-white border-blue-600 hover:bg-blue-700">
+                                <Clock className="w-3 h-3" />
+                                {notifications.new} Novo{notifications.new > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            {notifications.adjustments > 0 && (
+                              <Badge className="gap-1.5 bg-orange-600 text-white border-orange-600 hover:bg-orange-700">
+                                <AlertCircle className="w-3 h-3" />
+                                {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            {notifications.approved > 0 && (
+                              <Badge className="gap-1.5 bg-green-600 text-white border-green-600 hover:bg-green-700">
+                                <CheckCircle className="w-3 h-3" />
+                                {notifications.approved} Aprovado{notifications.approved > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            {notifications.rejected > 0 && (
+                              <Badge className="gap-1.5 bg-red-600 text-white border-red-600 hover:bg-red-700">
+                                <XCircle className="w-3 h-3" />
+                                {notifications.rejected} Reprovado{notifications.rejected > 1 ? 's' : ''}
+                              </Badge>
+                            )}
                             {notifications.creatives > 0 && (
                               <Badge 
-                                variant="warning" 
-                                className="cursor-pointer hover:opacity-80"
+                                className="gap-1.5 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 cursor-pointer"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/agency/creative-requests/${client.id}`);
                                 }}
                               >
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                {notifications.creatives} Novo{notifications.creatives > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                            {notifications.adjustments > 0 && (
-                              <Badge variant="warning">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                            {notifications.approved > 0 && (
-                              <Badge variant="success">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                {notifications.approved}
-                              </Badge>
-                            )}
-                            {notifications.rejected > 0 && (
-                              <Badge variant="destructive">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {notifications.rejected}
+                                <Sparkles className="h-3 w-3" />
+                                {notifications.creatives} Solicitaç{notifications.creatives > 1 ? 'ões' : 'ão'}
                               </Badge>
                             )}
                           </div>
