@@ -13,6 +13,8 @@ import { ArrowLeft, Clock, CheckCircle, AlertCircle, Loader2, MessageSquare, Che
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { triggerWebhook } from "@/lib/webhooks";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 interface CreativeRequest {
   id: string;
@@ -48,10 +50,38 @@ export default function CreativeRequests() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    loadRequests();
+    checkAuthAndLoadRequests();
   }, [clientId]);
+
+  const checkAuthAndLoadRequests = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      // Carregar perfil
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      await loadRequests();
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      navigate("/dashboard");
+    }
+  };
 
   const loadRequests = async () => {
     try {
@@ -146,6 +176,11 @@ export default function CreativeRequests() {
     }
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   const handleRequestInfo = async () => {
     if (!selectedRequest || !infoMessage.trim()) {
       toast({
@@ -181,9 +216,15 @@ export default function CreativeRequests() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <AppHeader 
+        userName={profile?.name}
+        userRole="Administrador da Agência"
+        onSignOut={handleSignOut}
+      />
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -302,7 +343,6 @@ export default function CreativeRequests() {
             })}
           </div>
         )}
-      </div>
 
       <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
         <DialogContent>
@@ -425,6 +465,9 @@ export default function CreativeRequests() {
           )}
         </DialogContent>
       </Dialog>
+      </main>
+      
+      <AppFooter />
     </div>
   );
 }

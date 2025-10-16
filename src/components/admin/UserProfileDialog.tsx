@@ -240,7 +240,7 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Minha Conta</DialogTitle>
         </DialogHeader>
