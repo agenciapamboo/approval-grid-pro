@@ -634,14 +634,14 @@ const Dashboard = () => {
                   return (
                     <Card 
                       key={client.id} 
-                      className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20"
+                      className="relative overflow-hidden"
                     >
                       {/* Notificações no topo */}
                       {hasNotifications && (
-                        <div className="bg-gradient-to-r from-amber-100/80 to-yellow-100/80 dark:from-amber-900/40 dark:to-yellow-900/40 p-3 border-b border-amber-200/50 dark:border-amber-800/50">
+                        <div className="bg-muted/50 p-3 border-b border-border/50">
                           <div className="flex flex-wrap gap-2">
                             {notifications.new > 0 && (
-                              <Badge className="gap-1.5 bg-amber-600 text-white border-amber-600 hover:bg-amber-700">
+                              <Badge className="gap-1.5 bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700">
                                 <Sparkles className="w-3 h-3" />
                                 {notifications.new} Solicitaç{notifications.new > 1 ? 'ões' : 'ão'}
                               </Badge>
