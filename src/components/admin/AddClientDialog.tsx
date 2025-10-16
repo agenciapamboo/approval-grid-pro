@@ -26,6 +26,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
     logo_url: "",
     webhook_url: "",
     timezone: "America/Sao_Paulo",
+    monthly_creatives: 0,
     notify_email: true,
     notify_whatsapp: false,
   });
@@ -44,6 +45,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
           logo_url: formData.logo_url,
           timezone: formData.timezone,
           email: formData.email,
+          monthly_creatives: formData.monthly_creatives,
           agency_id: agencyId,
         }])
         .select()
@@ -111,6 +113,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
         logo_url: "",
         webhook_url: "",
         timezone: "America/Sao_Paulo",
+        monthly_creatives: 0,
         notify_email: true,
         notify_whatsapp: false,
       });
@@ -210,6 +213,18 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
               value={formData.logo_url}
               onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
               placeholder="https://exemplo.com/logo.png"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="monthly_creatives">Criativos por Mês</Label>
+            <Input
+              id="monthly_creatives"
+              type="number"
+              min="0"
+              value={formData.monthly_creatives}
+              onChange={(e) => setFormData({ ...formData, monthly_creatives: parseInt(e.target.value) || 0 })}
+              placeholder="0"
             />
           </div>
 

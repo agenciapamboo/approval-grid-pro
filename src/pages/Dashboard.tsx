@@ -634,137 +634,146 @@ const Dashboard = () => {
                       key={client.id} 
                       className="relative overflow-hidden"
                     >
-                      <CardHeader>
-                        <div className="flex items-start gap-3">
-                          <div 
-                            className="flex-1 cursor-pointer" 
-                            onClick={() => {
-                              const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                              if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                            }}
-                          >
+                      {/* Notificações no topo */}
+                      {hasNotifications && (
+                        <div className="bg-muted/50 p-3 border-b border-border/50">
+                          <div className="flex flex-wrap gap-2">
+                            {notifications.creatives > 0 && (
+                              <Badge 
+                                variant="warning" 
+                                className="cursor-pointer hover:opacity-80"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/agency/creative-requests/${client.id}`);
+                                }}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                {notifications.creatives} Novo{notifications.creatives > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            {notifications.adjustments > 0 && (
+                              <Badge variant="warning">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            {notifications.approved > 0 && (
+                              <Badge variant="success">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {notifications.approved}
+                              </Badge>
+                            )}
+                            {notifications.rejected > 0 && (
+                              <Badge variant="destructive">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {notifications.rejected}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Coluna Esquerda - Dados do Cliente */}
+                          <div className="space-y-4">
                             {client.logo_url && (
                               <img 
                                 src={client.logo_url} 
                                 alt={client.name}
-                                className="h-12 mb-3 object-contain"
+                                className="h-12 object-contain"
                               />
                             )}
-                            <CardTitle className="text-lg">{client.name}</CardTitle>
-                            {agency && (
-                              <CardDescription className="text-sm mt-1">
-                                {agency.name}
-                              </CardDescription>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            {hasNotifications && (
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {notifications.creatives > 0 && (
-                                  <Badge 
-                                    variant="warning" 
-                                    className="cursor-pointer hover:opacity-80"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/agency/creative-requests/${client.id}`);
+                            <div>
+                              <h3 className="font-semibold text-lg mb-1">{client.name}</h3>
+                              {(client as any).monthly_creatives > 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                  {(client as any).monthly_creatives} criativos/mês
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full justify-start"
+                                onClick={() => {
+                                  setSelectedClient(client);
+                                  setViewClientOpen(true);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Dados
+                              </Button>
+                              {profile?.role === 'agency_admin' && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start"
+                                    onClick={() => {
+                                      setSelectedClient(client);
+                                      setEditClientOpen(true);
                                     }}
                                   >
-                                    <Sparkles className="h-3 w-3" />
-                                    {notifications.creatives} Novo criativo{notifications.creatives > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                                {notifications.adjustments > 0 && (
-                                  <Badge variant="warning" className="cursor-pointer">
-                                    <AlertCircle className="h-3 w-3" />
-                                    {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                                {notifications.approved > 0 && (
-                                  <Badge variant="success" className="cursor-pointer">
-                                    <CheckCircle className="h-3 w-3" />
-                                    {notifications.approved} Aprovado{notifications.approved > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                                {notifications.rejected > 0 && (
-                                  <Badge variant="destructive" className="cursor-pointer">
-                                    <Clock className="h-3 w-3" />
-                                    {notifications.rejected} Reprovado{notifications.rejected > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
+                                    <Pencil className="w-4 h-4 mr-2" />
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-full justify-start"
+                                    onClick={() => handleDeleteClient(client)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Remover Cliente
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Coluna Direita - Botões de Conteúdo */}
+                          <div className="space-y-2">
                             <Button
-                              variant="outline" 
+                              variant="success"
                               size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedClient(client);
-                                setViewClientOpen(true);
-                              }}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              Dados
-                            </Button>
-                            <Button 
-                              variant="success" 
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
+                              className="w-full justify-start"
+                              onClick={() => {
                                 setSelectedClient(client);
                                 setMonthSelectorOpen(true);
                               }}
                             >
-                              <CheckCircle className="w-4 h-4 mr-2" />
+                              <Plus className="w-4 h-4 mr-2" />
                               Aprovação
                             </Button>
-                            {profile?.role === 'agency_admin' && (
-                              <>
-                                <Button 
-                                  variant="secondary" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                    if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                                  }}
-                                >
-                                  <FileImage className="w-4 h-4 mr-2" />
-                                  Ver conteúdo
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedClient(client);
-                                    setEditClientOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="w-4 h-4 mr-2" />
-                                  Editar
-                                </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteClient(client);
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
+                            
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                if (aSlug) navigate(`/${aSlug}/${client.slug}`);
+                              }}
+                            >
+                              <FileImage className="w-4 h-4 mr-2" />
+                              Conteúdos
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => navigate(`/agency/creative-requests/${client.id}`)}
+                            >
+                              <MessageSquare className="w-4 h-4 mr-2" />
+                              Solicitações
+                            </Button>
                           </div>
                         </div>
-                        {client.plan_renewal_date && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-xs text-muted-foreground">
-                              Última atualização: {new Date(client.plan_renewal_date).toLocaleDateString('pt-BR')} às {new Date(client.plan_renewal_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        )}
-                      </CardHeader>
+                      </CardContent>
                     </Card>
                   );
                 })}

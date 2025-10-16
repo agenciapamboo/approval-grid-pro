@@ -45,6 +45,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     website: "",
     whatsapp: "",
     address: "",
+    monthly_creatives: 0,
     note: "",
     password: "",
   });
@@ -67,6 +68,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         website: client.website || "",
         whatsapp: client.whatsapp || "",
         address: client.address || "",
+        monthly_creatives: (client as any).monthly_creatives || 0,
         note: "",
         password: "",
       });
@@ -126,6 +128,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
           website: formData.website || null,
           whatsapp: formData.whatsapp || null,
           address: formData.address || null,
+          monthly_creatives: formData.monthly_creatives,
         })
         .eq("id", client.id);
 
@@ -326,6 +329,18 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Rua, número, bairro, cidade - Estado"
               rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="monthly_creatives">Criativos por Mês</Label>
+            <Input
+              id="monthly_creatives"
+              type="number"
+              min="0"
+              value={formData.monthly_creatives}
+              onChange={(e) => setFormData({ ...formData, monthly_creatives: parseInt(e.target.value) || 0 })}
+              placeholder="0"
             />
           </div>
 

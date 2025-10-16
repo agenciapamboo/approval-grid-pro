@@ -147,6 +147,7 @@ export type Database = {
           email: string | null
           id: string
           logo_url: string | null
+          monthly_creatives: number | null
           name: string
           plan_renewal_date: string | null
           responsible_user_id: string | null
@@ -165,6 +166,7 @@ export type Database = {
           email?: string | null
           id?: string
           logo_url?: string | null
+          monthly_creatives?: number | null
           name: string
           plan_renewal_date?: string | null
           responsible_user_id?: string | null
@@ -183,6 +185,7 @@ export type Database = {
           email?: string | null
           id?: string
           logo_url?: string | null
+          monthly_creatives?: number | null
           name?: string
           plan_renewal_date?: string | null
           responsible_user_id?: string | null
