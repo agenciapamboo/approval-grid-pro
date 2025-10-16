@@ -45,7 +45,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [rejectReason, setRejectReason] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [newDate, setNewDate] = useState<Date>(new Date(content.date));
-  const [selectedTime, setSelectedTime] = useState<string>("12:00");
+  const [selectedTime, setSelectedTime] = useState<string>(() => {
+    const raw = String(content.date || "");
+    const parts = raw.includes("T") ? raw.split("T")[1] : raw.split(" ")[1] || "12:00:00";
+    const [hh = "12", mm = "00"] = parts.split(":");
+    return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
@@ -326,8 +331,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       const month = newDate.getMonth();
       const day = newDate.getDate();
       
-      // Criar data no formato ISO sem conversão de timezone
-      const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+      // String no formato ISO local com "T" para evitar parse UTC no front
+      const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
       
       const { error } = await supabase
         .from("contents")

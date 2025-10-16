@@ -215,8 +215,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       const month = date.getMonth();
       const day = date.getDate();
       
-      // Criar data no formato ISO sem conversão de timezone
-      const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+      // String no formato ISO local com "T" para evitar parse UTC no front
+      const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
       const { data: content, error: contentError } = await supabase
         .from("contents")

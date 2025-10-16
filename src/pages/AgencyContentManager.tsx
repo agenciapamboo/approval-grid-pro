@@ -171,12 +171,16 @@ export default function AgencyContentManager() {
     if (monthParam && yearParam) {
       const month = parseInt(monthParam);
       const year = parseInt(yearParam);
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
+      const startDate = new Date(year, month - 1, 1, 0, 0, 0);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+      
+      const startStr = format(startDate, "yyyy-MM-dd HH:mm:ss");
+      const endStr = format(endDate, "yyyy-MM-dd HH:mm:ss");
       
       query = query
-        .gte("date", startDate.toISOString().split('T')[0])
-        .lte("date", endDate.toISOString().split('T')[0]);
+        .gte("date", startStr)
+        .lte("date", endStr);
+
     }
 
     const { data, error } = await query.order("date", { ascending: false });
@@ -209,7 +213,7 @@ export default function AgencyContentManager() {
 
     if (dateFilter) {
       const filterDate = format(dateFilter, "yyyy-MM-dd");
-      filtered = filtered.filter(content => content.date === filterDate);
+      filtered = filtered.filter(content => (content.date || "").slice(0, 10) === filterDate);
     }
 
     setFilteredContents(filtered);
