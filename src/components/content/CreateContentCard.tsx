@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { triggerWebhook } from "@/lib/webhooks";
 import { createNotification } from "@/lib/notifications";
+import { TimeInput } from "@/components/ui/time-input";
 
 interface CreateContentCardProps {
   clientId: string;
@@ -208,17 +209,21 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         finalContentType = videoTypes[0] as typeof finalContentType;
       }
 
-      // Criar datetime combinando data e hora
-      const [hours, minutes] = time.split(':');
-      const dateTime = new Date(date);
-      dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      // Criar datetime combinando data e hora (sem conversão de timezone)
+      const [hours, minutes] = time.split(':').map(Number);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+      
+      // Criar data no formato ISO sem conversão de timezone
+      const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
       const { data: content, error: contentError } = await supabase
         .from("contents")
         .insert([{
           client_id: clientId,
-          title: `Conteúdo ${format(dateTime, "dd/MM/yyyy HH:mm")}`,
-          date: format(date, "yyyy-MM-dd"),
+          title: `Conteúdo ${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+          date: dateTimeString,
           type: finalContentType,
           status: 'draft' as const,
           owner_user_id: user.id,
@@ -437,18 +442,29 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
               </PopoverContent>
             </Popover>
             
-            <div className="relative flex-1">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="time"
-                value={time}
-                onChange={(e) => {
-                  setTime(e.target.value);
-                  setHasChanges(true);
-                }}
-                className="pl-9"
-              />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex-1 justify-start text-left font-normal"
+                >
+                  <Clock className="mr-2 h-4 w-4" />
+                  {time}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-4">
+                <div className="flex flex-col items-center gap-2">
+                  <Label className="text-sm font-medium">Hora</Label>
+                  <TimeInput
+                    value={time}
+                    onChange={(newTime) => {
+                      setTime(newTime);
+                      setHasChanges(true);
+                    }}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 

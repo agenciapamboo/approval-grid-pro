@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import TimePicker from 'react-time-picker';
-import 'react-time-picker/dist/TimePicker.css';
+import { TimeInput } from "@/components/ui/time-input";
 import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -323,17 +322,16 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const handleDateTimeConfirm = async () => {
     try {
       const [hours, minutes] = selectedTime.split(':').map(Number);
-      const dateTime = new Date(
-        newDate.getFullYear(),
-        newDate.getMonth(),
-        newDate.getDate(),
-        hours,
-        minutes
-      );
+      const year = newDate.getFullYear();
+      const month = newDate.getMonth();
+      const day = newDate.getDate();
+      
+      // Criar data no formato ISO sem conversão de timezone
+      const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
       
       const { error } = await supabase
         .from("contents")
-        .update({ date: format(dateTime, "yyyy-MM-dd HH:mm:ss") })
+        .update({ date: dateTimeString })
         .eq("id", content.id);
 
       if (error) throw error;
@@ -489,14 +487,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                           initialFocus
                           className="pointer-events-auto"
                         />
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm font-medium">Hora:</label>
-                          <TimePicker
-                            onChange={(value) => setSelectedTime(value || "12:00")}
+                        <div className="flex flex-col items-center gap-2">
+                          <label className="text-sm font-medium">Hora</label>
+                          <TimeInput
                             value={selectedTime}
-                            disableClock
-                            format="HH:mm"
-                            className="border rounded px-2"
+                            onChange={(value) => setSelectedTime(value)}
                           />
                         </div>
                         <Button onClick={handleDateTimeConfirm} className="w-full">
