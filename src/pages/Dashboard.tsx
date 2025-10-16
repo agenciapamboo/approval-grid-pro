@@ -771,10 +771,7 @@ const Dashboard = () => {
                               variant="secondary"
                               size="sm"
                               className="w-full justify-start"
-                              onClick={() => {
-                                const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
-                                if (aSlug) navigate(`/${aSlug}/${client.slug}`);
-                              }}
+                              onClick={() => navigate(`/agency/client/${client.id}`)}
                             >
                               <FileImage className="w-4 h-4 mr-2" />
                               Conteúdos
