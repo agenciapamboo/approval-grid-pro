@@ -80,33 +80,55 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     if (!client) return;
     
     try {
+      console.log("🔍 Carregando preferências para cliente:", client.id);
+      
       // Buscar o user_id do cliente
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from("profiles")
         .select("id")
         .eq("client_id", client.id)
         .single();
 
+      if (userError) {
+        console.error("❌ Erro ao buscar usuário:", userError);
+        return;
+      }
+
       if (userData) {
+        console.log("✅ User ID encontrado:", userData.id);
         setUserId(userData.id);
 
         // Carregar preferências de notificação
-        const { data: prefsData } = await supabase
+        const { data: prefsData, error: prefsError } = await supabase
           .from("user_preferences")
           .select("*")
           .eq("user_id", userData.id)
           .maybeSingle();
 
+        if (prefsError) {
+          console.error("❌ Erro ao buscar preferências:", prefsError);
+          return;
+        }
+
+        console.log("📋 Preferências carregadas:", prefsData);
+
         if (prefsData) {
           setNotificationPreferences({
+            notify_email: prefsData.notify_email ?? true,
+            notify_whatsapp: prefsData.notify_whatsapp ?? false,
+            notify_webhook: prefsData.notify_webhook ?? true,
+          });
+          console.log("✅ Estado de preferências atualizado:", {
             notify_email: prefsData.notify_email,
             notify_whatsapp: prefsData.notify_whatsapp,
             notify_webhook: prefsData.notify_webhook,
           });
+        } else {
+          console.log("⚠️ Nenhuma preferência encontrada, usando defaults");
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar preferências:", error);
+      console.error("❌ Erro ao carregar preferências:", error);
     }
   };
 
@@ -178,35 +200,54 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
 
       // Update notification preferences if userId exists
       if (userId) {
-        const { data: existingPref } = await supabase
+        console.log("💾 Salvando preferências para user_id:", userId);
+        console.log("📝 Preferências a salvar:", notificationPreferences);
+
+        const { data: existingPref, error: checkError } = await supabase
           .from("user_preferences")
           .select("id")
           .eq("user_id", userId)
           .maybeSingle();
 
+        if (checkError) {
+          console.error("❌ Erro ao verificar preferências existentes:", checkError);
+        }
+
+        console.log("🔍 Preferência existente:", existingPref);
+
         if (existingPref) {
           // Update existing preferences
-          const { error: prefsError } = await supabase
+          console.log("🔄 Atualizando preferências existentes...");
+          const { data: updateData, error: prefsError } = await supabase
             .from("user_preferences")
             .update(notificationPreferences)
-            .eq("user_id", userId);
+            .eq("user_id", userId)
+            .select();
 
           if (prefsError) {
-            console.error("Erro ao atualizar preferências:", prefsError);
+            console.error("❌ Erro ao atualizar preferências:", prefsError);
+          } else {
+            console.log("✅ Preferências atualizadas com sucesso:", updateData);
           }
         } else {
           // Insert new preferences
-          const { error: prefsError } = await supabase
+          console.log("➕ Inserindo novas preferências...");
+          const { data: insertData, error: prefsError } = await supabase
             .from("user_preferences")
             .insert({
               user_id: userId,
               ...notificationPreferences,
-            });
+            })
+            .select();
 
           if (prefsError) {
-            console.error("Erro ao inserir preferências:", prefsError);
+            console.error("❌ Erro ao inserir preferências:", prefsError);
+          } else {
+            console.log("✅ Preferências inseridas com sucesso:", insertData);
           }
         }
+      } else {
+        console.log("⚠️ Nenhum userId encontrado para salvar preferências");
       }
 
       toast({
