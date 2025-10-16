@@ -227,12 +227,24 @@ serve(async (req) => {
     // Executar o envio do webhook em background
     const sendWebhookTask = async () => {
       try {
-        const webhookResponse = await fetch(webhookUrl, {
-          method: 'POST',
+        // Construir URL com query parameters para GET request
+        const urlWithParams = new URL(webhookUrl)
+        urlWithParams.searchParams.set('event', event)
+        urlWithParams.searchParams.set('content_id', content_id)
+        if (sanitizedPayload.client_id) {
+          urlWithParams.searchParams.set('client_id', sanitizedPayload.client_id)
+        }
+        if (sanitizedPayload.agency_id) {
+          urlWithParams.searchParams.set('agency_id', sanitizedPayload.agency_id)
+        }
+        // Adicionar payload como JSON string
+        urlWithParams.searchParams.set('data', JSON.stringify(sanitizedPayload))
+
+        const webhookResponse = await fetch(urlWithParams.toString(), {
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
-          body: JSON.stringify(sanitizedPayload),
         })
 
         const responseText = await webhookResponse.text()
