@@ -35,7 +35,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -73,72 +73,15 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         password: "",
       });
 
-      // Inicializa preferências a partir do cliente (fallback)
-      setNotificationPreferences(prev => ({
-        notify_email: (client as any).notify_email ?? prev.notify_email,
-        notify_whatsapp: (client as any).notify_whatsapp ?? prev.notify_whatsapp,
-        notify_webhook: (client as any).notify_webhook ?? prev.notify_webhook,
-      }));
-
-      loadUserIdAndPreferences();
+      // Inicializa preferências a partir do cliente
+      setNotificationPreferences({
+        notify_email: (client as any).notify_email ?? true,
+        notify_whatsapp: (client as any).notify_whatsapp ?? false,
+        notify_webhook: true, // Webhook sempre ativo
+      });
     }
   }, [client]);
 
-  const loadUserIdAndPreferences = async () => {
-    if (!client) return;
-    
-    try {
-      console.log("🔍 Carregando preferências para cliente:", client.id);
-      
-      // Buscar o user_id do cliente
-      const { data: userData, error: userError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("client_id", client.id)
-        .single();
-
-      if (userError) {
-        console.error("❌ Erro ao buscar usuário:", userError);
-        return;
-      }
-
-      if (userData) {
-        console.log("✅ User ID encontrado:", userData.id);
-        setUserId(userData.id);
-
-        // Carregar preferências de notificação
-        const { data: prefsData, error: prefsError } = await supabase
-          .from("user_preferences")
-          .select("*")
-          .eq("user_id", userData.id)
-          .maybeSingle();
-
-        if (prefsError) {
-          console.error("❌ Erro ao buscar preferências:", prefsError);
-          return;
-        }
-
-        console.log("📋 Preferências carregadas:", prefsData);
-
-        if (prefsData) {
-          setNotificationPreferences({
-            notify_email: prefsData.notify_email ?? true,
-            notify_whatsapp: prefsData.notify_whatsapp ?? false,
-            notify_webhook: prefsData.notify_webhook ?? true,
-          });
-          console.log("✅ Estado de preferências atualizado:", {
-            notify_email: prefsData.notify_email,
-            notify_whatsapp: prefsData.notify_whatsapp,
-            notify_webhook: prefsData.notify_webhook,
-          });
-        } else {
-          console.log("⚠️ Nenhuma preferência encontrada, usando defaults");
-        }
-      }
-    } catch (error) {
-      console.error("❌ Erro ao carregar preferências:", error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,57 +152,6 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         if (noteError) throw noteError;
       }
 
-      // Update notification preferences if userId exists
-      if (userId) {
-        console.log("💾 Salvando preferências para user_id:", userId);
-        console.log("📝 Preferências a salvar:", notificationPreferences);
-
-        const { data: existingPref, error: checkError } = await supabase
-          .from("user_preferences")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (checkError) {
-          console.error("❌ Erro ao verificar preferências existentes:", checkError);
-        }
-
-        console.log("🔍 Preferência existente:", existingPref);
-
-        if (existingPref) {
-          // Update existing preferences
-          console.log("🔄 Atualizando preferências existentes...");
-          const { data: updateData, error: prefsError } = await supabase
-            .from("user_preferences")
-            .update(notificationPreferences)
-            .eq("user_id", userId)
-            .select();
-
-          if (prefsError) {
-            console.error("❌ Erro ao atualizar preferências:", prefsError);
-          } else {
-            console.log("✅ Preferências atualizadas com sucesso:", updateData);
-          }
-        } else {
-          // Insert new preferences
-          console.log("➕ Inserindo novas preferências...");
-          const { data: insertData, error: prefsError } = await supabase
-            .from("user_preferences")
-            .insert({
-              user_id: userId,
-              ...notificationPreferences,
-            })
-            .select();
-
-          if (prefsError) {
-            console.error("❌ Erro ao inserir preferências:", prefsError);
-          } else {
-            console.log("✅ Preferências inseridas com sucesso:", insertData);
-          }
-        }
-      } else {
-        console.log("⚠️ Nenhum userId encontrado para salvar preferências");
-      }
 
       toast({
         title: "Sucesso",
@@ -466,20 +358,16 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="notify_webhook" className="flex flex-col gap-1">
-                <span>Webhook</span>
-                <span className="text-xs text-muted-foreground font-normal">
-                  Enviar eventos via webhook
+            <div className="rounded-lg border p-4 bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium">Webhook</span>
+                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                  Sempre Ativo
                 </span>
-              </Label>
-              <Switch
-                id="notify_webhook"
-                checked={notificationPreferences.notify_webhook}
-                onCheckedChange={(checked) =>
-                  setNotificationPreferences({ ...notificationPreferences, notify_webhook: checked })
-                }
-              />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Os webhooks são sempre enviados para integração com sistemas externos, independente das outras configurações. As preferências de email e WhatsApp são incluídas no payload.
+              </p>
             </div>
           </div>
 

@@ -43,27 +43,12 @@ export const createNotification = async (
       .limit(1)
       .single();
 
-    let clientPreferences = {
+    // Buscar preferências diretamente da tabela clients
+    const clientPreferences = {
       email: (content as any).clients?.notify_email ?? true,
       whatsapp: (content as any).clients?.notify_whatsapp ?? false,
-      webhook: (content as any).clients?.notify_webhook ?? true
+      webhook: true // Webhook SEMPRE ativo
     };
-
-    if (clientUser) {
-      const { data: prefs } = await supabase
-        .from('user_preferences')
-        .select('notify_email, notify_whatsapp, notify_webhook')
-        .eq('user_id', clientUser.id)
-        .single();
-
-      if (prefs) {
-        clientPreferences = {
-          email: prefs.notify_email ?? true,
-          whatsapp: prefs.notify_whatsapp ?? false,
-          webhook: prefs.notify_webhook ?? true
-        };
-      }
-    }
 
     // Throttle: evitar duplicações por 1h para eventos específicos
     const throttleEvents = ['content.revised', 'content.rejected', 'content.approved'];

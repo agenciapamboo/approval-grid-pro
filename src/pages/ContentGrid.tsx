@@ -10,6 +10,7 @@ import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { ClientNotificationSettings } from "@/components/admin/ClientNotificationSettings";
 
 interface Profile {
   id: string;
@@ -239,6 +240,13 @@ export default function ContentGrid() {
       />
 
       <main className="container mx-auto px-4 py-8">
+        {/* Preferências de Notificação - Apenas para usuários logados */}
+        {profile && client && (
+          <div className="mb-8 max-w-2xl">
+            <ClientNotificationSettings clientId={client.id} />
+          </div>
+        )}
+
         {sortedMonthKeys.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum conteúdo encontrado
