@@ -23,6 +23,8 @@ import { EditCreativeRequestDialog } from "@/components/admin/EditCreativeReques
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 
 
@@ -425,81 +427,27 @@ const Dashboard = () => {
                 <h3 className="text-lg font-semibold">Solicitações</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {creativeRequests.map((request) => (
-                    <Card key={request.id} className="border-l-4 border-l-primary">
+                    <Card key={request.id} className="border-l-4 border-l-primary transition-all">
                       <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-base">{request.payload?.title || 'Sem título'}</CardTitle>
-                            <CardDescription>
-                              {request.payload?.type && (
-                                <Badge variant="outline" className="mr-2 capitalize">
-                                  {request.payload.type}
-                                </Badge>
-                              )}
-                              Solicitado em {new Date(request.created_at).toLocaleDateString('pt-BR')}
-                            </CardDescription>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingRequest(request);
-                              setEditCreativeOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar solicitação
-                          </Button>
-                        </div>
+                        <CardTitle className="text-base">{request.payload?.title || 'Sem título'}</CardTitle>
+                        <CardDescription className="space-y-1">
+                          <p>Solicitado em: {format(new Date(request.created_at!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                          <p>Tipo: {request.payload?.type || 'Não especificado'}</p>
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        {request.payload?.text && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Texto na arte:</p>
-                            <p className="text-sm">{request.payload.text}</p>
-                          </div>
-                        )}
-                        {request.payload?.caption && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Informações para legenda:</p>
-                            <p className="text-sm">{request.payload.caption}</p>
-                          </div>
-                        )}
-                        {request.payload?.observations && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Outras observações:</p>
-                            <p className="text-sm">{request.payload.observations}</p>
-                          </div>
-                        )}
-                        {request.payload?.reference_files?.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground mb-2">Referências:</p>
-                            <div className="grid grid-cols-4 gap-2">
-                              {request.payload.reference_files.map((url: string, i: number) => (
-                                <img key={i} src={url} alt={`ref-${i}`} className="w-full h-20 object-cover rounded" />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {request.payload?.history && request.payload.history.length > 0 && (
-                          <div className="mt-4 pt-4 border-t">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">Histórico de alterações (v{request.payload.version || 1}):</p>
-                            <div className="space-y-2">
-                              {request.payload.history.map((hist: any, i: number) => (
-                                <div key={i} className="text-xs glass p-2 rounded">
-                                  <p className="font-medium">{new Date(hist.at).toLocaleString('pt-BR')}</p>
-                                  {Object.entries(hist.changes || {}).map(([key, value]: [string, any]) => {
-                                    if (!value) return null;
-                                    if (key === 'added_files') {
-                                      return <p key={key}>• {value.length} arquivo(s) adicionado(s)</p>;
-                                    }
-                                    return <p key={key}>• {key}: "{value.from}" → "{value.to}"</p>;
-                                  })}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                      <CardContent>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => {
+                            setEditingRequest(request);
+                            setEditCreativeOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar solicitação
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -531,7 +479,7 @@ const Dashboard = () => {
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div 
-                          className="flex items-center justify-between p-3 glass rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                          className="flex items-center justify-between p-3 glass rounded-lg cursor-pointer hover:shadow-md transition-shadow"
                           onClick={() => {
                             const c = clients[0];
                             const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
@@ -546,7 +494,9 @@ const Dashboard = () => {
                               Você tem {pendingContents.length} para aprovar
                             </p>
                           </div>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          <div className="h-8 w-8 rounded-full bg-[#00B878] hover:bg-[#00a06a] transition-colors flex items-center justify-center">
+                            <ArrowRight className="h-5 w-5 text-white" />
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -564,7 +514,7 @@ const Dashboard = () => {
                         {partialContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:shadow-md transition-shadow"
                             onClick={() => {
                               const c = clients[0];
                               const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
@@ -579,7 +529,9 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                            <div className="h-8 w-8 rounded-full bg-[#00B878] hover:bg-[#00a06a] transition-colors flex items-center justify-center">
+                              <ArrowRight className="h-5 w-5 text-white" />
+                            </div>
                           </div>
                         ))}
                       </CardContent>
@@ -598,7 +550,7 @@ const Dashboard = () => {
                         {approvedContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:shadow-md transition-shadow"
                             onClick={() => {
                               const c = clients[0];
                               const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
@@ -613,7 +565,9 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                            <div className="h-8 w-8 rounded-full bg-[#00B878] hover:bg-[#00a06a] transition-colors flex items-center justify-center">
+                              <ArrowRight className="h-5 w-5 text-white" />
+                            </div>
                           </div>
                         ))}
                       </CardContent>

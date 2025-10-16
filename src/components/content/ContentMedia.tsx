@@ -97,10 +97,8 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Imagem ou vídeo com efeito hover para conteúdos maiores */}
-        <div className={`w-full h-full transition-transform duration-500 ease-out ${
-          isHovering ? 'scale-110' : 'scale-100'
-        }`}>
+        {/* Imagem ou vídeo sem efeito de zoom */}
+        <div className="w-full h-full">
           {currentMedia.kind === "video" ? (
             <video
               src={currentMedia.src_url}
@@ -193,9 +191,15 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
       {/* Modal para visualização em tamanho maior */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-4xl w-full p-0 bg-black/95">
+        <DialogContent className="max-w-none w-auto p-0 bg-transparent border-0 shadow-none">
+          <button
+            onClick={() => setShowModal(false)}
+            className="absolute -top-12 right-0 h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-800 hover:bg-white hover:scale-110 transition-all z-50"
+          >
+            <span className="text-xl font-light">×</span>
+          </button>
           <div 
-            className="relative w-full h-[80vh] flex items-center justify-center"
+            className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -205,13 +209,13 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
                 src={currentMedia.src_url}
                 poster={currentMedia.thumb_url}
                 controls
-                className="max-w-full max-h-full"
+                className="max-w-full max-h-[90vh] rounded-lg"
               />
             ) : (
               <img
                 src={currentMedia.src_url}
                 alt={`Mídia ${currentIndex + 1}`}
-                className="max-w-full max-h-full object-contain"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg"
               />
             )}
 
@@ -238,6 +242,7 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
               </>
             )}
           </div>
+          <div className="fixed inset-0 bg-black/70 -z-10" onClick={() => setShowModal(false)} />
         </DialogContent>
       </Dialog>
     </>

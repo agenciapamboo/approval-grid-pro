@@ -181,16 +181,17 @@ export function ContentComments({ contentId, onUpdate }: ContentCommentsProps) {
           rows={3}
           className="resize-none"
         />
-        <Button 
-          size="sm" 
-          variant="outline"
-          onClick={handleAddComment}
-          disabled={!newComment.trim()}
-          className="self-end"
-        >
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Adicionar comentário
-        </Button>
+        <div className="flex justify-end">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={handleAddComment}
+            disabled={!newComment.trim()}
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Adicionar comentário
+          </Button>
+        </div>
       </div>
     </div>
   );

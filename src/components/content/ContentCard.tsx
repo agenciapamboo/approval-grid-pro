@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import TimePicker from 'react-time-picker';
+import 'react-time-picker/dist/TimePicker.css';
 import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -44,6 +46,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [rejectReason, setRejectReason] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [newDate, setNewDate] = useState<Date>(new Date(content.date));
+  const [selectedTime, setSelectedTime] = useState<string>("12:00");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
@@ -314,21 +317,30 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
   const handleDateChange = async (date: Date | undefined) => {
     if (!date) return;
-    
+    setNewDate(date);
+  };
+
+  const handleDateTimeConfirm = async () => {
     try {
-      // Criar data local com timezone do usuário
-      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const dateTime = new Date(
+        newDate.getFullYear(),
+        newDate.getMonth(),
+        newDate.getDate(),
+        hours,
+        minutes
+      );
       
       const { error } = await supabase
         .from("contents")
-        .update({ date: format(localDate, "yyyy-MM-dd") })
+        .update({ date: format(dateTime, "yyyy-MM-dd HH:mm:ss") })
         .eq("id", content.id);
 
       if (error) throw error;
 
       toast({
-        title: "Data atualizada",
-        description: "A data de postagem foi atualizada com sucesso",
+        title: "Data e hora atualizadas",
+        description: "A data e hora de postagem foram atualizadas com sucesso",
       });
 
       setShowDatePicker(false);
@@ -465,16 +477,32 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
                     <PopoverTrigger asChild>
                       <span className="font-medium text-sm cursor-pointer hover:text-primary transition-colors">
-                        {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                        {format(new Date(content.date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </span>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={newDate}
-                        onSelect={handleDateChange}
-                        initialFocus
-                      />
+                    <PopoverContent className="w-auto p-4" align="start">
+                      <div className="space-y-4">
+                        <CalendarComponent
+                          mode="single"
+                          selected={newDate}
+                          onSelect={handleDateChange}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm font-medium">Hora:</label>
+                          <TimePicker
+                            onChange={(value) => setSelectedTime(value || "12:00")}
+                            value={selectedTime}
+                            disableClock
+                            format="HH:mm"
+                            className="border rounded px-2"
+                          />
+                        </div>
+                        <Button onClick={handleDateTimeConfirm} className="w-full">
+                          Confirmar
+                        </Button>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -519,7 +547,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           {/* Ações */}
           {!isAgencyView && (
             <div className="p-4 border-t">
-              <div className="grid grid-cols-1 gap-2">
+              <div className="flex flex-col gap-2">
                 {content.status !== "approved" && (
                   <>
                     <Button 
