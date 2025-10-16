@@ -10,7 +10,7 @@ import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
-import { ClientNotificationSettings } from "@/components/admin/ClientNotificationSettings";
+import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 
 interface Profile {
   id: string;
@@ -64,6 +64,8 @@ export default function ContentGrid() {
   const [contents, setContents] = useState<Content[]>([]);
   const [showConsent, setShowConsent] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     loadPublicData();
@@ -79,6 +81,7 @@ export default function ContentGrid() {
       console.log('Session exists:', !!session);
       
       if (session) {
+        setUser(session.user);
         // Carregar perfil se logado
         console.log('Loading profile for user:', session.user.id);
         const { data: profileData, error: profileError } = await supabase
@@ -206,6 +209,10 @@ export default function ContentGrid() {
     loadPublicData();
   };
 
+  const handleProfileUpdate = () => {
+    loadPublicData();
+  };
+
   // Agrupar conteúdos por mês
   const groupedContents = contents.reduce((groups, content) => {
     const date = new Date(content.date);
@@ -236,17 +243,22 @@ export default function ContentGrid() {
       <AppHeader 
         userName={profile?.name}
         userRole="Cliente"
+        onProfileClick={() => setShowProfileDialog(true)}
         onSignOut={handleSignOut}
       />
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Preferências de Notificação - Apenas para usuários logados */}
-        {profile && client && (
-          <div className="mb-8 max-w-2xl">
-            <ClientNotificationSettings clientId={client.id} />
-          </div>
-        )}
+      {/* Diálogo de Perfil com Preferências */}
+      {profile && user && (
+        <UserProfileDialog
+          user={user}
+          profile={profile}
+          onUpdate={handleProfileUpdate}
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+        />
+      )}
 
+      <main className="container mx-auto px-4 py-8">
         {sortedMonthKeys.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum conteúdo encontrado

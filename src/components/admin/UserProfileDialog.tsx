@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "lucide-react";
@@ -30,6 +31,7 @@ interface Profile {
   role: string;
   plan?: string;
   plan_renewal_date?: string;
+  client_id?: string;
 }
 
 interface UserProfileDialogProps {
@@ -57,6 +59,70 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
     newPassword: "",
     confirmPassword: "",
   });
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    notify_email: true,
+    notify_whatsapp: false,
+  });
+  const [prefsLoading, setPrefsLoading] = useState(false);
+
+  useEffect(() => {
+    if (profile?.client_id) {
+      loadClientPreferences();
+    }
+  }, [profile?.client_id]);
+
+  const loadClientPreferences = async () => {
+    if (!profile?.client_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("notify_email, notify_whatsapp")
+        .eq("id", profile.client_id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setNotificationPreferences({
+          notify_email: data.notify_email ?? true,
+          notify_whatsapp: data.notify_whatsapp ?? false,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar preferências:", error);
+    }
+  };
+
+  const handleSavePreferences = async () => {
+    if (!profile?.client_id) return;
+
+    setPrefsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          notify_email: notificationPreferences.notify_email,
+          notify_whatsapp: notificationPreferences.notify_whatsapp,
+        })
+        .eq("id", profile.client_id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Preferências atualizadas",
+        description: "Suas preferências de notificação foram salvas com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar preferências",
+        variant: "destructive",
+      });
+    } finally {
+      setPrefsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,6 +336,56 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
               </form>
             </CardContent>
           </Card>
+
+          {/* Preferências de Notificação - Apenas para clientes */}
+          {profile?.client_id && (
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <h3 className="font-semibold text-sm text-muted-foreground">Preferências de Notificação</h3>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="notify_email" className="flex flex-col gap-1 cursor-pointer">
+                    <span>Notificações por E-mail</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      Receba atualizações sobre aprovações e rejeições por e-mail
+                    </span>
+                  </Label>
+                  <Switch
+                    id="notify_email"
+                    checked={notificationPreferences.notify_email}
+                    onCheckedChange={(checked) =>
+                      setNotificationPreferences({ ...notificationPreferences, notify_email: checked })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="notify_whatsapp" className="flex flex-col gap-1 cursor-pointer">
+                    <span>Notificações por WhatsApp</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      Receba atualizações sobre aprovações e rejeições via WhatsApp
+                    </span>
+                  </Label>
+                  <Switch
+                    id="notify_whatsapp"
+                    checked={notificationPreferences.notify_whatsapp}
+                    onCheckedChange={(checked) =>
+                      setNotificationPreferences({ ...notificationPreferences, notify_whatsapp: checked })
+                    }
+                  />
+                </div>
+
+                <div className="pt-4 border-t">
+                  <p className="text-xs text-muted-foreground mb-4">
+                    ℹ️ Independente das suas preferências, os webhooks sempre serão enviados para integração com sistemas externos.
+                  </p>
+                  <Button onClick={handleSavePreferences} disabled={prefsLoading} size="sm" className="w-full">
+                    {prefsLoading ? "Salvando..." : "Salvar Preferências"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>
