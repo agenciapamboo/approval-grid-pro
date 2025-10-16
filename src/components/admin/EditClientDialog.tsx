@@ -178,15 +178,34 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
 
       // Update notification preferences if userId exists
       if (userId) {
-        const { error: prefsError } = await supabase
+        const { data: existingPref } = await supabase
           .from("user_preferences")
-          .upsert({
-            user_id: userId,
-            ...notificationPreferences,
-          });
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
 
-        if (prefsError) {
-          console.error("Erro ao atualizar preferências:", prefsError);
+        if (existingPref) {
+          // Update existing preferences
+          const { error: prefsError } = await supabase
+            .from("user_preferences")
+            .update(notificationPreferences)
+            .eq("user_id", userId);
+
+          if (prefsError) {
+            console.error("Erro ao atualizar preferências:", prefsError);
+          }
+        } else {
+          // Insert new preferences
+          const { error: prefsError } = await supabase
+            .from("user_preferences")
+            .insert({
+              user_id: userId,
+              ...notificationPreferences,
+            });
+
+          if (prefsError) {
+            console.error("Erro ao inserir preferências:", prefsError);
+          }
         }
       }
 
