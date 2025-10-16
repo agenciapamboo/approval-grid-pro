@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<any>): void;
+};
+
 interface WebhookPayload {
   event: string
   content_id: string
@@ -220,71 +224,83 @@ serve(async (req) => {
       client_id: client_id || payload.client?.id 
     })
     
-    // Enviar webhook
-    try {
-      const webhookResponse = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sanitizedPayload),
-      })
+    // Executar o envio do webhook em background
+    const sendWebhookTask = async () => {
+      try {
+        const webhookResponse = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(sanitizedPayload),
+        })
 
-      const responseText = await webhookResponse.text()
-      console.log('Webhook response:', { 
-        status: webhookResponse.status, 
-        ok: webhookResponse.ok,
-        statusText: webhookResponse.statusText,
-        body: responseText.substring(0, 200) // Primeiros 200 chars
-      })
+        const responseText = await webhookResponse.text()
+        console.log('Webhook response:', { 
+          status: webhookResponse.status, 
+          ok: webhookResponse.ok,
+          statusText: webhookResponse.statusText,
+          body: responseText.substring(0, 200)
+        })
 
-      // Atualizar status do webhook event
-      if (webhookEvent) {
-        await supabaseClient
-          .from('webhook_events')
-          .update({
-            status: webhookResponse.ok ? 'delivered' : 'failed',
-            delivered_at: new Date().toISOString(),
-          })
-          .eq('id', webhookEvent.id)
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Webhook sent successfully',
-          status: webhookResponse.status 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
+        // Atualizar status do webhook event
+        if (webhookEvent) {
+          await supabaseClient
+            .from('webhook_events')
+            .update({
+              status: webhookResponse.ok ? 'delivered' : 'failed',
+              delivered_at: new Date().toISOString(),
+            })
+            .eq('id', webhookEvent.id)
         }
-      )
-    } catch (webhookError) {
-      console.error('Error sending webhook:', webhookError)
-      
-      // Atualizar status para failed
-      if (webhookEvent) {
+
+        // Atualizar status da notificação
         await supabaseClient
-          .from('webhook_events')
+          .from('notifications')
+          .update({
+            status: webhookResponse.ok ? 'sent' : 'failed',
+            sent_at: webhookResponse.ok ? new Date().toISOString() : null,
+            error_message: webhookResponse.ok ? null : `HTTP ${webhookResponse.status}: ${responseText.substring(0, 200)}`,
+          })
+          .eq('id', content_id)
+
+      } catch (webhookError) {
+        console.error('Error sending webhook:', webhookError)
+        
+        // Atualizar status para failed
+        if (webhookEvent) {
+          await supabaseClient
+            .from('webhook_events')
+            .update({
+              status: 'failed',
+            })
+            .eq('id', webhookEvent.id)
+        }
+
+        await supabaseClient
+          .from('notifications')
           .update({
             status: 'failed',
+            error_message: webhookError instanceof Error ? webhookError.message : String(webhookError),
           })
-          .eq('id', webhookEvent.id)
+          .eq('id', content_id)
       }
-
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Failed to send webhook',
-          error: webhookError instanceof Error ? webhookError.message : String(webhookError)
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500 
-        }
-      )
     }
+
+    // Executar em background sem bloquear a resposta
+    EdgeRuntime.waitUntil(sendWebhookTask())
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Webhook queued for delivery',
+        webhook_event_id: webhookEvent?.id
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    )
 
   } catch (error) {
     console.error('Error in webhook function:', error)
