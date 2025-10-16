@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -191,12 +191,12 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
       {/* Modal para visualização em tamanho maior */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-none w-auto p-0 bg-transparent border-0 shadow-none">
+        <DialogContent className="max-w-none w-auto p-0 bg-transparent border-0 shadow-none" onPointerDownOutside={() => setShowModal(false)}>
           <button
             onClick={() => setShowModal(false)}
-            className="absolute -top-12 right-0 h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-800 hover:bg-white hover:scale-110 transition-all z-50"
+            className="absolute -top-14 right-0 h-12 w-12 rounded-full border-2 border-white bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 hover:scale-110 transition-all z-50"
           >
-            <span className="text-xl font-light">×</span>
+            <X className="h-6 w-6" />
           </button>
           <div 
             className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
