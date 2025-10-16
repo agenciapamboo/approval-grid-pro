@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, ArrowLeft, Plus, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
-import { CreateContentCard } from "@/components/content/CreateContentCard";
-import { CreateAvulsoCard } from "@/components/content/CreateAvulsoCard";
+import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
@@ -323,22 +322,12 @@ export default function AgencyContentManager() {
       <main className="container mx-auto px-4 py-8">
         {client && (
           <div className="space-y-4 mb-6">
-            {categoryParam === 'social' ? (
-              <CreateContentCard 
-                clientId={client.id}
-                onContentCreated={() => {
-                  loadContents(client.id);
-                }}
-                category="social"
-              />
-            ) : categoryParam === 'avulso' ? (
-              <CreateAvulsoCard 
-                clientId={client.id}
-                onContentCreated={() => {
-                  loadContents(client.id);
-                }}
-              />
-            ) : null}
+            <CreateContentWrapper 
+              clientId={client.id}
+              onContentCreated={() => {
+                loadContents(client.id);
+              }}
+            />
             
             <div className="flex justify-end">
               <Button
