@@ -194,11 +194,11 @@ const Dashboard = () => {
             
             if (contentsData) {
               notifications[client.id] = {
-                new: contentsData.filter(c => c.status === 'draft').length,
+                new: creativesData?.length || 0,
                 adjustments: contentsData.filter(c => c.status === 'in_review').length,
                 approved: contentsData.filter(c => c.status === 'approved' && new Date(c.date) > now).length,
                 rejected: contentsData.filter(c => c.status === 'changes_requested' && new Date(c.date) > now).length,
-                creatives: creativesData?.length || 0,
+                creatives: 0,
               };
             }
           }
@@ -629,21 +629,21 @@ const Dashboard = () => {
                 {clients.map((client) => {
                   const agency = getClientAgency(client.agency_id);
                   const notifications = clientNotifications[client.id] || { adjustments: 0, approved: 0, rejected: 0, creatives: 0, new: 0 };
-                  const hasNotifications = notifications.new > 0 || notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0 || notifications.creatives > 0;
+                  const hasNotifications = notifications.new > 0 || notifications.adjustments > 0 || notifications.approved > 0 || notifications.rejected > 0;
                   
                   return (
                     <Card 
                       key={client.id} 
-                      className="relative overflow-hidden"
+                      className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20"
                     >
                       {/* Notificações no topo */}
                       {hasNotifications && (
-                        <div className="bg-muted/50 p-3 border-b border-border/50">
+                        <div className="bg-gradient-to-r from-amber-100/80 to-yellow-100/80 dark:from-amber-900/40 dark:to-yellow-900/40 p-3 border-b border-amber-200/50 dark:border-amber-800/50">
                           <div className="flex flex-wrap gap-2">
                             {notifications.new > 0 && (
-                              <Badge className="gap-1.5 bg-blue-600 text-white border-blue-600 hover:bg-blue-700">
-                                <Clock className="w-3 h-3" />
-                                {notifications.new} Novo{notifications.new > 1 ? 's' : ''}
+                              <Badge className="gap-1.5 bg-amber-600 text-white border-amber-600 hover:bg-amber-700">
+                                <Sparkles className="w-3 h-3" />
+                                {notifications.new} Solicitaç{notifications.new > 1 ? 'ões' : 'ão'}
                               </Badge>
                             )}
                             {notifications.adjustments > 0 && (
@@ -662,18 +662,6 @@ const Dashboard = () => {
                               <Badge className="gap-1.5 bg-red-600 text-white border-red-600 hover:bg-red-700">
                                 <XCircle className="w-3 h-3" />
                                 {notifications.rejected} Reprovado{notifications.rejected > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                            {notifications.creatives > 0 && (
-                              <Badge 
-                                className="gap-1.5 bg-purple-600 text-white border-purple-600 hover:bg-purple-700 cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/agency/creative-requests/${client.id}`);
-                                }}
-                              >
-                                <Sparkles className="h-3 w-3" />
-                                {notifications.creatives} Solicitaç{notifications.creatives > 1 ? 'ões' : 'ão'}
                               </Badge>
                             )}
                           </div>
