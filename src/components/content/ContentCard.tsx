@@ -592,11 +592,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           )}
 
           {/* Comentários expandidos */}
-          {showComments && (
-            <div className="border-t">
-              <ContentComments contentId={content.id} onUpdate={onUpdate} />
-            </div>
-          )}
+          <div className="border-t">
+            <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} />
+          </div>
         </CardContent>
       </Card>
 

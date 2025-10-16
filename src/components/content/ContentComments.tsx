@@ -22,9 +22,10 @@ interface Comment {
 interface ContentCommentsProps {
   contentId: string;
   onUpdate: () => void;
+  showHistory?: boolean;
 }
 
-export function ContentComments({ contentId, onUpdate }: ContentCommentsProps) {
+export function ContentComments({ contentId, onUpdate, showHistory = true }: ContentCommentsProps) {
   const { toast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -123,57 +124,59 @@ export function ContentComments({ contentId, onUpdate }: ContentCommentsProps) {
   };
 
   return (
-    <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+    <div className="p-4 space-y-4">
       {/* Lista de comentários */}
-      <div className="space-y-3">
-        {comments.map((comment) => (
-          <div 
-            key={comment.id} 
-            className={`p-3 rounded-lg ${
-              comment.is_adjustment_request 
-                ? "bg-destructive/10 border border-destructive/20" 
-                : "bg-muted"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">
-                    {comment.profiles?.name || "Usuário"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(comment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </span>
-                  {comment.is_adjustment_request && (
-                    <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded">
-                      Ajuste solicitado
+      {showHistory && (
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {comments.map((comment) => (
+            <div 
+              key={comment.id} 
+              className={`p-3 rounded-lg ${
+                comment.is_adjustment_request 
+                  ? "bg-destructive/10 border border-destructive/20" 
+                  : "bg-muted"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm">
+                      {comment.profiles?.name || "Usuário"}
                     </span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(comment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </span>
+                    {comment.is_adjustment_request && (
+                      <span className="text-xs bg-destructive text-destructive-foreground px-2 py-0.5 rounded">
+                        Ajuste solicitado
+                      </span>
+                    )}
+                  </div>
+                  {comment.adjustment_reason && (
+                    <p className="text-sm font-medium text-destructive mb-1">
+                      {comment.adjustment_reason}
+                    </p>
                   )}
+                  <p className="text-sm whitespace-pre-wrap break-words">{comment.body}</p>
                 </div>
-                {comment.adjustment_reason && (
-                  <p className="text-sm font-medium text-destructive mb-1">
-                    {comment.adjustment_reason}
-                  </p>
+                {comment.author_user_id === currentUserId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    onClick={() => handleDeleteComment(comment.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 )}
-                <p className="text-sm whitespace-pre-wrap break-words">{comment.body}</p>
               </div>
-              {comment.author_user_id === currentUserId && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => handleDeleteComment(comment.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Novo comentário */}
-      <div className="space-y-2 pt-2 border-t">
+      <div className={`space-y-2 ${showHistory ? 'pt-2 border-t' : ''}`}>
         <Textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
@@ -181,17 +184,16 @@ export function ContentComments({ contentId, onUpdate }: ContentCommentsProps) {
           rows={3}
           className="resize-none"
         />
-        <div className="flex justify-end">
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={handleAddComment}
-            disabled={!newComment.trim()}
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Adicionar comentário
-          </Button>
-        </div>
+        <Button 
+          size="sm" 
+          variant="outline"
+          onClick={handleAddComment}
+          disabled={!newComment.trim()}
+          className="w-full"
+        >
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Adicionar comentário
+        </Button>
       </div>
     </div>
   );
