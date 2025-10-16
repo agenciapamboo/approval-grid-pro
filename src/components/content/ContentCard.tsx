@@ -39,7 +39,7 @@ interface ContentCardProps {
 
 export function ContentCard({ content, isResponsible, isAgencyView = false, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -585,7 +585,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   className="w-full"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Comentários
+                  {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                 </Button>
               </div>
             </div>

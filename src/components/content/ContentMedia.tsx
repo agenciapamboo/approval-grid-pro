@@ -191,7 +191,7 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
       {/* Modal para visualização em tamanho maior */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-none w-auto p-0 bg-transparent border-0 shadow-none" onPointerDownOutside={() => setShowModal(false)}>
+        <DialogContent className="max-w-none w-auto p-0 bg-transparent border-0 shadow-none">
           <button
             onClick={() => setShowModal(false)}
             className="absolute -top-14 right-0 h-12 w-12 rounded-full border-2 border-white bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 hover:scale-110 transition-all z-50"
@@ -242,7 +242,6 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
               </>
             )}
           </div>
-          <div className="fixed inset-0 bg-black/70 -z-10" onClick={() => setShowModal(false)} />
         </DialogContent>
       </Dialog>
     </>
