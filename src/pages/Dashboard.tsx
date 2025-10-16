@@ -636,30 +636,51 @@ const Dashboard = () => {
                       key={client.id} 
                       className="relative overflow-hidden"
                     >
-                      {/* Notificações no topo */}
+                      {/* Notificações no topo com links */}
                       {hasNotifications && (
-                        <div className="bg-muted/50 p-3 border-b border-border/50">
+                        <div className="bg-muted/50 p-3">
                           <div className="flex flex-wrap gap-2">
                             {notifications.new > 0 && (
-                              <Badge className="gap-1.5 bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700">
+                              <Badge 
+                                className="gap-1.5 bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700 cursor-pointer"
+                                onClick={() => navigate(`/agency/creative-requests/${client.id}`)}
+                              >
                                 <Sparkles className="w-3 h-3" />
                                 {notifications.new} Solicitaç{notifications.new > 1 ? 'ões' : 'ão'}
                               </Badge>
                             )}
                             {notifications.adjustments > 0 && (
-                              <Badge className="gap-1.5 bg-orange-600 text-white border-orange-600 hover:bg-orange-700">
+                              <Badge 
+                                className="gap-1.5 bg-orange-600 text-white border-orange-600 hover:bg-orange-700 cursor-pointer"
+                                onClick={() => {
+                                  const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                  if (aSlug) navigate(`/${aSlug}/${client.slug}`);
+                                }}
+                              >
                                 <AlertCircle className="w-3 h-3" />
                                 {notifications.adjustments} Ajuste{notifications.adjustments > 1 ? 's' : ''}
                               </Badge>
                             )}
                             {notifications.approved > 0 && (
-                              <Badge className="gap-1.5 bg-green-600 text-white border-green-600 hover:bg-green-700">
+                              <Badge 
+                                className="gap-1.5 bg-green-600 text-white border-green-600 hover:bg-green-700 cursor-pointer"
+                                onClick={() => {
+                                  const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                  if (aSlug) navigate(`/${aSlug}/${client.slug}`);
+                                }}
+                              >
                                 <CheckCircle className="w-3 h-3" />
                                 {notifications.approved} Aprovado{notifications.approved > 1 ? 's' : ''}
                               </Badge>
                             )}
                             {notifications.rejected > 0 && (
-                              <Badge className="gap-1.5 bg-red-600 text-white border-red-600 hover:bg-red-700">
+                              <Badge 
+                                className="gap-1.5 bg-red-600 text-white border-red-600 hover:bg-red-700 cursor-pointer"
+                                onClick={() => {
+                                  const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug;
+                                  if (aSlug) navigate(`/${aSlug}/${client.slug}`);
+                                }}
+                              >
                                 <XCircle className="w-3 h-3" />
                                 {notifications.rejected} Reprovado{notifications.rejected > 1 ? 's' : ''}
                               </Badge>
@@ -669,64 +690,66 @@ const Dashboard = () => {
                       )}
                       
                       <CardContent className="p-6">
+                        {/* Linha com dados do cliente */}
+                        <div className="flex items-center gap-4 mb-6">
+                          {client.logo_url && (
+                            <img 
+                              src={client.logo_url} 
+                              alt={client.name}
+                              className="h-12 w-12 object-contain"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg">{client.name}</h3>
+                            {(client as any).monthly_creatives > 0 && (
+                              <p className="text-sm text-muted-foreground">
+                                {(client as any).monthly_creatives} criativos/mês
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Duas colunas de botões */}
                         <div className="grid grid-cols-2 gap-4">
                           {/* Coluna Esquerda - Dados do Cliente */}
-                          <div className="space-y-4">
-                            {client.logo_url && (
-                              <img 
-                                src={client.logo_url} 
-                                alt={client.name}
-                                className="h-12 object-contain"
-                              />
+                          <div className="space-y-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                setSelectedClient(client);
+                                setViewClientOpen(true);
+                              }}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Dados
+                            </Button>
+                            {profile?.role === 'agency_admin' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    setSelectedClient(client);
+                                    setEditClientOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="w-full justify-start"
+                                  onClick={() => handleDeleteClient(client)}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Remover Cliente
+                                </Button>
+                              </>
                             )}
-                            <div>
-                              <h3 className="font-semibold text-lg mb-1">{client.name}</h3>
-                              {(client as any).monthly_creatives > 0 && (
-                                <p className="text-sm text-muted-foreground">
-                                  {(client as any).monthly_creatives} criativos/mês
-                                </p>
-                              )}
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full justify-start"
-                                onClick={() => {
-                                  setSelectedClient(client);
-                                  setViewClientOpen(true);
-                                }}
-                              >
-                                <Eye className="w-4 h-4 mr-2" />
-                                Dados
-                              </Button>
-                              {profile?.role === 'agency_admin' && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full justify-start"
-                                    onClick={() => {
-                                      setSelectedClient(client);
-                                      setEditClientOpen(true);
-                                    }}
-                                  >
-                                    <Pencil className="w-4 h-4 mr-2" />
-                                    Editar
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="w-full justify-start"
-                                    onClick={() => handleDeleteClient(client)}
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Remover Cliente
-                                  </Button>
-                                </>
-                              )}
-                            </div>
                           </div>
 
                           {/* Coluna Direita - Botões de Conteúdo */}
