@@ -103,9 +103,19 @@ export default function CreativeRequests() {
         ...additionalData,
       };
 
+      // Atualizar payload E status da notificação
+      const updateData: any = { payload: updatedPayload };
+      
+      // Se o job está finalizado, atualizar o status da notificação para remover do contador
+      if (newStatus === "completed") {
+        updateData.status = "sent"; // ou "completed" - qualquer coisa diferente de "pending"
+      } else {
+        updateData.status = "pending"; // Manter pending para outros status
+      }
+
       const { error } = await supabase
         .from("notifications")
-        .update({ payload: updatedPayload })
+        .update(updateData)
         .eq("id", request.id);
 
       if (error) throw error;
