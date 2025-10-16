@@ -215,7 +215,6 @@ All colors MUST be HSL.
   .glass-hover:hover {
     background: hsl(var(--card));
     box-shadow: var(--shadow-glass-lg);
-    transform: translateY(-2px);
   }
 }
 
