@@ -42,7 +42,7 @@ serve(async (req) => {
     if (event === 'novojob' || event.startsWith('job.')) {
       const { data: notification, error: notificationError } = await supabaseClient
         .from('notifications')
-        .select('*, clients!inner(*), agencies!inner(*)')
+        .select('*, clients!inner(*, agencies!inner(*)), agencies!inner(*)')
         .eq('id', content_id)
         .single()
 
@@ -51,9 +51,22 @@ serve(async (req) => {
         throw notificationError
       }
 
-      webhookUrl = notification.agencies.webhook_url
+      // Buscar webhook_url da agência (não do notification.agencies que pode estar null)
+      const { data: agency } = await supabaseClient
+        .from('agencies')
+        .select('webhook_url, id, name, slug, email, whatsapp')
+        .eq('id', notification.agency_id)
+        .single()
+
+      webhookUrl = agency?.webhook_url || null
       targetId = notification.agency_id
       targetType = 'agency'
+
+      console.log('Job webhook URL from agency:', { 
+        agency_id: notification.agency_id, 
+        webhook_url: webhookUrl,
+        event 
+      })
 
       payload = {
         event,
@@ -72,11 +85,11 @@ serve(async (req) => {
           whatsapp: notification.clients.whatsapp,
         },
         agency: {
-          id: notification.agencies.id,
-          name: notification.agencies.name,
-          slug: notification.agencies.slug,
-          email: notification.agencies.email,
-          whatsapp: notification.agencies.whatsapp,
+          id: agency?.id,
+          name: agency?.name,
+          slug: agency?.slug,
+          email: agency?.email,
+          whatsapp: agency?.whatsapp,
         }
       }
     } else {
@@ -95,13 +108,19 @@ serve(async (req) => {
       // Sempre buscar o webhook da agência para todos os eventos
       const { data: agency } = await supabaseClient
         .from('agencies')
-        .select('webhook_url, id, name, slug')
+        .select('webhook_url, id, name, slug, email, whatsapp')
         .eq('id', content.clients.agency_id)
         .single()
       
-      webhookUrl = agency?.webhook_url
+      webhookUrl = agency?.webhook_url || null
       targetId = content.clients.agency_id
       targetType = 'agency'
+
+      console.log('Content webhook URL from agency:', { 
+        agency_id: content.clients.agency_id, 
+        webhook_url: webhookUrl,
+        event 
+      })
 
       payload = {
         event,
@@ -127,12 +146,32 @@ serve(async (req) => {
       }
     }
 
-    if (!webhookUrl) {
-      console.log('No webhook URL configured for agency:', targetId)
+    // Sanitizar payload (remover campos sensíveis)
+    const sanitizedPayload = JSON.parse(JSON.stringify(payload))
+    
+    if (!webhookUrl || webhookUrl.trim() === '') {
+      console.log('No webhook URL configured for agency:', { 
+        targetId, 
+        targetType, 
+        event,
+        webhook_url: webhookUrl 
+      })
+      
+      // Ainda registrar evento mas como não enviado
+      await supabaseClient
+        .from('webhook_events')
+        .insert({
+          client_id: client_id || payload.client?.id,
+          event,
+          payload: sanitizedPayload,
+          status: 'failed',
+        })
+
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'No webhook URL configured for agency' 
+          message: 'No webhook URL configured for agency',
+          details: { agency_id: targetId, event }
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -141,8 +180,23 @@ serve(async (req) => {
       )
     }
 
-    // Sanitizar payload (remover campos sensíveis)
-    const sanitizedPayload = JSON.parse(JSON.stringify(payload))
+    // Validar se a URL é válida
+    try {
+      new URL(webhookUrl)
+    } catch (urlError) {
+      console.error('Invalid webhook URL:', { webhookUrl, urlError })
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid webhook URL configured',
+          details: { webhook_url: webhookUrl }
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
     
     // Registrar evento de webhook
     const { data: webhookEvent, error: eventError } = await supabaseClient
@@ -160,7 +214,11 @@ serve(async (req) => {
       console.error('Error creating webhook event:', eventError)
     }
 
-    console.log('Sending webhook to:', webhookUrl)
+    console.log('Sending webhook to:', { 
+      url: webhookUrl, 
+      event, 
+      client_id: client_id || payload.client?.id 
+    })
     
     // Enviar webhook
     try {
@@ -172,7 +230,13 @@ serve(async (req) => {
         body: JSON.stringify(sanitizedPayload),
       })
 
-      console.log('Webhook response status:', webhookResponse.status)
+      const responseText = await webhookResponse.text()
+      console.log('Webhook response:', { 
+        status: webhookResponse.status, 
+        ok: webhookResponse.ok,
+        statusText: webhookResponse.statusText,
+        body: responseText.substring(0, 200) // Primeiros 200 chars
+      })
 
       // Atualizar status do webhook event
       if (webhookEvent) {
