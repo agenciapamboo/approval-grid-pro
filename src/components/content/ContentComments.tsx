@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -183,9 +183,12 @@ export function ContentComments({ contentId, onUpdate }: ContentCommentsProps) {
         />
         <Button 
           size="sm" 
+          variant="outline"
           onClick={handleAddComment}
           disabled={!newComment.trim()}
+          className="self-end"
         >
+          <MessageSquare className="h-4 w-4 mr-2" />
           Adicionar comentário
         </Button>
       </div>

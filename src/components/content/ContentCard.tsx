@@ -47,15 +47,14 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: "default" | "pending" | "destructive" | "success" | "warning" | "outline", label: string }> = {
-      draft: { variant: "default", label: "Rascunho" },
-      in_review: { variant: "pending", label: "Em Revisão" },
-      changes_requested: { variant: "warning", label: "Ajustes Solicitados" },
-      approved: { variant: "success", label: "Aprovado" },
+    const map: Record<string, { label: string; classes: string }> = {
+      draft: { label: "Rascunho", classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" },
+      in_review: { label: "Em Revisão", classes: "bg-[hsl(var(--accent))] text-white" },
+      changes_requested: { label: "Ajustes Solicitados", classes: "bg-[hsl(var(--warning))] text-white" },
+      approved: { label: "Aprovado", classes: "bg-[hsl(var(--success))] text-white" },
     };
-    
-    const config = variants[status] || { variant: "default", label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const cfg = map[status] || { label: status, classes: "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]" };
+    return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.classes}`}>{cfg.label}</span>;
   };
 
   const getTypeLabel = (type: string) => {
@@ -82,12 +81,23 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
   const handleApprove = async () => {
     try {
-      const { error } = await supabase
+      const { data: userData } = await supabase.auth.getUser();
+
+      const { error: updateErr } = await supabase
         .from("contents")
         .update({ status: "approved" })
         .eq("id", content.id);
+      if (updateErr) throw updateErr;
 
-      if (error) throw error;
+      // Registrar comentário automático de aprovação
+      const timestamp = new Date().toLocaleString('pt-BR');
+      await supabase.from('comments').insert({
+        content_id: content.id,
+        version: content.version,
+        author_user_id: userData?.user?.id || null,
+        body: `Cliente: Aprovado em ${timestamp}`,
+        is_adjustment_request: false,
+      });
 
       // Disparar notificação de aprovação
       await createNotification('content.approved', content.id, {
@@ -470,7 +480,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="default">Tipo: {getTypeLabel(content.type)}</Badge>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]">{getTypeLabel(content.type)}</span>
                 {getStatusBadge(content.status)}
                 {content.channels && content.channels.length > 0 && (
                   <div className="flex items-center gap-1">
@@ -509,62 +519,47 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           {/* Ações */}
           {!isAgencyView && (
             <div className="p-4 border-t">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
+                {content.status !== "approved" && (
+                  <>
+                    <Button 
+                      size="sm"
+                      variant="success"
+                      onClick={handleApprove}
+                      className="w-full"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Aprovar
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="warning"
+                      onClick={() => setShowAdjustment(true)}
+                      className="w-full"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Solicitar ajuste
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowRejectDialog(true)}
+                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      Reprovar
+                    </Button>
+                  </>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setShowComments(!showComments)}
+                  className="w-full"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Comentários
                 </Button>
-                
-                {content.status !== "approved" && content.status !== "draft" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowAdjustment(true)}
-                  >
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    Solicitar Ajuste
-                  </Button>
-                )}
               </div>
-              
-              {content.status !== "approved" && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <Button 
-                    size="sm"
-                    onClick={handleApprove}
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Aprovar
-                  </Button>
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowRejectDialog(true)}
-                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    Reprovar
-                  </Button>
-                </div>
-              )}
-              
-              {content.status === "approved" && (
-                <div className="mt-2">
-                  <Button 
-                    size="sm"
-                    className="w-full bg-green-500 hover:bg-green-600 text-white"
-                    disabled
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Aprovado
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 

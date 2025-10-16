@@ -11,6 +11,7 @@ const buttonVariants = cva(
       variant: {
         default: "glass bg-primary text-primary-foreground shadow-glass hover:bg-primary/90 hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
         success: "glass bg-primary text-primary-foreground shadow-glass hover:bg-primary/90 hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
+        warning: "glass bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))] shadow-glass hover:opacity-90 hover:shadow-glass-lg hover:scale-[1.02] active:scale-[0.98]",
         destructive: "glass border border-destructive/50 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-[1.02] active:scale-[0.98]",
         outline: "glass border border-border/50 hover:bg-accent/10 hover:border-accent/50 hover:scale-[1.02] active:scale-[0.98]",
         secondary: "glass bg-secondary/50 text-secondary-foreground hover:bg-secondary/70 hover:scale-[1.02] active:scale-[0.98]",

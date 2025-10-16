@@ -209,7 +209,7 @@ All colors MUST be HSL.
   }
 
   .glass-hover {
-    transition: all 0.2s ease-in-out;
+    /* Removed global transition from blocks; cards handle their own transitions */
   }
 
   .glass-hover:hover {

@@ -422,8 +422,8 @@ const Dashboard = () => {
             {/* Solicitações Criativas */}
             {creativeRequests.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">📋 Solicitações Criativas</h3>
-                <div className="grid gap-4">
+                <h3 className="text-lg font-semibold">Solicitações</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {creativeRequests.map((request) => (
                     <Card key={request.id} className="border-l-4 border-l-primary">
                       <CardHeader>
@@ -526,30 +526,27 @@ const Dashboard = () => {
                       <CardHeader>
                         <div className="flex items-center gap-2">
                           <Clock className="h-5 w-5 text-pending" />
-                          <CardTitle className="text-base">🕓 Aprovação Pendente</CardTitle>
+                          <CardTitle className="text-base">Aprovação Pendente</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
-                        <div className="flex items-center justify-between p-3 glass rounded-lg">
+                        <div 
+                          className="flex items-center justify-between p-3 glass rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                          onClick={() => {
+                            const c = clients[0];
+                            const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                            if (c?.slug) {
+                              navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
+                            }
+                          }}
+                        >
                           <div>
                             <p className="font-medium">Conteúdo pendente</p>
                             <p className="text-sm text-muted-foreground">
                               Você tem {pendingContents.length} para aprovar
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const c = clients[0];
-                              const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                              if (c?.slug) {
-                                navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
-                              }
-                            }}
-                          >
-                            <ArrowRight className="h-4 w-4" />
-                          </Button>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </CardContent>
                     </Card>
@@ -560,14 +557,21 @@ const Dashboard = () => {
                       <CardHeader>
                         <div className="flex items-center gap-2">
                           <AlertCircle className="h-5 w-5 text-warning" />
-                          <CardTitle className="text-base">🔁 Aguardando Revisão da Agência</CardTitle>
+                          <CardTitle className="text-base">Aguardando Revisão da Agência</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {partialContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg"
+                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              const c = clients[0];
+                              const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                              if (c?.slug) {
+                                navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
+                              }
+                            }}
                           >
                             <div>
                               <p className="font-medium">{content.title}</p>
@@ -575,19 +579,7 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  const c = clients[0];
-                                  const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                                  if (c?.slug) {
-                                    navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
-                                  }
-                                }}
-                              >
-                              <ArrowRight className="h-4 w-4" />
-                            </Button>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         ))}
                       </CardContent>
@@ -599,14 +591,21 @@ const Dashboard = () => {
                       <CardHeader>
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-5 w-5 text-success" />
-                          <CardTitle className="text-base">✔️ Aprovado</CardTitle>
+                          <CardTitle className="text-base">Aprovado</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {approvedContents.map(content => (
                           <div 
                             key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg"
+                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={() => {
+                              const c = clients[0];
+                              const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
+                              if (c?.slug) {
+                                navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
+                              }
+                            }}
                           >
                             <div>
                               <p className="font-medium">{content.title}</p>
@@ -614,19 +613,7 @@ const Dashboard = () => {
                                 {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
                               </p>
                             </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  const c = clients[0];
-                                  const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                                  if (c?.slug) {
-                                    navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
-                                  }
-                                }}
-                              >
-                                <ArrowRight className="h-4 w-4" />
-                              </Button>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         ))}
                       </CardContent>
