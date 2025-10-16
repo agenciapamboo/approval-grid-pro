@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, ArrowLeft, Plus, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
-import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
+import { CreateContentCard } from "@/components/content/CreateContentCard";
+import { ContentCategorySelector } from "@/components/content/ContentCategorySelector";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
@@ -67,6 +68,7 @@ export default function AgencyContentManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<'social' | 'avulso'>('social');
   const monthParam = searchParams.get("month");
   const yearParam = searchParams.get("year");
   const categoryParam = searchParams.get("category") as 'social' | 'avulso' | null;
@@ -322,11 +324,29 @@ export default function AgencyContentManager() {
       <main className="container mx-auto px-4 py-8">
         {client && (
           <div className="space-y-4 mb-6">
-            <CreateContentWrapper 
+            {/* Seletor de Categoria */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant={selectedCategory === 'social' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('social')}
+              >
+                Redes Sociais
+              </Button>
+              <Button
+                variant={selectedCategory === 'avulso' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('avulso')}
+              >
+                Avulso
+              </Button>
+            </div>
+
+            {/* Bloco de Cadastro de Conteúdo - Sempre Visível */}
+            <CreateContentCard 
               clientId={client.id}
               onContentCreated={() => {
                 loadContents(client.id);
               }}
+              category={selectedCategory}
             />
             
             <div className="flex justify-end">
