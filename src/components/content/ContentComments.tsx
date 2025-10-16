@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { triggerWebhook } from "@/lib/webhooks";
 
 interface Comment {
   id: string;
@@ -63,10 +64,10 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
     if (!newComment.trim()) return;
 
     try {
-      // Pegar a versão atual do conteúdo
+      // Pegar a versão atual do conteúdo e dados do cliente
       const { data: contentData } = await supabase
         .from("contents")
-        .select("version")
+        .select("version, client_id")
         .eq("id", contentId)
         .single();
 
@@ -80,6 +81,22 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
         });
 
       if (error) throw error;
+
+      // Disparar webhook de novo comentário
+      if (contentData?.client_id) {
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("agency_id")
+          .eq("id", contentData.client_id)
+          .single();
+
+        await triggerWebhook(
+          "comentario",
+          contentId,
+          contentData.client_id,
+          clientData?.agency_id
+        );
+      }
 
       setNewComment("");
       loadComments();

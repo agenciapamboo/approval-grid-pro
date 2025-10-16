@@ -151,8 +151,19 @@ export default function CreativeRequests() {
       if (error) throw error;
 
       // Disparar webhook com novo status
+      let eventName = `job.${newStatus}`;
+      if (newStatus === "pending" && additionalData?.info_request) {
+        eventName = "job.info_requested";
+      } else if (newStatus === "reviewing") {
+        eventName = "job.reviewing";
+      } else if (newStatus === "in_production") {
+        eventName = "job.in_production";
+      } else if (newStatus === "completed") {
+        eventName = "job.completed";
+      }
+
       await triggerWebhook(
-        `job.${newStatus}`,
+        eventName,
         request.id,
         request.client_id,
         request.agency_id
