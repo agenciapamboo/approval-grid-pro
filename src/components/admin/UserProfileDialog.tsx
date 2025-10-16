@@ -34,6 +34,15 @@ interface Profile {
   client_id?: string;
 }
 
+interface ClientData {
+  id: string;
+  name: string;
+  cnpj?: string;
+  address?: string;
+  email?: string;
+  whatsapp?: string;
+}
+
 interface UserProfileDialogProps {
   user: any;
   profile: Profile | null;
@@ -64,33 +73,78 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
     notify_whatsapp: false,
   });
   const [prefsLoading, setPrefsLoading] = useState(false);
+  const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [clientLoading, setClientLoading] = useState(false);
 
   useEffect(() => {
     if (profile?.client_id) {
-      loadClientPreferences();
+      loadClientData();
     }
   }, [profile?.client_id]);
 
-  const loadClientPreferences = async () => {
+  const loadClientData = async () => {
     if (!profile?.client_id) return;
 
     try {
       const { data, error } = await supabase
         .from("clients")
-        .select("notify_email, notify_whatsapp")
+        .select("id, name, cnpj, address, email, whatsapp, notify_email, notify_whatsapp")
         .eq("id", profile.client_id)
         .single();
 
       if (error) throw error;
 
       if (data) {
+        setClientData({
+          id: data.id,
+          name: data.name,
+          cnpj: data.cnpj || "",
+          address: data.address || "",
+          email: data.email || "",
+          whatsapp: data.whatsapp || "",
+        });
         setNotificationPreferences({
           notify_email: data.notify_email ?? true,
           notify_whatsapp: data.notify_whatsapp ?? false,
         });
       }
     } catch (error) {
-      console.error("Erro ao carregar preferências:", error);
+      console.error("Erro ao carregar dados do cliente:", error);
+    }
+  };
+
+  const handleSaveClientData = async () => {
+    if (!profile?.client_id || !clientData) return;
+
+    setClientLoading(true);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          name: clientData.name,
+          cnpj: clientData.cnpj,
+          address: clientData.address,
+          email: clientData.email,
+          whatsapp: clientData.whatsapp,
+        })
+        .eq("id", profile.client_id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Dados atualizados",
+        description: "Os dados da empresa foram atualizados com sucesso.",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar dados da empresa",
+        variant: "destructive",
+      });
+    } finally {
+      setClientLoading(false);
     }
   };
 
@@ -246,32 +300,91 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Dados Cadastrais */}
-          <Card>
-            <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">Dados Cadastrais</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Email</Label>
-                  <p className="text-sm font-medium">{user?.email}</p>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-2">
+          {/* Dados Cadastrais - Para usuários não-clientes */}
+          {!profile?.client_id && (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">Dados Cadastrais</h3>
+                <div className="space-y-2">
                   <div>
-                    <Label htmlFor="name">Nome</Label>
+                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <p className="text-sm font-medium">{user?.email}</p>
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-2">
+                    <div>
+                      <Label htmlFor="name">Nome</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" size="sm" disabled={loading}>
+                      {loading ? "Salvando..." : "Salvar Nome"}
+                    </Button>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dados da Empresa - Para clientes */}
+          {profile?.client_id && clientData && (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">Dados da Empresa</h3>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveClientData(); }} className="space-y-3">
+                  <div>
+                    <Label htmlFor="company_name">Nome da Empresa</Label>
                     <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      id="company_name"
+                      value={clientData.name}
+                      onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
                       required
                     />
                   </div>
-                  <Button type="submit" size="sm" disabled={loading}>
-                    {loading ? "Salvando..." : "Salvar Nome"}
+                  <div>
+                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Input
+                      id="cnpj"
+                      value={clientData.cnpj}
+                      onChange={(e) => setClientData({ ...clientData, cnpj: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address">Endereço</Label>
+                    <Input
+                      id="address"
+                      value={clientData.address}
+                      onChange={(e) => setClientData({ ...clientData, address: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="client_email">Email</Label>
+                    <Input
+                      id="client_email"
+                      type="email"
+                      value={clientData.email}
+                      onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                    <Input
+                      id="whatsapp"
+                      value={clientData.whatsapp}
+                      onChange={(e) => setClientData({ ...clientData, whatsapp: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <Button type="submit" size="sm" disabled={clientLoading}>
+                    {clientLoading ? "Salvando..." : "Salvar Dados da Empresa"}
                   </Button>
                 </form>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Plano e Renovação */}
           <Card>
@@ -347,7 +460,7 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
                   <Label htmlFor="notify_email" className="flex flex-col gap-1 cursor-pointer">
                     <span>Notificações por E-mail</span>
                     <span className="text-xs text-muted-foreground font-normal">
-                      Receba atualizações sobre aprovações e rejeições por e-mail
+                      Receba atualizações sobre aprovações pendentes e ajustes feitos por e-mail
                     </span>
                   </Label>
                   <Switch
@@ -363,7 +476,7 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
                   <Label htmlFor="notify_whatsapp" className="flex flex-col gap-1 cursor-pointer">
                     <span>Notificações por WhatsApp</span>
                     <span className="text-xs text-muted-foreground font-normal">
-                      Receba atualizações sobre aprovações e rejeições via WhatsApp
+                      Receba atualizações sobre aprovações pendentes e ajustes feitos por WhatsApp
                     </span>
                   </Label>
                   <Switch
@@ -375,14 +488,9 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
                   />
                 </div>
 
-                <div className="pt-4 border-t">
-                  <p className="text-xs text-muted-foreground mb-4">
-                    ℹ️ Independente das suas preferências, os webhooks sempre serão enviados para integração com sistemas externos.
-                  </p>
-                  <Button onClick={handleSavePreferences} disabled={prefsLoading} size="sm" className="w-full">
-                    {prefsLoading ? "Salvando..." : "Salvar Preferências"}
-                  </Button>
-                </div>
+                <Button onClick={handleSavePreferences} disabled={prefsLoading} size="sm" className="w-full">
+                  {prefsLoading ? "Salvando..." : "Salvar Preferências"}
+                </Button>
               </CardContent>
             </Card>
           )}
