@@ -149,6 +149,9 @@ export type Database = {
           logo_url: string | null
           monthly_creatives: number | null
           name: string
+          notify_email: boolean | null
+          notify_webhook: boolean | null
+          notify_whatsapp: boolean | null
           plan_renewal_date: string | null
           responsible_user_id: string | null
           slug: string
@@ -168,6 +171,9 @@ export type Database = {
           logo_url?: string | null
           monthly_creatives?: number | null
           name: string
+          notify_email?: boolean | null
+          notify_webhook?: boolean | null
+          notify_whatsapp?: boolean | null
           plan_renewal_date?: string | null
           responsible_user_id?: string | null
           slug: string
@@ -187,6 +193,9 @@ export type Database = {
           logo_url?: string | null
           monthly_creatives?: number | null
           name?: string
+          notify_email?: boolean | null
+          notify_webhook?: boolean | null
+          notify_whatsapp?: boolean | null
           plan_renewal_date?: string | null
           responsible_user_id?: string | null
           slug?: string

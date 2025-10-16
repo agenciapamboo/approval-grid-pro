@@ -72,6 +72,14 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         note: "",
         password: "",
       });
+
+      // Inicializa preferências a partir do cliente (fallback)
+      setNotificationPreferences(prev => ({
+        notify_email: (client as any).notify_email ?? prev.notify_email,
+        notify_whatsapp: (client as any).notify_whatsapp ?? prev.notify_whatsapp,
+        notify_webhook: (client as any).notify_webhook ?? prev.notify_webhook,
+      }));
+
       loadUserIdAndPreferences();
     }
   }, [client]);
@@ -151,6 +159,9 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
           whatsapp: formData.whatsapp || null,
           address: formData.address || null,
           monthly_creatives: formData.monthly_creatives,
+          notify_email: notificationPreferences.notify_email,
+          notify_whatsapp: notificationPreferences.notify_whatsapp,
+          notify_webhook: notificationPreferences.notify_webhook,
         })
         .eq("id", client.id);
 

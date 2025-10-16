@@ -29,6 +29,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
     monthly_creatives: 0,
     notify_email: true,
     notify_whatsapp: false,
+    notify_webhook: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +48,9 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
           email: formData.email,
           monthly_creatives: formData.monthly_creatives,
           agency_id: agencyId,
+          notify_email: formData.notify_email,
+          notify_whatsapp: formData.notify_whatsapp,
+          notify_webhook: formData.notify_webhook,
         }])
         .select()
         .single();
@@ -116,6 +120,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
         monthly_creatives: 0,
         notify_email: true,
         notify_whatsapp: false,
+        notify_webhook: true,
       });
       setOpen(false);
       onClientAdded();

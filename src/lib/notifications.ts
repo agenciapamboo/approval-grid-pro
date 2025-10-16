@@ -44,9 +44,9 @@ export const createNotification = async (
       .single();
 
     let clientPreferences = {
-      email: true,
-      whatsapp: false,
-      webhook: true
+      email: (content as any).clients?.notify_email ?? true,
+      whatsapp: (content as any).clients?.notify_whatsapp ?? false,
+      webhook: (content as any).clients?.notify_webhook ?? true
     };
 
     if (clientUser) {
