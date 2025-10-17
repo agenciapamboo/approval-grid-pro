@@ -138,6 +138,59 @@ export type Database = {
           },
         ]
       }
+      client_social_accounts: {
+        Row: {
+          access_token: string
+          account_id: string
+          account_name: string
+          client_id: string
+          created_at: string
+          id: string
+          instagram_business_account_id: string | null
+          is_active: boolean
+          page_id: string | null
+          platform: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          account_id: string
+          account_name: string
+          client_id: string
+          created_at?: string
+          id?: string
+          instagram_business_account_id?: string | null
+          is_active?: boolean
+          page_id?: string | null
+          platform: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string
+          account_name?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          instagram_business_account_id?: string | null
+          is_active?: boolean
+          page_id?: string | null
+          platform?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_social_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -390,6 +443,7 @@ export type Database = {
       }
       contents: {
         Row: {
+          auto_publish: boolean | null
           category: string | null
           channels: string[] | null
           client_id: string
@@ -398,6 +452,8 @@ export type Database = {
           deadline: string | null
           id: string
           owner_user_id: string
+          publish_error: string | null
+          published_at: string | null
           status: Database["public"]["Enums"]["content_status"]
           title: string
           type: Database["public"]["Enums"]["content_type"]
@@ -405,6 +461,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          auto_publish?: boolean | null
           category?: string | null
           channels?: string[] | null
           client_id: string
@@ -413,6 +470,8 @@ export type Database = {
           deadline?: string | null
           id?: string
           owner_user_id: string
+          publish_error?: string | null
+          published_at?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           title: string
           type: Database["public"]["Enums"]["content_type"]
@@ -420,6 +479,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          auto_publish?: boolean | null
           category?: string | null
           channels?: string[] | null
           client_id?: string
@@ -428,6 +488,8 @@ export type Database = {
           deadline?: string | null
           id?: string
           owner_user_id?: string
+          publish_error?: string | null
+          published_at?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           title?: string
           type?: Database["public"]["Enums"]["content_type"]
