@@ -15,6 +15,7 @@ import AdminPasswordReset from "./pages/AdminPasswordReset";
 import HeroDemo from "./pages/HeroDemo";
 import NotFound from "./pages/NotFound";
 import CreativeRequests from "./pages/CreativeRequests";
+import SocialConnect from "./pages/SocialConnect";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
             <Route path="/admin/reset-passwords" element={<AdminPasswordReset />} />
             <Route path="/hero" element={<HeroDemo />} />
+            <Route path="/social-connect" element={<SocialConnect />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
