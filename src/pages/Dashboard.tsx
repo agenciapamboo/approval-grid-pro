@@ -429,7 +429,7 @@ const Dashboard = () => {
                 <h3 className="text-lg font-semibold">Solicitações</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {creativeRequests.map((request) => (
-                    <Card key={request.id} className="border-l-4 border-l-primary transition-all">
+                    <Card key={request.id} className="transition-all">
                       <CardHeader>
                         <CardTitle className="text-base">{request.payload?.title || 'Sem título'}</CardTitle>
                         <CardDescription className="space-y-1">

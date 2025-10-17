@@ -66,6 +66,10 @@ export default function ContentGrid() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
     loadPublicData();
@@ -225,6 +229,9 @@ export default function ContentGrid() {
   }, {} as Record<string, Content[]>);
 
   const sortedMonthKeys = Object.keys(groupedContents).sort((a, b) => b.localeCompare(a));
+  
+  // Filtrar pelo mês selecionado
+  const filteredContents = selectedMonth ? (groupedContents[selectedMonth] || []) : contents;
 
   if (loading) {
     return (
@@ -259,39 +266,46 @@ export default function ContentGrid() {
       )}
 
       <main className="container mx-auto px-4 py-8">
-        {sortedMonthKeys.length === 0 ? (
+        {/* Seletor de Mês */}
+        {sortedMonthKeys.length > 0 && (
+          <div className="mb-6">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {sortedMonthKeys.map((monthKey) => {
+                const [year, month] = monthKey.split('-');
+                const monthDate = new Date(parseInt(year), parseInt(month) - 1);
+                const monthName = monthDate.toLocaleDateString('pt-BR', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                });
+                return (
+                  <option key={monthKey} value={monthKey}>
+                    {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
+        {filteredContents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhum conteúdo encontrado
+            Nenhum conteúdo encontrado para este mês
           </div>
         ) : (
-          <div className="space-y-12 mt-6">
-            {sortedMonthKeys.map((monthKey) => {
-              const [year, month] = monthKey.split('-');
-              const monthDate = new Date(parseInt(year), parseInt(month) - 1);
-              const monthName = monthDate.toLocaleDateString('pt-BR', { 
-                month: 'long', 
-                year: 'numeric' 
-              });
-
-              return (
-                <div key={monthKey}>
-                  <h2 className="text-2xl font-semibold capitalize mb-4">
-                    {monthName}
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groupedContents[monthKey].map((content) => (
-                      <ContentCard 
-                        key={content.id} 
-                        content={content}
-                        isResponsible={false}
-                        isAgencyView={false}
-                        onUpdate={() => loadContents(client!.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredContents.map((content) => (
+              <ContentCard 
+                key={content.id} 
+                content={content}
+                isResponsible={false}
+                isAgencyView={false}
+                onUpdate={() => loadContents(client!.id)}
+              />
+            ))}
           </div>
         )}
       </main>
