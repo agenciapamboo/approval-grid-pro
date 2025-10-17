@@ -38,13 +38,17 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   const [hasChanges, setHasChanges] = useState(false);
   const [contentType, setContentType] = useState<'image' | 'carousel' | 'reels' | 'story' | 'feed'>('image');
   const [videoTypes, setVideoTypes] = useState<string[]>([]);
+  const [reelsThumbnail, setReelsThumbnail] = useState<File | null>(null);
+  const [reelsThumbnailPreview, setReelsThumbnailPreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     return () => {
       previews.forEach(url => URL.revokeObjectURL(url));
+      if (reelsThumbnailPreview) URL.revokeObjectURL(reelsThumbnailPreview);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -173,6 +177,35 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         ? prev.filter(t => t !== type)
         : [...prev, type]
     );
+    // Se selecionou reels, atualiza contentType
+    if (type === 'reels') {
+      setContentType('reels');
+    }
+    setHasChanges(true);
+  };
+
+  const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Arquivo inválido",
+          description: "Por favor, selecione uma imagem",
+          variant: "destructive",
+        });
+        return;
+      }
+      setReelsThumbnail(file);
+      if (reelsThumbnailPreview) URL.revokeObjectURL(reelsThumbnailPreview);
+      setReelsThumbnailPreview(URL.createObjectURL(file));
+      setHasChanges(true);
+    }
+  };
+
+  const removeThumbnail = () => {
+    if (reelsThumbnailPreview) URL.revokeObjectURL(reelsThumbnailPreview);
+    setReelsThumbnail(null);
+    setReelsThumbnailPreview("");
     setHasChanges(true);
   };
 
@@ -235,6 +268,25 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
       if (contentError) throw contentError;
 
+      // Upload de thumbnail se for reels e houver thumbnail
+      let thumbUrl = null;
+      if (finalContentType === 'reels' && reelsThumbnail) {
+        const thumbExt = reelsThumbnail.name.split('.').pop();
+        const thumbFileName = `${content.id}/thumb-${Date.now()}.${thumbExt}`;
+        
+        const { error: thumbUploadError } = await supabase.storage
+          .from('content-media')
+          .upload(thumbFileName, reelsThumbnail);
+
+        if (thumbUploadError) throw thumbUploadError;
+
+        const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
+          .from('content-media')
+          .getPublicUrl(thumbFileName);
+        
+        thumbUrl = thumbPublicUrl;
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileExt = file.name.split('.').pop();
@@ -257,6 +309,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
             src_url: publicUrl,
             kind: file.type.startsWith('video/') ? 'video' : 'image',
             order_index: i,
+            thumb_url: thumbUrl,
           });
       }
 
@@ -283,6 +336,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       setChannels([]);
       setContentType('image');
       setVideoTypes([]);
+      setReelsThumbnail(null);
+      setReelsThumbnailPreview("");
       setHasChanges(false);
       onContentCreated();
 
@@ -528,6 +583,39 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                 </Label>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Upload de capa para Reels */}
+        {contentType === 'reels' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Capa do Reels (opcional)</Label>
+            {reelsThumbnailPreview ? (
+              <div className="relative w-32 h-32">
+                <img src={reelsThumbnailPreview} alt="Capa" className="w-full h-full object-cover rounded border" />
+                <button
+                  type="button"
+                  onClick={removeThumbnail}
+                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 shadow-sm"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => thumbnailInputRef.current?.click()}
+                className="w-32 h-32 border-2 border-dashed border-muted-foreground/30 rounded flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <Upload className="h-6 w-6 text-muted-foreground" />
+              </div>
+            )}
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailSelect}
+              className="hidden"
+            />
           </div>
         )}
 
