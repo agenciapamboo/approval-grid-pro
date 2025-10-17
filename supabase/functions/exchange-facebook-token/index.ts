@@ -20,7 +20,7 @@ serve(async (req) => {
 
     const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID');
     const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET');
-    const REDIRECT_URI = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '')}.lovable.app/social-connect`;
+    const REDIRECT_URI = 'https://app.aprovacriativos.com.br/social-connect';
 
     if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
       throw new Error('Credenciais do Facebook não configuradas');
