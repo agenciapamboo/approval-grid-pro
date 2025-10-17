@@ -481,7 +481,7 @@ const Dashboard = () => {
               }
               
               return (
-                <Card key={monthKey} className="border-l-4 border-l-primary">
+                <Card key={monthKey}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -492,22 +492,22 @@ const Dashboard = () => {
                       </div>
                       <div className="flex gap-2">
                         {pendingContents.length > 0 && (
-                          <Badge variant="outline" className="bg-pending/10 text-pending border-pending">
+                          <Badge className="bg-pending text-white border-0">
                             {pendingContents.length} pendente{pendingContents.length > 1 ? 's' : ''}
                           </Badge>
                         )}
                         {approvedContents.length > 0 && (
-                          <Badge variant="outline" className="bg-success/10 text-success border-success">
+                          <Badge className="bg-success text-white border-0">
                             {approvedContents.length} aprovado{approvedContents.length > 1 ? 's' : ''}
                           </Badge>
                         )}
                         {partialContents.length > 0 && (
-                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning">
+                          <Badge className="bg-warning text-white border-0">
                             {partialContents.length} ajuste{partialContents.length > 1 ? 's' : ''}
                           </Badge>
                         )}
                         {rejectedContents.length > 0 && (
-                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
+                          <Badge className="bg-destructive text-white border-0">
                             {rejectedContents.length} reprovado{rejectedContents.length > 1 ? 's' : ''}
                           </Badge>
                         )}
@@ -531,7 +531,11 @@ const Dashboard = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigate(`/${agency.slug}/${client.slug}/conteudos`)}
+                              onClick={() => {
+                                if (agency?.slug && client?.slug) {
+                                  navigate(`/${agency.slug}/${client.slug}`);
+                                }
+                              }}
                             >
                               Revisar
                             </Button>
@@ -553,7 +557,11 @@ const Dashboard = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => navigate(`/${agency.slug}/${client.slug}/conteudos`)}
+                                onClick={() => {
+                                  if (agency?.slug && client?.slug) {
+                                    navigate(`/${agency.slug}/${client.slug}`);
+                                  }
+                                }}
                               >
                                 Ver detalhes
                               </Button>
