@@ -456,126 +456,114 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-            {Object.entries(contentsByMonth).map(([monthKey, monthContents]) => {
+            {Object.entries(contentsByMonth)
+              .sort(([a], [b]) => b.localeCompare(a)) // Ordenar por mês decrescente
+              .map(([monthKey, monthContents]) => {
               const [year, month] = monthKey.split('-');
               const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
               
               const pendingContents = monthContents.filter(c => c.status === 'in_review' || c.status === 'draft');
               const partialContents = monthContents.filter(c => c.status === 'changes_requested');
               const approvedContents = monthContents.filter(c => c.status === 'approved');
+              const rejectedContents = monthContents.filter(c => c.status === 'rejected');
               
               const client = clients[0];
               const agency = agencies[0];
               
+              // Determinar o subtítulo baseado no status
+              let subtitle = '';
+              if (pendingContents.length > 0) {
+                subtitle = `Você tem ${pendingContents.length} ${pendingContents.length === 1 ? 'conteúdo' : 'conteúdos'} para aprovar`;
+              } else if (partialContents.length > 0) {
+                subtitle = `${partialContents.length} ${partialContents.length === 1 ? 'conteúdo necessita' : 'conteúdos necessitam'} de ajustes`;
+              } else if (approvedContents.length === monthContents.length) {
+                subtitle = 'Tudo Aprovado ✓';
+              }
+              
               return (
-                <div key={monthKey} className="space-y-4">
-                  <h3 className="text-lg font-semibold capitalize">{monthName}</h3>
-                  
-                  {pendingContents.length > 0 && (
-                    <Card className="border-l-4 border-l-pending">
-                      <CardHeader>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-5 w-5 text-pending" />
-                          <CardTitle className="text-base">Aprovação Pendente</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div 
-                          className="flex items-center justify-between p-3 glass rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => {
-                            const c = clients[0];
-                            const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                            if (c?.slug) {
-                              navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
-                            }
-                          }}
-                        >
-                          <div>
-                            <p className="font-medium">Conteúdo pendente</p>
-                            <p className="text-sm text-muted-foreground">
-                              Você tem {pendingContents.length} para aprovar
-                            </p>
-                          </div>
-                          <div className="h-8 w-8 rounded-full bg-[#00B878] hover:bg-[#00a06a] transition-colors flex items-center justify-center">
-                            <ArrowRight className="h-5 w-5 text-white" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {partialContents.length > 0 && (
-                    <Card className="border-l-4 border-l-warning">
-                      <CardHeader>
-                        <div className="flex items-center gap-2">
-                          <AlertCircle className="h-5 w-5 text-warning" />
-                          <CardTitle className="text-base">Aguardando Revisão da Agência</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {partialContents.map(content => (
-                          <div 
-                            key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => {
-                              const c = clients[0];
-                              const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                              if (c?.slug) {
-                                navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
-                              }
-                            }}
-                          >
-                            <div>
-                              <p className="font-medium">{content.title}</p>
+                <Card key={monthKey} className="border-l-4 border-l-primary">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="capitalize">{monthName}</CardTitle>
+                        {subtitle && (
+                          <CardDescription className="mt-1">{subtitle}</CardDescription>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        {pendingContents.length > 0 && (
+                          <Badge variant="outline" className="bg-pending/10 text-pending border-pending">
+                            {pendingContents.length} pendente{pendingContents.length > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                        {approvedContents.length > 0 && (
+                          <Badge variant="outline" className="bg-success/10 text-success border-success">
+                            {approvedContents.length} aprovado{approvedContents.length > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                        {partialContents.length > 0 && (
+                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning">
+                            {partialContents.length} ajuste{partialContents.length > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                        {rejectedContents.length > 0 && (
+                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
+                            {rejectedContents.length} reprovado{rejectedContents.length > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {pendingContents.length > 0 && (
+                        <div className="space-y-2">{pendingContents.map((c) => (
+                          <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-pending/5 border border-pending/20">
+                            <div className="flex-1">
+                              <p className="font-medium">{c.title}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
+                                {format(new Date(c.date), "dd/MM/yyyy", { locale: ptBR })}
+                                {c.channels && c.channels.length > 0 && (
+                                  <span className="ml-2">• {c.channels.join(', ')}</span>
+                                )}
                               </p>
                             </div>
-                            <div className="h-8 w-8 rounded-full bg-[#00B878] hover:bg-[#00a06a] transition-colors flex items-center justify-center">
-                              <ArrowRight className="h-5 w-5 text-white" />
-                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/${agency.slug}/${client.slug}/conteudos`)}
+                            >
+                              Revisar
+                            </Button>
                           </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {approvedContents.length > 0 && (
-                    <Card className="border-l-4 border-l-success">
-                      <CardHeader>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-success" />
-                          <CardTitle className="text-base">Aprovado</CardTitle>
+                        ))}</div>
+                      )}
+                      
+                      {partialContents.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold text-warning">Ajustes Solicitados</h4>
+                          {partialContents.map((c) => (
+                            <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-warning/5 border border-warning/20">
+                              <div className="flex-1">
+                                <p className="font-medium">{c.title}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {format(new Date(c.date), "dd/MM/yyyy", { locale: ptBR })}
+                                </p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/${agency.slug}/${client.slug}/conteudos`)}
+                              >
+                                Ver detalhes
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {approvedContents.map(content => (
-                          <div 
-                            key={content.id} 
-                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => {
-                              const c = clients[0];
-                              const aSlug = c?.agencies?.slug || agencies[0]?.slug || 'agencia';
-                              if (c?.slug) {
-                                navigate(`/${aSlug}/${c.slug}?month=${month}&year=${year}`);
-                              }
-                            }}
-                          >
-                            <div>
-                              <p className="font-medium">{content.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(content.date).toLocaleDateString('pt-BR')} - {content.type}
-                              </p>
-                            </div>
-                            <div className="h-8 w-8 rounded-full bg-[#00B878] hover:bg-[#00a06a] transition-colors flex items-center justify-center">
-                              <ArrowRight className="h-5 w-5 text-white" />
-                            </div>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
             <Alert>

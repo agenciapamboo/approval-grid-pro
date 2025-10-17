@@ -188,7 +188,7 @@ export default function ContentGrid() {
       console.log('Session exists - loading all contents');
     }
     
-    const { data, error } = await query.order("date", { ascending: false });
+    const { data, error } = await query.order("date", { ascending: true });
 
     if (error) {
       console.error("Erro ao carregar conteúdos:", error);

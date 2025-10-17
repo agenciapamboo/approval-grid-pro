@@ -49,6 +49,10 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* Pending/In Review */
+    --pending: 204 100% 41%;
+    --pending-foreground: 0 0% 100%;
+
     /* Destructive */
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
@@ -127,6 +131,10 @@ All colors MUST be HSL.
     /* Warning */
     --warning: 38 92% 55%;
     --warning-foreground: 215 30% 8%;
+
+    /* Pending/In Review */
+    --pending: 204 100% 41%;
+    --pending-foreground: 0 0% 100%;
 
     /* Destructive */
     --destructive: 0 72% 55%;
