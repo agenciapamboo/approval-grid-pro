@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import CreativeRequests from "./pages/CreativeRequests";
 import SocialConnect from "./pages/SocialConnect";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DataDeletion from "./pages/DataDeletion";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/hero" element={<HeroDemo />} />
             <Route path="/social-connect" element={<SocialConnect />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/data-deletion" element={<DataDeletion />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

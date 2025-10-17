@@ -212,7 +212,7 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
 
   // 2. Publicar container
   const publishUrl = `https://graph.facebook.com/v18.0/${igAccountId}/media_publish`;
-  const publishParams = {
+  const publishParams: Record<string, string> = {
     creation_id: creationId,
     access_token: account.access_token,
   };
