@@ -80,33 +80,6 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     }
   };
 
-  const detectContentType = async (file: File): Promise<'image' | 'carousel' | 'story' | 'feed'> => {
-    return new Promise((resolve) => {
-      if (file.type.startsWith('image/')) {
-        const img = new Image();
-        img.onload = () => {
-          const aspectRatio = img.width / img.height;
-          
-          // 9:16 (0.5625) - Story/vertical
-          if (aspectRatio >= 0.5 && aspectRatio <= 0.6) {
-            resolve('story');
-          }
-          // 4:5 (0.8) - Feed
-          else if (aspectRatio >= 0.75 && aspectRatio <= 0.85) {
-            resolve('feed');
-          }
-          // Outras proporções - Image
-          else {
-            resolve('image');
-          }
-        };
-        img.src = URL.createObjectURL(file);
-      } else {
-        resolve('image');
-      }
-    });
-  };
-
   const handleFiles = async (newFiles: File[]) => {
     const validFiles = newFiles.filter(file => {
       const isImage = file.type.startsWith('image/');
@@ -128,15 +101,9 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
     
-    // Detectar tipo de conteúdo automaticamente
+    // Definir tipo de conteúdo baseado em múltiplos arquivos
     if (validFiles.length > 1) {
       setContentType('carousel');
-    } else if (validFiles[0].type.startsWith('video/')) {
-      // Vídeos permanecem sem tipo definido até o usuário escolher
-      setVideoTypes([]);
-    } else {
-      const detectedType = await detectContentType(validFiles[0]);
-      setContentType(detectedType);
     }
     
     setHasChanges(true);
@@ -219,28 +186,11 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       return;
     }
 
-    // Validar tipo de vídeo se for vídeo
-    if (files.length === 1 && files[0].type.startsWith('video/') && videoTypes.length === 0) {
-      toast({
-        title: "Tipo de vídeo obrigatório",
-        description: "Por favor, selecione ao menos um tipo para o vídeo (Story, Reels ou ambos)",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setUploading(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
-
-      // Determinar tipo de conteúdo
-      let finalContentType = contentType;
-      if (files.length === 1 && files[0].type.startsWith('video/')) {
-        // Para vídeos, usar o primeiro tipo selecionado
-        finalContentType = videoTypes[0] as typeof finalContentType;
-      }
 
       // Criar datetime combinando data e hora (sem conversão de timezone)
       const [hours, minutes] = time.split(':').map(Number);
@@ -257,7 +207,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           client_id: clientId,
           title: `Conteúdo ${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
           date: dateTimeString,
-          type: finalContentType,
+          type: contentType,
           status: 'draft' as const,
           owner_user_id: user.id,
           channels: channels,
@@ -270,7 +220,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
       // Upload de thumbnail se for reels e houver thumbnail
       let thumbUrl = null;
-      if (finalContentType === 'reels' && reelsThumbnail) {
+      if (contentType === 'reels' && reelsThumbnail) {
         const thumbExt = reelsThumbnail.name.split('.').pop();
         const thumbFileName = `${content.id}/thumb-${Date.now()}.${thumbExt}`;
         
@@ -464,6 +414,71 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Seletor de tipo de conteúdo - sempre visível */}
+        {files.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Tipo de Conteúdo</Label>
+            <RadioGroup 
+              value={contentType} 
+              onValueChange={(value) => {
+                setContentType(value as typeof contentType);
+                setHasChanges(true);
+              }}
+            >
+              {files.length > 1 ? (
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="carousel" id="type-carousel" />
+                  <Label htmlFor="type-carousel" className="text-sm font-normal cursor-pointer">
+                    Carrossel ({files.length} itens)
+                  </Label>
+                </div>
+              ) : files[0].type.startsWith('video/') ? (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="story" id="type-story-video" />
+                    <Label htmlFor="type-story-video" className="text-sm font-normal cursor-pointer">
+                      Story (vídeo vertical 9:16)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="reels" id="type-reels" />
+                    <Label htmlFor="type-reels" className="text-sm font-normal cursor-pointer">
+                      Reels (vídeo curto)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="feed" id="type-feed-video" />
+                    <Label htmlFor="type-feed-video" className="text-sm font-normal cursor-pointer">
+                      Feed (vídeo normal)
+                    </Label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="feed" id="type-feed" />
+                    <Label htmlFor="type-feed" className="text-sm font-normal cursor-pointer">
+                      Feed (post normal)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="story" id="type-story" />
+                    <Label htmlFor="type-story" className="text-sm font-normal cursor-pointer">
+                      Story (vertical 9:16)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="image" id="type-image" />
+                    <Label htmlFor="type-image" className="text-sm font-normal cursor-pointer">
+                      Outro formato
+                    </Label>
+                  </div>
+                </>
+              )}
+            </RadioGroup>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label className="text-sm font-medium">Data e hora</Label>
           <div className="flex gap-2">
@@ -529,62 +544,6 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           onChange={(e) => handleCaptionChange(e.target.value)}
           className="min-h-[100px]"
         />
-
-        {/* Tipo de conteúdo para imagens */}
-        {files.length === 1 && files[0] && !files[0].type.startsWith('video/') && (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Tipo de conteúdo</Label>
-            <RadioGroup value={contentType} onValueChange={(value) => setContentType(value as typeof contentType)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="feed" id="type-feed" />
-                <Label htmlFor="type-feed" className="text-sm font-normal cursor-pointer">
-                  Feed (4:5)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="story" id="type-story" />
-                <Label htmlFor="type-story" className="text-sm font-normal cursor-pointer">
-                  Story (9:16)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="image" id="type-image" />
-                <Label htmlFor="type-image" className="text-sm font-normal cursor-pointer">
-                  Imagem (Outro)
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-        )}
-
-        {/* Tipo de vídeo - checkbox múltipla */}
-        {files.length === 1 && files[0] && files[0].type.startsWith('video/') && (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Tipo de vídeo (selecione ao menos um)</Label>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="video-story"
-                  checked={videoTypes.includes('story')}
-                  onCheckedChange={() => toggleVideoType('story')}
-                />
-                <Label htmlFor="video-story" className="text-sm font-normal cursor-pointer">
-                  Story (9:16)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="video-reels"
-                  checked={videoTypes.includes('reels')}
-                  onCheckedChange={() => toggleVideoType('reels')}
-                />
-                <Label htmlFor="video-reels" className="text-sm font-normal cursor-pointer">
-                  Reels
-                </Label>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Upload de capa para Reels */}
         {contentType === 'reels' && (
