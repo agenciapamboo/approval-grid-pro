@@ -3,12 +3,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { SelectSocialAccountsDialog } from "@/components/admin/SelectSocialAccountsDialog";
 
 export default function SocialConnect() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [status, setStatus] = useState("Processando...");
+  const [showDialog, setShowDialog] = useState(false);
+  const [availableAccounts, setAvailableAccounts] = useState<any[]>([]);
+  const [currentClientId, setCurrentClientId] = useState<string>("");
+  const [returnUrl, setReturnUrl] = useState<string>("/");
 
   useEffect(() => {
     handleOAuthCallback();
@@ -43,13 +48,11 @@ export default function SocialConnect() {
         throw new Error(data.error || "Erro ao conectar conta");
       }
 
-      toast({
-        title: "Sucesso!",
-        description: `${data.accounts_connected} conta(s) conectada(s) com sucesso`,
-      });
-
-      // Redirecionar de volta
-      navigate(returnUrl || "/");
+      // Salvar dados para o dialog
+      setAvailableAccounts(data.accounts || []);
+      setCurrentClientId(clientId);
+      setReturnUrl(returnUrl || "/");
+      setShowDialog(true);
     } catch (error: any) {
       console.error("Erro no callback OAuth:", error);
       toast({
@@ -62,11 +65,27 @@ export default function SocialConnect() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <Loader2 className="h-12 w-12 animate-spin mx-auto" />
-        <p className="text-lg">{status}</p>
+    <>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto" />
+          <p className="text-lg">{status}</p>
+        </div>
       </div>
-    </div>
+
+      <SelectSocialAccountsDialog
+        open={showDialog}
+        onOpenChange={setShowDialog}
+        accounts={availableAccounts}
+        clientId={currentClientId}
+        onSuccess={() => {
+          toast({
+            title: "Sucesso!",
+            description: "Contas configuradas com sucesso",
+          });
+          navigate(returnUrl);
+        }}
+      />
+    </>
   );
 }

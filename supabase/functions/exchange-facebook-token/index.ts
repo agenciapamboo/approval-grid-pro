@@ -55,9 +55,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    let accountsConnected = 0;
+    const availableAccounts = [];
 
-    // 3. Salvar cada página
+    // 3. Coletar todas as contas disponíveis
     for (const page of pagesData.data || []) {
       // Obter conta Instagram vinculada à página (se houver)
       const instagramUrl = `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`;
@@ -66,64 +66,39 @@ serve(async (req) => {
 
       const instagramAccountId = instagramData.instagram_business_account?.id;
 
-      // Salvar conta do Facebook
-      const { error: fbError } = await supabaseClient
-        .from('client_social_accounts')
-        .upsert({
-          client_id: clientId,
-          platform: 'facebook',
-          account_id: page.id,
-          account_name: page.name,
-          access_token: page.access_token,
-          page_id: page.id,
-          instagram_business_account_id: instagramAccountId,
-          is_active: true,
-        }, {
-          onConflict: 'client_id,platform,account_id'
-        });
+      // Adicionar conta Facebook
+      availableAccounts.push({
+        platform: 'facebook',
+        account_id: page.id,
+        account_name: page.name,
+        access_token: page.access_token,
+        page_id: page.id,
+        instagram_business_account_id: instagramAccountId,
+      });
 
-      if (fbError) {
-        console.error('Erro ao salvar conta Facebook:', fbError);
-      } else {
-        accountsConnected++;
-      }
-
-      // Se houver Instagram vinculado, salvar também
+      // Se houver Instagram vinculado, adicionar também
       if (instagramAccountId) {
-        // Obter informações da conta Instagram
         const igInfoUrl = `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=username&access_token=${page.access_token}`;
         const igInfoResponse = await fetch(igInfoUrl);
         const igInfo = await igInfoResponse.json();
 
-        const { error: igError } = await supabaseClient
-          .from('client_social_accounts')
-          .upsert({
-            client_id: clientId,
-            platform: 'instagram',
-            account_id: instagramAccountId,
-            account_name: igInfo.username || `Instagram de ${page.name}`,
-            access_token: page.access_token,
-            page_id: page.id,
-            instagram_business_account_id: instagramAccountId,
-            is_active: true,
-          }, {
-            onConflict: 'client_id,platform,account_id'
-          });
-
-        if (igError) {
-          console.error('Erro ao salvar conta Instagram:', igError);
-        } else {
-          accountsConnected++;
-        }
+        availableAccounts.push({
+          platform: 'instagram',
+          account_id: instagramAccountId,
+          account_name: igInfo.username || `Instagram de ${page.name}`,
+          access_token: page.access_token,
+          page_id: page.id,
+          instagram_business_account_id: instagramAccountId,
+        });
       }
     }
 
-    console.log(`${accountsConnected} conta(s) conectada(s)`);
+    console.log(`${availableAccounts.length} conta(s) disponível(is)`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        accounts_connected: accountsConnected,
+        accounts: availableAccounts,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
