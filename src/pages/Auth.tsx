@@ -245,10 +245,16 @@ const Auth = () => {
           </form>
         </Card>
 
-        <div className="text-center">
+        <div className="text-center space-y-2">
           <p className="text-sm text-muted-foreground">
             Sistema profissional de aprovação de conteúdos
           </p>
+          <Link 
+            to="/privacy-policy" 
+            className="text-sm text-primary hover:underline block"
+          >
+            Política de Privacidade
+          </Link>
         </div>
       </div>
       
