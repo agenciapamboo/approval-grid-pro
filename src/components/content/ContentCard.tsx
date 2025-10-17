@@ -30,6 +30,7 @@ interface ContentCardProps {
     status: string;
     version: number;
     channels?: string[];
+    auto_publish?: boolean;
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
@@ -51,6 +52,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     const [hh = "12", mm = "00"] = parts.split(":");
     return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
   });
+  const [publishing, setPublishing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string) => {
@@ -433,6 +435,62 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     }
   };
 
+  const handlePublishNow = async () => {
+    setPublishing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('publish-to-social', {
+        body: { contentId: content.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Publicado com sucesso!",
+          description: `Conteúdo publicado em ${data.results?.length || 0} conta(s)`,
+        });
+        onUpdate();
+      } else {
+        throw new Error(data?.error || 'Erro ao publicar');
+      }
+    } catch (error: any) {
+      console.error("Erro ao publicar:", error);
+      toast({
+        title: "Erro ao publicar",
+        description: error.message || "Erro ao publicar o conteúdo",
+        variant: "destructive",
+      });
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleSchedule = async () => {
+    try {
+      // Atualizar para auto-publicar no horário agendado
+      const { error } = await supabase
+        .from("contents")
+        .update({ auto_publish: true })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento ativado",
+        description: `Conteúdo será publicado automaticamente em ${format(new Date(content.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao agendar:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao agendar publicação",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -586,6 +644,31 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Ações de Publicação - Apenas para Agência */}
+          {isAgencyView && content.status === 'approved' && (
+            <div className="p-4 border-t">
+              <div className="flex flex-col gap-2">
+                <Button 
+                  size="sm"
+                  onClick={handlePublishNow}
+                  disabled={publishing}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {publishing ? 'Publicando...' : 'Publicar Agora'}
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSchedule}
+                  disabled={content.auto_publish}
+                  className="w-full"
+                >
+                  {content.auto_publish ? 'Agendado ✓' : 'Agendar Publicação'}
                 </Button>
               </div>
             </div>

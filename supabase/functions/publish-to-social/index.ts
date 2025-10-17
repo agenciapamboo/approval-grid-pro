@@ -115,29 +115,54 @@ serve(async (req) => {
 async function publishToFacebook(content: any, account: any): Promise<string> {
   const caption = content.content_texts?.[0]?.caption || '';
   const media = content.content_media?.[0];
+  const contentType = content.type; // 'image', 'carousel', 'reels', 'story', 'feed'
 
   let url = `https://graph.facebook.com/v18.0/${account.page_id}/feed`;
   const params: any = {
-    message: caption,
     access_token: account.access_token,
   };
 
-  // Se houver mídia
-  if (media && media.src_url) {
-    // Para imagem
+  // Story
+  if (contentType === 'story') {
+    if (!media || !media.src_url) {
+      throw new Error('Story requer mídia');
+    }
+    
+    url = `https://graph.facebook.com/v18.0/${account.page_id}/photo_stories`;
     if (media.kind === 'image') {
+      params.photo_url = media.src_url;
+    } else if (media.kind === 'video') {
+      url = `https://graph.facebook.com/v18.0/${account.page_id}/video_stories`;
+      params.video_url = media.src_url;
+    }
+  }
+  // Carrossel
+  else if (contentType === 'carousel') {
+    // Para carrossel, precisaria criar um álbum ou usar múltiplas imagens
+    // Por simplicidade, vamos postar como imagem única
+    if (media && media.src_url && media.kind === 'image') {
       url = `https://graph.facebook.com/v18.0/${account.page_id}/photos`;
       params.url = media.src_url;
       params.caption = caption;
-      delete params.message;
+    } else {
+      params.message = caption;
     }
-    // Para vídeo
-    else if (media.kind === 'video') {
-      url = `https://graph.facebook.com/v18.0/${account.page_id}/videos`;
-      params.file_url = media.src_url;
-      params.description = caption;
-      delete params.message;
-    }
+  }
+  // Reels/Video
+  else if (contentType === 'reels' || (media && media.kind === 'video')) {
+    url = `https://graph.facebook.com/v18.0/${account.page_id}/videos`;
+    params.file_url = media.src_url;
+    params.description = caption;
+  }
+  // Imagem
+  else if (media && media.src_url && media.kind === 'image') {
+    url = `https://graph.facebook.com/v18.0/${account.page_id}/photos`;
+    params.url = media.src_url;
+    params.caption = caption;
+  }
+  // Texto puro
+  else {
+    params.message = caption;
   }
 
   const formBody = Object.keys(params)
@@ -164,6 +189,7 @@ async function publishToFacebook(content: any, account: any): Promise<string> {
 async function publishToInstagram(content: any, account: any): Promise<string> {
   const caption = content.content_texts?.[0]?.caption || '';
   const media = content.content_media?.[0];
+  const contentType = content.type; // 'image', 'carousel', 'reels', 'story', 'feed'
 
   if (!media || !media.src_url) {
     throw new Error('Instagram requer mídia (imagem ou vídeo)');
@@ -181,13 +207,49 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
     access_token: account.access_token,
   };
 
-  if (media.kind === 'image') {
-    containerParams.image_url = media.src_url;
-  } else if (media.kind === 'video') {
-    containerParams.media_type = 'VIDEO';
+  // Story
+  if (contentType === 'story') {
+    containerParams.media_type = 'STORIES';
+    if (media.kind === 'image') {
+      containerParams.image_url = media.src_url;
+    } else if (media.kind === 'video') {
+      containerParams.video_url = media.src_url;
+    }
+  }
+  // Reels
+  else if (contentType === 'reels') {
+    containerParams.media_type = 'REELS';
     containerParams.video_url = media.src_url;
-  } else {
-    throw new Error('Tipo de mídia não suportado pelo Instagram');
+    // Suporta thumbnail customizada
+    if (media.thumb_url) {
+      containerParams.thumb_offset = '0'; // ou usar thumb_url se suportado
+    }
+  }
+  // Carrossel
+  else if (contentType === 'carousel') {
+    // Para carrossel, precisaria criar múltiplos containers
+    // Por simplicidade, vamos postar como imagem única
+    if (media.kind === 'image') {
+      containerParams.image_url = media.src_url;
+    } else if (media.kind === 'video') {
+      containerParams.media_type = 'VIDEO';
+      containerParams.video_url = media.src_url;
+    }
+  }
+  // Feed normal (imagem ou vídeo)
+  else {
+    if (media.kind === 'image') {
+      containerParams.image_url = media.src_url;
+    } else if (media.kind === 'video') {
+      containerParams.media_type = 'VIDEO';
+      containerParams.video_url = media.src_url;
+      // Suporta thumbnail customizada para vídeos
+      if (media.thumb_url) {
+        containerParams.thumb_offset = '0';
+      }
+    } else {
+      throw new Error('Tipo de mídia não suportado pelo Instagram');
+    }
   }
 
   const containerFormBody = Object.keys(containerParams)
