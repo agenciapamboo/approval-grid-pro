@@ -249,12 +249,20 @@ const Auth = () => {
           <p className="text-sm text-muted-foreground">
             Sistema profissional de aprovação de conteúdos
           </p>
-          <Link 
-            to="/privacy-policy" 
-            className="text-sm text-primary hover:underline block"
-          >
-            Política de Privacidade
-          </Link>
+          <div className="flex gap-4 justify-center text-sm">
+            <Link 
+              to="/terms-of-service" 
+              className="text-primary hover:underline"
+            >
+              Termos de Uso
+            </Link>
+            <Link 
+              to="/privacy-policy" 
+              className="text-primary hover:underline"
+            >
+              Política de Privacidade
+            </Link>
+          </div>
         </div>
       </div>
       

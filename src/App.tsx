@@ -18,6 +18,7 @@ import CreativeRequests from "./pages/CreativeRequests";
 import SocialConnect from "./pages/SocialConnect";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/social-connect" element={<SocialConnect />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/data-deletion" element={<DataDeletion />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
