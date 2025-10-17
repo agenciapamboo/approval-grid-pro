@@ -41,56 +41,58 @@ serve(async (req) => {
     const accessToken = tokenData.access_token;
     console.log('Token obtido com sucesso');
 
-    // 2. Obter páginas do usuário
-    const pagesUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`;
-    const pagesResponse = await fetch(pagesUrl);
-    const pagesData = await pagesResponse.json();
-
-    if (pagesData.error) {
-      throw new Error(pagesData.error.message || 'Erro ao obter páginas');
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
-
+    // 2. Obter todas as páginas do usuário (com paginação)
     const availableAccounts = [];
+    let pagesUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}&limit=100`;
+    
+    while (pagesUrl) {
+      const pagesResponse = await fetch(pagesUrl);
+      const pagesData = await pagesResponse.json();
 
-    // 3. Coletar todas as contas disponíveis
-    for (const page of pagesData.data || []) {
-      // Obter conta Instagram vinculada à página (se houver)
-      const instagramUrl = `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`;
-      const instagramResponse = await fetch(instagramUrl);
-      const instagramData = await instagramResponse.json();
+      if (pagesData.error) {
+        throw new Error(pagesData.error.message || 'Erro ao obter páginas');
+      }
 
-      const instagramAccountId = instagramData.instagram_business_account?.id;
+      console.log(`Processando ${pagesData.data?.length || 0} páginas...`);
 
-      // Adicionar conta Facebook
-      availableAccounts.push({
-        platform: 'facebook',
-        account_id: page.id,
-        account_name: page.name,
-        access_token: page.access_token,
-        page_id: page.id,
-        instagram_business_account_id: instagramAccountId,
-      });
+      // 3. Coletar todas as contas disponíveis
+      for (const page of pagesData.data || []) {
+        // Obter conta Instagram vinculada à página (se houver)
+        const instagramUrl = `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`;
+        const instagramResponse = await fetch(instagramUrl);
+        const instagramData = await instagramResponse.json();
 
-      // Se houver Instagram vinculado, adicionar também
-      if (instagramAccountId) {
-        const igInfoUrl = `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=username&access_token=${page.access_token}`;
-        const igInfoResponse = await fetch(igInfoUrl);
-        const igInfo = await igInfoResponse.json();
+        const instagramAccountId = instagramData.instagram_business_account?.id;
 
+        // Adicionar conta Facebook
         availableAccounts.push({
-          platform: 'instagram',
-          account_id: instagramAccountId,
-          account_name: igInfo.username || `Instagram de ${page.name}`,
+          platform: 'facebook',
+          account_id: page.id,
+          account_name: page.name,
           access_token: page.access_token,
           page_id: page.id,
           instagram_business_account_id: instagramAccountId,
         });
+
+        // Se houver Instagram vinculado, adicionar também
+        if (instagramAccountId) {
+          const igInfoUrl = `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=username&access_token=${page.access_token}`;
+          const igInfoResponse = await fetch(igInfoUrl);
+          const igInfo = await igInfoResponse.json();
+
+          availableAccounts.push({
+            platform: 'instagram',
+            account_id: instagramAccountId,
+            account_name: igInfo.username || `Instagram de ${page.name}`,
+            access_token: page.access_token,
+            page_id: page.id,
+            instagram_business_account_id: instagramAccountId,
+          });
+        }
       }
+      
+      // Verificar se há próxima página
+      pagesUrl = pagesData.paging?.next || null;
     }
 
     console.log(`${availableAccounts.length} conta(s) disponível(is)`);
