@@ -57,9 +57,9 @@ serve(async (req) => {
 
     // Find and delete all social accounts for this Facebook user
     const { data: socialAccounts, error: findError } = await supabase
-      .from('social_accounts')
-      .select('id, user_id')
-      .eq('platform_user_id', userId);
+      .from('client_social_accounts')
+      .select('id')
+      .eq('account_id', userId);
 
     if (findError) {
       console.error('Error finding social accounts:', findError);
@@ -71,9 +71,9 @@ serve(async (req) => {
       
       // Delete the social accounts
       const { error: deleteError } = await supabase
-        .from('social_accounts')
+        .from('client_social_accounts')
         .delete()
-        .eq('platform_user_id', userId);
+        .eq('account_id', userId);
 
       if (deleteError) {
         console.error('Error deleting social accounts:', deleteError);
