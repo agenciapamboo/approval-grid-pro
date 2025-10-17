@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Share2 } from "lucide-react";
+import { SocialAccountsDialog } from "./SocialAccountsDialog";
 
 interface Client {
   id: string;
@@ -35,6 +36,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -173,11 +175,23 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
   if (!client) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Cliente</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Editar Cliente</DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSocialDialogOpen(true)}
+                type="button"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Redes Sociais
+              </Button>
+            </div>
+          </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -387,5 +401,14 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         </form>
       </DialogContent>
     </Dialog>
+
+    {client && (
+      <SocialAccountsDialog
+        clientId={client.id}
+        open={socialDialogOpen}
+        onOpenChange={setSocialDialogOpen}
+      />
+    )}
+  </>
   );
 }

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building2, Calendar, Globe, Phone, MapPin, FileText } from "lucide-react";
+import { Building2, Calendar, Globe, Phone, MapPin, FileText, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { SocialAccountsDialog } from "./SocialAccountsDialog";
 
 interface Client {
   id: string;
@@ -37,6 +39,7 @@ interface ClientNote {
 export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialogProps) {
   const [notes, setNotes] = useState<ClientNote[]>([]);
   const [loading, setLoading] = useState(false);
+  const [socialDialogOpen, setSocialDialogOpen] = useState(false);
 
   useEffect(() => {
     if (client && open) {
@@ -67,14 +70,25 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
   if (!client) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Dados do Cliente
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Dados do Cliente
+              </DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSocialDialogOpen(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Redes Sociais
+              </Button>
+            </div>
+          </DialogHeader>
         
         <div className="space-y-6">
           {client.logo_url && (
@@ -187,5 +201,14 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
         </div>
       </DialogContent>
     </Dialog>
+
+    {client && (
+      <SocialAccountsDialog
+        clientId={client.id}
+        open={socialDialogOpen}
+        onOpenChange={setSocialDialogOpen}
+      />
+    )}
+  </>
   );
 }
