@@ -34,6 +34,19 @@ serve(async (req) => {
       throw new Error('Conteúdo não encontrado');
     }
 
+    // Verificar se o conteúdo já foi publicado
+    if (content.published_at) {
+      console.log(`Conteúdo ${contentId} já foi publicado em ${content.published_at}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Conteúdo já foi publicado anteriormente',
+          published_at: content.published_at
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
     // 2. Buscar contas sociais ativas do cliente
     const { data: accounts, error: accountsError } = await supabaseClient
       .from('client_social_accounts')
