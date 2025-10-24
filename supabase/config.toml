@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.facebook-data-deletion]
 verify_jwt = false
+
+[functions.delete-content]
+verify_jwt = false

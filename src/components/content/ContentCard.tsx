@@ -280,58 +280,27 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
   const handleDelete = async () => {
     try {
-      // Buscar todas as mídias para deletar do storage
-      const { data: mediaData } = await supabase
-        .from("content_media")
-        .select("src_url")
-        .eq("content_id", content.id);
+      const { data, error } = await supabase.functions.invoke('delete-content', {
+        body: { contentId: content.id },
+      });
 
-      // Deletar arquivos do storage ANTES de deletar o registro
-      if (mediaData && mediaData.length > 0) {
-        const filePaths = mediaData
-          .map(m => {
-            try {
-              const url = new URL(m.src_url);
-              const pathParts = url.pathname.split('/content-media/');
-              return pathParts[1] || null;
-            } catch {
-              return null;
-            }
-          })
-          .filter(Boolean);
-        
-        if (filePaths.length > 0) {
-          const { error: storageError } = await supabase.storage
-            .from('content-media')
-            .remove(filePaths);
-          
-          if (storageError) {
-            console.warn("Aviso ao deletar do storage:", storageError);
-          }
-        }
+      if (error || !data?.success) {
+        throw new Error(error?.message || data?.error || 'Falha ao remover');
       }
 
-      // Deletar conteúdo (cascade irá deletar mídias e textos)
-      const { error } = await supabase
-        .from("contents")
-        .delete()
-        .eq("id", content.id);
-
-      if (error) throw error;
-
       toast({
-        title: "Conteúdo removido",
-        description: "O conteúdo foi removido com sucesso",
+        title: 'Conteúdo removido',
+        description: 'O conteúdo foi removido com sucesso',
       });
 
       setShowDeleteDialog(false);
       onUpdate();
     } catch (error) {
-      console.error("Erro ao remover conteúdo:", error);
+      console.error('Erro ao remover conteúdo:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao remover o conteúdo",
-        variant: "destructive",
+        title: 'Erro',
+        description: 'Erro ao remover o conteúdo',
+        variant: 'destructive',
       });
     }
   };
