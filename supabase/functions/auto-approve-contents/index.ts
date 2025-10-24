@@ -70,80 +70,113 @@ serve(async (req) => {
       throw expiredError;
     }
 
-    if (!expiredContents || expiredContents.length === 0) {
-      console.log('Nenhum conteúdo para auto-aprovar');
-      return new Response(
-        JSON.stringify({ 
-          message: 'Nenhum conteúdo para auto-aprovar',
-          reminders_sent: todayContents?.length || 0,
-          approved: 0,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+    let approvedCount = 0;
+    
+    if (expiredContents && expiredContents.length > 0) {
+      console.log(`Encontrados ${expiredContents.length} conteúdos para auto-aprovar`);
+
+      for (const content of expiredContents) {
+        try {
+          // Atualizar status para aprovado
+          const { error: updateError } = await supabaseClient
+            .from('contents')
+            .update({ status: 'approved' })
+            .eq('id', content.id);
+
+          if (updateError) {
+            console.error(`Erro ao aprovar ${content.id}:`, updateError);
+            continue;
+          }
+
+          // Registrar atividade
+          await supabaseClient
+            .from('activity_log')
+            .insert({
+              entity: 'content',
+              entity_id: content.id,
+              action: 'auto_approved',
+              metadata: {
+                deadline: content.deadline,
+                previous_status: content.status,
+              },
+            });
+
+          // Enviar webhook
+          try {
+            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-webhook`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              },
+              body: JSON.stringify({
+                event: 'content.auto_approved',
+                content_id: content.id,
+                client_id: content.client_id,
+              }),
+            });
+          } catch (webhookError) {
+            console.error(`Erro ao enviar webhook para ${content.id}:`, webhookError);
+          }
+
+          approvedCount++;
+          console.log(`Conteúdo ${content.id} auto-aprovado com sucesso`);
+        } catch (error) {
+          console.error(`Erro ao processar conteúdo ${content.id}:`, error);
+        }
+      }
+
+      console.log(`Auto-aprovação concluída: ${approvedCount}/${expiredContents.length} conteúdos aprovados`);
     }
 
-    console.log(`Encontrados ${expiredContents.length} conteúdos para auto-aprovar`);
-    let approvedCount = 0;
+    // 3. Publicar conteúdos agendados
+    console.log('Buscando conteúdos agendados para publicar...');
+    const now = new Date().toISOString();
+    
+    const { data: scheduledContents, error: scheduledError } = await supabaseClient
+      .from('contents')
+      .select('*')
+      .eq('auto_publish', true)
+      .lte('date', now)
+      .is('published_at', null);
 
-    for (const content of expiredContents) {
-      try {
-        // Atualizar status para aprovado
-        const { error: updateError } = await supabaseClient
-          .from('contents')
-          .update({ status: 'approved' })
-          .eq('id', content.id);
-
-        if (updateError) {
-          console.error(`Erro ao aprovar ${content.id}:`, updateError);
-          continue;
-        }
-
-        // Registrar atividade
-        await supabaseClient
-          .from('activity_log')
-          .insert({
-            entity: 'content',
-            entity_id: content.id,
-            action: 'auto_approved',
-            metadata: {
-              deadline: content.deadline,
-              previous_status: content.status,
-            },
-          });
-
-        // Enviar webhook
+    if (scheduledError) {
+      console.error('Erro ao buscar conteúdos agendados:', scheduledError);
+    } else if (scheduledContents && scheduledContents.length > 0) {
+      console.log(`Encontrados ${scheduledContents.length} conteúdos para publicar`);
+      
+      for (const content of scheduledContents) {
         try {
-          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-webhook`, {
+          // Chamar função de publicação
+          const publishResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/publish-to-social`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
             },
-            body: JSON.stringify({
-              event: 'content.auto_approved',
-              content_id: content.id,
-              client_id: content.client_id,
-            }),
+            body: JSON.stringify({ contentId: content.id }),
           });
-        } catch (webhookError) {
-          console.error(`Erro ao enviar webhook para ${content.id}:`, webhookError);
-        }
 
-        approvedCount++;
-        console.log(`Conteúdo ${content.id} auto-aprovado com sucesso`);
-      } catch (error) {
-        console.error(`Erro ao processar conteúdo ${content.id}:`, error);
+          const publishResult = await publishResponse.json();
+          
+          if (publishResult.success) {
+            console.log(`Conteúdo ${content.id} publicado automaticamente`);
+          } else {
+            console.error(`Erro ao publicar conteúdo ${content.id}:`, publishResult.error);
+          }
+        } catch (error) {
+          console.error(`Erro ao publicar conteúdo ${content.id}:`, error);
+        }
       }
     }
 
-    console.log(`Auto-aprovação concluída: ${approvedCount}/${expiredContents.length} conteúdos aprovados`);
-
     return new Response(
       JSON.stringify({ 
-        message: 'Auto-aprovação executada com sucesso',
+        message: 'Auto-aprovação e publicação executadas com sucesso',
         reminders_sent: todayContents?.length || 0,
         approved: approvedCount,
-        total_expired: expiredContents.length,
+        total_expired: expiredContents?.length || 0,
+        published: scheduledContents?.length || 0,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

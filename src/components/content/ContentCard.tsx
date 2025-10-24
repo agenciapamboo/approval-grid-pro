@@ -286,6 +286,31 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
         .select("src_url")
         .eq("content_id", content.id);
 
+      // Deletar arquivos do storage ANTES de deletar o registro
+      if (mediaData && mediaData.length > 0) {
+        const filePaths = mediaData
+          .map(m => {
+            try {
+              const url = new URL(m.src_url);
+              const pathParts = url.pathname.split('/content-media/');
+              return pathParts[1] || null;
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        
+        if (filePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('content-media')
+            .remove(filePaths);
+          
+          if (storageError) {
+            console.warn("Aviso ao deletar do storage:", storageError);
+          }
+        }
+      }
+
       // Deletar conteúdo (cascade irá deletar mídias e textos)
       const { error } = await supabase
         .from("contents")
@@ -294,22 +319,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
-      // Deletar arquivos do storage
-      if (mediaData && mediaData.length > 0) {
-        const filePaths = mediaData
-          .map(m => m.src_url.split('/content-media/')[1])
-          .filter(Boolean);
-        
-        if (filePaths.length > 0) {
-          await supabase.storage.from('content-media').remove(filePaths);
-        }
-      }
-
       toast({
         title: "Conteúdo removido",
         description: "O conteúdo foi removido com sucesso",
       });
 
+      setShowDeleteDialog(false);
       onUpdate();
     } catch (error) {
       console.error("Erro ao remover conteúdo:", error);
@@ -675,7 +690,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           )}
 
           {/* Ações de Publicação - Apenas para Agência */}
-          {isAgencyView && content.status === 'approved' && (
+          {isAgencyView && (
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
                 <Button 
