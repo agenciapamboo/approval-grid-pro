@@ -491,6 +491,31 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     }
   };
 
+  const handleCancelSchedule = async () => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ auto_publish: false })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento cancelado",
+        description: "A publicação automática foi cancelada",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao cancelar agendamento:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao cancelar agendamento",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -661,15 +686,25 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                 >
                   {publishing ? 'Publicando...' : 'Publicar Agora'}
                 </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={handleSchedule}
-                  disabled={content.auto_publish}
-                  className="w-full"
-                >
-                  {content.auto_publish ? 'Agendado ✓' : 'Agendar Publicação'}
-                </Button>
+                {!content.auto_publish ? (
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSchedule}
+                    className="w-full"
+                  >
+                    Agendar Publicação
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCancelSchedule}
+                    className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    Cancelar Agendamento
+                  </Button>
+                )}
               </div>
             </div>
           )}
