@@ -47,6 +47,43 @@ serve(async (req) => {
       );
     }
 
+    // Verificar se o conteúdo está aprovado
+    if (content.status !== 'approved') {
+      console.log(`Conteúdo ${contentId} não está aprovado. Status atual: ${content.status}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Conteúdo não pode ser publicado. Status: ${content.status}`,
+          status: content.status
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Verificar se há ajustes pendentes
+    const { data: pendingAdjustments, error: adjustmentsError } = await supabaseClient
+      .from('comments')
+      .select('id')
+      .eq('content_id', contentId)
+      .eq('is_adjustment_request', true)
+      .limit(1);
+
+    if (adjustmentsError) {
+      console.error('Erro ao verificar ajustes pendentes:', adjustmentsError);
+    }
+
+    if (pendingAdjustments && pendingAdjustments.length > 0) {
+      console.log(`Conteúdo ${contentId} possui ajustes pendentes`);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Conteúdo possui ajustes pendentes',
+          pending_adjustments: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
     // 2. Buscar contas sociais ativas do cliente
     const { data: accounts, error: accountsError } = await supabaseClient
       .from('client_social_accounts')
