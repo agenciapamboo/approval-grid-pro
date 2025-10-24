@@ -87,37 +87,9 @@ serve(async (req) => {
       });
     }
 
-    // Buscar mídias para remover do storage
-    const { data: mediaList, error: mediaErr } = await admin
-      .from('content_media')
-      .select('src_url')
-      .eq('content_id', contentId);
+    // Remoção de arquivos do storage será feita via trigger no banco (delete_content_media_files)
+    // Portanto, não removemos arquivos diretamente aqui para evitar duplicidade/erros.
 
-    if (mediaErr) {
-      console.error('Erro ao buscar mídias:', mediaErr);
-    }
-
-    // Remover arquivos do storage
-    if (mediaList && mediaList.length > 0) {
-      const paths = mediaList
-        .map((m) => {
-          try {
-            const url = new URL(m.src_url as string);
-            const parts = url.pathname.split('/content-media/');
-            return parts[1] || null;
-          } catch {
-            return null;
-          }
-        })
-        .filter((p): p is string => !!p);
-
-      if (paths.length > 0) {
-        const { error: rmErr } = await admin.storage.from('content-media').remove(paths);
-        if (rmErr) {
-          console.warn('Aviso: erro ao remover arquivos do storage:', rmErr);
-        }
-      }
-    }
 
     // Remover registros dependentes e o conteúdo
     await admin.from('comments').delete().eq('content_id', contentId);

@@ -779,10 +779,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      sanitize_webhook_payload: {
-        Args: { payload: Json }
-        Returns: Json
-      }
+      sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
       send_notification: {
         Args: {
           p_agency_id?: string
