@@ -96,6 +96,29 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       return;
     }
 
+    // Se o tipo for story e já existe arquivo, substituir ao invés de adicionar
+    if (contentType === 'story' && files.length > 0) {
+      toast({
+        title: "Story permite apenas uma mídia",
+        description: "O arquivo anterior foi substituído",
+        variant: "default",
+      });
+      // Limpar arquivos anteriores
+      previews.forEach(url => URL.revokeObjectURL(url));
+      setFiles(validFiles.slice(0, 1));
+      setPreviews([URL.createObjectURL(validFiles[0])]);
+      setHasChanges(true);
+      return;
+    }
+
+    // Para story, permitir apenas 1 arquivo
+    if (contentType === 'story') {
+      setFiles(validFiles.slice(0, 1));
+      setPreviews([URL.createObjectURL(validFiles[0])]);
+      setHasChanges(true);
+      return;
+    }
+
     setFiles(prev => [...prev, ...validFiles]);
     
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
@@ -369,7 +392,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                     </div>
                   </div>
                 ))}
-                {files.length < 10 && (
+                {(contentType !== 'story' && files.length < 10) && (
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="aspect-square border-2 border-dashed border-muted-foreground/30 rounded flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
@@ -379,7 +402,10 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                 )}
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                Arraste para reordenar • {files.length}/10 imagens
+                {contentType === 'story' 
+                  ? 'Story permite apenas 1 mídia' 
+                  : `Arraste para reordenar • ${files.length}/10 imagens`
+                }
               </p>
             </>
           ) : (
@@ -421,7 +447,21 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
             <RadioGroup 
               value={contentType} 
               onValueChange={(value) => {
-                setContentType(value as typeof contentType);
+                const newType = value as typeof contentType;
+                // Se mudou para story e tem mais de 1 arquivo, manter apenas o primeiro
+                if (newType === 'story' && files.length > 1) {
+                  const firstFile = files[0];
+                  const firstPreview = previews[0];
+                  // Limpar outros previews
+                  previews.slice(1).forEach(url => URL.revokeObjectURL(url));
+                  setFiles([firstFile]);
+                  setPreviews([firstPreview]);
+                  toast({
+                    title: "Story permite apenas uma mídia",
+                    description: "Apenas o primeiro arquivo foi mantido",
+                  });
+                }
+                setContentType(newType);
                 setHasChanges(true);
               }}
             >

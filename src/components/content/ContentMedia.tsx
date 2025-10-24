@@ -79,6 +79,7 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
+    // Apenas carrossel permite navegação (story não)
     if (isLeftSwipe && type === "carousel" && media.length > 1) {
       setCurrentIndex((prev) => (prev + 1) % media.length);
     }
@@ -126,8 +127,8 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
           <Maximize2 className="h-5 w-5" />
         </Button>
 
-        {/* Navegação do carrossel e stories */}
-        {(type === "carousel" || type === "story") && media.length > 1 && (
+        {/* Navegação apenas do carrossel (story não tem navegação) */}
+        {type === "carousel" && media.length > 1 && (
           <>
             <Button
               variant="ghost"
@@ -219,8 +220,8 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
               />
             )}
 
-            {/* Navegação no modal para carrossel e stories */}
-            {(type === "carousel" || type === "story") && media.length > 1 && (
+            {/* Navegação no modal apenas para carrossel */}
+            {type === "carousel" && media.length > 1 && (
               <>
                 <Button
                   variant="ghost"
