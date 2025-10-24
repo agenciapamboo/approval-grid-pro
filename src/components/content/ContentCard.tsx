@@ -31,6 +31,7 @@ interface ContentCardProps {
     version: number;
     channels?: string[];
     auto_publish?: boolean;
+    published_at?: string | null;
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
@@ -55,7 +56,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [publishing, setPublishing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, publishedAt?: string | null) => {
+    // Se foi publicado, mostrar badge de publicado
+    if (publishedAt) {
+      return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--success))] text-white">Publicado</span>;
+    }
+    
     const map: Record<string, { label: string; classes: string }> = {
       draft: { label: "Rascunho", classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" },
       in_review: { label: "Em Revisão", classes: "bg-[hsl(var(--accent))] text-white" },
@@ -576,7 +582,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]">{getTypeLabel(content.type)}</span>
-                {getStatusBadge(content.status)}
+                {getStatusBadge(content.status, content.published_at)}
                 {content.channels && content.channels.length > 0 && (
                   <div className="flex items-center gap-1">
                     {content.channels.map((channel) => {

@@ -126,8 +126,8 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
           <Maximize2 className="h-5 w-5" />
         </Button>
 
-        {/* Navegação do carrossel */}
-        {type === "carousel" && media.length > 1 && (
+        {/* Navegação do carrossel e stories */}
+        {(type === "carousel" || type === "story") && media.length > 1 && (
           <>
             <Button
               variant="ghost"
@@ -219,8 +219,8 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
               />
             )}
 
-            {/* Navegação no modal */}
-            {type === "carousel" && media.length > 1 && (
+            {/* Navegação no modal para carrossel e stories */}
+            {(type === "carousel" || type === "story") && media.length > 1 && (
               <>
                 <Button
                   variant="ghost"

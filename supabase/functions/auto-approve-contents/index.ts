@@ -129,21 +129,20 @@ serve(async (req) => {
       console.log(`Auto-aprovação concluída: ${approvedCount}/${expiredContents.length} conteúdos aprovados`);
     }
 
-    // 3. Publicar conteúdos agendados
-    console.log('Buscando conteúdos agendados para publicar...');
+    // 3. Publicar conteúdos agendados pela data/hora (independente de aprovação)
+    console.log('Buscando conteúdos com data/hora vencida para publicar...');
     const now = new Date().toISOString();
     
     const { data: scheduledContents, error: scheduledError } = await supabaseClient
       .from('contents')
       .select('*')
-      .eq('auto_publish', true)
       .lte('date', now)
       .is('published_at', null);
 
     if (scheduledError) {
       console.error('Erro ao buscar conteúdos agendados:', scheduledError);
     } else if (scheduledContents && scheduledContents.length > 0) {
-      console.log(`Encontrados ${scheduledContents.length} conteúdos para publicar`);
+      console.log(`Encontrados ${scheduledContents.length} conteúdos para publicar automaticamente`);
       
       for (const content of scheduledContents) {
         try {
@@ -160,7 +159,47 @@ serve(async (req) => {
           const publishResult = await publishResponse.json();
           
           if (publishResult.success) {
-            console.log(`Conteúdo ${content.id} publicado automaticamente`);
+            console.log(`Conteúdo ${content.id} publicado automaticamente na data agendada`);
+          } else {
+            console.error(`Erro ao publicar conteúdo ${content.id}:`, publishResult.error);
+          }
+        } catch (error) {
+          console.error(`Erro ao publicar conteúdo ${content.id}:`, error);
+        }
+      }
+    }
+
+    // 4. Publicar conteúdos com auto_publish=true e data vencida
+    console.log('Buscando conteúdos com auto_publish ativado...');
+    
+    const { data: autoPublishContents, error: autoPublishError } = await supabaseClient
+      .from('contents')
+      .select('*')
+      .eq('auto_publish', true)
+      .lte('date', now)
+      .is('published_at', null);
+
+    if (autoPublishError) {
+      console.error('Erro ao buscar conteúdos auto_publish:', autoPublishError);
+    } else if (autoPublishContents && autoPublishContents.length > 0) {
+      console.log(`Encontrados ${autoPublishContents.length} conteúdos agendados para publicar`);
+      
+      for (const content of autoPublishContents) {
+        try {
+          // Chamar função de publicação
+          const publishResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/publish-to-social`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            },
+            body: JSON.stringify({ contentId: content.id }),
+          });
+
+          const publishResult = await publishResponse.json();
+          
+          if (publishResult.success) {
+            console.log(`Conteúdo ${content.id} publicado via agendamento (auto_publish)`);
           } else {
             console.error(`Erro ao publicar conteúdo ${content.id}:`, publishResult.error);
           }
@@ -176,7 +215,7 @@ serve(async (req) => {
         reminders_sent: todayContents?.length || 0,
         approved: approvedCount,
         total_expired: expiredContents?.length || 0,
-        published: scheduledContents?.length || 0,
+        auto_published: (scheduledContents?.length || 0) + (autoPublishContents?.length || 0),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
