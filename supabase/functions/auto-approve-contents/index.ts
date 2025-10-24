@@ -129,14 +129,16 @@ serve(async (req) => {
       console.log(`Auto-aprovação concluída: ${approvedCount}/${expiredContents.length} conteúdos aprovados`);
     }
 
-    // 3. Publicar conteúdos agendados pela data/hora (independente de aprovação)
+    // 3. Publicar conteúdos agendados pela data/hora (apenas conteúdos recentes - últimas 2 horas)
     console.log('Buscando conteúdos com data/hora vencida para publicar...');
     const now = new Date().toISOString();
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 horas atrás
     
     const { data: scheduledContents, error: scheduledError } = await supabaseClient
       .from('contents')
       .select('*')
       .lte('date', now)
+      .gte('date', twoHoursAgo) // Não publicar conteúdos com mais de 2 horas de atraso
       .is('published_at', null);
 
     if (scheduledError) {
@@ -169,7 +171,7 @@ serve(async (req) => {
       }
     }
 
-    // 4. Publicar conteúdos com auto_publish=true e data vencida
+    // 4. Publicar conteúdos com auto_publish=true e data vencida (apenas conteúdos recentes - últimas 2 horas)
     console.log('Buscando conteúdos com auto_publish ativado...');
     
     const { data: autoPublishContents, error: autoPublishError } = await supabaseClient
@@ -177,6 +179,7 @@ serve(async (req) => {
       .select('*')
       .eq('auto_publish', true)
       .lte('date', now)
+      .gte('date', twoHoursAgo) // Não publicar conteúdos com mais de 2 horas de atraso
       .is('published_at', null);
 
     if (autoPublishError) {
