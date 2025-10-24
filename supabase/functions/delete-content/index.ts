@@ -87,9 +87,32 @@ serve(async (req) => {
       });
     }
 
-    // Remoção de arquivos do storage será feita via trigger no banco (delete_content_media_files)
-    // Portanto, não removemos arquivos diretamente aqui para evitar duplicidade/erros.
+    // Remover arquivos do storage antes de deletar os registros
+    const { data: mediaList } = await admin
+      .from('content_media')
+      .select('src_url')
+      .eq('content_id', contentId);
 
+    if (mediaList && mediaList.length > 0) {
+      const paths = mediaList
+        .map((m) => {
+          try {
+            const url = new URL((m as any).src_url as string);
+            const parts = url.pathname.split('/content-media/');
+            return parts[1] || null;
+          } catch {
+            return null;
+          }
+        })
+        .filter((p): p is string => !!p);
+
+      if (paths.length > 0) {
+        const { error: rmErr } = await admin.storage.from('content-media').remove(paths);
+        if (rmErr) {
+          console.warn('Aviso: erro ao remover arquivos do storage:', rmErr);
+        }
+      }
+    }
 
     // Remover registros dependentes e o conteúdo
     await admin.from('comments').delete().eq('content_id', contentId);
