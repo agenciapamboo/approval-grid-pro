@@ -245,7 +245,7 @@ const Auth = () => {
           </form>
         </Card>
 
-        <div className="text-center mb-12">
+        <div className="text-center mb-24">
           <p className="text-sm text-muted-foreground">
             Sistema profissional de aprovação de conteúdos
           </p>
