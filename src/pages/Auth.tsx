@@ -245,24 +245,10 @@ const Auth = () => {
           </form>
         </Card>
 
-        <div className="text-center space-y-2">
+        <div className="text-center mb-12">
           <p className="text-sm text-muted-foreground">
             Sistema profissional de aprovação de conteúdos
           </p>
-          <div className="flex gap-4 justify-center text-sm">
-            <Link 
-              to="/terms-of-service" 
-              className="text-primary hover:underline"
-            >
-              Termos de Uso
-            </Link>
-            <Link 
-              to="/privacy-policy" 
-              className="text-primary hover:underline"
-            >
-              Política de Privacidade
-            </Link>
-          </div>
         </div>
       </div>
       
