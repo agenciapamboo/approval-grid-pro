@@ -39,6 +39,7 @@ export function AppFooter() {
           <div>
             <h4 className="font-semibold mb-4">Suporte</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link to="/help" className="hover:text-primary transition-colors">Central de Ajuda</Link></li>
               <li><a href="mailto:contato@aprovacriativos.com.br" className="hover:text-primary transition-colors">Contato</a></li>
               <li><Link to="/auth" className="hover:text-primary transition-colors">Login</Link></li>
             </ul>
