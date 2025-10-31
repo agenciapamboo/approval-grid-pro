@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -692,39 +692,124 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           )}
 
           {/* Ações de Publicação - Apenas para Agência */}
-          {isAgencyView && (
-            <div className="p-4 border-t">
-              <div className="flex flex-col gap-2">
-                <Button 
-                  size="sm"
-                  onClick={handlePublishNow}
-                  disabled={publishing}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {publishing ? 'Publicando...' : 'Publicar Agora'}
-                </Button>
-                {!content.auto_publish ? (
+          {isAgencyView && (() => {
+            const isStory = content.type === 'story';
+            const channels = content.channels || [];
+            const hasFacebook = channels.some(ch => ch.toLowerCase().includes('facebook'));
+            const hasInstagram = channels.some(ch => ch.toLowerCase().includes('instagram'));
+            
+            // Se for story com apenas Instagram ou sem Facebook, mostra aviso completo
+            if (isStory && (!hasFacebook || (hasInstagram && !hasFacebook))) {
+              return (
+                <div className="p-4 border-t">
+                  <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold text-foreground">
+                          Publicação de Stories indisponível
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          A API oficial do Instagram ainda não permite a publicação de Stories diretamente por plataformas externas.
+                          Essa é uma limitação imposta pelo Meta/Instagram, relacionada a políticas de segurança e privacidade.
+                        </p>
+                        <p className="text-xs font-medium text-foreground mt-2">
+                          Você deve publicar seus Stories manualmente após a aprovação do conteúdo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Se for story com Facebook, mostra botões com aviso sobre Instagram
+            if (isStory && hasFacebook) {
+              return (
+                <div className="p-4 border-t">
+                  <div className="flex flex-col gap-3">
+                    {hasInstagram && (
+                      <div className="rounded-lg border border-warning/50 bg-warning/10 p-3">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              <strong className="text-foreground">Instagram:</strong> A API do Instagram não permite publicação automática de Stories. 
+                              Você deverá publicar manualmente no Instagram após a publicação no Facebook.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        size="sm"
+                        onClick={handlePublishNow}
+                        disabled={publishing}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {publishing ? 'Publicando...' : hasInstagram ? 'Publicar no Facebook' : 'Publicar Agora'}
+                      </Button>
+                      {!content.auto_publish ? (
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={handleSchedule}
+                          className="w-full"
+                        >
+                          Agendar Publicação
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelSchedule}
+                          className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          Cancelar Agendamento
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Para conteúdos normais (não stories), mostra os botões normalmente
+            return (
+              <div className="p-4 border-t">
+                <div className="flex flex-col gap-2">
                   <Button 
                     size="sm"
-                    variant="outline"
-                    onClick={handleSchedule}
-                    className="w-full"
+                    onClick={handlePublishNow}
+                    disabled={publishing}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
                   >
-                    Agendar Publicação
+                    {publishing ? 'Publicando...' : 'Publicar Agora'}
                   </Button>
-                ) : (
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCancelSchedule}
-                    className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    Cancelar Agendamento
-                  </Button>
-                )}
+                  {!content.auto_publish ? (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={handleSchedule}
+                      className="w-full"
+                    >
+                      Agendar Publicação
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelSchedule}
+                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      Cancelar Agendamento
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Comentários expandidos */}
           <div className="border-t">
