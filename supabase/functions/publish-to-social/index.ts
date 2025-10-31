@@ -12,17 +12,30 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== Iniciando publicação ===');
+    
     const { contentId } = await req.json();
+    console.log('Content ID recebido:', contentId);
 
     if (!contentId) {
-      throw new Error('contentId é obrigatório');
+      console.error('contentId não fornecido');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'contentId é obrigatório'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
+    // IMPORTANTE: Usar SERVICE_ROLE_KEY para bypass RLS
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
+    console.log('Buscando conteúdo...');
+    
     // 1. Buscar conteúdo
     const { data: content, error: contentError } = await supabaseClient
       .from('contents')
@@ -30,9 +43,29 @@ serve(async (req) => {
       .eq('id', contentId)
       .single();
 
-    if (contentError || !content) {
-      throw new Error('Conteúdo não encontrado');
+    if (contentError) {
+      console.error('Erro ao buscar conteúdo:', contentError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Erro ao buscar conteúdo: ' + contentError.message
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
+
+    if (!content) {
+      console.error('Conteúdo não encontrado');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Conteúdo não encontrado'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
+    }
+
+    console.log('Conteúdo encontrado:', content.id, 'Status:', content.status);
 
     // Verificar se o conteúdo já foi publicado
     if (content.published_at) {
@@ -74,6 +107,8 @@ serve(async (req) => {
       );
     }
 
+    console.log('Buscando contas sociais do cliente:', content.client_id);
+    
     // 2. Buscar contas sociais ativas do cliente
     const { data: accounts, error: accountsError } = await supabaseClient
       .from('client_social_accounts')
@@ -82,12 +117,28 @@ serve(async (req) => {
       .eq('is_active', true);
 
     if (accountsError) {
-      throw new Error('Erro ao buscar contas sociais');
+      console.error('Erro ao buscar contas sociais:', accountsError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Erro ao buscar contas sociais: ' + accountsError.message
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     if (!accounts || accounts.length === 0) {
-      throw new Error('Nenhuma conta social conectada');
+      console.error('Nenhuma conta social conectada para o cliente');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Nenhuma conta social conectada. Configure as contas sociais antes de publicar.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
+
+    console.log('Contas sociais encontradas:', accounts.length);
 
     const results = [];
     const errors = [];
@@ -95,6 +146,7 @@ serve(async (req) => {
     // 3. Publicar em cada conta
     for (const account of accounts) {
       try {
+        console.log(`Publicando em ${account.platform} (${account.account_name})...`);
         let postId = null;
 
         if (account.platform === 'facebook') {
@@ -104,6 +156,7 @@ serve(async (req) => {
         }
 
         if (postId) {
+          console.log(`Sucesso! Post ID: ${postId}`);
           results.push({
             platform: account.platform,
             account: account.account_name,
@@ -112,7 +165,7 @@ serve(async (req) => {
           });
         }
       } catch (error: any) {
-        console.error(`Erro ao publicar no ${account.platform}:`, error);
+        console.error(`Erro ao publicar no ${account.platform}:`, error.message);
         errors.push({
           platform: account.platform,
           account: account.account_name,
@@ -121,15 +174,25 @@ serve(async (req) => {
       }
     }
 
+    console.log('Resultados:', results.length, 'Erros:', errors.length);
+
     // 4. Atualizar status do conteúdo
     const hasSuccess = results.length > 0;
-    await supabaseClient
+    
+    console.log('Atualizando status do conteúdo...');
+    const { error: updateError } = await supabaseClient
       .from('contents')
       .update({
         published_at: hasSuccess ? new Date().toISOString() : null,
         publish_error: errors.length > 0 ? JSON.stringify(errors) : null,
       })
       .eq('id', contentId);
+
+    if (updateError) {
+      console.error('Erro ao atualizar conteúdo:', updateError);
+    }
+
+    console.log('=== Publicação concluída ===');
 
     return new Response(
       JSON.stringify({ 
@@ -141,11 +204,15 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Erro:', error);
+    console.error('=== Erro geral na publicação ===');
+    console.error('Tipo:', error.constructor.name);
+    console.error('Mensagem:', error.message);
+    console.error('Stack:', error.stack);
+    
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: error.message || 'Erro desconhecido ao publicar'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );

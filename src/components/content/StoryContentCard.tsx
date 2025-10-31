@@ -201,26 +201,21 @@ export function StoryContentCard({ content, media, isResponsible, isAgencyView =
         body: { contentId: content.id }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao chamar função:', error);
+        toast({
+          title: "Erro ao publicar",
+          description: error.message || "Erro ao conectar com o serviço de publicação",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Verificar erros de negócio retornados pela função
       if (data && !data.success) {
-        let errorMessage = data.error || "Erro ao publicar";
-        
-        // Mensagens personalizadas baseadas no erro
-        if (data.status === 'draft') {
-          errorMessage = "Este story precisa ser aprovado antes de publicar";
-        } else if (data.status === 'in_review') {
-          errorMessage = "Este story está em análise e não pode ser publicado ainda";
-        } else if (data.pending_adjustments) {
-          errorMessage = "Este story possui ajustes pendentes";
-        } else if (data.published_at) {
-          errorMessage = "Este story já foi publicado anteriormente";
-        }
-        
         toast({
           title: "Não foi possível publicar",
-          description: errorMessage,
+          description: data.error || "Erro desconhecido ao publicar",
           variant: "destructive",
         });
         return;
@@ -231,15 +226,24 @@ export function StoryContentCard({ content, media, isResponsible, isAgencyView =
           title: "Story publicado!",
           description: `Story publicado em ${data.results?.length || 0} conta(s)`,
         });
-        onUpdate();
-      } else {
-        throw new Error(data?.error || 'Erro ao publicar');
+        
+        // Mostrar erros parciais se houver
+        if (data.errors && data.errors.length > 0) {
+          console.warn('Erros parciais:', data.errors);
+          toast({
+            title: "Atenção",
+            description: `Algumas publicações falharam. Verifique os detalhes.`,
+            variant: "destructive",
+          });
+        }
+        
+        onUpdate?.();
       }
     } catch (error: any) {
-      console.error("Erro ao publicar:", error);
+      console.error("Erro ao publicar story:", error);
       toast({
         title: "Erro ao publicar",
-        description: error.message || "Erro ao publicar o story",
+        description: error.message || "Erro inesperado",
         variant: "destructive",
       });
     } finally {
