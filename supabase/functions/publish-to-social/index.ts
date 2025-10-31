@@ -47,18 +47,8 @@ serve(async (req) => {
       );
     }
 
-    // Verificar se o conteúdo está aprovado
-    if (content.status !== 'approved') {
-      console.log(`Conteúdo ${contentId} não está aprovado. Status atual: ${content.status}`);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: `Conteúdo não pode ser publicado. Status: ${content.status}`,
-          status: content.status
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
+    // Validação de status removida - conteúdo pode ser publicado em qualquer status
+
 
     // Verificar se há ajustes pendentes
     const { data: pendingAdjustments, error: adjustmentsError } = await supabaseClient
