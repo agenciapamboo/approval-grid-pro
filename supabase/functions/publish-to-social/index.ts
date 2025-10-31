@@ -67,17 +67,9 @@ serve(async (req) => {
 
     console.log('Conteúdo encontrado:', content.id, 'Status:', content.status);
 
-    // Verificar se o conteúdo já foi publicado
+    // Conteúdo já possui published_at, mas permitimos re-publicação para tentar novamente plataformas que falharam
     if (content.published_at) {
-      console.log(`Conteúdo ${contentId} já foi publicado em ${content.published_at}`);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Conteúdo já foi publicado anteriormente',
-          published_at: content.published_at
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      console.log(`Conteúdo ${contentId} já possui published_at (${content.published_at}) - prosseguindo para re-publicação`);
     }
 
     // Validação de status removida - conteúdo pode ser publicado em qualquer status
@@ -140,11 +132,21 @@ serve(async (req) => {
 
     console.log('Contas sociais encontradas:', accounts.length);
 
+    const targetPlatforms = Array.isArray((content as any).channels) && (content as any).channels.length > 0
+      ? (content as any).channels.map((ch: string) => String(ch).toLowerCase())
+      : [];
+
+    const accountsToPublish = targetPlatforms.length > 0
+      ? accounts.filter((acc: any) => targetPlatforms.includes(String(acc.platform).toLowerCase()))
+      : accounts;
+
+    console.log('Publicando para plataformas alvo:', targetPlatforms.length > 0 ? targetPlatforms.join(', ') : 'todas ativas');
+
     const results = [];
     const errors = [];
 
     // 3. Publicar em cada conta
-    for (const account of accounts) {
+    for (const account of accountsToPublish) {
       try {
         console.log(`Publicando em ${account.platform} (${account.account_name})...`);
         let postId = null;
@@ -178,12 +180,13 @@ serve(async (req) => {
 
     // 4. Atualizar status do conteúdo
     const hasSuccess = results.length > 0;
+    const allSucceeded = (accountsToPublish?.length ?? 0) > 0 && results.length === accountsToPublish.length;
     
     console.log('Atualizando status do conteúdo...');
     const { error: updateError } = await supabaseClient
       .from('contents')
       .update({
-        published_at: hasSuccess ? new Date().toISOString() : null,
+        published_at: allSucceeded ? new Date().toISOString() : null,
         publish_error: errors.length > 0 ? JSON.stringify(errors) : null,
       })
       .eq('id', contentId);
@@ -238,10 +241,10 @@ async function publishToFacebook(content: any, account: any): Promise<string> {
     url = `https://graph.facebook.com/v18.0/${account.page_id}/photo_stories`;
     if (media.kind === 'image') {
       params.photo_url = media.src_url;
-    } else if (media.kind === 'video') {
-      url = `https://graph.facebook.com/v18.0/${account.page_id}/video_stories`;
-      params.video_url = media.src_url;
-    }
+      } else if (media.kind === 'video') {
+        url = `https://graph.facebook.com/v18.0/${account.page_id}/video_stories`;
+        params.file_url = media.src_url;
+      }
   }
   // Carrossel
   else if (contentType === 'carousel') {
@@ -326,7 +329,7 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
     containerParams.video_url = media.src_url;
     // Suporta thumbnail customizada
     if (media.thumb_url) {
-      containerParams.thumb_offset = '0'; // ou usar thumb_url se suportado
+      containerParams.cover_url = media.thumb_url;
     }
   }
   // Carrossel
@@ -347,9 +350,9 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
     } else if (media.kind === 'video') {
       containerParams.media_type = 'VIDEO';
       containerParams.video_url = media.src_url;
-      // Suporta thumbnail customizada para vídeos
+      // Thumbnail personalizada para vídeos
       if (media.thumb_url) {
-        containerParams.thumb_offset = '0';
+        containerParams.cover_url = media.thumb_url;
       }
     } else {
       throw new Error('Tipo de mídia não suportado pelo Instagram');
@@ -378,7 +381,7 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
 
   // Aguardar processamento do container (especialmente para vídeos/Reels)
   let statusCode = 'IN_PROGRESS';
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     const statusResp = await fetch(`https://graph.facebook.com/v18.0/${creationId}?fields=status_code&access_token=${encodeURIComponent(account.access_token)}`);
     const statusJson = await statusResp.json();
     if (statusJson.error) {
@@ -389,7 +392,7 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
     if (statusCode === 'ERROR') {
       throw new Error('Falha no processamento do vídeo no Instagram');
     }
-    await sleep(2000);
+    await sleep(3000);
   }
 
   if (statusCode !== 'FINISHED') {
