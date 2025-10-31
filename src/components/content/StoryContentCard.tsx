@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2 } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, AlertTriangle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -386,25 +386,24 @@ export function StoryContentCard({ content, media, isResponsible, isAgencyView =
               </div>
             )}
 
-            {/* Ações de Publicação (Agency) */}
+            {/* Aviso sobre Stories (Agency) */}
             {isAgencyView && content.status === 'approved' && (
-              <div className="flex gap-2">
-                <Button
-                  onClick={handlePublishNow}
-                  disabled={publishing}
-                  size="sm"
-                  className="flex-1"
-                >
-                  {publishing ? "Publicando..." : "Publicar Agora"}
-                </Button>
-                <Button
-                  onClick={handleSchedule}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
-                  Agendar
-                </Button>
+              <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Publicação de Stories indisponível
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      A API oficial do Instagram ainda não permite a publicação de Stories diretamente por plataformas externas.
+                      Essa é uma limitação imposta pelo Meta/Instagram, relacionada a políticas de segurança e privacidade.
+                    </p>
+                    <p className="text-xs font-medium text-foreground mt-2">
+                      Você ainda deve publicar seus Stories manualmente após a aprovação do conteúdo.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
