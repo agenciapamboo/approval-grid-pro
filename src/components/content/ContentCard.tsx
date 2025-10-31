@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +16,7 @@ import { ContentMedia } from "./ContentMedia";
 import { ContentCaption } from "./ContentCaption";
 import { ContentComments } from "./ContentComments";
 import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
+import { EditContentDialog } from "./EditContentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
@@ -44,6 +45,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [newDate, setNewDate] = useState<Date>(new Date(content.date));
@@ -57,7 +60,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string, publishedAt?: string | null) => {
-    // Se foi publicado, mostrar badge de publicado
+    // Se foi publicado, mostrar badge de publicado (não clicável)
     if (publishedAt) {
       return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--success))] text-white">Publicado</span>;
     }
@@ -69,6 +72,20 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
       approved: { label: "Aprovado", classes: "bg-[hsl(var(--success))] text-white" },
     };
     const cfg = map[status] || { label: status, classes: "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]" };
+    
+    // Apenas clicável na visão da agência
+    if (isAgencyView) {
+      return (
+        <span 
+          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.classes} cursor-pointer hover:opacity-80 transition-opacity`}
+          onClick={() => setShowStatusDialog(true)}
+          title="Clique para alterar o status"
+        >
+          {cfg.label}
+        </span>
+      );
+    }
+    
     return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.classes}`}>{cfg.label}</span>;
   };
 
@@ -350,6 +367,32 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ status: newStatus as "draft" | "in_review" | "approved" | "changes_requested" })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status atualizado",
+        description: "O status do conteúdo foi atualizado com sucesso",
+      });
+
+      setShowStatusDialog(false);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar o status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmitForReview = async () => {
     try {
       // Buscar dados do usuário para notificação
@@ -548,7 +591,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
+                    <DropdownMenuContent align="start" className="bg-background z-50">
+                      <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar conteúdo
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleReplaceMedia}>
                         <ImagePlus className="h-4 w-4 mr-2" />
                         Substituir imagem
@@ -818,12 +865,73 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
         </CardContent>
       </Card>
 
+      <EditContentDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        contentId={content.id}
+        onSuccess={onUpdate}
+      />
+
       <RequestAdjustmentDialog
         open={showAdjustment}
         onOpenChange={setShowAdjustment}
         contentId={content.id}
         onSuccess={onUpdate}
       />
+
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Status</DialogTitle>
+            <DialogDescription>
+              Selecione o novo status para este conteúdo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-4">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleStatusChange("draft")}
+            >
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] mr-2">
+                Rascunho
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleStatusChange("in_review")}
+            >
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--accent))] text-white mr-2">
+                Em Revisão
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleStatusChange("approved")}
+            >
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--success))] text-white mr-2">
+                Aprovado
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleStatusChange("changes_requested")}
+            >
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--warning))] text-white mr-2">
+                Ajustes Solicitados
+              </span>
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
