@@ -242,7 +242,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       if (contentError) throw contentError;
 
       // Upload de thumbnail se for reels e houver thumbnail
-      let thumbUrl = null;
+      let thumbUrl: string | null = null;
       if (contentType === 'reels' && reelsThumbnail) {
         const thumbExt = reelsThumbnail.name.split('.').pop();
         const thumbFileName = `${content.id}/thumb-${Date.now()}.${thumbExt}`;
@@ -251,7 +251,10 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           .from('content-media')
           .upload(thumbFileName, reelsThumbnail);
 
-        if (thumbUploadError) throw thumbUploadError;
+        if (thumbUploadError) {
+          console.error("Erro ao fazer upload do thumbnail:", thumbUploadError);
+          throw thumbUploadError;
+        }
 
         const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
           .from('content-media')
@@ -260,6 +263,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         thumbUrl = thumbPublicUrl;
       }
 
+      // Upload dos arquivos de mídia
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileExt = file.name.split('.').pop();
@@ -269,21 +273,38 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           .from('content-media')
           .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Erro ao fazer upload do arquivo:", uploadError);
+          throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('content-media')
           .getPublicUrl(fileName);
 
-        await supabase
+        const mediaKind = file.type.startsWith('video/') ? 'video' : 'image';
+        
+        // Thumbnail só vai no primeiro item se for vídeo
+        const mediaData: any = {
+          content_id: content.id,
+          src_url: publicUrl,
+          kind: mediaKind,
+          order_index: i,
+        };
+
+        // Adiciona thumb_url apenas se for o primeiro item E houver thumbnail
+        if (i === 0 && thumbUrl) {
+          mediaData.thumb_url = thumbUrl;
+        }
+
+        const { error: mediaError } = await supabase
           .from("content_media")
-          .insert({
-            content_id: content.id,
-            src_url: publicUrl,
-            kind: file.type.startsWith('video/') ? 'video' : 'image',
-            order_index: i,
-            thumb_url: thumbUrl,
-          });
+          .insert(mediaData);
+
+        if (mediaError) {
+          console.error("Erro ao inserir registro de mídia:", mediaError);
+          throw mediaError;
+        }
       }
 
       if (caption) {
