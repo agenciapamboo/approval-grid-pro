@@ -293,6 +293,8 @@ async function publishToFacebook(content: any, account: any): Promise<string> {
   return data.id || data.post_id;
 }
 
+async function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
 async function publishToInstagram(content: any, account: any): Promise<string> {
   const caption = content.content_texts?.[0]?.caption || '';
   const media = content.content_media?.[0];
@@ -314,15 +316,10 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
     access_token: account.access_token,
   };
 
-  // Story
   if (contentType === 'story') {
-    containerParams.media_type = 'STORIES';
-    if (media.kind === 'image') {
-      containerParams.image_url = media.src_url;
-    } else if (media.kind === 'video') {
-      containerParams.video_url = media.src_url;
-    }
+    throw new Error('Publicação de Stories no Instagram não é suportada pela API');
   }
+
   // Reels
   else if (contentType === 'reels') {
     containerParams.media_type = 'REELS';
@@ -378,6 +375,26 @@ async function publishToInstagram(content: any, account: any): Promise<string> {
   }
 
   const creationId = containerData.id;
+
+  // Aguardar processamento do container (especialmente para vídeos/Reels)
+  let statusCode = 'IN_PROGRESS';
+  for (let i = 0; i < 10; i++) {
+    const statusResp = await fetch(`https://graph.facebook.com/v18.0/${creationId}?fields=status_code&access_token=${encodeURIComponent(account.access_token)}`);
+    const statusJson = await statusResp.json();
+    if (statusJson.error) {
+      throw new Error(statusJson.error.message || 'Erro ao verificar status da mídia');
+    }
+    statusCode = statusJson.status_code;
+    if (statusCode === 'FINISHED') break;
+    if (statusCode === 'ERROR') {
+      throw new Error('Falha no processamento do vídeo no Instagram');
+    }
+    await sleep(2000);
+  }
+
+  if (statusCode !== 'FINISHED') {
+    throw new Error('Tempo esgotado ao processar a mídia no Instagram');
+  }
 
   // 2. Publicar container
   const publishUrl = `https://graph.facebook.com/v18.0/${igAccountId}/media_publish`;
