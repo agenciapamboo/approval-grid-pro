@@ -386,26 +386,72 @@ export function StoryContentCard({ content, media, isResponsible, isAgencyView =
               </div>
             )}
 
-            {/* Aviso sobre Stories (Agency) */}
-            {isAgencyView && content.status === 'approved' && (
-              <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-2">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-semibold text-foreground">
-                      Publicação de Stories indisponível
-                    </h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      A API oficial do Instagram ainda não permite a publicação de Stories diretamente por plataformas externas.
-                      Essa é uma limitação imposta pelo Meta/Instagram, relacionada a políticas de segurança e privacidade.
-                    </p>
-                    <p className="text-xs font-medium text-foreground mt-2">
-                      Você ainda deve publicar seus Stories manualmente após a aprovação do conteúdo.
-                    </p>
+            {/* Ações e Avisos de Publicação (Agency) */}
+            {isAgencyView && content.status === 'approved' && (() => {
+              const channels = content.channels || [];
+              const hasFacebook = channels.some(ch => ch.toLowerCase().includes('facebook'));
+              const hasInstagram = channels.some(ch => ch.toLowerCase().includes('instagram'));
+              
+              // Se tem Facebook, permite publicação com aviso sobre Instagram
+              if (hasFacebook) {
+                return (
+                  <div className="space-y-3">
+                    {hasInstagram && (
+                      <div className="rounded-lg border border-warning/50 bg-warning/10 p-3">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              <strong className="text-foreground">Instagram:</strong> A API do Instagram não permite publicação automática de Stories. 
+                              Você deverá publicar manualmente no Instagram após a publicação no Facebook.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handlePublishNow}
+                        disabled={publishing}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        {publishing ? "Publicando..." : hasInstagram ? "Publicar no Facebook" : "Publicar Agora"}
+                      </Button>
+                      <Button
+                        onClick={handleSchedule}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Agendar
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Se tem apenas Instagram, mostra aviso completo sem botões
+              return (
+                <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Publicação de Stories indisponível
+                      </h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        A API oficial do Instagram ainda não permite a publicação de Stories diretamente por plataformas externas.
+                        Essa é uma limitação imposta pelo Meta/Instagram, relacionada a políticas de segurança e privacidade.
+                      </p>
+                      <p className="text-xs font-medium text-foreground mt-2">
+                        Você deve publicar seus Stories manualmente após a aprovação do conteúdo.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
