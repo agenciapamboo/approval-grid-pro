@@ -434,6 +434,29 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
+      // Verificar erros de negócio retornados pela função
+      if (data && !data.success) {
+        let errorMessage = data.error || "Erro ao publicar";
+        
+        // Mensagens personalizadas baseadas no erro
+        if (data.status === 'draft') {
+          errorMessage = "Este conteúdo precisa ser aprovado antes de publicar";
+        } else if (data.status === 'in_review') {
+          errorMessage = "Este conteúdo está em análise e não pode ser publicado ainda";
+        } else if (data.pending_adjustments) {
+          errorMessage = "Este conteúdo possui ajustes pendentes";
+        } else if (data.published_at) {
+          errorMessage = "Este conteúdo já foi publicado anteriormente";
+        }
+        
+        toast({
+          title: "Não foi possível publicar",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (data?.success) {
         toast({
           title: "Publicado com sucesso!",

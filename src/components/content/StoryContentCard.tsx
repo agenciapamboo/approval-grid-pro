@@ -203,6 +203,29 @@ export function StoryContentCard({ content, media, isResponsible, isAgencyView =
 
       if (error) throw error;
 
+      // Verificar erros de negócio retornados pela função
+      if (data && !data.success) {
+        let errorMessage = data.error || "Erro ao publicar";
+        
+        // Mensagens personalizadas baseadas no erro
+        if (data.status === 'draft') {
+          errorMessage = "Este story precisa ser aprovado antes de publicar";
+        } else if (data.status === 'in_review') {
+          errorMessage = "Este story está em análise e não pode ser publicado ainda";
+        } else if (data.pending_adjustments) {
+          errorMessage = "Este story possui ajustes pendentes";
+        } else if (data.published_at) {
+          errorMessage = "Este story já foi publicado anteriormente";
+        }
+        
+        toast({
+          title: "Não foi possível publicar",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (data?.success) {
         toast({
           title: "Story publicado!",
