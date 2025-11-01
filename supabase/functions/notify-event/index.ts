@@ -129,16 +129,18 @@ serve(async (req) => {
           results.push({ id: notification.id, status: 'sent' })
         } else {
           const errorText = await n8nResponse.text().catch(() => '')
+          // Log detailed error server-side, sanitize for database
+          console.error(`Webhook failed for notification ${notification.id}:`, errorText)
           await supabaseClient
             .from('notifications')
             .update({
               status: 'failed',
-              error_message: `n8n returned ${n8nResponse.status}: ${errorText}`,
+              error_message: `Webhook delivery failed with status ${n8nResponse.status}`,
               retry_count: notification.retry_count + 1,
             })
             .eq('id', notification.id)
 
-          results.push({ id: notification.id, status: 'failed', error: errorText })
+          results.push({ id: notification.id, status: 'failed', error: 'Webhook delivery failed' })
         }
       } catch (notificationError) {
         console.error('Error processing notification:', notificationError)
@@ -174,10 +176,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in notify-event function:', error)
+    // Return generic error message to client, log details server-side
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : String(error)
+        error: 'Failed to process notifications'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

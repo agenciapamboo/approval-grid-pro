@@ -134,6 +134,8 @@ const Dashboard = () => {
       setProfile(profileData);
 
       // Carregar dados baseado no role
+      // NOTE: These client-side role checks are for UX only (showing/hiding UI elements).
+      // All actual authorization is enforced server-side via RLS policies.
       if (profileData.role === 'super_admin') {
         // Super admin vê todas agências
         const { data: agenciesData } = await supabase
@@ -398,6 +400,7 @@ const Dashboard = () => {
               Olá, {profile?.name} 👋
             </h2>
             <p className="text-muted-foreground">
+              {/* Client-side role check for UX only - actual authorization via server-side RLS */}
               {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
               {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
               {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos'}
@@ -414,6 +417,7 @@ const Dashboard = () => {
                 Solicitar Criativo
               </Button>
             )}
+            {/* Client-side role check for UX only - server validates actual permissions */}
             {(profile?.role === 'agency_admin' || profile?.role === 'super_admin') && (
               <TestNotificationButton />
             )}
