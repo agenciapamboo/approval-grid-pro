@@ -57,21 +57,42 @@ export function EditAgencyDialog({ agency, onAgencyUpdated, open: controlledOpen
     setLoading(true);
 
     try {
+      // Encrypt sensitive data
+      const updateData: any = {
+        name: formData.name,
+        slug: formData.slug,
+        brand_primary: formData.brand_primary,
+        brand_secondary: formData.brand_secondary,
+        logo_url: formData.logo_url || null,
+        plan: formData.plan,
+        plan_type: formData.plan_type,
+        last_payment_date: formData.last_payment_date || null,
+      };
+
+      if (formData.email) {
+        const { data: emailEnc } = await supabase.rpc('encrypt_social_token', {
+          token: formData.email
+        });
+        updateData.email_encrypted = emailEnc;
+      }
+
+      if (formData.whatsapp) {
+        const { data: whatsappEnc } = await supabase.rpc('encrypt_social_token', {
+          token: formData.whatsapp
+        });
+        updateData.whatsapp_encrypted = whatsappEnc;
+      }
+
+      if (formData.webhook_url) {
+        const { data: webhookEnc } = await supabase.rpc('encrypt_social_token', {
+          token: formData.webhook_url
+        });
+        updateData.webhook_url_encrypted = webhookEnc;
+      }
+
       const { error } = await supabase
         .from("agencies")
-        .update({
-          name: formData.name,
-          slug: formData.slug,
-          brand_primary: formData.brand_primary,
-          brand_secondary: formData.brand_secondary,
-          logo_url: formData.logo_url || null,
-          webhook_url: formData.webhook_url || null,
-          email: formData.email || null,
-          whatsapp: formData.whatsapp || null,
-          plan: formData.plan,
-          plan_type: formData.plan_type,
-          last_payment_date: formData.last_payment_date || null,
-        })
+        .update(updateData)
         .eq("id", agency.id);
 
       if (error) throw error;

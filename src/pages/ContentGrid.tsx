@@ -115,7 +115,7 @@ export default function ContentGrid() {
       if (agencySlug) {
         console.log('Loading agency by slug:', agencySlug);
         const { data: agencyData, error: agencyError } = await supabase
-          .from("agencies")
+          .from("agencies_public")
           .select("*")
           .eq("slug", agencySlug)
           .maybeSingle();

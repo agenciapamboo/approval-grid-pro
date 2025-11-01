@@ -32,6 +32,14 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
     setLoading(true);
 
     try {
+      // Encrypt sensitive data first
+      const { data: emailEnc } = await supabase.rpc('encrypt_social_token', {
+        token: formData.email
+      });
+      const { data: webhookEnc } = formData.webhook_url 
+        ? await supabase.rpc('encrypt_social_token', { token: formData.webhook_url })
+        : { data: null };
+
       // Create agency first
       const { data: agencyData, error: agencyError } = await supabase
         .from("agencies")
@@ -41,8 +49,8 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
           brand_primary: formData.brand_primary,
           brand_secondary: formData.brand_secondary,
           logo_url: formData.logo_url,
-          email: formData.email,
-          webhook_url: formData.webhook_url || null,
+          email_encrypted: emailEnc,
+          webhook_url_encrypted: webhookEnc,
         }])
         .select()
         .single();
