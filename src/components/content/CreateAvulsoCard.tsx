@@ -123,6 +123,20 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
 
       if (contentError) throw contentError;
 
+      // Validação de tamanho de arquivo (50MB por arquivo)
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB em bytes
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          toast({ 
+            title: 'Arquivo muito grande', 
+            description: `O arquivo "${file.name}" tem ${sizeMB}MB. O tamanho máximo permitido é 50MB.`, 
+            variant: 'destructive' 
+          });
+          throw new Error(`Arquivo ${file.name} excede o tamanho máximo permitido`);
+        }
+      }
+
       if (files.length > 0) {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
