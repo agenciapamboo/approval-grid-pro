@@ -866,6 +866,36 @@ export type Database = {
           },
         ]
       }
+      token_validation_attempts: {
+        Row: {
+          attempted_at: string
+          blocked_until: string | null
+          id: string
+          ip_address: string
+          success: boolean
+          token_attempted: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          blocked_until?: string | null
+          id?: string
+          ip_address: string
+          success?: boolean
+          token_attempted?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          blocked_until?: string | null
+          id?: string
+          ip_address?: string
+          success?: boolean
+          token_attempted?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string | null
@@ -1249,6 +1279,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_old_validation_attempts: { Args: never; Returns: undefined }
       decrypt_social_token: {
         Args: { encrypted_token: string }
         Returns: string
@@ -1270,6 +1301,23 @@ export type Database = {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      is_ip_blocked: {
+        Args: { p_ip_address: string }
+        Returns: {
+          blocked_until: string
+          failed_attempts: number
+          is_blocked: boolean
+        }[]
+      }
+      log_validation_attempt: {
+        Args: {
+          p_ip_address: string
+          p_success: boolean
+          p_token_attempted: string
+          p_user_agent?: string
         }
         Returns: boolean
       }

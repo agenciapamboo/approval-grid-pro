@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RateLimitBlockedAlert } from "@/components/admin/RateLimitBlockedAlert";
 
 interface Profile {
   id: string;
@@ -78,6 +79,43 @@ export default function ContentGrid() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [rateLimitError, setRateLimitError] = useState<{
+    type: 'RATE_LIMIT' | 'IP_BLOCKED' | 'INVALID_TOKEN' | null;
+    message: string;
+    blockedUntil?: string;
+    ipAddress?: string;
+    failedAttempts?: number;
+    attemptsRemaining?: number;
+  }>({ type: null, message: '' });
+  const [countdown, setCountdown] = useState<number>(0);
+
+  // Countdown effect for rate limiting
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  // Countdown effect for IP block
+  useEffect(() => {
+    if (rateLimitError.type === 'IP_BLOCKED' && rateLimitError.blockedUntil) {
+      const updateCountdown = () => {
+        const now = new Date().getTime();
+        const blockEnd = new Date(rateLimitError.blockedUntil!).getTime();
+        const remaining = Math.max(0, Math.floor((blockEnd - now) / 1000));
+        setCountdown(remaining);
+        
+        if (remaining <= 0) {
+          setRateLimitError({ type: null, message: '' });
+        }
+      };
+      
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [rateLimitError.type, rateLimitError.blockedUntil]);
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -91,32 +129,90 @@ export default function ContentGrid() {
 
   const validateTokenAndLoadData = async (token: string) => {
     try {
-      console.log('=== Validating approval token ===');
+      console.log('=== Validating approval token with rate limiting ===');
+      setRateLimitError({ type: null, message: '' });
       
-      const { data, error } = await supabase
-        .rpc('validate_approval_token', { p_token: token });
+      // Call the edge function with rate limiting
+      const { data, error } = await supabase.functions.invoke('validate-approval-token', {
+        body: { token }
+      });
 
-      if (error || !data || data.length === 0) {
-        console.error('Invalid token:', error);
+      if (error) {
+        console.error('Token validation error:', error);
         setTokenValid(false);
+        setLoading(false);
+        
+        // Try to parse error message as JSON
+        let errorData: any = {};
+        try {
+          errorData = typeof error.message === 'string' ? JSON.parse(error.message) : error;
+        } catch {
+          errorData = { error: error.message };
+        }
+        
+        // Handle rate limiting errors
+        if (errorData.error === 'IP_BLOCKED') {
+          setRateLimitError({
+            type: 'IP_BLOCKED',
+            message: errorData.message || 'Seu IP foi bloqueado temporariamente.',
+            blockedUntil: errorData.blocked_until,
+            ipAddress: errorData.ip_address,
+            failedAttempts: errorData.failed_attempts
+          });
+          return;
+        }
+        
+        if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
+          setRateLimitError({
+            type: 'RATE_LIMIT',
+            message: errorData.message || 'Limite de tentativas excedido.',
+            attemptsRemaining: errorData.attempts_remaining
+          });
+          setCountdown(errorData.retry_after || 60);
+          return;
+        }
+        
+        if (errorData.error === 'INVALID_TOKEN') {
+          setRateLimitError({
+            type: 'INVALID_TOKEN',
+            message: 'Token inválido ou expirado.',
+            failedAttempts: errorData.failed_attempts,
+            attemptsRemaining: errorData.attempts_remaining
+          });
+          return;
+        }
+        
+        // Generic error
+        toast({
+          title: "Erro ao validar token",
+          description: errorData.message || "Ocorreu um erro ao validar o link de aprovação.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || !data.success) {
+        console.error('Token validation failed:', data);
+        setTokenValid(false);
+        setLoading(false);
         toast({
           title: "Link inválido ou expirado",
           description: "Este link de aprovação não é mais válido. Entre em contato com a agência.",
           variant: "destructive",
         });
-        setLoading(false);
         return;
       }
 
-      const tokenData = data[0];
-      console.log('Token validated:', tokenData);
+      console.log('Token validated successfully:', data);
       setTokenValid(true);
+      setRateLimitError({ type: null, message: '' });
+      setSelectedMonth(data.month);
 
       // Carregar dados do cliente usando as informações do token
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("*")
-        .eq("id", tokenData.client_id)
+        .eq("id", data.client_id)
         .maybeSingle();
 
       if (clientError || !clientData) {
@@ -131,7 +227,6 @@ export default function ContentGrid() {
       }
 
       setClient(clientData);
-      setSelectedMonth(tokenData.month);
 
       // Carregar agência
       if (clientData.agency_id) {
@@ -146,7 +241,7 @@ export default function ContentGrid() {
         }
       }
 
-      await loadContents(clientData.id, tokenData.month, true);
+      await loadContents(clientData.id, data.month, true);
     } catch (error) {
       console.error("Error validating token:", error);
       setTokenValid(false);
@@ -346,19 +441,31 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Token inválido ou expirado
+  // Token inválido ou expirado (com rate limiting)
   if (approvalToken && tokenValid === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-md w-full space-y-4">
-          <Alert variant="destructive">
-            <Lock className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Link Expirado ou Inválido</strong>
-              <p className="mt-2">Este link de aprovação não é mais válido. Links de aprovação expiram após 7 dias.</p>
-              <p className="mt-2">Entre em contato com a agência para receber um novo link de aprovação.</p>
-            </AlertDescription>
-          </Alert>
+        <div className="max-w-2xl w-full space-y-4">
+          {rateLimitError.type ? (
+            <RateLimitBlockedAlert
+              type={rateLimitError.type}
+              message={rateLimitError.message}
+              countdown={countdown}
+              blockedUntil={rateLimitError.blockedUntil}
+              ipAddress={rateLimitError.ipAddress}
+              failedAttempts={rateLimitError.failedAttempts}
+              attemptsRemaining={rateLimitError.attemptsRemaining}
+            />
+          ) : (
+            <Alert variant="destructive">
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Link Expirado ou Inválido</strong>
+                <p className="mt-2">Este link de aprovação não é mais válido. Links de aprovação expiram após 7 dias.</p>
+                <p className="mt-2">Entre em contato com a agência para receber um novo link de aprovação.</p>
+              </AlertDescription>
+            </Alert>
+          )}
           <Button 
             onClick={() => navigate('/')} 
             className="w-full"
