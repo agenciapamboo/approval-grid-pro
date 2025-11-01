@@ -65,17 +65,17 @@ export const RateLimitBlockedAlert = ({
 
           {failedAttempts !== undefined && (
             <p className="text-sm">
-              <strong>Tentativas falhas:</strong> {failedAttempts}
+              <strong>Tentativas falhas na última hora:</strong> {failedAttempts}
             </p>
           )}
 
           {ipAddress && (
             <div className="space-y-2 p-4 bg-background/50 rounded-md border border-border">
               <p className="text-sm font-semibold text-destructive">
-                ⚠️ Seu IP foi bloqueado devido a múltiplas tentativas falhas
+                ⚠️ Seu IP foi bloqueado por 15 minutos devido a múltiplas tentativas falhas
               </p>
               <p className="text-sm">
-                Para solicitar o desbloqueio, entre em contato com o suporte e informe o seguinte IP:
+                Para solicitar o desbloqueio imediato, entre em contato com o suporte e informe o seguinte IP:
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <code className="flex-1 p-2 bg-muted rounded text-sm font-mono select-all">
@@ -94,8 +94,8 @@ export const RateLimitBlockedAlert = ({
 
           <div className="pt-2 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              Por segurança, bloqueamos temporariamente o acesso após múltiplas tentativas de validação falhas.
-              Se você esqueceu sua senha ou perdeu o link de aprovação, entre em contato com o suporte.
+              Por segurança, bloqueamos temporariamente o acesso por 15 minutos após 10 tentativas de validação falhas na última hora.
+              Aguarde o tempo de bloqueio ou entre em contato com o suporte para desbloqueio imediato.
             </p>
           </div>
         </AlertDescription>
@@ -126,7 +126,7 @@ export const RateLimitBlockedAlert = ({
 
           <div className="pt-2 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              Limite: 10 tentativas por minuto. Após 3 tentativas falhas, seu IP será bloqueado temporariamente.
+              Limite: 10 tentativas por minuto. Após 10 tentativas falhas na última hora, seu IP será bloqueado por 15 minutos.
             </p>
           </div>
         </AlertDescription>
@@ -135,6 +135,8 @@ export const RateLimitBlockedAlert = ({
   }
 
   if (type === 'INVALID_TOKEN') {
+    const showPasswordRecovery = failedAttempts !== undefined && failedAttempts >= 3;
+    
     return (
       <Alert variant="destructive" className="my-8">
         <AlertCircle className="h-5 w-5" />
@@ -149,16 +151,16 @@ export const RateLimitBlockedAlert = ({
           {attemptsRemaining !== undefined && (
             <div className="p-3 bg-background/50 rounded-md border border-border">
               <p className="text-sm">
-                <strong>Tentativas restantes:</strong> {attemptsRemaining} de 3
+                <strong>Tentativas restantes:</strong> {attemptsRemaining} de 10 (última hora)
               </p>
+              {attemptsRemaining <= 2 && attemptsRemaining > 0 && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2">
+                  ⚠️ Atenção: Após 10 tentativas falhas na última hora, seu IP será bloqueado por 15 minutos
+                </p>
+              )}
               {attemptsRemaining === 0 && (
                 <p className="text-xs text-destructive mt-2">
                   ⚠️ Próxima tentativa falhada bloqueará seu IP por 15 minutos
-                </p>
-              )}
-              {attemptsRemaining === 1 && (
-                <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2">
-                  ⚠️ Atenção: Mais 1 tentativa falhada bloqueará seu IP
                 </p>
               )}
             </div>
@@ -168,6 +170,17 @@ export const RateLimitBlockedAlert = ({
             <p className="text-xs text-muted-foreground">
               Você teve {failedAttempts} tentativa(s) falha(s) na última hora.
             </p>
+          )}
+
+          {showPasswordRecovery && (
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-md border border-yellow-200 dark:border-yellow-900">
+              <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+                💡 Sugestão
+              </p>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Se você está tendo dificuldades com o link de aprovação, entre em contato com quem enviou o link para solicitar um novo, ou verifique se o link não expirou.
+              </p>
+            </div>
           )}
 
           <div className="pt-2 border-t border-border">

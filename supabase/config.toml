@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.facebook-data-deletion]
 verify_jwt = false
+
+[functions.validate-approval-token]
+verify_jwt = false
+
+[functions.notify-ip-unblock]
+verify_jwt = false

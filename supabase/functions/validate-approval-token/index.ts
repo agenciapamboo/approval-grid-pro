@@ -78,11 +78,12 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: 'IP_BLOCKED',
-          message: 'Seu IP foi bloqueado temporariamente devido a múltiplas tentativas falhas.',
+          message: 'Seu IP foi bloqueado por 15 minutos devido a múltiplas tentativas falhas. Aguarde ou entre em contato com o suporte.',
           ip_address: clientIP,
           blocked_until: rateLimitData.blocked_until,
           failed_attempts: rateLimitData.failed_attempts,
-          contact_support: true
+          contact_support: true,
+          block_duration_minutes: 15
         }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -153,15 +154,18 @@ serve(async (req) => {
         .gte('attempted_at', new Date(Date.now() - 3600000).toISOString());
 
       const failedAttempts = failedCount?.length || 0;
-      const remainingAttempts = Math.max(0, 3 - failedAttempts);
+      const remainingAttempts = Math.max(0, 10 - failedAttempts);
 
       return new Response(
         JSON.stringify({
           error: 'INVALID_TOKEN',
-          message: 'Token inválido ou expirado.',
+          message: failedAttempts >= 3 
+            ? 'Token inválido. Verifique o link de aprovação ou solicite um novo. Após 10 tentativas falhas na última hora, seu IP será bloqueado por 15 minutos.'
+            : 'Token inválido ou expirado.',
           failed_attempts: failedAttempts,
           attempts_remaining: remainingAttempts,
-          will_block_after: 3
+          will_block_after: 10,
+          show_password_recovery: failedAttempts >= 3
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

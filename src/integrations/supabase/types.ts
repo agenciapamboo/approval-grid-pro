@@ -1293,6 +1293,16 @@ export type Database = {
         Args: { agency_id_param: string }
         Returns: string
       }
+      get_blocked_ips: {
+        Args: never
+        Returns: {
+          blocked_until: string
+          failed_attempts: number
+          ip_address: string
+          last_attempt: string
+          user_agents: string[]
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1332,6 +1342,10 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      unblock_ip: {
+        Args: { p_ip_address: string; p_unblocked_by: string }
+        Returns: Json
       }
       validate_approval_token: {
         Args: { p_token: string }

@@ -23,6 +23,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DataDeletion = lazy(() => import("./pages/DataDeletion"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const BlockedIPs = lazy(() => import("./pages/BlockedIPs"));
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/data-deletion" element={<DataDeletion />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/central-de-ajuda" element={<HelpCenter />} />
+              <Route path="/admin/blocked-ips" element={<BlockedIPs />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
