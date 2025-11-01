@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
@@ -11,6 +11,7 @@ import { CreateContentWrapper } from "@/components/content/CreateContentWrapper"
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Profile {
   id: string;
@@ -55,6 +56,7 @@ interface Content {
 
 export default function ContentGrid() {
   const { agencySlug, clientSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -66,14 +68,97 @@ export default function ContentGrid() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [approvalToken, setApprovalToken] = useState<string | null>(null);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const tokenMonth = searchParams.get('month');
+    if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
+      return tokenMonth;
+    }
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
   useEffect(() => {
-    loadPublicData();
-  }, [agencySlug, clientSlug]);
+    const token = searchParams.get('token');
+    if (token) {
+      setApprovalToken(token);
+      validateTokenAndLoadData(token);
+    } else {
+      loadPublicData();
+    }
+  }, [agencySlug, clientSlug, searchParams]);
+
+  const validateTokenAndLoadData = async (token: string) => {
+    try {
+      console.log('=== Validating approval token ===');
+      
+      const { data, error } = await supabase
+        .rpc('validate_approval_token', { p_token: token });
+
+      if (error || !data || data.length === 0) {
+        console.error('Invalid token:', error);
+        setTokenValid(false);
+        toast({
+          title: "Link inválido ou expirado",
+          description: "Este link de aprovação não é mais válido. Entre em contato com a agência.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const tokenData = data[0];
+      console.log('Token validated:', tokenData);
+      setTokenValid(true);
+
+      // Carregar dados do cliente usando as informações do token
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", tokenData.client_id)
+        .maybeSingle();
+
+      if (clientError || !clientData) {
+        console.error('Error loading client:', clientError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados do cliente",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      setClient(clientData);
+      setSelectedMonth(tokenData.month);
+
+      // Carregar agência
+      if (clientData.agency_id) {
+        const { data: agencyData } = await supabase
+          .from("agencies_public")
+          .select("*")
+          .eq("id", clientData.agency_id)
+          .maybeSingle();
+        
+        if (agencyData) {
+          setAgency(agencyData);
+        }
+      }
+
+      await loadContents(clientData.id, tokenData.month, true);
+    } catch (error) {
+      console.error("Error validating token:", error);
+      setTokenValid(false);
+      toast({
+        title: "Erro",
+        description: "Erro ao validar o link de aprovação",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadPublicData = async () => {
     try {
@@ -158,7 +243,7 @@ export default function ContentGrid() {
 
       console.log('Client loaded:', clientData);
       setClient(clientData);
-      await loadContents(clientData.id);
+      await loadContents(clientData.id, undefined, false);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -171,25 +256,41 @@ export default function ContentGrid() {
     }
   };
 
-  const loadContents = async (clientId: string) => {
+  const loadContents = async (clientId: string, filterMonth?: string, tokenAccess: boolean = false) => {
     console.log('=== loadContents started for client:', clientId);
     
-    // Se há um usuário logado, mostrar todos os conteúdos
-    // Se não há usuário logado (acesso público), mostrar apenas aprovados
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('Session in loadContents:', !!session);
+    console.log('Session in loadContents:', !!session, 'Token access:', tokenAccess);
     
     let query = supabase
       .from("contents")
       .select("*")
       .eq("client_id", clientId);
     
-    // Se não estiver logado, filtrar apenas aprovados
-    if (!session) {
+    // Com token: mostrar apenas "in_review" (aguardando aprovação)
+    if (tokenAccess) {
+      console.log('Token access - filtering in_review contents');
+      query = query.eq("status", "in_review");
+    } 
+    // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
+    else if (!session) {
       console.log('No session - filtering only approved contents');
       query = query.eq("status", "approved");
-    } else {
+    } 
+    // Com sessão: mostrar todos
+    else {
       console.log('Session exists - loading all contents');
+    }
+
+    // Filtrar por mês se especificado
+    if (filterMonth) {
+      const [year, month] = filterMonth.split('-');
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+      
+      query = query
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString());
     }
     
     const { data, error } = await query.order("date", { ascending: true });
@@ -245,14 +346,67 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
+  // Token inválido ou expirado
+  if (approvalToken && tokenValid === false) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-4">
+          <Alert variant="destructive">
+            <Lock className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Link Expirado ou Inválido</strong>
+              <p className="mt-2">Este link de aprovação não é mais válido. Links de aprovação expiram após 7 dias.</p>
+              <p className="mt-2">Entre em contato com a agência para receber um novo link de aprovação.</p>
+            </AlertDescription>
+          </Alert>
+          <Button 
+            onClick={() => navigate('/')} 
+            className="w-full"
+          >
+            Voltar ao Início
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const isPublicView = !!approvalToken && tokenValid;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader 
-        userName={profile?.name}
-        userRole="Cliente"
-        onProfileClick={() => setShowProfileDialog(true)}
-        onSignOut={handleSignOut}
-      />
+      {/* Mostrar header apenas se NÃO for visualização pública com token */}
+      {!isPublicView && (
+        <AppHeader 
+          userName={profile?.name}
+          userRole="Cliente"
+          onProfileClick={() => setShowProfileDialog(true)}
+          onSignOut={handleSignOut}
+        />
+      )}
+
+      {/* Cabeçalho especial para visualização pública */}
+      {isPublicView && (
+        <header className="border-b bg-card">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {agency?.logo_url && (
+                  <img 
+                    src={agency.logo_url} 
+                    alt={agency.name} 
+                    className="h-10 w-auto"
+                  />
+                )}
+                <div>
+                  <h1 className="text-lg font-semibold">{client?.name}</h1>
+                  <p className="text-sm text-muted-foreground">Aprovação de Conteúdo</p>
+                </div>
+              </div>
+              <Lock className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+        </header>
+      )}
 
       {/* Diálogo de Perfil com Preferências */}
       {profile && user && (
@@ -266,8 +420,18 @@ export default function ContentGrid() {
       )}
 
       <main className="container mx-auto px-4 py-8">
-        {/* Seletor de Mês */}
-        {sortedMonthKeys.length > 0 && (
+        {/* Aviso de acesso via link */}
+        {isPublicView && (
+          <Alert className="mb-6">
+            <AlertDescription>
+              Você está visualizando os conteúdos aguardando aprovação via link temporário. 
+              Este link expira em 7 dias a partir do envio.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Seletor de Mês - desabilitado na visualização pública */}
+        {!isPublicView && sortedMonthKeys.length > 0 && (
           <div className="mb-6">
             <select
               value={selectedMonth}
@@ -293,7 +457,10 @@ export default function ContentGrid() {
 
         {filteredContents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhum conteúdo encontrado para este mês
+            {isPublicView 
+              ? "Nenhum conteúdo aguardando aprovação neste período" 
+              : "Nenhum conteúdo encontrado para este mês"
+            }
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -303,7 +470,8 @@ export default function ContentGrid() {
                 content={content}
                 isResponsible={false}
                 isAgencyView={false}
-                onUpdate={() => loadContents(client!.id)}
+                isPublicApproval={isPublicView}
+                onUpdate={() => loadContents(client!.id, selectedMonth, isPublicView)}
               />
             ))}
           </div>

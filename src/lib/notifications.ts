@@ -75,7 +75,31 @@ export const createNotification = async (
     // Construir links úteis
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const adminLink = `${origin}/agency/client/${content.client_id}`;
-    const previewLink = `${origin}/content/${contentId}`;
+    let previewLink = `${origin}/content/${contentId}`;
+
+    // Se o evento é de envio para revisão, gerar token de aprovação
+    if (event === 'content.sent_for_review' && content) {
+      try {
+        const contentDate = new Date(content.date);
+        const month = `${contentDate.getFullYear()}-${String(contentDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('generate-approval-link', {
+          body: {
+            client_id: content.client_id,
+            month: month
+          }
+        });
+
+        if (!tokenError && tokenData?.approval_url) {
+          previewLink = tokenData.approval_url;
+          console.log('Generated approval link for notification:', previewLink);
+        } else {
+          console.error('Error generating approval link:', tokenError);
+        }
+      } catch (error) {
+        console.error('Failed to generate approval link:', error);
+      }
+    }
 
     // Payload final padronizado
     const finalPayload: NotificationPayload = {

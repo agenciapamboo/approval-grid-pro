@@ -36,10 +36,11 @@ interface ContentCardProps {
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
+  isPublicApproval?: boolean; // Indica se é acesso via token de aprovação
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, isAgencyView = false, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
@@ -691,11 +692,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           {/* Linha 3: Legenda */}
           <ContentCaption contentId={content.id} version={content.version} />
 
-          {/* Ações */}
+          {/* Ações - Simplificado para visualização pública */}
           {!isAgencyView && (
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
-                {content.status !== "approved" && (
+                {isPublicApproval ? (
+                  // Visualização pública: apenas aprovar e solicitar ajustes
                   <>
                     <Button 
                       size="sm"
@@ -704,7 +706,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                       className="w-full"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Aprovar
+                      Aprovar Conteúdo
                     </Button>
                     <Button 
                       size="sm"
@@ -713,17 +715,41 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                       className="w-full"
                     >
                       <AlertCircle className="h-4 w-4 mr-2" />
-                      Solicitar ajuste
-                    </Button>
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowRejectDialog(true)}
-                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      Reprovar
+                      Solicitar Ajustes
                     </Button>
                   </>
+                ) : (
+                  content.status !== "approved" && (
+                    // Visualização autenticada: todas as opções
+                    <>
+                      <Button 
+                        size="sm"
+                        variant="success"
+                        onClick={handleApprove}
+                        className="w-full"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Aprovar
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="warning"
+                        onClick={() => setShowAdjustment(true)}
+                        className="w-full"
+                      >
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Solicitar ajuste
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowRejectDialog(true)}
+                        className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        Reprovar
+                      </Button>
+                    </>
+                  )
                 )}
                 <Button 
                   variant="outline" 

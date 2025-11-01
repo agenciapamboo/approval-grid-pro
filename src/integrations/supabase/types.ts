@@ -115,6 +115,61 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_tokens: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          month: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          month: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          month?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           client_id: string
@@ -1199,6 +1254,10 @@ export type Database = {
         Returns: string
       }
       encrypt_social_token: { Args: { token: string }; Returns: string }
+      generate_approval_token: {
+        Args: { p_client_id: string; p_month: string }
+        Returns: string
+      }
       get_agency_admin_email: {
         Args: { agency_id_param: string }
         Returns: string
@@ -1225,6 +1284,15 @@ export type Database = {
           p_user_id?: string
         }
         Returns: string
+      }
+      validate_approval_token: {
+        Args: { p_token: string }
+        Returns: {
+          client_id: string
+          client_name: string
+          client_slug: string
+          month: string
+        }[]
       }
     }
     Enums: {
