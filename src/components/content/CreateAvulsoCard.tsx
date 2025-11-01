@@ -173,12 +173,13 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
       setHasChanges(false);
       onContentCreated();
 
-    } catch (error) {
-      console.error("Erro ao criar conteúdo:", error);
+    } catch (error: any) {
+      console.error('Erro ao criar conteúdo:', error);
+      const msg = error?.message || error?.error?.message || error?.details || 'Erro ao criar o conteúdo';
       toast({
-        title: "Erro",
-        description: "Erro ao criar o conteúdo",
-        variant: "destructive",
+        title: 'Erro',
+        description: `Erro ao criar o conteúdo: ${msg}`,
+        variant: 'destructive',
       });
     } finally {
       setUploading(false);

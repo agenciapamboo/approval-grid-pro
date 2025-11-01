@@ -263,9 +263,25 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         thumbUrl = thumbPublicUrl;
       }
 
-      // Upload dos arquivos de mídia
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      // Preparação e upload dos arquivos de mídia
+      let filesToUpload = files;
+      if (contentType === 'reels') {
+        const videoFiles = files.filter(f => f.type.startsWith('video/'));
+        if (videoFiles.length === 0) {
+          toast({ title: 'Arquivo inválido', description: 'Para Reels, selecione um arquivo de vídeo', variant: 'destructive' });
+          throw new Error('Reels requer um arquivo de vídeo');
+        }
+        // Reels aceita apenas 1 vídeo
+        filesToUpload = [videoFiles[0]];
+        if (files.length !== filesToUpload.length) {
+          console.warn('Imagens ignoradas ao criar Reels. Apenas o vídeo foi utilizado.');
+        }
+      }
+
+      const videoIndex = filesToUpload.findIndex(f => f.type.startsWith('video/'));
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
         const fileExt = file.name.split('.').pop();
         const fileName = `${content.id}/${Date.now()}-${i}.${fileExt}`;
 
@@ -274,7 +290,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           .upload(fileName, file);
 
         if (uploadError) {
-          console.error("Erro ao fazer upload do arquivo:", uploadError);
+          console.error('Erro ao fazer upload do arquivo:', uploadError);
           throw uploadError;
         }
 
@@ -283,26 +299,26 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           .getPublicUrl(fileName);
 
         const mediaKind = file.type.startsWith('video/') ? 'video' : 'image';
-        
-        // Thumbnail só vai no primeiro item se for vídeo
+
         const mediaData: any = {
           content_id: content.id,
           src_url: publicUrl,
           kind: mediaKind,
           order_index: i,
+          size_bytes: file.size,
         };
 
-        // Adiciona thumb_url apenas se for o primeiro item E houver thumbnail
-        if (i === 0 && thumbUrl) {
+        // Adiciona thumb_url sempre no registro do vídeo
+        if (thumbUrl && videoIndex === i) {
           mediaData.thumb_url = thumbUrl;
         }
 
         const { error: mediaError } = await supabase
-          .from("content_media")
+          .from('content_media')
           .insert(mediaData);
 
         if (mediaError) {
-          console.error("Erro ao inserir registro de mídia:", mediaError);
+          console.error('Erro ao inserir registro de mídia:', mediaError);
           throw mediaError;
         }
       }
@@ -335,12 +351,13 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       setHasChanges(false);
       onContentCreated();
 
-    } catch (error) {
-      console.error("Erro ao criar conteúdo:", error);
+    } catch (error: any) {
+      console.error('Erro ao criar conteúdo:', error);
+      const msg = error?.message || error?.error?.message || error?.details || 'Erro ao criar o conteúdo';
       toast({
-        title: "Erro",
-        description: "Erro ao criar o conteúdo",
-        variant: "destructive",
+        title: 'Erro',
+        description: `Erro ao criar o conteúdo: ${msg}`,
+        variant: 'destructive',
       });
     } finally {
       setUploading(false);
