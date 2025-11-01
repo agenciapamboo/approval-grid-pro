@@ -14,6 +14,7 @@ interface RateLimitResponse {
   is_blocked: boolean;
   blocked_until: string | null;
   failed_attempts: number;
+  is_permanent: boolean;
 }
 
 interface ValidationResponse {
@@ -65,7 +66,7 @@ serve(async (req) => {
     const rateLimitData = blockCheck as RateLimitResponse;
 
     if (rateLimitData?.is_blocked) {
-      console.log('IP blocked:', clientIP, 'until:', rateLimitData.blocked_until);
+      console.log('IP blocked:', clientIP, 'until:', rateLimitData.blocked_until, 'permanent:', rateLimitData.is_permanent);
       
       // Registrar tentativa bloqueada
       await supabase.rpc('log_validation_attempt', {
@@ -75,18 +76,35 @@ serve(async (req) => {
         p_user_agent: userAgent
       });
 
-      return new Response(
-        JSON.stringify({
-          error: 'IP_BLOCKED',
-          message: 'Seu IP foi bloqueado por 15 minutos devido a múltiplas tentativas falhas. Aguarde ou entre em contato com o suporte.',
-          ip_address: clientIP,
-          blocked_until: rateLimitData.blocked_until,
-          failed_attempts: rateLimitData.failed_attempts,
-          contact_support: true,
-          block_duration_minutes: 15
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (rateLimitData.is_permanent) {
+        // Bloqueio permanente (10+ tentativas)
+        return new Response(
+          JSON.stringify({
+            error: 'IP_BLOCKED_PERMANENT',
+            message: 'Seu IP foi bloqueado permanentemente devido a múltiplas tentativas falhas. Entre em contato com o suporte informando seu IP para desbloqueio.',
+            ip_address: clientIP,
+            blocked_until: rateLimitData.blocked_until,
+            failed_attempts: rateLimitData.failed_attempts,
+            contact_support: true,
+            is_permanent: true
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Bloqueio temporário (5 tentativas)
+        return new Response(
+          JSON.stringify({
+            error: 'IP_BLOCKED_TEMPORARY',
+            message: 'Seu usuário foi bloqueado por 15 minutos por excesso de falhas no login. Volte a tentar mais tarde ou faça a recuperação da senha.',
+            ip_address: clientIP,
+            blocked_until: rateLimitData.blocked_until,
+            failed_attempts: rateLimitData.failed_attempts,
+            contact_support: false,
+            block_duration_minutes: 15
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Verificar limite de tentativas (10 por minuto)
@@ -156,16 +174,36 @@ serve(async (req) => {
       const failedAttempts = failedCount?.length || 0;
       const remainingAttempts = Math.max(0, 10 - failedAttempts);
 
+      let message = 'Token inválido ou expirado.';
+      let show_warning = false;
+      let show_temporary_block_warning = false;
+      let show_permanent_block_warning = false;
+      
+      // Regra 1: Aviso após 3 tentativas
+      if (failedAttempts >= 3 && failedAttempts < 5) {
+        message = 'Seu usuário pode ser bloqueado. Revise seu usuário e senha e tente novamente.';
+        show_warning = true;
+      }
+      // Regra 2: Aviso de bloqueio temporário após 5 tentativas
+      else if (failedAttempts >= 5 && failedAttempts < 10) {
+        message = 'Token inválido. Próximas tentativas resultarão em bloqueio temporário de 15 minutos.';
+        show_temporary_block_warning = true;
+      }
+      // Regra 3: Aviso de bloqueio permanente próximo
+      else if (failedAttempts >= 10) {
+        message = 'Token inválido. Atenção: você atingiu o limite máximo de tentativas.';
+        show_permanent_block_warning = true;
+      }
+
       return new Response(
         JSON.stringify({
           error: 'INVALID_TOKEN',
-          message: failedAttempts >= 3 
-            ? 'Token inválido. Verifique o link de aprovação ou solicite um novo. Após 10 tentativas falhas na última hora, seu IP será bloqueado por 15 minutos.'
-            : 'Token inválido ou expirado.',
+          message,
           failed_attempts: failedAttempts,
           attempts_remaining: remainingAttempts,
-          will_block_after: 10,
-          show_password_recovery: failedAttempts >= 3
+          show_warning,
+          show_temporary_block_warning,
+          show_permanent_block_warning
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

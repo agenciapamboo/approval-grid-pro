@@ -1320,6 +1320,7 @@ export type Database = {
           blocked_until: string
           failed_attempts: number
           is_blocked: boolean
+          is_permanent: boolean
         }[]
       }
       log_validation_attempt: {

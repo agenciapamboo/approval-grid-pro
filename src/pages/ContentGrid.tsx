@@ -80,12 +80,15 @@ export default function ContentGrid() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [rateLimitError, setRateLimitError] = useState<{
-    type: 'RATE_LIMIT' | 'IP_BLOCKED' | 'INVALID_TOKEN' | null;
+    type: 'RATE_LIMIT' | 'IP_BLOCKED_PERMANENT' | 'IP_BLOCKED_TEMPORARY' | 'INVALID_TOKEN' | null;
     message: string;
     blockedUntil?: string;
     ipAddress?: string;
     failedAttempts?: number;
     attemptsRemaining?: number;
+    showWarning?: boolean;
+    showTemporaryBlockWarning?: boolean;
+    showPermanentBlockWarning?: boolean;
   }>({ type: null, message: '' });
   const [countdown, setCountdown] = useState<number>(0);
 
@@ -99,7 +102,7 @@ export default function ContentGrid() {
 
   // Countdown effect for IP block
   useEffect(() => {
-    if (rateLimitError.type === 'IP_BLOCKED' && rateLimitError.blockedUntil) {
+    if ((rateLimitError.type === 'IP_BLOCKED_PERMANENT' || rateLimitError.type === 'IP_BLOCKED_TEMPORARY') && rateLimitError.blockedUntil) {
       const updateCountdown = () => {
         const now = new Date().getTime();
         const blockEnd = new Date(rateLimitError.blockedUntil!).getTime();
@@ -151,10 +154,10 @@ export default function ContentGrid() {
         }
         
         // Handle rate limiting errors
-        if (errorData.error === 'IP_BLOCKED') {
+        if (errorData.error === 'IP_BLOCKED_PERMANENT' || errorData.error === 'IP_BLOCKED_TEMPORARY') {
           setRateLimitError({
-            type: 'IP_BLOCKED',
-            message: errorData.message || 'Seu IP foi bloqueado temporariamente.',
+            type: errorData.error,
+            message: errorData.message || 'Seu IP foi bloqueado.',
             blockedUntil: errorData.blocked_until,
             ipAddress: errorData.ip_address,
             failedAttempts: errorData.failed_attempts
