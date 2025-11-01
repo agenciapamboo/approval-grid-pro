@@ -10,6 +10,16 @@ declare const EdgeRuntime: {
   waitUntil(promise: Promise<any>): void;
 };
 
+// Validation schema
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
+const isValidEvent = (str: string): boolean => {
+  return typeof str === 'string' && str.length > 0 && str.length <= 100;
+};
+
 interface WebhookPayload {
   event: string
   content_id: string
@@ -28,14 +38,69 @@ serve(async (req) => {
   }
 
   try {
+    // Get authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    // Verify authentication
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const requestBody = await req.json();
+    const { event, content_id, client_id, agency_id } = requestBody;
+
+    // Input validation
+    if (!isValidEvent(event)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid event parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!isValidUUID(content_id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid content_id parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (client_id && !isValidUUID(client_id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid client_id parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (agency_id && !isValidUUID(agency_id)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid agency_id parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Webhook triggered:', { event, content_id, client_id, agency_id })
+
+    // Use service role key for internal operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
-
-    const { event, content_id, client_id, agency_id } = await req.json()
-
-    console.log('Webhook triggered:', { event, content_id, client_id, agency_id })
 
     let webhookUrl: string | null = null
     let targetId: string
@@ -44,7 +109,7 @@ serve(async (req) => {
 
     // Para eventos relacionados a jobs (novojob e job.*)
     if (event === 'novojob' || event.startsWith('job.')) {
-      const { data: notification, error: notificationError } = await supabaseClient
+      const { data: notification, error: notificationError } = await supabaseAdmin
         .from('notifications')
         .select('*, clients!inner(*, agencies!inner(*)), agencies!inner(*)')
         .eq('id', content_id)
@@ -52,12 +117,15 @@ serve(async (req) => {
 
       if (notificationError) {
         console.error('Error fetching notification:', notificationError)
-        throw notificationError
+        return new Response(
+          JSON.stringify({ error: 'Notification not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       // Buscar webhook_url da agência (não do notification.agencies que pode estar null)
-      const { data: agency } = await supabaseClient
-        .from('agencies')
+      const { data: agency } = await supabaseAdmin
+        .from('agencies_secure')
         .select('webhook_url, id, name, slug, email, whatsapp')
         .eq('id', notification.agency_id)
         .single()
@@ -68,7 +136,7 @@ serve(async (req) => {
 
       console.log('Job webhook URL from agency:', { 
         agency_id: notification.agency_id, 
-        webhook_url: webhookUrl,
+        webhook_url: webhookUrl ? '[REDACTED]' : null,
         event 
       })
 
@@ -85,97 +153,87 @@ serve(async (req) => {
           id: notification.clients.id,
           name: notification.clients.name,
           slug: notification.clients.slug,
-          email: notification.clients.email,
-          whatsapp: notification.clients.whatsapp,
         },
         agency: {
           id: agency?.id,
           name: agency?.name,
           slug: agency?.slug,
-          email: agency?.email,
-          whatsapp: agency?.whatsapp,
         }
       }
     } else {
       // Para outros eventos, buscar da tabela contents
-      const { data: content, error: contentError } = await supabaseClient
+      const { data: content, error: contentError } = await supabaseAdmin
         .from('contents')
-        .select('*, clients!inner(*)')
+        .select(`
+          *,
+          clients!inner(
+            *,
+            agencies!inner(*)
+          )
+        `)
         .eq('id', content_id)
         .single()
 
       if (contentError) {
         console.error('Error fetching content:', contentError)
-        throw contentError
+        return new Response(
+          JSON.stringify({ error: 'Content not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
-      // Sempre buscar o webhook da agência para todos os eventos
-      const { data: agency } = await supabaseClient
-        .from('agencies')
-        .select('webhook_url, id, name, slug, email, whatsapp')
-        .eq('id', content.clients.agency_id)
+      const client = content.clients
+      const agency = client.agencies
+
+      // Usar webhook_url da agência (via agencies_secure)
+      const { data: agencySecure } = await supabaseAdmin
+        .from('agencies_secure')
+        .select('webhook_url')
+        .eq('id', agency.id)
         .single()
-      
-      webhookUrl = agency?.webhook_url || null
-      targetId = content.clients.agency_id
+
+      webhookUrl = agencySecure?.webhook_url || null
+      targetId = agency.id
       targetType = 'agency'
 
       console.log('Content webhook URL from agency:', { 
-        agency_id: content.clients.agency_id, 
-        webhook_url: webhookUrl,
+        agency_id: agency.id, 
+        webhook_url: webhookUrl ? '[REDACTED]' : null,
         event 
       })
 
       payload = {
         event,
         content_id,
+        client_id: client.id,
+        agency_id: agency.id,
         content: {
           id: content.id,
           title: content.title,
-          date: content.date,
-          status: content.status,
           type: content.type,
-          category: content.category,
+          status: content.status,
+          date: content.date,
+          deadline: content.deadline,
         },
         client: {
-          id: content.clients.id,
-          name: content.clients.name,
-          slug: content.clients.slug,
+          id: client.id,
+          name: client.name,
+          slug: client.slug,
         },
         agency: {
-          id: agency?.id,
-          name: agency?.name,
-          slug: agency?.slug,
+          id: agency.id,
+          name: agency.name,
+          slug: agency.slug,
         }
       }
     }
 
-    // Sanitizar payload (remover campos sensíveis)
-    const sanitizedPayload = JSON.parse(JSON.stringify(payload))
-    
-    if (!webhookUrl || webhookUrl.trim() === '') {
-      console.log('No webhook URL configured for agency:', { 
-        targetId, 
-        targetType, 
-        event,
-        webhook_url: webhookUrl 
-      })
-      
-      // Ainda registrar evento mas como não enviado
-      await supabaseClient
-        .from('webhook_events')
-        .insert({
-          client_id: client_id || payload.client?.id,
-          event,
-          payload: sanitizedPayload,
-          status: 'failed',
-        })
-
+    if (!webhookUrl) {
+      console.log('No webhook URL configured for target:', { targetType, targetId })
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'No webhook URL configured for agency',
-          details: { agency_id: targetId, event }
+          message: 'No webhook URL configured' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -184,123 +242,83 @@ serve(async (req) => {
       )
     }
 
-    // Validar se a URL é válida
-    try {
-      new URL(webhookUrl)
-    } catch (urlError) {
-      console.error('Invalid webhook URL:', { webhookUrl, urlError })
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Invalid webhook URL configured',
-          details: { webhook_url: webhookUrl }
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-    
-    // Registrar evento de webhook
-    const { data: webhookEvent, error: eventError } = await supabaseClient
+    // Log webhook event
+    const { data: webhookEvent, error: webhookEventError } = await supabaseAdmin
       .from('webhook_events')
       .insert({
-        client_id: client_id || payload.client?.id,
-        event,
-        payload: sanitizedPayload,
-        status: 'queued',
+        client_id: payload.client_id || null,
+        event: payload.event,
+        payload: payload,
+        status: 'queued'
       })
       .select()
       .single()
 
-    if (eventError) {
-      console.error('Error creating webhook event:', eventError)
+    if (webhookEventError) {
+      console.error('Error logging webhook event:', webhookEventError)
     }
 
-    console.log('Sending webhook to:', { 
-      url: webhookUrl, 
-      event, 
-      client_id: client_id || payload.client?.id 
-    })
-    
-    // Executar o envio do webhook em background
+    // Send webhook asynchronously
     const sendWebhookTask = async () => {
       try {
-        // Construir URL com query parameters para GET request
-        const urlWithParams = new URL(webhookUrl)
-        urlWithParams.searchParams.set('event', event)
-        urlWithParams.searchParams.set('content_id', content_id)
-        if (sanitizedPayload.client_id) {
-          urlWithParams.searchParams.set('client_id', sanitizedPayload.client_id)
-        }
-        if (sanitizedPayload.agency_id) {
-          urlWithParams.searchParams.set('agency_id', sanitizedPayload.agency_id)
-        }
-        // Adicionar payload como JSON string
-        urlWithParams.searchParams.set('data', JSON.stringify(sanitizedPayload))
+        const params = new URLSearchParams({
+          event: payload.event,
+          content_id: payload.content_id,
+          ...(payload.client_id && { client_id: payload.client_id }),
+          ...(payload.agency_id && { agency_id: payload.agency_id }),
+          payload: JSON.stringify(payload)
+        })
 
-        const webhookResponse = await fetch(urlWithParams.toString(), {
+        const response = await fetch(`${webhookUrl}?${params.toString()}`, {
           method: 'GET',
           headers: {
-            'Accept': 'application/json',
-          },
+            'Content-Type': 'application/json',
+          }
         })
 
-        const responseText = await webhookResponse.text()
-        console.log('Webhook response:', { 
-          status: webhookResponse.status, 
-          ok: webhookResponse.ok,
-          statusText: webhookResponse.statusText,
-          body: responseText.substring(0, 200)
-        })
-
-        // Atualizar status do webhook event
         if (webhookEvent) {
-          await supabaseClient
+          if (response.ok) {
+            await supabaseAdmin
+              .from('webhook_events')
+              .update({
+                status: 'delivered',
+                delivered_at: new Date().toISOString()
+              })
+              .eq('id', webhookEvent.id)
+
+            await supabaseAdmin
+              .from('notifications')
+              .update({ status: 'sent' })
+              .eq('id', content_id)
+          } else {
+            await supabaseAdmin
+              .from('webhook_events')
+              .update({ status: 'failed' })
+              .eq('id', webhookEvent.id)
+
+            await supabaseAdmin
+              .from('notifications')
+              .update({ status: 'failed', error_message: 'Webhook delivery failed' })
+              .eq('id', content_id)
+          }
+        }
+      } catch (error) {
+        console.error('Error sending webhook:', error)
+        if (webhookEvent) {
+          await supabaseAdmin
             .from('webhook_events')
-            .update({
-              status: webhookResponse.ok ? 'delivered' : 'failed',
-              delivered_at: new Date().toISOString(),
-            })
+            .update({ status: 'failed' })
             .eq('id', webhookEvent.id)
         }
-
-        // Atualizar status da notificação
-        await supabaseClient
-          .from('notifications')
-          .update({
-            status: webhookResponse.ok ? 'sent' : 'failed',
-            sent_at: webhookResponse.ok ? new Date().toISOString() : null,
-            error_message: webhookResponse.ok ? null : `HTTP ${webhookResponse.status}: ${responseText.substring(0, 200)}`,
-          })
-          .eq('id', content_id)
-
-      } catch (webhookError) {
-        console.error('Error sending webhook:', webhookError)
-        
-        // Atualizar status para failed
-        if (webhookEvent) {
-          await supabaseClient
-            .from('webhook_events')
-            .update({
-              status: 'failed',
-            })
-            .eq('id', webhookEvent.id)
-        }
-
-        await supabaseClient
-          .from('notifications')
-          .update({
-            status: 'failed',
-            error_message: webhookError instanceof Error ? webhookError.message : String(webhookError),
-          })
-          .eq('id', content_id)
       }
     }
 
-    // Executar em background sem bloquear a resposta
-    EdgeRuntime.waitUntil(sendWebhookTask())
+    // Use EdgeRuntime.waitUntil if available (production), otherwise await (development)
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      EdgeRuntime.waitUntil(sendWebhookTask())
+    } else {
+      await sendWebhookTask()
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -315,12 +333,9 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in webhook function:', error)
+    console.error('Error in send-webhook function:', error)
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error)
-      }),
+      JSON.stringify({ error: 'Internal server error' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 

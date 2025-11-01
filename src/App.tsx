@@ -14,7 +14,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ContentGrid = lazy(() => import("./pages/ContentGrid"));
 const AgencyContentManager = lazy(() => import("./pages/AgencyContentManager"));
-const AdminPasswordReset = lazy(() => import("./pages/AdminPasswordReset"));
+
 const HeroDemo = lazy(() => import("./pages/HeroDemo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const CreativeRequests = lazy(() => import("./pages/CreativeRequests"));
@@ -52,7 +52,7 @@ const App = () => (
               <Route path="/agency/creative-requests/:clientId" element={<CreativeRequests />} />
               <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
               <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
-              <Route path="/admin/reset-passwords" element={<AdminPasswordReset />} />
+              
               <Route path="/hero" element={<HeroDemo />} />
               <Route path="/social-connect" element={<SocialConnect />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />

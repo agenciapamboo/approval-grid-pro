@@ -6,18 +6,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { contentId } = await req.json();
-    if (!contentId) {
-      return new Response(JSON.stringify({ error: 'contentId é obrigatório' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const requestBody = await req.json();
+    const { contentId } = requestBody;
+    
+    // Input validation
+    if (!contentId || !isValidUUID(contentId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid contentId parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -142,10 +151,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Erro inesperado ao deletar conteúdo:', error);
-    return new Response(JSON.stringify({ error: error?.message || 'Erro inesperado' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Error in delete-content function:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
