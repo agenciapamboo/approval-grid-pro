@@ -101,9 +101,9 @@ serve(async (req) => {
 
     console.log('Buscando contas sociais do cliente:', content.client_id);
     
-    // 2. Buscar contas sociais ativas do cliente
+    // 2. Buscar contas sociais ativas do cliente com tokens descriptografados
     const { data: accounts, error: accountsError } = await supabaseClient
-      .from('client_social_accounts')
+      .from('client_social_accounts_decrypted')
       .select('*')
       .eq('client_id', content.client_id)
       .eq('is_active', true);

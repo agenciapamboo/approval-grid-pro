@@ -69,12 +69,17 @@ export function SelectSocialAccountsDialog({
           (acc) => acc.account_id === selectedFacebook
         );
         if (fbAccount) {
+          // Encrypt token before saving
+          const { data: encryptedToken } = await supabase.rpc('encrypt_social_token', {
+            token: fbAccount.access_token
+          });
+
           accountsToSave.push({
             client_id: clientId,
             platform: "facebook",
             account_id: fbAccount.account_id,
             account_name: fbAccount.account_name,
-            access_token: fbAccount.access_token,
+            access_token_encrypted: encryptedToken,
             page_id: fbAccount.page_id,
             instagram_business_account_id: fbAccount.instagram_business_account_id,
             is_active: true,
@@ -87,12 +92,17 @@ export function SelectSocialAccountsDialog({
           (acc) => acc.account_id === selectedInstagram
         );
         if (igAccount) {
+          // Encrypt token before saving
+          const { data: encryptedToken } = await supabase.rpc('encrypt_social_token', {
+            token: igAccount.access_token
+          });
+
           accountsToSave.push({
             client_id: clientId,
             platform: "instagram",
             account_id: igAccount.account_id,
             account_name: igAccount.account_name,
-            access_token: igAccount.access_token,
+            access_token_encrypted: encryptedToken,
             page_id: igAccount.page_id,
             instagram_business_account_id: igAccount.instagram_business_account_id,
             is_active: true,

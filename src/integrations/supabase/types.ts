@@ -141,6 +141,7 @@ export type Database = {
       client_social_accounts: {
         Row: {
           access_token: string
+          access_token_encrypted: string | null
           account_id: string
           account_name: string
           client_id: string
@@ -155,6 +156,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          access_token_encrypted?: string | null
           account_id: string
           account_name: string
           client_id: string
@@ -169,6 +171,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          access_token_encrypted?: string | null
           account_id?: string
           account_name?: string
           client_id?: string
@@ -761,9 +764,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_social_accounts_decrypted: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          account_name: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string | null
+          instagram_business_account_id: string | null
+          is_active: boolean | null
+          page_id: string | null
+          platform: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: never
+          account_id?: string | null
+          account_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          instagram_business_account_id?: string | null
+          is_active?: boolean | null
+          page_id?: string | null
+          platform?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: never
+          account_id?: string | null
+          account_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          instagram_business_account_id?: string | null
+          is_active?: boolean | null
+          page_id?: string | null
+          platform?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_social_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      decrypt_social_token: {
+        Args: { encrypted_token: string }
+        Returns: string
+      }
+      encrypt_social_token: { Args: { token: string }; Returns: string }
       get_agency_admin_email: {
         Args: { agency_id_param: string }
         Returns: string
