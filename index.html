@@ -18,14 +18,20 @@
     
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/IrCTAs4qiYc918FvTYM2pVszotf1/social-images/social-1760462534231-aprova_thumb2.png">
     
-    <!-- Google Fonts - Poppins -->
+    <!-- DNS Prefetch and Preconnect for performance -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts - Poppins with font-display swap for better performance -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Fallback CSS para garantir Poppins -->
+    <!-- Inline critical CSS for font fallback -->
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+      body {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
       h1, .font-poppins {
         font-family: 'Poppins', sans-serif !important;
         font-weight: 700 !important;
