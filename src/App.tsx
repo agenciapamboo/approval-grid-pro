@@ -14,7 +14,9 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ContentGrid = lazy(() => import("./pages/ContentGrid"));
 const AgencyContentManager = lazy(() => import("./pages/AgencyContentManager"));
-
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Success = lazy(() => import("./pages/Success"));
+const MySubscription = lazy(() => import("./pages/MySubscription"));
 const HeroDemo = lazy(() => import("./pages/HeroDemo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const CreativeRequests = lazy(() => import("./pages/CreativeRequests"));
@@ -48,6 +50,9 @@ const App = () => (
               <Route path="/auth/forgot-password" element={<ForgotPassword />} />
               <Route path="/linkderecuperacao" element={<ResetPassword />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/planos" element={<Pricing />} />
+              <Route path="/success" element={<Success />} />
+              <Route path="/minha-assinatura" element={<MySubscription />} />
               <Route path="/agency/client/:clientId" element={<AgencyContentManager />} />
               <Route path="/agency/creative-requests" element={<CreativeRequests />} />
               <Route path="/agency/creative-requests/:clientId" element={<CreativeRequests />} />
