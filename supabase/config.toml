@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.notify-ip-unblock]
 verify_jwt = false
 
+[functions.subscription-enforcement]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 
