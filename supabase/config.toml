@@ -15,5 +15,8 @@ verify_jwt = false
 [functions.notify-ip-unblock]
 verify_jwt = false
 
+[functions.stripe-webhook]
+verify_jwt = false
+
 [functions.create-billing-portal]
 verify_jwt = true
