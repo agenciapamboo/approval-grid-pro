@@ -1,5 +1,8 @@
 project_id = "sgarwrreywadxsodnxng"
 
+[functions.create-checkout]
+verify_jwt = true
+
 [functions.exchange-facebook-token]
 verify_jwt = false
 
