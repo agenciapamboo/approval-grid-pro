@@ -781,44 +781,119 @@ export type Database = {
           },
         ]
       }
+      plan_entitlements: {
+        Row: {
+          created_at: string | null
+          creatives_limit: number | null
+          global_agenda: boolean | null
+          graphics_approval: boolean | null
+          history_days: number
+          id: string
+          plan: string
+          posts_limit: number | null
+          supplier_link: boolean | null
+          team_kanban: boolean | null
+          team_members_limit: number | null
+          team_notifications: boolean | null
+          updated_at: string | null
+          whatsapp_support: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          creatives_limit?: number | null
+          global_agenda?: boolean | null
+          graphics_approval?: boolean | null
+          history_days: number
+          id?: string
+          plan: string
+          posts_limit?: number | null
+          supplier_link?: boolean | null
+          team_kanban?: boolean | null
+          team_members_limit?: number | null
+          team_notifications?: boolean | null
+          updated_at?: string | null
+          whatsapp_support?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          creatives_limit?: number | null
+          global_agenda?: boolean | null
+          graphics_approval?: boolean | null
+          history_days?: number
+          id?: string
+          plan?: string
+          posts_limit?: number | null
+          supplier_link?: boolean | null
+          team_kanban?: boolean | null
+          team_members_limit?: number | null
+          team_notifications?: boolean | null
+          updated_at?: string | null
+          whatsapp_support?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accepted_terms_at: string | null
           agency_id: string | null
+          billing_cycle: string | null
           client_id: string | null
           created_at: string
+          current_period_end: string | null
+          delinquent: boolean | null
+          grace_period_end: string | null
           id: string
           is_active: boolean
+          is_pro: boolean | null
           name: string
           plan: string | null
           plan_renewal_date: string | null
           role: Database["public"]["Enums"]["user_role"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
           updated_at: string
         }
         Insert: {
           accepted_terms_at?: string | null
           agency_id?: string | null
+          billing_cycle?: string | null
           client_id?: string | null
           created_at?: string
+          current_period_end?: string | null
+          delinquent?: boolean | null
+          grace_period_end?: string | null
           id: string
           is_active?: boolean
+          is_pro?: boolean | null
           name: string
           plan?: string | null
           plan_renewal_date?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Update: {
           accepted_terms_at?: string | null
           agency_id?: string | null
+          billing_cycle?: string | null
           client_id?: string | null
           created_at?: string
+          current_period_end?: string | null
+          delinquent?: boolean | null
+          grace_period_end?: string | null
           id?: string
           is_active?: boolean
+          is_pro?: boolean | null
           name?: string
           plan?: string | null
           plan_renewal_date?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1303,6 +1378,22 @@ export type Database = {
           user_agents: string[]
         }[]
       }
+      get_user_entitlements: {
+        Args: { user_id: string }
+        Returns: {
+          creatives_limit: number
+          global_agenda: boolean
+          graphics_approval: boolean
+          history_days: number
+          plan: string
+          posts_limit: number
+          supplier_link: boolean
+          team_kanban: boolean
+          team_members_limit: number
+          team_notifications: boolean
+          whatsapp_support: boolean
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1323,6 +1414,7 @@ export type Database = {
           is_permanent: boolean
         }[]
       }
+      is_subscription_active: { Args: { user_id: string }; Returns: boolean }
       log_validation_attempt: {
         Args: {
           p_ip_address: string

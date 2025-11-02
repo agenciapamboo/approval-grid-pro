@@ -69,8 +69,9 @@ export type StripePriceInterval = 'monthly' | 'annual';
  */
 export const getPriceLookupKey = (plan: StripePlan, interval: StripePriceInterval): string | null => {
   const product = STRIPE_PRODUCTS[plan];
-  if (!product || product.free) return null;
-  return (product.prices as any)?.[interval]?.lookup_key || null;
+  if ('free' in product && product.free) return null;
+  if (!('prices' in product)) return null;
+  return product.prices?.[interval]?.lookup_key || null;
 };
 
 /**
@@ -84,5 +85,6 @@ export const getProductId = (plan: StripePlan): string => {
  * Check if a plan is free
  */
 export const isFreePlan = (plan: StripePlan): boolean => {
-  return STRIPE_PRODUCTS[plan].free === true;
+  const product = STRIPE_PRODUCTS[plan];
+  return 'free' in product && product.free === true;
 };
