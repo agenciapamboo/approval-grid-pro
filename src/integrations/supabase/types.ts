@@ -835,12 +835,22 @@ export type Database = {
       profiles: {
         Row: {
           accepted_terms_at: string | null
+          account_type: string | null
+          address_city: string | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
           agency_id: string | null
+          agency_name: string | null
           billing_cycle: string | null
           client_id: string | null
           created_at: string
           current_period_end: string | null
           delinquent: boolean | null
+          document: string | null
           grace_period_end: string | null
           id: string
           is_active: boolean
@@ -848,20 +858,34 @@ export type Database = {
           name: string
           plan: string | null
           plan_renewal_date: string | null
+          responsible_name: string | null
           role: Database["public"]["Enums"]["user_role"]
+          selected_plan: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_end_date: string | null
           subscription_status: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           accepted_terms_at?: string | null
+          account_type?: string | null
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           agency_id?: string | null
+          agency_name?: string | null
           billing_cycle?: string | null
           client_id?: string | null
           created_at?: string
           current_period_end?: string | null
           delinquent?: boolean | null
+          document?: string | null
           grace_period_end?: string | null
           id: string
           is_active?: boolean
@@ -869,20 +893,34 @@ export type Database = {
           name: string
           plan?: string | null
           plan_renewal_date?: string | null
+          responsible_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          selected_plan?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
           subscription_status?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           accepted_terms_at?: string | null
+          account_type?: string | null
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           agency_id?: string | null
+          agency_name?: string | null
           billing_cycle?: string | null
           client_id?: string | null
           created_at?: string
           current_period_end?: string | null
           delinquent?: boolean | null
+          document?: string | null
           grace_period_end?: string | null
           id?: string
           is_active?: boolean
@@ -890,11 +928,15 @@ export type Database = {
           name?: string
           plan?: string | null
           plan_renewal_date?: string | null
+          responsible_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          selected_plan?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
           subscription_status?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
