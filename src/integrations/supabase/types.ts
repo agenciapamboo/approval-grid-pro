@@ -853,6 +853,8 @@ export type Database = {
           document: string | null
           grace_period_end: string | null
           id: string
+          instagram_handle: string | null
+          instagram_verified: boolean | null
           is_active: boolean
           is_pro: boolean | null
           name: string
@@ -888,6 +890,8 @@ export type Database = {
           document?: string | null
           grace_period_end?: string | null
           id: string
+          instagram_handle?: string | null
+          instagram_verified?: boolean | null
           is_active?: boolean
           is_pro?: boolean | null
           name: string
@@ -923,6 +927,8 @@ export type Database = {
           document?: string | null
           grace_period_end?: string | null
           id?: string
+          instagram_handle?: string | null
+          instagram_verified?: boolean | null
           is_active?: boolean
           is_pro?: boolean | null
           name?: string

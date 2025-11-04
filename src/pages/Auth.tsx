@@ -36,13 +36,19 @@ const step1Schema = z.object({
     .regex(/[^A-Za-z0-9]/, { message: "A senha deve conter pelo menos um caractere especial" }),
 });
 
-// Step 2: Business data
-const step2Schema = z.object({
+// Step 2: Business data - dynamic validation based on account type
+const createStep2Schema = (accountType: 'agency' | 'creator') => z.object({
   accountType: z.enum(['agency', 'creator'], { message: "Selecione o tipo de conta" }),
   agencyName: z.string().trim().min(2, { message: "Nome da agência/creator é obrigatório" }),
   responsibleName: z.string().trim().min(2, { message: "Nome do responsável é obrigatório" }),
   whatsapp: z.string().trim().min(10, { message: "WhatsApp inválido" }),
-  document: z.string().trim().min(11, { message: "CPF/CNPJ inválido" }),
+  document: accountType === 'creator' 
+    ? z.string().trim().length(11, { message: "Creators devem usar apenas CPF (11 dígitos)" })
+    : z.string().trim().min(11, { message: "CPF/CNPJ inválido" }),
+  instagramHandle: accountType === 'creator'
+    ? z.string().trim().min(1, { message: "Instagram é obrigatório para creators" })
+        .regex(/^@?[\w.]+$/, { message: "Instagram inválido (use apenas letras, números, . e _)" })
+    : z.string().optional(),
   addressZip: z.string().trim().min(8, { message: "CEP inválido" }),
   addressStreet: z.string().trim().min(3, { message: "Endereço é obrigatório" }),
   addressNumber: z.string().trim().min(1, { message: "Número é obrigatório" }),
@@ -82,6 +88,7 @@ const Auth = () => {
   const [addressNeighborhood, setAddressNeighborhood] = useState("");
   const [addressCity, setAddressCity] = useState("");
   const [addressState, setAddressState] = useState("");
+  const [instagramHandle, setInstagramHandle] = useState("");
   
   // Step 3: Plan selection
   const [selectedPlan, setSelectedPlan] = useState<StripePlan>('creator');
@@ -121,12 +128,14 @@ const Auth = () => {
         }
         setCurrentStep(2);
       } else if (currentStep === 2) {
+        const step2Schema = createStep2Schema(accountType);
         const validation = step2Schema.safeParse({
           accountType,
           agencyName,
           responsibleName,
           whatsapp,
           document,
+          instagramHandle,
           addressZip,
           addressStreet,
           addressNumber,
@@ -184,6 +193,7 @@ const Auth = () => {
           responsible_name: responsibleName,
           whatsapp,
           document,
+          instagram_handle: instagramHandle ? instagramHandle.replace('@', '') : null,
           address_zip: addressZip,
           address_street: addressStreet,
           address_number: addressNumber,
@@ -465,17 +475,44 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="document">CPF/CNPJ</Label>
+                        <Label htmlFor="document">{accountType === 'creator' ? 'CPF' : 'CPF/CNPJ'}</Label>
                         <Input
                           id="document"
                           value={document}
-                          onChange={(e) => setDocument(e.target.value)}
-                          placeholder="000.000.000-00"
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            if (accountType === 'creator' && value.length > 11) return;
+                            setDocument(value);
+                          }}
+                          placeholder={accountType === 'creator' ? '00000000000' : '000.000.000-00'}
+                          required
+                          disabled={loading}
+                          maxLength={accountType === 'creator' ? 11 : 14}
+                        />
+                        {accountType === 'creator' && (
+                          <p className="text-xs text-muted-foreground">
+                            Apenas CPF (pessoa física)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {accountType === 'creator' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram">Instagram</Label>
+                        <Input
+                          id="instagram"
+                          value={instagramHandle}
+                          onChange={(e) => setInstagramHandle(e.target.value)}
+                          placeholder="@seuusuario"
                           required
                           disabled={loading}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Apenas contas pessoais ou de criador de conteúdo são aceitas (não empresas)
+                        </p>
                       </div>
-                    </div>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="addressZip">CEP</Label>
                       <Input
