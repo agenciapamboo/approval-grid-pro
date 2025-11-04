@@ -430,23 +430,23 @@ const Auth = () => {
                       <RadioGroup value={accountType} onValueChange={(v) => setAccountType(v as 'agency' | 'creator')}>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="agency" id="agency" />
-                          <Label htmlFor="agency" className="cursor-pointer">Agência</Label>
+                          <Label htmlFor="agency" className="cursor-pointer">Influencer</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="creator" id="creator-type" />
-                          <Label htmlFor="creator-type" className="cursor-pointer">Creator Individual</Label>
+                          <Label htmlFor="creator-type" className="cursor-pointer">Creator</Label>
                         </div>
                       </RadioGroup>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="agencyName">
-                        {accountType === 'agency' ? 'Nome da Agência' : 'Nome Profissional'}
+                        {accountType === 'agency' ? 'Nome do Influencer' : 'Nome do Creator'}
                       </Label>
                       <Input
                         id="agencyName"
                         value={agencyName}
                         onChange={(e) => setAgencyName(e.target.value)}
-                        placeholder={accountType === 'agency' ? 'Sua Agência' : 'Seu Nome Profissional'}
+                        placeholder={accountType === 'agency' ? 'Seu Nome como Influencer' : 'Seu Nome como Creator'}
                         required
                         disabled={loading}
                       />
