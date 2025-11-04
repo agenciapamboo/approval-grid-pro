@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, User, LogOut, Sun, Moon } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { useTheme } from "next-themes";
@@ -12,6 +12,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: AppHeaderProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
@@ -38,8 +39,8 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
               { title: "Sair", icon: LogOut },
             ]}
             onChange={(index) => {
-              if (index === 0 && onProfileClick) {
-                onProfileClick();
+              if (index === 0) {
+                navigate("/minha-conta");
               } else if (index === 1) {
                 setTheme(resolvedTheme === "dark" ? "light" : "dark");
               } else if (index === 2 && onSignOut) {

@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Check } from "lucide-react";
 import { createInitialUsers } from "@/lib/createUsers";
 import { z } from "zod";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { STRIPE_PRODUCTS, StripePlan, StripePriceInterval } from "@/lib/stripe-config";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const authSchema = z.object({
   email: z
@@ -42,6 +44,9 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [creatingUsers, setCreatingUsers] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<StripePlan>('creator');
+  const [billingCycle, setBillingCycle] = useState<StripePriceInterval>('monthly');
+  const [step, setStep] = useState<'auth' | 'plan'>(isSignUp ? 'auth' : 'auth');
 
   const handleCreateUsers = async () => {
     setCreatingUsers(true);
@@ -87,7 +92,8 @@ const Auth = () => {
       }
 
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Primeiro cadastrar o usuário
+        const { data: authData, error } = await supabase.auth.signUp({
           email: validation.data.email,
           password: validation.data.password,
           options: {
@@ -106,11 +112,35 @@ const Auth = () => {
           throw error;
         }
 
-        toast({
-          title: "Conta criada!",
-          description: "Você já pode fazer login.",
-        });
-        setIsSignUp(false);
+        if (!authData.user) {
+          throw new Error("Erro ao criar conta");
+        }
+
+        // Se selecionou plano gratuito, finalizar
+        if (selectedPlan === 'creator') {
+          toast({
+            title: "Conta criada!",
+            description: "Você já pode fazer login.",
+          });
+          setIsSignUp(false);
+          setStep('auth');
+        } else {
+          // Criar checkout session para plano pago
+          const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
+            body: {
+              plan: selectedPlan,
+              billing_cycle: billingCycle,
+            },
+          });
+
+          if (checkoutError) throw checkoutError;
+
+          if (checkoutData?.url) {
+            window.location.href = checkoutData.url;
+          } else {
+            throw new Error("URL de checkout não recebida");
+          }
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: validation.data.email,
@@ -164,12 +194,81 @@ const Auth = () => {
             <CardTitle>{isSignUp ? "Criar conta" : "Entrar"}</CardTitle>
             <CardDescription>
               {isSignUp
-                ? "Preencha os dados para criar sua conta"
+                ? "Escolha seu plano e crie sua conta"
                 : "Entre com suas credenciais para acessar"}
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleAuth}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Seleção de Plano - apenas no cadastro */}
+              {isSignUp && (
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-lg font-semibold">Selecione seu plano</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={billingCycle === 'monthly' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setBillingCycle('monthly')}
+                      >
+                        Mensal
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={billingCycle === 'annual' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setBillingCycle('annual')}
+                      >
+                        Anual
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <RadioGroup value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as StripePlan)}>
+                    <div className="space-y-3">
+                      {Object.entries(STRIPE_PRODUCTS).map(([key, product]) => {
+                        const isCreator = 'free' in product && product.free;
+                        const price = !isCreator && 'prices' in product ? product.prices[billingCycle] : null;
+                        
+                        return (
+                          <div
+                            key={key}
+                            className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                              selectedPlan === key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => setSelectedPlan(key as StripePlan)}
+                          >
+                            <RadioGroupItem value={key} id={key} />
+                            <div className="flex-1">
+                              <Label htmlFor={key} className="cursor-pointer font-semibold">
+                                {product.name}
+                              </Label>
+                              <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                              {price && (
+                                <p className="text-lg font-bold mt-2">
+                                  R$ {(price.amount / 100).toFixed(2)}
+                                  <span className="text-sm font-normal text-muted-foreground">
+                                    /{billingCycle === 'monthly' ? 'mês' : 'ano'}
+                                  </span>
+                                </p>
+                              )}
+                              {isCreator && (
+                                <p className="text-lg font-bold text-success mt-2">Gratuito</p>
+                              )}
+                            </div>
+                            {selectedPlan === key && (
+                              <Check className="h-5 w-5 text-primary" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Campos de cadastro/login */}
               {isSignUp && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome completo</Label>
@@ -225,7 +324,7 @@ const Auth = () => {
                     Processando...
                   </>
                 ) : isSignUp ? (
-                  "Criar conta"
+                  selectedPlan === 'creator' ? 'Criar conta gratuita' : 'Continuar para pagamento'
                 ) : (
                   "Entrar"
                 )}
@@ -234,7 +333,10 @@ const Auth = () => {
                 type="button"
                 variant="ghost"
                 className="w-full"
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setStep('auth');
+                }}
                 disabled={loading}
               >
                 {isSignUp
