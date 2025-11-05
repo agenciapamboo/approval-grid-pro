@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -26,6 +26,9 @@ import { TestNotificationButton } from "@/components/admin/TestNotificationButto
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
 import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
+import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
+import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -703,25 +706,43 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Clientes - Para Agency Admin e planos específicos */}
+        {/* Painel de Agência com Tabs */}
         {(profile?.role === 'agency_admin' || 
           ['creator', 'eugencia', 'social_midia', 'agencia_full'].includes(profile?.plan || '') ||
-          (profile?.role === 'agency_admin' && !profile?.plan)) && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-bold">Clientes</h3>
-              </div>
-              <div className="flex gap-2">
-                {profile?.role === 'agency_admin' && profile?.agency_id && (
-                  <AddClientDialog 
-                    agencyId={profile.agency_id} 
-                    onClientAdded={fetchClients} 
-                  />
-                )}
-              </div>
-            </div>
+          (profile?.role === 'agency_admin' && !profile?.plan)) && profile?.agency_id && (
+          <Tabs defaultValue="clients" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="clients">
+                <Building2 className="w-4 h-4 mr-2" />
+                Clientes
+              </TabsTrigger>
+              <TabsTrigger value="calendar">
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Agenda Geral
+              </TabsTrigger>
+              <TabsTrigger value="team">
+                <Users className="w-4 h-4 mr-2" />
+                Equipe
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Aba de Clientes */}
+            <TabsContent value="clients">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-6 h-6 text-primary" />
+                    <h3 className="text-2xl font-bold">Clientes</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    {profile?.role === 'agency_admin' && profile?.agency_id && (
+                      <AddClientDialog 
+                        agencyId={profile.agency_id} 
+                        onClientAdded={fetchClients} 
+                      />
+                    )}
+                  </div>
+                </div>
             {clients.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -901,12 +922,24 @@ const Dashboard = () => {
                           </div>
                         </div>
                       </CardContent>
-                    </Card>
+                  </Card>
                   );
                 })}
               </div>
             )}
-          </div>
+              </div>
+            </TabsContent>
+
+            {/* Aba de Agenda Geral */}
+            <TabsContent value="calendar">
+              <AgencyCalendar agencyId={profile.agency_id!} />
+            </TabsContent>
+
+            {/* Aba de Equipe */}
+            <TabsContent value="team">
+              <TeamMembersManager agencyId={profile.agency_id!} />
+            </TabsContent>
+          </Tabs>
         )}
 
 
