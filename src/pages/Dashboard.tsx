@@ -151,14 +151,15 @@ const Dashboard = () => {
         return;
       }
 
-      // Buscar role do usuário
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Buscar role do usuário (com precedência correta via função do backend)
+      const { data: userRoleData, error: roleError } = await supabase
+        .rpc('get_user_role', { _user_id: user.id });
 
-      const userRole = roleData?.role || 'client_user';
+      if (roleError) {
+        console.error("Erro ao obter role do usuário:", roleError);
+      }
+
+      const userRole = (userRoleData as string) || 'client_user';
       const enrichedProfile = { ...profileData, role: userRole };
       setProfile(enrichedProfile as any);
 
