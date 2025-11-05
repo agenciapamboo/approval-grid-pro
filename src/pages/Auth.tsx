@@ -34,6 +34,10 @@ const step1Schema = z.object({
     .regex(/[a-z]/, { message: "A senha deve conter pelo menos uma letra minúscula" })
     .regex(/[0-9]/, { message: "A senha deve conter pelo menos um número" })
     .regex(/[^A-Za-z0-9]/, { message: "A senha deve conter pelo menos um caractere especial" }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
 // Step 2: Business data - dynamic validation based on account type
@@ -73,6 +77,7 @@ const Auth = () => {
   // Step 1: Personal data
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   
   // Step 2: Business data
@@ -122,7 +127,7 @@ const Auth = () => {
     setLoading(true);
     try {
       if (currentStep === 1) {
-        const validation = step1Schema.safeParse({ name, email, password });
+        const validation = step1Schema.safeParse({ name, email, password, confirmPassword });
         if (!validation.success) {
           throw new Error(validation.error.errors[0].message);
         }
@@ -163,6 +168,17 @@ const Auth = () => {
   const handleSignUp = async () => {
     setLoading(true);
     try {
+      // Check for duplicate CPF/CNPJ
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('document', document)
+        .maybeSingle();
+
+      if (existingProfile) {
+        throw new Error("Este CPF/CNPJ já está cadastrado.");
+      }
+
       // Create user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -202,6 +218,7 @@ const Auth = () => {
           address_city: addressCity,
           address_state: addressState,
           selected_plan: selectedPlan,
+          plan: selectedPlan,
         })
         .eq('id', authData.user.id);
 
@@ -257,7 +274,7 @@ const Auth = () => {
         throw new Error(validation.error.errors[0].message);
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: validation.data.email,
         password: validation.data.password,
       });
@@ -269,11 +286,24 @@ const Auth = () => {
         throw new Error("Erro ao fazer login. Tente novamente.");
       }
 
+      // Get user profile to check role
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
       toast({
         title: "Login realizado!",
         description: "Redirecionando...",
       });
-      navigate("/");
+
+      // Redirect based on role
+      if (profileData?.role === 'super_admin') {
+        navigate("/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -418,6 +448,19 @@ const Auth = () => {
                       <p className="text-xs text-muted-foreground">
                         Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial
                       </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        disabled={loading}
+                        minLength={8}
+                      />
                     </div>
                   </>
                 )}

@@ -806,7 +806,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Users className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-bold">Agências</h3>
+                <h3 className="text-2xl font-bold">Usuários Cadastrados</h3>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -819,64 +819,120 @@ const Dashboard = () => {
                 <AddAgencyDialog onAgencyAdded={checkAuth} />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {agencies.map((agency) => (
-                <Card key={agency.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        {agency.logo_url && (
-                          <div className="mb-3">
-                            <img 
-                              src={agency.logo_url} 
-                              alt={agency.name}
-                              className="h-16 max-w-[200px] object-contain"
-                            />
-                          </div>
-                        )}
-                        <div>
-                          <CardTitle className="text-lg truncate">{agency.name}</CardTitle>
-                          <CardDescription className="text-xs mt-1 truncate">
-                            Slug: {agency.slug}
-                          </CardDescription>
+
+            {/* Blocos de Planos */}
+            <div className="space-y-6">
+              {(() => {
+                // Group profiles by plan
+                const planGroups: Record<string, any[]> = {
+                  'creator': [],
+                  'eugencia': [],
+                  'socialMidia': [],
+                  'fullService': [],
+                  'unlimited': []
+                };
+
+                // This is just for UI organization - actual data access controlled by RLS
+                agencies.forEach(agency => {
+                  const plan = agency.plan || 'unlimited';
+                  if (planGroups[plan]) {
+                    planGroups[plan].push(agency);
+                  } else {
+                    planGroups['unlimited'].push(agency);
+                  }
+                });
+
+                const planConfigs = [
+                  { key: 'creator', title: 'Influencers / Creator', icon: '👤' },
+                  { key: 'eugencia', title: 'Agência Individual (Eugência)', icon: '🏢' },
+                  { key: 'socialMidia', title: 'Agência de Social Mídia', icon: '📱' },
+                  { key: 'fullService', title: 'Agência Full Service', icon: '🚀' },
+                  { key: 'unlimited', title: 'Sem Plano (Recursos Ilimitados)', icon: '♾️' }
+                ];
+
+                return planConfigs.map(({ key, title, icon }) => {
+                  const items = planGroups[key] || [];
+                  
+                  return (
+                    <Card key={key}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2">
+                            <span className="text-2xl">{icon}</span>
+                            {title}
+                          </CardTitle>
+                          <Badge variant="outline" className="text-lg px-3 py-1">
+                            {items.length} {items.length === 1 ? 'conta' : 'contas'}
+                          </Badge>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2 flex-shrink-0">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setOpenViewAgencyId(agency.id)}
-                          className="w-full justify-start"
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setOpenEditAgencyId(agency.id)}
-                          className="w-full justify-start"
-                        >
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteAgency(agency);
-                          }}
-                          className="w-full justify-start"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Remover
-                        </Button>
-                      </div>
-                    </div>
-                </CardHeader>
-                </Card>
-              ))}
+                      </CardHeader>
+                      {items.length > 0 && (
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {items.map((agency) => (
+                              <Card key={agency.id} className="hover:shadow-lg transition-shadow">
+                                <CardHeader>
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      {agency.logo_url && (
+                                        <div className="mb-3">
+                                          <img 
+                                            src={agency.logo_url} 
+                                            alt={agency.name}
+                                            className="h-16 max-w-[200px] object-contain"
+                                          />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <CardTitle className="text-lg truncate">{agency.name}</CardTitle>
+                                        <CardDescription className="text-xs mt-1 truncate">
+                                          Slug: {agency.slug}
+                                        </CardDescription>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-2 flex-shrink-0">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => setOpenViewAgencyId(agency.id)}
+                                        className="w-full justify-start"
+                                      >
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        Ver
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => setOpenEditAgencyId(agency.id)}
+                                        className="w-full justify-start"
+                                      >
+                                        <Pencil className="w-4 h-4 mr-2" />
+                                        Editar
+                                      </Button>
+                                      <Button 
+                                        variant="destructive" 
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteAgency(agency);
+                                        }}
+                                        className="w-full justify-start"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Remover
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </CardHeader>
+                              </Card>
+                            ))}
+                          </div>
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                });
+              })()}
             </div>
           </div>
         )}
