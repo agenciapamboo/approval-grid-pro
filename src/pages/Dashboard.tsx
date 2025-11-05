@@ -867,17 +867,7 @@ const Dashboard = () => {
                               variant="outline"
                               size="sm"
                               className="w-full justify-start"
-                              onClick={() => {
-                                setSelectedClient(client);
-                                setViewClientOpen(true);
-                                // Aguardar o dialog abrir e então ir para aba de logs
-                                setTimeout(() => {
-                                  const logsTab = document.querySelector('[value="logs"]');
-                                  if (logsTab instanceof HTMLElement) {
-                                    logsTab.click();
-                                  }
-                                }, 100);
-                              }}
+                              onClick={() => navigate(`/client/${client.id}/history`)}
                             >
                               <HistoryIcon className="w-4 h-4 mr-2" />
                               Histórico

@@ -27,6 +27,7 @@ const DataDeletion = lazy(() => import("./pages/DataDeletion"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const BlockedIPs = lazy(() => import("./pages/BlockedIPs"));
+const ClientHistory = lazy(() => import("./pages/ClientHistory"));
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/central-de-ajuda" element={<HelpCenter />} />
               <Route path="/admin/blocked-ips" element={<BlockedIPs />} />
+              <Route path="/client/:clientId/history" element={<ClientHistory />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
