@@ -168,14 +168,23 @@ const Dashboard = () => {
           setAgencies(enrichedAgencies);
         }
 
-        // Buscar todos os profiles
+        // Buscar todos os profiles com informações de agência
         const { data: profilesData } = await supabase
           .from("profiles")
-          .select("*")
+          .select(`
+            *,
+            user_roles(role),
+            agencies:agency_id(name)
+          `)
           .order("created_at", { ascending: false });
         
         if (profilesData) {
-          setAllProfiles(profilesData as Profile[]);
+          const enrichedProfiles = profilesData.map((p: any) => ({
+            ...p,
+            role: Array.isArray(p.user_roles) && p.user_roles.length > 0 ? p.user_roles[0].role : 'client_user',
+            agency_name: p.agencies?.name || null
+          }));
+          setAllProfiles(enrichedProfiles as any);
         }
       } else if (profileData.role === 'agency_admin' && profileData.agency_id) {
         // Agency admin vê sua agência e clientes
