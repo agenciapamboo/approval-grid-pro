@@ -5,11 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ContentMedia } from "./ContentMedia";
@@ -33,6 +34,7 @@ interface ContentCardProps {
     channels?: string[];
     auto_publish?: boolean;
     published_at?: string | null;
+    supplier_link?: string | null;
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
@@ -58,6 +60,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
     return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
   });
   const [publishing, setPublishing] = useState(false);
+  const [supplierLink, setSupplierLink] = useState(content.supplier_link || "");
+  const [showSupplierDialog, setShowSupplierDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string, publishedAt?: string | null) => {
@@ -577,6 +581,73 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
     }
   };
 
+  const handleSaveSupplierLink = async () => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ supplier_link: supplierLink } as any)
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Link salvo",
+        description: "Link do fornecedor foi salvo com sucesso",
+      });
+
+      setShowSupplierDialog(false);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao salvar link:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar link do fornecedor",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadMedia = async () => {
+    try {
+      const { data: mediaData } = await supabase
+        .from("content_media")
+        .select("*")
+        .eq("content_id", content.id)
+        .order("order_index");
+
+      if (!mediaData || mediaData.length === 0) {
+        toast({
+          title: "Nenhuma mídia",
+          description: "Não há mídia disponível para download",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      mediaData.forEach((media, index) => {
+        const link = document.createElement('a');
+        link.href = media.src_url;
+        link.download = `${content.title}-${index + 1}`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      toast({
+        title: "Download iniciado",
+        description: `${mediaData.length} arquivo(s) em download`,
+      });
+    } catch (error) {
+      console.error("Erro ao baixar mídia:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar mídia",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -601,9 +672,17 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         <ImagePlus className="h-4 w-4 mr-2" />
                         Substituir imagem
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowDatePicker(true)}>
+                       <DropdownMenuItem onClick={() => setShowDatePicker(true)}>
                         <Calendar className="h-4 w-4 mr-2" />
                         Alterar data
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDownloadMedia}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Baixar mídia
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowSupplierDialog(true)}>
+                        <Link2 className="h-4 w-4 mr-2" />
+                        Link fornecedor
                       </DropdownMenuItem>
                       {content.status === 'changes_requested' && (
                         <DropdownMenuItem onClick={handleMarkAdjustmentDone}>
@@ -1001,6 +1080,38 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Reprovar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showSupplierDialog} onOpenChange={setShowSupplierDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link do Fornecedor</DialogTitle>
+            <DialogDescription>
+              Insira o link do Google Drive, iCloud ou outro serviço onde o fornecedor pode baixar os arquivos fechados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="https://drive.google.com/..."
+              value={supplierLink}
+              onChange={(e) => setSupplierLink(e.target.value)}
+            />
+            {content.supplier_link && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Link atual: <a href={content.supplier_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{content.supplier_link}</a>
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSupplierDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveSupplierLink}>
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Link
             </Button>
           </DialogFooter>
         </DialogContent>
