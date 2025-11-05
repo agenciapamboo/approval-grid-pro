@@ -209,9 +209,7 @@ export default function ClientHistory() {
                     <TableRow>
                       <TableHead>Título</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Data de Envio</TableHead>
-                      <TableHead>Data de Aprovação</TableHead>
-                      <TableHead>Data de Reprovação</TableHead>
+                      <TableHead>Data de envio para aprovação</TableHead>
                       <TableHead className="min-w-[300px]">Histórico</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -220,9 +218,7 @@ export default function ClientHistory() {
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">{log.title}</TableCell>
                         <TableCell>{getStatusBadge(log.status)}</TableCell>
-                        <TableCell>{formatDate(log.submitted_for_review_at)}</TableCell>
-                        <TableCell>{formatDate(log.approved_at)}</TableCell>
-                        <TableCell>{formatDate(log.rejected_at)}</TableCell>
+                        <TableCell>{formatDate(log.created_at)}</TableCell>
                         <TableCell>
                           {log.history.length === 0 ? (
                             <span className="text-muted-foreground">-</span>
