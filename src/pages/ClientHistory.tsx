@@ -208,9 +208,9 @@ export default function ClientHistory() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Título</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[180px]">Status</TableHead>
                       <TableHead>Data de envio para aprovação</TableHead>
-                      <TableHead className="min-w-[300px]">Histórico</TableHead>
+                      <TableHead className="w-[40%]">Histórico</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
