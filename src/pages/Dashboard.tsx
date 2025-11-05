@@ -28,6 +28,7 @@ import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager"
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
 import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
+import { ContentKanban } from "@/components/content/ContentKanban";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -711,14 +712,18 @@ const Dashboard = () => {
           ['creator', 'eugencia', 'social_midia', 'agencia_full'].includes(profile?.plan || '') ||
           (profile?.role === 'agency_admin' && !profile?.plan)) && profile?.agency_id && (
           <Tabs defaultValue="clients" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="clients">
                 <Building2 className="w-4 h-4 mr-2" />
                 Clientes
               </TabsTrigger>
+              <TabsTrigger value="kanban">
+                <FileImage className="w-4 h-4 mr-2" />
+                Kanban
+              </TabsTrigger>
               <TabsTrigger value="calendar">
                 <CalendarIcon className="w-4 h-4 mr-2" />
-                Agenda Geral
+                Agenda
               </TabsTrigger>
               <TabsTrigger value="team">
                 <Users className="w-4 h-4 mr-2" />
@@ -928,6 +933,11 @@ const Dashboard = () => {
               </div>
             )}
               </div>
+            </TabsContent>
+
+            {/* Aba de Kanban */}
+            <TabsContent value="kanban">
+              <ContentKanban agencyId={profile.agency_id!} />
             </TabsContent>
 
             {/* Aba de Agenda Geral */}
