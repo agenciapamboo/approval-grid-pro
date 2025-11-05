@@ -882,7 +882,11 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <ProfilesManager profiles={allProfiles} getRoleLabel={getRoleLabel} />
+            <ProfilesManager 
+              profiles={allProfiles} 
+              getRoleLabel={getRoleLabel}
+              onProfileUpdated={checkAuth}
+            />
           </div>
         )}
 
