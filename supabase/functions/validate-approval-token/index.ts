@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { notifySecurity } from "../_shared/internal-notifications.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +76,23 @@ serve(async (req) => {
         p_success: false,
         p_user_agent: userAgent
       });
+
+      // Enviar notificação de segurança sobre bloqueio de IP
+      await notifySecurity(
+        '🚨 IP Bloqueado por Tentativas Falhas',
+        `IP ${clientIP} foi bloqueado ${rateLimitData.is_permanent ? 'permanentemente' : 'temporariamente'}`,
+        {
+          ip_address: clientIP,
+          blocked_until: rateLimitData.blocked_until,
+          failed_attempts: rateLimitData.failed_attempts,
+          is_permanent: rateLimitData.is_permanent,
+          user_agent: userAgent,
+          token_prefix: token.substring(0, 10) + '...',
+          block_type: rateLimitData.is_permanent ? 'permanent' : 'temporary',
+          block_duration_minutes: rateLimitData.is_permanent ? null : 15
+        },
+        supabase
+      );
 
       if (rateLimitData.is_permanent) {
         // Bloqueio permanente (10+ tentativas)

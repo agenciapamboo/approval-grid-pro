@@ -24,6 +24,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
+import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -880,9 +881,10 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Contas Órfãs - Só para Super Admin */}
+        {/* Ferramentas e Configurações - Só para Super Admin */}
         {profile?.role === 'super_admin' && (
-          <div className="mt-8">
+          <div className="mt-8 space-y-6">
+            <SystemSettingsManager />
             <OrphanedAccountsManager />
           </div>
         )}

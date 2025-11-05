@@ -3,7 +3,7 @@
  * Para emails de erros, alertas e relatórios do sistema
  */
 
-const INTERNAL_EMAIL_WEBHOOK = 'https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos';
+// Webhook será buscado dinamicamente da tabela system_settings
 
 export type NotificationType = 
   | 'error'           // Erros críticos do sistema
@@ -23,10 +23,34 @@ export interface InternalNotification {
 }
 
 /**
+ * Busca o webhook URL da tabela de configurações do sistema
+ */
+async function getInternalWebhookUrl(supabaseClient: any): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'internal_webhook_url')
+      .single();
+
+    if (error || !data) {
+      console.warn('⚠️ Webhook URL não encontrado nas configurações, usando padrão');
+      return 'https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos';
+    }
+
+    return data.value;
+  } catch (error) {
+    console.error('❌ Erro ao buscar webhook URL:', error);
+    return 'https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos';
+  }
+}
+
+/**
  * Envia notificação interna via webhook N8N
  */
 export async function sendInternalNotification(
-  notification: InternalNotification
+  notification: InternalNotification,
+  supabaseClient?: any
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const payload = {
@@ -37,7 +61,13 @@ export async function sendInternalNotification(
 
     console.log(`📧 Enviando notificação interna [${notification.type}]: ${notification.subject}`);
 
-    const response = await fetch(INTERNAL_EMAIL_WEBHOOK, {
+    // Buscar webhook URL se supabaseClient foi fornecido
+    let webhookUrl = 'https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos';
+    if (supabaseClient) {
+      webhookUrl = await getInternalWebhookUrl(supabaseClient);
+    }
+
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +96,8 @@ export async function sendInternalNotification(
 export async function notifyError(
   source: string,
   error: Error | string,
-  details?: Record<string, any>
+  details?: Record<string, any>,
+  supabaseClient?: any
 ) {
   return sendInternalNotification({
     type: 'error',
@@ -78,7 +109,7 @@ export async function notifyError(
     },
     source,
     priority: 'critical',
-  });
+  }, supabaseClient);
 }
 
 /**
@@ -87,7 +118,8 @@ export async function notifyError(
 export async function notifyWarning(
   source: string,
   message: string,
-  details?: Record<string, any>
+  details?: Record<string, any>,
+  supabaseClient?: any
 ) {
   return sendInternalNotification({
     type: 'warning',
@@ -96,7 +128,7 @@ export async function notifyWarning(
     details,
     source,
     priority: 'high',
-  });
+  }, supabaseClient);
 }
 
 /**
@@ -105,7 +137,8 @@ export async function notifyWarning(
 export async function notifySecurity(
   subject: string,
   message: string,
-  details?: Record<string, any>
+  details?: Record<string, any>,
+  supabaseClient?: any
 ) {
   return sendInternalNotification({
     type: 'security',
@@ -114,7 +147,7 @@ export async function notifySecurity(
     details,
     source: 'security-system',
     priority: 'critical',
-  });
+  }, supabaseClient);
 }
 
 /**
@@ -123,7 +156,8 @@ export async function notifySecurity(
 export async function notifyReport(
   subject: string,
   message: string,
-  details?: Record<string, any>
+  details?: Record<string, any>,
+  supabaseClient?: any
 ) {
   return sendInternalNotification({
     type: 'report',
@@ -132,5 +166,5 @@ export async function notifyReport(
     details,
     source: 'reporting-system',
     priority: 'low',
-  });
+  }, supabaseClient);
 }
