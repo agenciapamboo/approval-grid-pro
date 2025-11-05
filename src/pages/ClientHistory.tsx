@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowUpDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, ArrowUpDown, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -18,6 +19,7 @@ interface ContentLog {
   submitted_for_review_at: string | null;
   approved_at: string | null;
   rejected_at: string | null;
+  is_available: boolean;
   history: Array<{
     type: 'comment' | 'adjustment' | 'rejection';
     text: string;
@@ -55,7 +57,15 @@ export default function ClientHistory() {
   const loadLogs = async () => {
     setLoading(true);
     
-    // Fetch contents
+    // Fetch contents with all IDs to check availability
+    const { data: allContentIds } = await supabase
+      .from("contents")
+      .select("id")
+      .eq("client_id", clientId);
+
+    const availableContentIds = new Set(allContentIds?.map(c => c.id) || []);
+    
+    // Fetch contents for logs
     const { data: contents, error: contentsError } = await supabase
       .from("contents")
       .select("id, title, status, created_at")
@@ -142,6 +152,7 @@ export default function ClientHistory() {
         submitted_for_review_at: submittedLog?.created_at || null,
         approved_at: approvedLog?.created_at || null,
         rejected_at: rejectedLog?.created_at || null,
+        is_available: availableContentIds.has(content.id),
         history,
       };
     });
@@ -204,7 +215,8 @@ export default function ClientHistory() {
               </p>
             ) : (
               <ScrollArea className="h-[600px]">
-                <Table>
+                <TooltipProvider>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Título</TableHead>
@@ -216,7 +228,29 @@ export default function ClientHistory() {
                   <TableBody>
                     {logs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.title}</TableCell>
+                        <TableCell className="font-medium">
+                          {log.is_available ? (
+                            <Link
+                              to={`/agency/client/${clientId}`}
+                              className="flex items-center gap-2 text-primary hover:underline"
+                            >
+                              {log.title}
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground">{log.title}</span>
+                                  <Badge variant="outline" className="text-xs">Indisponível</Badge>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Conteúdo expirado ou removido pela rotatividade do plano</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </TableCell>
                         <TableCell>{getStatusBadge(log.status)}</TableCell>
                         <TableCell>{formatDate(log.created_at)}</TableCell>
                         <TableCell>
@@ -248,6 +282,7 @@ export default function ClientHistory() {
                     ))}
                   </TableBody>
                 </Table>
+                </TooltipProvider>
               </ScrollArea>
             )}
           </CardContent>
