@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -862,6 +862,25 @@ const Dashboard = () => {
                             >
                               <Eye className="w-4 h-4 mr-2" />
                               Dados
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => {
+                                setSelectedClient(client);
+                                setViewClientOpen(true);
+                                // Aguardar o dialog abrir e então ir para aba de logs
+                                setTimeout(() => {
+                                  const logsTab = document.querySelector('[value="logs"]');
+                                  if (logsTab instanceof HTMLElement) {
+                                    logsTab.click();
+                                  }
+                                }, 100);
+                              }}
+                            >
+                              <HistoryIcon className="w-4 h-4 mr-2" />
+                              Histórico
                             </Button>
                             {profile?.role === 'agency_admin' && (
                               <>
