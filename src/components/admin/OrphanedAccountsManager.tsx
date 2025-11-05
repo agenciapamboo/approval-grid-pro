@@ -24,32 +24,11 @@ export const OrphanedAccountsManager = () => {
   const fetchOrphanedAccounts = async () => {
     setLoading(true);
     try {
-      // Buscar todos os usuários do auth
-      const { data, error: usersError } = await supabase.auth.admin.listUsers();
-      
-      if (usersError) throw usersError;
+      // Buscar contas órfãs via função de backend (usa service role com segurança)
+      const { data, error } = await supabase.functions.invoke('list-orphaned-accounts');
+      if (error) throw error;
 
-      const users = data?.users || [];
-
-      // Buscar todos os perfis
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id');
-      
-      if (profilesError) throw profilesError;
-
-      const profileIds = new Set((profiles || []).map((p: any) => p.id));
-      
-      // Filtrar contas órfãs
-      const orphans = users
-        .filter(user => !profileIds.has(user.id))
-        .map(user => ({
-          id: user.id,
-          email: user.email || 'sem-email',
-          created_at: user.created_at,
-          user_metadata: user.user_metadata
-        }));
-
+      const orphans = (data?.orphaned_accounts || []) as OrphanedAccount[];
       setOrphanedAccounts(orphans);
       
       if (orphans.length === 0) {
