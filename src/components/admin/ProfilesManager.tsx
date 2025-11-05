@@ -25,27 +25,25 @@ export function ProfilesManager({ profiles, getRoleLabel }: ProfilesManagerProps
   // Group profiles by plan
   const planGroups: Record<string, Profile[]> = {
     'creator': [],
-    'eugencia': [],
-    'socialMidia': [],
-    'fullService': [],
+    'free': [],
     'unlimited': []
   };
 
   // Group all profiles by their plan
   profiles.forEach(prof => {
-    const plan = prof.plan || 'creator';
+    const plan = prof.plan || 'free';
     if (planGroups[plan]) {
       planGroups[plan].push(prof);
     } else {
+      // Se não reconhecer o plano, adiciona em unlimited
+      if (!planGroups['unlimited']) planGroups['unlimited'] = [];
       planGroups['unlimited'].push(prof);
     }
   });
 
   const planConfigs = [
     { key: 'creator', title: 'Influencers / Creator', icon: '👤' },
-    { key: 'eugencia', title: 'Agência Individual (Eugência)', icon: '🏢' },
-    { key: 'socialMidia', title: 'Agência de Social Mídia', icon: '📱' },
-    { key: 'fullService', title: 'Agência Full Service', icon: '🚀' },
+    { key: 'free', title: 'Plano Gratuito', icon: '🆓' },
     { key: 'unlimited', title: 'Sem Plano (Recursos Ilimitados)', icon: '♾️' }
   ];
 

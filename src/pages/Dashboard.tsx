@@ -122,12 +122,12 @@ const Dashboard = () => {
 
       setUser(user);
 
-      // Fetch profile
+      // Fetch profile e role
       const { data: profileData, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -140,12 +140,32 @@ const Dashboard = () => {
         return;
       }
 
-      setProfile(profileData);
+      if (!profileData) {
+        console.error("Profile not found");
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Perfil não encontrado.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Buscar role do usuário
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const userRole = roleData?.role || 'client_user';
+      const enrichedProfile = { ...profileData, role: userRole };
+      setProfile(enrichedProfile as any);
 
       // Carregar dados baseado no role
       // NOTE: These client-side role checks are for UX only (showing/hiding UI elements).
       // All actual authorization is enforced server-side via RLS policies.
-      if (profileData.role === 'super_admin') {
+      if (userRole === 'super_admin') {
         // Super admin vê todas agências
         const { data: agenciesData } = await supabase
           .from("agencies")
@@ -186,21 +206,28 @@ const Dashboard = () => {
           }));
           setAllProfiles(enrichedProfiles as any);
         }
-      } else if (profileData.role === 'agency_admin' && profileData.agency_id) {
+      } else if (userRole === 'agency_admin' && enrichedProfile.agency_id) {
         // Agency admin vê sua agência e clientes
-        const { data: agencyData } = await supabase
+        const { data: agencyData, error: agencyError } = await supabase
           .from("agencies")
           .select("*")
-          .eq("id", profileData.agency_id)
-          .single();
+          .eq("id", enrichedProfile.agency_id)
+          .maybeSingle();
         
+        if (agencyError) {
+          console.error("Error fetching agency:", agencyError);
+        }
         if (agencyData) setAgencies([agencyData]);
 
-        const { data: clientsData } = await supabase
+        const { data: clientsData, error: clientsError } = await supabase
           .from("clients")
           .select("*")
-          .eq("agency_id", profileData.agency_id)
+          .eq("agency_id", enrichedProfile.agency_id)
           .order("name");
+        
+        if (clientsError) {
+          console.error("Error fetching clients:", clientsError);
+        }
         
         if (clientsData) {
           setClients(clientsData);
@@ -235,14 +262,17 @@ const Dashboard = () => {
           
           setClientNotifications(notifications);
         }
-      } else if (profileData.role === 'client_user' && profileData.client_id) {
+      } else if (userRole === 'client_user' && enrichedProfile.client_id) {
         // Client user vê seu cliente
-        const { data: clientData } = await supabase
+        const { data: clientData, error: clientError } = await supabase
           .from("clients")
           .select("*, agencies(*)")
-          .eq("id", profileData.client_id)
-          .single();
+          .eq("id", enrichedProfile.client_id)
+          .maybeSingle();
         
+        if (clientError) {
+          console.error("Error fetching client:", clientError);
+        }
         if (clientData) {
           setClients([clientData]);
           if (clientData.agencies) {
@@ -251,11 +281,15 @@ const Dashboard = () => {
         }
 
         // Buscar conteúdos do cliente
-        const { data: contentsData } = await supabase
+        const { data: contentsData, error: contentsError } = await supabase
           .from("contents")
           .select("*")
-          .eq("client_id", profileData.client_id)
+          .eq("client_id", enrichedProfile.client_id)
           .order("date", { ascending: false });
+        
+        if (contentsError) {
+          console.error("Error fetching contents:", contentsError);
+        }
         
         if (contentsData) {
           setContents(contentsData);
