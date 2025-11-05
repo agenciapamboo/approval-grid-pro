@@ -156,10 +156,10 @@ Deno.serve(async (req) => {
 
     // Enviar notificação via N8N webhook se houver contas órfãs detectadas
     if (results.orphaned_found > 0) {
-      const N8N_WEBHOOK_URL = Deno.env.get('N8N_WEBHOOK_URL')
+      const N8N_INTERNAL_EMAIL_WEBHOOK = 'https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos'
       const N8N_WEBHOOK_TOKEN = Deno.env.get('N8N_WEBHOOK_TOKEN')
 
-      if (N8N_WEBHOOK_URL) {
+      if (N8N_INTERNAL_EMAIL_WEBHOOK) {
         try {
           const n8nPayload = {
             event: 'orphaned_accounts_detected',
@@ -175,9 +175,9 @@ Deno.serve(async (req) => {
             failed_accounts: results.failed
           }
 
-          console.log('📧 Enviando notificação para N8N...')
+          console.log('📧 Enviando notificação para N8N webhook de emails internos...')
           
-          const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+          const n8nResponse = await fetch(N8N_INTERNAL_EMAIL_WEBHOOK, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -194,8 +194,6 @@ Deno.serve(async (req) => {
         } catch (n8nError) {
           console.error('❌ Erro ao enviar notificação para N8N:', n8nError)
         }
-      } else {
-        console.log('⚠️  N8N_WEBHOOK_URL não configurado, notificação não enviada')
       }
     }
 
