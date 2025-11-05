@@ -36,6 +36,7 @@ interface Profile {
   agency_name?: string | null;
   responsible_name?: string | null;
   created_at?: string;
+  client_count?: number;
 }
 
 interface ProfilesManagerProps {
@@ -165,7 +166,7 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
                     <Card key={prof.id} className="hover:shadow-lg transition-shadow">
                       <CardContent className="p-4">
                         <div className="space-y-2">
-                          <div className="flex justify-between items-start">
+                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <h4 className="font-semibold">{prof.name}</h4>
                               <p className="text-sm text-muted-foreground">
@@ -175,6 +176,11 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
                                 <p className="text-xs text-muted-foreground">
                                   Responsável: {prof.responsible_name}
                                 </p>
+                              )}
+                              {prof.role === 'agency_admin' && prof.client_count !== undefined && (
+                                <Badge variant="outline" className="mt-1 text-xs">
+                                  {prof.client_count} {prof.client_count === 1 ? 'cliente' : 'clientes'}
+                                </Badge>
                               )}
                             </div>
                             <Button

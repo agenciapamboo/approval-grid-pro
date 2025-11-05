@@ -209,11 +209,22 @@ const Dashboard = () => {
             rolesMap[r.user_id].push(r.role);
           });
 
-          // Buscar nomes das agências para mapear
+          // Buscar nomes das agências e contar clientes
           const { data: agenciesLookup } = await supabase
             .from("agencies")
             .select("id, name");
           const agencyNameMap = new Map((agenciesLookup || []).map((a: any) => [a.id, a.name]));
+
+          // Contar clientes por agência
+          const { data: clientCounts } = await supabase
+            .from("clients")
+            .select("agency_id");
+          
+          const clientCountMap = new Map<string, number>();
+          (clientCounts || []).forEach((c: any) => {
+            const count = clientCountMap.get(c.agency_id) || 0;
+            clientCountMap.set(c.agency_id, count + 1);
+          });
 
           const enrichedProfiles = profilesData.map((p: any) => {
             const roles = rolesMap[p.id] || [];
@@ -226,6 +237,7 @@ const Dashboard = () => {
               ...p,
               role: resolvedRole,
               agency_name: p.agency_id ? (agencyNameMap.get(p.agency_id) || null) : null,
+              client_count: p.agency_id ? (clientCountMap.get(p.agency_id) || 0) : 0,
             };
           });
 
