@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.create-billing-portal]
 verify_jwt = true
+
+[functions.cleanup-orphaned-accounts]
+verify_jwt = false
