@@ -188,23 +188,50 @@ const Dashboard = () => {
           setAgencies(enrichedAgencies);
         }
 
-        // Buscar todos os profiles com informações de agência
+        // Buscar todos os profiles e montar roles/agência via consultas separadas para evitar RLS/nested issues
         const { data: profilesData } = await supabase
           .from("profiles")
-          .select(`
-            *,
-            user_roles(role),
-            agencies:agency_id(name)
-          `)
+          .select("*")
           .order("created_at", { ascending: false });
         
-        if (profilesData) {
-          const enrichedProfiles = profilesData.map((p: any) => ({
-            ...p,
-            role: Array.isArray(p.user_roles) && p.user_roles.length > 0 ? p.user_roles[0].role : 'client_user',
-            agency_name: p.agencies?.name || null
-          }));
+        if (profilesData && profilesData.length > 0) {
+          const userIds = profilesData.map((p: any) => p.id);
+
+          // Buscar roles de todos os usuários
+          const { data: rolesData } = await supabase
+            .from("user_roles")
+            .select("user_id, role")
+            .in("user_id", userIds);
+
+          const rolesMap: Record<string, string[]> = {};
+          (rolesData || []).forEach((r: any) => {
+            if (!rolesMap[r.user_id]) rolesMap[r.user_id] = [];
+            rolesMap[r.user_id].push(r.role);
+          });
+
+          // Buscar nomes das agências para mapear
+          const { data: agenciesLookup } = await supabase
+            .from("agencies")
+            .select("id, name");
+          const agencyNameMap = new Map((agenciesLookup || []).map((a: any) => [a.id, a.name]));
+
+          const enrichedProfiles = profilesData.map((p: any) => {
+            const roles = rolesMap[p.id] || [];
+            const resolvedRole = roles.includes('super_admin')
+              ? 'super_admin'
+              : roles.includes('agency_admin')
+                ? 'agency_admin'
+                : (roles[0] || 'client_user');
+            return {
+              ...p,
+              role: resolvedRole,
+              agency_name: p.agency_id ? (agencyNameMap.get(p.agency_id) || null) : null,
+            };
+          });
+
           setAllProfiles(enrichedProfiles as any);
+        } else {
+          setAllProfiles([]);
         }
       } else if (userRole === 'agency_admin' && enrichedProfile.agency_id) {
         // Agency admin vê sua agência e clientes
