@@ -655,8 +655,8 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Clientes - Para Admin e Agency Admin */}
-        {profile?.role !== 'client_user' && (
+        {/* Clientes - Apenas para Agency Admin */}
+        {profile?.role === 'agency_admin' && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
