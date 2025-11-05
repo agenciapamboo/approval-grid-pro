@@ -154,6 +154,51 @@ Deno.serve(async (req) => {
     console.log(`   - Successfully fixed: ${results.fixed.length}`)
     console.log(`   - Failed to fix: ${results.failed.length}`)
 
+    // Enviar notificação via N8N webhook se houver contas órfãs detectadas
+    if (results.orphaned_found > 0) {
+      const N8N_WEBHOOK_URL = Deno.env.get('N8N_WEBHOOK_URL')
+      const N8N_WEBHOOK_TOKEN = Deno.env.get('N8N_WEBHOOK_TOKEN')
+
+      if (N8N_WEBHOOK_URL) {
+        try {
+          const n8nPayload = {
+            event: 'orphaned_accounts_detected',
+            channel: 'email',
+            timestamp: results.timestamp,
+            summary: {
+              total_users: results.total_users,
+              orphaned_found: results.orphaned_found,
+              fixed: results.fixed.length,
+              failed: results.failed.length
+            },
+            fixed_accounts: results.fixed,
+            failed_accounts: results.failed
+          }
+
+          console.log('📧 Enviando notificação para N8N...')
+          
+          const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(N8N_WEBHOOK_TOKEN ? { 'Authorization': `Bearer ${N8N_WEBHOOK_TOKEN}` } : {}),
+            },
+            body: JSON.stringify(n8nPayload),
+          })
+
+          if (n8nResponse.ok) {
+            console.log('✅ Notificação enviada para N8N com sucesso')
+          } else {
+            console.error('❌ Falha ao enviar notificação para N8N:', n8nResponse.status)
+          }
+        } catch (n8nError) {
+          console.error('❌ Erro ao enviar notificação para N8N:', n8nError)
+        }
+      } else {
+        console.log('⚠️  N8N_WEBHOOK_URL não configurado, notificação não enviada')
+      }
+    }
+
     return new Response(
       JSON.stringify(results),
       { 
