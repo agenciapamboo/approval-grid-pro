@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Key } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
@@ -61,6 +61,9 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
   const { toast } = useToast();
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [formData, setFormData] = useState({
     name: '',
     plan: '',
@@ -183,6 +186,58 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!editingProfile) return;
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: {
+          userId: editingProfile.id,
+          newPassword
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Senha alterada",
+        description: "A senha foi alterada com sucesso."
+      });
+
+      setPasswordDialogOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao alterar a senha.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {planConfigs.map(({ key, title, icon }) => {
@@ -291,6 +346,18 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
                   </p>
                 </div>
               )}
+              <div className="grid gap-2">
+                <Label>Senha</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPasswordDialogOpen(true)}
+                  className="w-full justify-start"
+                >
+                  <Key className="mr-2 h-4 w-4" />
+                  Alterar Senha
+                </Button>
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome</Label>
                 <Input
@@ -456,6 +523,57 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para {editingProfile?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirm-password">Confirmar Senha</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Digite a senha novamente"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setPasswordDialogOpen(false);
+                setNewPassword("");
+                setConfirmPassword("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handlePasswordReset} 
+              disabled={saving || !newPassword || !confirmPassword}
+            >
+              {saving ? "Alterando..." : "Alterar Senha"}
             </Button>
           </DialogFooter>
         </DialogContent>
