@@ -66,16 +66,21 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
     'unlimited': []
   };
 
-  // Group all profiles by their plan
+  // Group all profiles by their plan (only creators and agency admins)
   profiles.forEach(prof => {
-    const plan = prof.plan || 'unlimited';
-    if (planGroups[plan]) {
-      planGroups[plan].push(prof);
-    } else {
-      // Se não reconhecer o plano, adiciona em unlimited
-      if (!planGroups['unlimited']) planGroups['unlimited'] = [];
-      planGroups['unlimited'].push(prof);
-    }
+    // Only include creators and agency admins
+    const isCreator = prof.account_type === 'creator' || prof.plan === 'creator';
+    const isAgency = prof.role === 'agency_admin';
+    if (!isCreator && !isAgency) return;
+
+    // Decide target group key
+    let key = '';
+    if (isCreator) key = 'creator';
+    else if (['eugencia', 'social_midia', 'agencia_full'].includes(prof.plan || '')) key = prof.plan as string;
+    else key = 'unlimited';
+
+    if (!planGroups[key]) planGroups[key] = [];
+    planGroups[key].push(prof);
   });
 
   const planConfigs = [
