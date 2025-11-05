@@ -89,11 +89,11 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
     'unlimited': []
   };
 
-  // Group all profiles by their plan (only creators and agency admins)
+  // Group all profiles by their plan (only creators and agency users)
   profiles.forEach(prof => {
-    // Only include creators and agency admins
+    // Include creators (account_type or plan = 'creator') OR agency users (account_type = 'agency' or role = 'agency_admin')
     const isCreator = prof.account_type === 'creator' || prof.plan === 'creator';
-    const isAgency = prof.role === 'agency_admin';
+    const isAgency = prof.account_type === 'agency' || prof.role === 'agency_admin';
     if (!isCreator && !isAgency) return;
 
     // Decide target group key
