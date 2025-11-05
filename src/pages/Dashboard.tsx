@@ -25,6 +25,7 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
 import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
+import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -36,6 +37,11 @@ interface Profile {
   role: string;
   agency_id: string | null;
   client_id: string | null;
+  account_type?: string | null;
+  plan?: string | null;
+  agency_name?: string | null;
+  responsible_name?: string | null;
+  created_at?: string;
 }
 
 interface Agency {
@@ -83,6 +89,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,6 +166,16 @@ const Dashboard = () => {
             })
           );
           setAgencies(enrichedAgencies);
+        }
+
+        // Buscar todos os profiles
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (profilesData) {
+          setAllProfiles(profilesData as Profile[]);
         }
       } else if (profileData.role === 'agency_admin' && profileData.agency_id) {
         // Agency admin vê sua agência e clientes
@@ -820,120 +837,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Blocos de Planos */}
-            <div className="space-y-6">
-              {(() => {
-                // Group profiles by plan
-                const planGroups: Record<string, any[]> = {
-                  'creator': [],
-                  'eugencia': [],
-                  'socialMidia': [],
-                  'fullService': [],
-                  'unlimited': []
-                };
-
-                // This is just for UI organization - actual data access controlled by RLS
-                agencies.forEach(agency => {
-                  const plan = agency.plan || 'unlimited';
-                  if (planGroups[plan]) {
-                    planGroups[plan].push(agency);
-                  } else {
-                    planGroups['unlimited'].push(agency);
-                  }
-                });
-
-                const planConfigs = [
-                  { key: 'creator', title: 'Influencers / Creator', icon: '👤' },
-                  { key: 'eugencia', title: 'Agência Individual (Eugência)', icon: '🏢' },
-                  { key: 'socialMidia', title: 'Agência de Social Mídia', icon: '📱' },
-                  { key: 'fullService', title: 'Agência Full Service', icon: '🚀' },
-                  { key: 'unlimited', title: 'Sem Plano (Recursos Ilimitados)', icon: '♾️' }
-                ];
-
-                return planConfigs.map(({ key, title, icon }) => {
-                  const items = planGroups[key] || [];
-                  
-                  return (
-                    <Card key={key}>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="flex items-center gap-2">
-                            <span className="text-2xl">{icon}</span>
-                            {title}
-                          </CardTitle>
-                          <Badge variant="outline" className="text-lg px-3 py-1">
-                            {items.length} {items.length === 1 ? 'conta' : 'contas'}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      {items.length > 0 && (
-                        <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {items.map((agency) => (
-                              <Card key={agency.id} className="hover:shadow-lg transition-shadow">
-                                <CardHeader>
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                      {agency.logo_url && (
-                                        <div className="mb-3">
-                                          <img 
-                                            src={agency.logo_url} 
-                                            alt={agency.name}
-                                            className="h-16 max-w-[200px] object-contain"
-                                          />
-                                        </div>
-                                      )}
-                                      <div>
-                                        <CardTitle className="text-lg truncate">{agency.name}</CardTitle>
-                                        <CardDescription className="text-xs mt-1 truncate">
-                                          Slug: {agency.slug}
-                                        </CardDescription>
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-col gap-2 flex-shrink-0">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => setOpenViewAgencyId(agency.id)}
-                                        className="w-full justify-start"
-                                      >
-                                        <Eye className="w-4 h-4 mr-2" />
-                                        Ver
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => setOpenEditAgencyId(agency.id)}
-                                        className="w-full justify-start"
-                                      >
-                                        <Pencil className="w-4 h-4 mr-2" />
-                                        Editar
-                                      </Button>
-                                      <Button 
-                                        variant="destructive" 
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteAgency(agency);
-                                        }}
-                                        className="w-full justify-start"
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Remover
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                              </Card>
-                            ))}
-                          </div>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                });
-              })()}
-            </div>
+            <ProfilesManager profiles={allProfiles} getRoleLabel={getRoleLabel} />
           </div>
         )}
 
