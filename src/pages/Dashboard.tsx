@@ -226,6 +226,13 @@ const Dashboard = () => {
             clientCountMap.set(c.agency_id, count + 1);
           });
 
+          // Buscar emails via edge function
+          const { data: emailData } = await supabase.functions.invoke('get-user-emails', {
+            body: { userIds }
+          });
+
+          const emailMap = emailData?.emailMap || {};
+
           const enrichedProfiles = profilesData.map((p: any) => {
             const roles = rolesMap[p.id] || [];
             const resolvedRole = roles.includes('super_admin')
@@ -238,6 +245,7 @@ const Dashboard = () => {
               role: resolvedRole,
               agency_name: p.agency_id ? (agencyNameMap.get(p.agency_id) || null) : null,
               client_count: p.agency_id ? (clientCountMap.get(p.agency_id) || 0) : 0,
+              email: emailMap[p.id] || null,
             };
           });
 

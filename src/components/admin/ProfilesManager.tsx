@@ -48,6 +48,7 @@ interface Profile {
   address_state?: string | null;
   address_zip?: string | null;
   instagram_handle?: string | null;
+  email?: string | null;
 }
 
 interface ProfilesManagerProps {
@@ -210,6 +211,11 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
                            <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <h4 className="font-semibold">{prof.name}</h4>
+                              {prof.email && (
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  {prof.email}
+                                </p>
+                              )}
                               <p className="text-sm text-muted-foreground">
                                 {prof.account_type === 'creator' ? 'Creator' : prof.agency_name || 'Usuário'}
                               </p>
@@ -271,6 +277,20 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
           <div className="grid gap-4 py-4">
             <div className="space-y-4">
               <h4 className="font-semibold text-sm">Informações Básicas</h4>
+              {editingProfile?.email && (
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email de Cadastro</Label>
+                  <Input
+                    id="email"
+                    value={editingProfile.email}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    O email não pode ser alterado aqui
+                  </p>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome</Label>
                 <Input
