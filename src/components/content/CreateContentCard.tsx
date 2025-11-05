@@ -31,6 +31,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
+  const [title, setTitle] = useState("");
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("12:00");
   const [channels, setChannels] = useState<string[]>([]);
@@ -224,11 +225,14 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       // String no formato ISO local com "T" para evitar parse UTC no front
       const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
+      // Gerar título automático se não preenchido
+      const contentTitle = title.trim() || `Conteúdo ${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
       const { data: content, error: contentError } = await supabase
         .from("contents")
         .insert([{
           client_id: clientId,
-          title: `Conteúdo ${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+          title: contentTitle,
           date: dateTimeString,
           type: contentType,
           status: 'draft' as const,
@@ -355,6 +359,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       setFiles([]);
       setPreviews([]);
       setCaption("");
+      setTitle("");
       setDate(undefined);
       setTime("12:00");
       setChannels([]);
@@ -568,8 +573,24 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                 </>
               )}
             </RadioGroup>
-          </div>
+        </div>
         )}
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Título (opcional)</Label>
+          <Input
+            placeholder="Ex: Lançamento do produto X"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setHasChanges(true);
+            }}
+            maxLength={100}
+          />
+          <p className="text-xs text-muted-foreground">
+            Deixe em branco para gerar automaticamente baseado na data
+          </p>
+        </div>
 
         <div className="space-y-2">
           <Label className="text-sm font-medium">Data e hora</Label>
