@@ -527,7 +527,7 @@ const Dashboard = () => {
               </Button>
             )}
             {/* Client-side role check for UX only - server validates actual permissions */}
-            {(profile?.role === 'agency_admin' || profile?.role === 'super_admin') && (
+            {profile?.role === 'super_admin' && (
               <TestNotificationButton />
             )}
           </div>
