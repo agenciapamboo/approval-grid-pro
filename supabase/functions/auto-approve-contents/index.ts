@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sendInternalNotification, notifyError } from '../_shared/internal-notifications.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -127,6 +128,22 @@ serve(async (req) => {
       }
 
       console.log(`Auto-aprovação concluída: ${approvedCount}/${expiredContents.length} conteúdos aprovados`);
+      
+      // Notificar sobre auto-aprovações
+      if (approvedCount > 0) {
+        await sendInternalNotification({
+          type: 'info',
+          subject: `${approvedCount} conteúdo(s) auto-aprovado(s)`,
+          message: `Job automático aprovou ${approvedCount} de ${expiredContents.length} conteúdos com deadline vencido.`,
+          details: {
+            approved: approvedCount,
+            total_expired: expiredContents.length,
+            date: today
+          },
+          source: 'auto-approve-contents',
+          priority: 'low'
+        });
+      }
     }
 
     // 3. Publicar conteúdos agendados pela data/hora (apenas conteúdos recentes - últimas 2 horas)
@@ -223,9 +240,17 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error: any) {
-    // Log detailed error server-side only
     console.error('Erro na auto-aprovação:', error);
-    // Return generic error to client
+    
+    // Notificar erro crítico
+    await notifyError(
+      'auto-approve-contents',
+      error,
+      {
+        timestamp: new Date().toISOString()
+      }
+    );
+    
     return new Response(
       JSON.stringify({ error: 'Failed to process content automation' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }

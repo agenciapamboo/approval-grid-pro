@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0'
+import { sendInternalNotification } from '../_shared/internal-notifications.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -154,47 +155,23 @@ Deno.serve(async (req) => {
     console.log(`   - Successfully fixed: ${results.fixed.length}`)
     console.log(`   - Failed to fix: ${results.failed.length}`)
 
-    // Enviar notificação via N8N webhook se houver contas órfãs detectadas
+    // Enviar notificação via sistema centralizado
     if (results.orphaned_found > 0) {
-      const N8N_INTERNAL_EMAIL_WEBHOOK = 'https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos'
-      const N8N_WEBHOOK_TOKEN = Deno.env.get('N8N_WEBHOOK_TOKEN')
-
-      if (N8N_INTERNAL_EMAIL_WEBHOOK) {
-        try {
-          const n8nPayload = {
-            event: 'orphaned_accounts_detected',
-            channel: 'email',
-            timestamp: results.timestamp,
-            summary: {
-              total_users: results.total_users,
-              orphaned_found: results.orphaned_found,
-              fixed: results.fixed.length,
-              failed: results.failed.length
-            },
-            fixed_accounts: results.fixed,
-            failed_accounts: results.failed
-          }
-
-          console.log('📧 Enviando notificação para N8N webhook de emails internos...')
-          
-          const n8nResponse = await fetch(N8N_INTERNAL_EMAIL_WEBHOOK, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(N8N_WEBHOOK_TOKEN ? { 'Authorization': `Bearer ${N8N_WEBHOOK_TOKEN}` } : {}),
-            },
-            body: JSON.stringify(n8nPayload),
-          })
-
-          if (n8nResponse.ok) {
-            console.log('✅ Notificação enviada para N8N com sucesso')
-          } else {
-            console.error('❌ Falha ao enviar notificação para N8N:', n8nResponse.status)
-          }
-        } catch (n8nError) {
-          console.error('❌ Erro ao enviar notificação para N8N:', n8nError)
-        }
-      }
+      await sendInternalNotification({
+        type: 'warning',
+        subject: `${results.orphaned_found} conta(s) órfã(s) detectada(s)`,
+        message: `Job de limpeza encontrou ${results.orphaned_found} contas sem perfil. ${results.fixed.length} foram corrigidas automaticamente.`,
+        details: {
+          total_users: results.total_users,
+          orphaned_found: results.orphaned_found,
+          fixed: results.fixed.length,
+          failed: results.failed.length,
+          fixed_accounts: results.fixed,
+          failed_accounts: results.failed
+        },
+        source: 'cleanup-orphaned-accounts',
+        priority: results.failed.length > 0 ? 'high' : 'medium'
+      });
     }
 
     return new Response(

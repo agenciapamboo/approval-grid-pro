@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.cleanup-orphaned-accounts]
 verify_jwt = false
+
+[functions.daily-report]
+verify_jwt = false

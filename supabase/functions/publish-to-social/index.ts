@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { notifyError, notifyWarning } from '../_shared/internal-notifications.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,10 +12,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let contentId: string | undefined;
+
   try {
     console.log('=== Iniciando publicação ===');
     
-    const { contentId } = await req.json();
+    const body = await req.json();
+    contentId = body.contentId;
     console.log('Content ID recebido:', contentId);
 
     if (!contentId) {
@@ -168,6 +172,19 @@ serve(async (req) => {
         }
       } catch (error: any) {
         console.error(`Erro ao publicar no ${account.platform}:`, error.message);
+        
+        // Notificar erro de publicação
+        await notifyError(
+          'publish-to-social',
+          error,
+          {
+            content_id: contentId,
+            platform: account.platform,
+            account: account.account_name,
+            content_type: content.type
+          }
+        );
+        
         errors.push({
           platform: account.platform,
           account: account.account_name,
@@ -211,6 +228,16 @@ serve(async (req) => {
     console.error('Tipo:', error.constructor.name);
     console.error('Mensagem:', error.message);
     console.error('Stack:', error.stack);
+    
+    // Notificar erro crítico
+    await notifyError(
+      'publish-to-social',
+      error,
+      {
+        content_id: contentId,
+        error_type: error.constructor.name
+      }
+    );
     
     return new Response(
       JSON.stringify({ 
