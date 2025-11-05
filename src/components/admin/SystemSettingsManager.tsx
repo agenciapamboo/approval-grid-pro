@@ -11,6 +11,7 @@ export const SystemSettingsManager = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [updatingDocs, setUpdatingDocs] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [originalWebhookUrl, setOriginalWebhookUrl] = useState("");
 
@@ -87,6 +88,34 @@ export const SystemSettingsManager = () => {
     setWebhookUrl(originalWebhookUrl);
   };
 
+  const handleUpdateDocs = async () => {
+    setUpdatingDocs(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('update-docs');
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Documentação atualizada",
+          description: `${data.stats.total_events} eventos documentados (${data.stats.client_events} clientes, ${data.stats.internal_events} internos)`,
+        });
+        console.log('✅ Documentação atualizada:', data);
+      } else {
+        throw new Error('Falha ao atualizar documentação');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao atualizar documentação:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar a documentação",
+      });
+    } finally {
+      setUpdatingDocs(false);
+    }
+  };
+
   const hasChanges = webhookUrl !== originalWebhookUrl;
 
   return (
@@ -97,7 +126,7 @@ export const SystemSettingsManager = () => {
           Configurações do Sistema
         </CardTitle>
         <CardDescription>
-          Configure o webhook interno para notificações de sistema
+          Configure o webhook interno e atualize a documentação automática
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -148,6 +177,33 @@ export const SystemSettingsManager = () => {
                   Cancelar
                 </Button>
               )}
+            </div>
+
+            <div className="pt-6 mt-6 border-t space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Documentação Automática</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Atualize os documentos de eventos (EVENTOS_NOTIFICACAO.md) e configuração do N8N (CONFIGURACAO_N8N.md) com base nas definições atuais do sistema.
+                </p>
+                <Button 
+                  onClick={handleUpdateDocs} 
+                  disabled={updatingDocs}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  {updatingDocs ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Atualizando documentação...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Atualizar Documentação
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </>
         )}
