@@ -42,16 +42,30 @@ serve(async (req) => {
 
     for (const media of mediaWithoutThumbs) {
       try {
-        // Baixar a imagem/vídeo original
-        const response = await fetch(media.src_url);
-        if (!response.ok) {
-          console.error(`Falha ao baixar mídia ${media.id}`);
+        // Extrair o caminho do arquivo da URL do Supabase Storage
+        const urlParts = media.src_url.split('/storage/v1/object/public/content-media/');
+        const filePath = urlParts[1] || media.src_url.split('/content-media/').pop();
+        
+        if (!filePath) {
+          console.error(`Caminho inválido para mídia ${media.id}: ${media.src_url}`);
           failed++;
           continue;
         }
 
-        const blob = await response.blob();
-        const arrayBuffer = await blob.arrayBuffer();
+        console.log(`Baixando mídia ${media.id} do caminho: ${filePath}`);
+
+        // Baixar do Supabase Storage usando o método correto
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from('content-media')
+          .download(filePath);
+
+        if (downloadError || !fileData) {
+          console.error(`Erro ao baixar mídia ${media.id}:`, downloadError);
+          failed++;
+          continue;
+        }
+
+        const arrayBuffer = await fileData.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
 
         let thumbnailBlob: Uint8Array;
@@ -69,16 +83,21 @@ serve(async (req) => {
           // Por simplicidade, vamos criar um placeholder por enquanto
           console.log(`Processando imagem ${media.id}...`);
           
-          // Vamos baixar e re-upload em tamanho menor usando storage
-          const fileName = media.src_url.split('/').pop() || 'image.jpg';
-          const contentId = fileName.split('/')[0];
-          const thumbFileName = `${contentId}/auto-thumb-${Date.now()}.jpg`;
+          // Extrair o nome do arquivo original para determinar o tipo
+          const fileName = filePath.split('/').pop() || 'image.jpg';
+          const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+          const contentType = fileExtension === 'png' ? 'image/png' : 'image/jpeg';
+          
+          // Gerar nome do thumbnail baseado no caminho original
+          const pathParts = filePath.split('/');
+          const contentId = pathParts[0];
+          const thumbFileName = `${contentId}/thumb-${Date.now()}.${fileExtension}`;
 
-          // Re-upload como thumbnail (Supabase fará o resize automaticamente se configurado)
+          // Upload da miniatura
           const { error: uploadError } = await supabase.storage
             .from('content-media')
             .upload(thumbFileName, uint8Array, {
-              contentType: blob.type,
+              contentType,
               upsert: false
             });
 
