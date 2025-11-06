@@ -169,7 +169,7 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
               placeholder="slug-do-cliente"
             />
             <p className="text-xs text-muted-foreground">
-              Acesso sem senha: https://aprova.pamboocriativos.com.br/[slug-agencia]/{formData.slug || 'slug-cliente'}
+              Acesso sem senha: https://aprovacriativos.com.br/[slug-agencia]/{formData.slug || 'slug-cliente'}
             </p>
           </div>
 

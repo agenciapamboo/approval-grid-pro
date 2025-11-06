@@ -37,7 +37,7 @@ const ForgotPassword = () => {
       setLoading(true);
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://aprova.pamboocriativos.com.br/linkderecuperacao',
+        redirectTo: 'https://aprovacriativos.com.br/linkderecuperacao',
       });
 
       if (error) throw error;

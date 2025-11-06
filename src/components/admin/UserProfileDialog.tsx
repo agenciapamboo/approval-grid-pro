@@ -394,8 +394,122 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Dados da Agência - Para agency_admin - MOVED TO TOP */}
+          {profile?.agency_id && profile?.role === 'agency_admin' && agencyData && (
+            <>
+              <Card>
+                <CardContent className="pt-6 space-y-3">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Dados da Agência</h3>
+                  <form onSubmit={(e) => { e.preventDefault(); handleSaveAgencyData(); }} className="space-y-3">
+                    <div>
+                      <Label htmlFor="agency_name">Nome da Agência</Label>
+                      <Input
+                        id="agency_name"
+                        value={agencyData.name}
+                        onChange={(e) => setAgencyData({ ...agencyData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="agency_slug">Slug da Agência</Label>
+                      <Input
+                        id="agency_slug"
+                        value={agencyData.slug}
+                        onChange={(e) => setAgencyData({ ...agencyData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                        placeholder="minha-agencia"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        URL base: https://aprovacriativos.com.br/{agencyData.slug}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="agency_email">Email</Label>
+                        <Input
+                          id="agency_email"
+                          type="email"
+                          value={agencyData.email || ''}
+                          onChange={(e) => setAgencyData({ ...agencyData, email: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="agency_whatsapp">WhatsApp</Label>
+                        <Input
+                          id="agency_whatsapp"
+                          value={agencyData.whatsapp || ''}
+                          onChange={(e) => setAgencyData({ ...agencyData, whatsapp: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="logo_url">Logo URL</Label>
+                      <Input
+                        id="logo_url"
+                        value={agencyData.logo_url || ''}
+                        onChange={(e) => setAgencyData({ ...agencyData, logo_url: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="brand_primary">Cor Primária</Label>
+                        <Input
+                          id="brand_primary"
+                          type="color"
+                          value={agencyData.brand_primary || '#2563eb'}
+                          onChange={(e) => setAgencyData({ ...agencyData, brand_primary: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="brand_secondary">Cor Secundária</Label>
+                        <Input
+                          id="brand_secondary"
+                          type="color"
+                          value={agencyData.brand_secondary || '#8b5cf6'}
+                          onChange={(e) => setAgencyData({ ...agencyData, brand_secondary: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" size="sm" disabled={agencyLoading}>
+                      {agencyLoading ? "Salvando..." : "Salvar Dados da Agência"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6 space-y-3">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Plano e Estatísticas</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Plano Atual</Label>
+                      <p className="text-sm font-medium">{agencyData.plan || 'Não definido'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Renovação</Label>
+                      <p className="text-sm font-medium">
+                        {agencyData.plan_renewal_date 
+                          ? formatDate(agencyData.plan_renewal_date)
+                          : 'Não definido'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Total de Clientes</Label>
+                      <p className="text-xl font-semibold">{agencyStats.clientCount}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Total de Conteúdos</Label>
+                      <p className="text-xl font-semibold">{agencyStats.contentCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
           {/* Dados Cadastrais - Para usuários não-clientes */}
-          {!profile?.client_id && (
+          {!profile?.client_id && !profile?.agency_id && (
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <h3 className="font-semibold text-sm text-muted-foreground">Dados Cadastrais</h3>
@@ -448,7 +562,7 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
                     />
                     {clientData.agencySlug && clientData.slug && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        URL de aprovação: {window.location.origin}/{clientData.agencySlug}/{clientData.slug}
+                        URL de aprovação: https://aprovacriativos.com.br/{clientData.agencySlug}/{clientData.slug}
                       </p>
                     )}
                   </div>
@@ -494,82 +608,62 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
             </Card>
           )}
 
-          {/* Dados da Agência - Para agency_admin */}
-          {profile?.agency_id && profile?.role === 'agency_admin' && agencyData && (
-            <Card>
-              <CardContent className="pt-6 space-y-3">
-                <h3 className="font-semibold text-sm text-muted-foreground">Dados da Agência</h3>
-                <form onSubmit={(e) => { e.preventDefault(); handleSaveAgencyData(); }} className="space-y-3">
-                  <div>
-                    <Label htmlFor="agency_name">Nome da Agência</Label>
-                    <Input
-                      id="agency_name"
-                      value={agencyData.name}
-                      onChange={(e) => setAgencyData({ ...agencyData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="agency_slug">Slug da Agência</Label>
-                    <Input
-                      id="agency_slug"
-                      value={agencyData.slug}
-                      onChange={(e) => setAgencyData({ ...agencyData, slug: e.target.value })}
-                      placeholder="minha-agencia"
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      URL base: {window.location.origin}/{agencyData.slug}
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="agency_email">Email</Label>
-                    <Input
-                      id="agency_email"
-                      type="email"
-                      value={agencyData.email}
-                      onChange={(e) => setAgencyData({ ...agencyData, email: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="agency_whatsapp">WhatsApp</Label>
-                    <Input
-                      id="agency_whatsapp"
-                      value={agencyData.whatsapp}
-                      onChange={(e) => setAgencyData({ ...agencyData, whatsapp: e.target.value })}
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-                  <Button type="submit" size="sm" disabled={agencyLoading}>
-                    {agencyLoading ? "Salvando..." : "Salvar Dados da Agência"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+          {/* Plano */}
+          <Card>
+            <CardContent className="pt-6 space-y-3">
+              <h3 className="font-semibold text-sm text-muted-foreground">Plano</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Plano Atual</Label>
+                  <span className="font-semibold">{getPlanLabel(profile?.plan)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Renovação</Label>
+                  <span className="font-medium text-sm">{formatDate(profile?.plan_renewal_date)}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => {
+                    window.location.href = '/minha-assinatura';
+                  }}
+                >
+                  Gerenciar Plano
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Plano e Estatísticas - Para agency_admin */}
-          {profile?.agency_id && profile?.role === 'agency_admin' && agencyData && (
+          {/* Preferências de Notificação - Para clientes */}
+          {profile?.client_id && (
             <Card>
               <CardContent className="pt-6 space-y-3">
-                <h3 className="font-semibold text-sm text-muted-foreground">Plano e Estatísticas</h3>
-                <div className="space-y-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Plano Atual</Label>
-                    <p className="text-sm font-medium">{getPlanLabel(agencyData.plan)}</p>
+                <h3 className="font-semibold text-sm text-muted-foreground">Preferências de Notificação</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="notify_email" className="flex-1">Email</Label>
+                    <Switch
+                      id="notify_email"
+                      checked={notificationPreferences.notify_email}
+                      onCheckedChange={(checked) => 
+                        setNotificationPreferences({ ...notificationPreferences, notify_email: checked })
+                      }
+                    />
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Data de Renovação</Label>
-                    <p className="text-sm font-medium">{formatDate(agencyData.plan_renewal_date)}</p>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="notify_whatsapp" className="flex-1">WhatsApp</Label>
+                    <Switch
+                      id="notify_whatsapp"
+                      checked={notificationPreferences.notify_whatsapp}
+                      onCheckedChange={(checked) => 
+                        setNotificationPreferences({ ...notificationPreferences, notify_whatsapp: checked })
+                      }
+                    />
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Clientes Cadastrados</Label>
-                    <p className="text-sm font-medium">{agencyStats.clientCount}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Conteúdos Cadastrados</Label>
-                    <p className="text-sm font-medium">{agencyStats.contentCount}</p>
-                  </div>
+                  <Button onClick={handleSavePreferences} size="sm" disabled={prefsLoading}>
+                    {prefsLoading ? "Salvando..." : "Salvar Preferências"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -578,41 +672,39 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
           {/* Alterar Senha */}
           <Card>
             <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">Segurança</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">Alterar Senha</h3>
               <form onSubmit={handlePasswordChange} className="space-y-3">
                 <div>
-                  <Label htmlFor="currentPassword">Senha Atual</Label>
+                  <Label htmlFor="current_password">Senha Atual</Label>
                   <Input
-                    id="currentPassword"
+                    id="current_password"
                     type="password"
                     value={passwordData.currentPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                    disabled={passwordLoading}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="newPassword">Nova Senha</Label>
+                  <Label htmlFor="new_password">Nova Senha</Label>
                   <Input
-                    id="newPassword"
+                    id="new_password"
                     type="password"
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    disabled={passwordLoading}
                     required
-                    minLength={8}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Mínimo 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial
+                  </p>
                 </div>
                 <div>
-                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                  <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
                   <Input
-                    id="confirmPassword"
+                    id="confirm_password"
                     type="password"
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    disabled={passwordLoading}
                     required
-                    minLength={8}
                   />
                 </div>
                 <Button type="submit" size="sm" disabled={passwordLoading}>
@@ -621,51 +713,6 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
               </form>
             </CardContent>
           </Card>
-
-          {/* Preferências de Notificação - Apenas para clientes */}
-          {profile?.client_id && (
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <h3 className="font-semibold text-sm text-muted-foreground">Preferências de Notificação</h3>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="notify_email" className="flex flex-col gap-1 cursor-pointer">
-                    <span>Notificações por E-mail</span>
-                    <span className="text-xs text-muted-foreground font-normal">
-                      Receba atualizações sobre aprovações pendentes e ajustes feitos por e-mail
-                    </span>
-                  </Label>
-                  <Switch
-                    id="notify_email"
-                    checked={notificationPreferences.notify_email}
-                    onCheckedChange={(checked) =>
-                      setNotificationPreferences({ ...notificationPreferences, notify_email: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="notify_whatsapp" className="flex flex-col gap-1 cursor-pointer">
-                    <span>Notificações por WhatsApp</span>
-                    <span className="text-xs text-muted-foreground font-normal">
-                      Receba atualizações sobre aprovações pendentes e ajustes feitos por WhatsApp
-                    </span>
-                  </Label>
-                  <Switch
-                    id="notify_whatsapp"
-                    checked={notificationPreferences.notify_whatsapp}
-                    onCheckedChange={(checked) =>
-                      setNotificationPreferences({ ...notificationPreferences, notify_whatsapp: checked })
-                    }
-                  />
-                </div>
-
-                <Button onClick={handleSavePreferences} disabled={prefsLoading} size="sm" className="w-full">
-                  {prefsLoading ? "Salvando..." : "Salvar Preferências"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </DialogContent>
     </Dialog>

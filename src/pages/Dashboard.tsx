@@ -840,6 +840,11 @@ const Dashboard = () => {
                           )}
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{client.name}</h3>
+                            {agency?.slug && client.slug && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Acesso sem senha: https://aprovacriativos.com.br/{agency.slug}/{client.slug}
+                              </p>
+                            )}
                             {(client as any).monthly_creatives > 0 && (
                               <p className="text-sm text-muted-foreground">
                                 {(client as any).monthly_creatives} criativos/mês
