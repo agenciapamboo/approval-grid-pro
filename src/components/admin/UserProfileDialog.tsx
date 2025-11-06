@@ -32,15 +32,18 @@ interface Profile {
   plan?: string;
   plan_renewal_date?: string;
   client_id?: string;
+  agency_id?: string;
 }
 
 interface ClientData {
   id: string;
   name: string;
+  slug?: string;
   cnpj?: string;
   address?: string;
   email?: string;
   whatsapp?: string;
+  agencySlug?: string;
 }
 
 interface UserProfileDialogProps {
@@ -75,12 +78,19 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
   const [prefsLoading, setPrefsLoading] = useState(false);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
+  const [agencyData, setAgencyData] = useState<any>(null);
+  const [agencyLoading, setAgencyLoading] = useState(false);
+  const [agencyStats, setAgencyStats] = useState<{ clientCount: number; contentCount: number }>({ clientCount: 0, contentCount: 0 });
 
   useEffect(() => {
     if (profile?.client_id) {
       loadClientData();
     }
-  }, [profile?.client_id]);
+    if (profile?.agency_id && profile?.role === 'agency_admin') {
+      loadAgencyData();
+      loadAgencyStats();
+    }
+  }, [profile?.client_id, profile?.agency_id, profile?.role]);
 
   const loadClientData = async () => {
     if (!profile?.client_id) return;
@@ -88,7 +98,7 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
     try {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, cnpj, address, email, whatsapp, notify_email, notify_whatsapp")
+        .select("id, name, slug, cnpj, address, email, whatsapp, notify_email, notify_whatsapp, agency_id, agencies!inner(slug)")
         .eq("id", profile.client_id)
         .single();
 
@@ -98,10 +108,12 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
         setClientData({
           id: data.id,
           name: data.name,
+          slug: data.slug || "",
           cnpj: data.cnpj || "",
           address: data.address || "",
           email: data.email || "",
           whatsapp: data.whatsapp || "",
+          agencySlug: (data.agencies as any)?.slug || "",
         });
         setNotificationPreferences({
           notify_email: data.notify_email ?? true,
@@ -110,6 +122,53 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
       }
     } catch (error) {
       console.error("Erro ao carregar dados do cliente:", error);
+    }
+  };
+
+  const loadAgencyData = async () => {
+    if (!profile?.agency_id) return;
+
+    setAgencyLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("agencies")
+        .select("id, name, slug, email, whatsapp, plan, plan_renewal_date, brand_primary, brand_secondary, logo_url")
+        .eq("id", profile.agency_id)
+        .single();
+
+      if (error) throw error;
+      setAgencyData(data);
+    } catch (error) {
+      console.error("Erro ao carregar dados da agência:", error);
+    } finally {
+      setAgencyLoading(false);
+    }
+  };
+
+  const loadAgencyStats = async () => {
+    if (!profile?.agency_id) return;
+
+    try {
+      const { data: clients, error: clientsError } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("agency_id", profile.agency_id);
+
+      if (clientsError) throw clientsError;
+
+      const { count: contentCount, error: contentsError } = await supabase
+        .from("contents")
+        .select("id", { count: 'exact', head: true })
+        .in("client_id", clients?.map(c => c.id) || []);
+
+      if (contentsError) throw contentsError;
+
+      setAgencyStats({
+        clientCount: clients?.length || 0,
+        contentCount: contentCount || 0,
+      });
+    } catch (error) {
+      console.error("Erro ao carregar estatísticas da agência:", error);
     }
   };
 
@@ -122,6 +181,7 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
         .from("clients")
         .update({
           name: clientData.name,
+          slug: clientData.slug,
           cnpj: clientData.cnpj,
           address: clientData.address,
           email: clientData.email,
@@ -145,6 +205,40 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
       });
     } finally {
       setClientLoading(false);
+    }
+  };
+
+  const handleSaveAgencyData = async () => {
+    if (!profile?.agency_id || !agencyData) return;
+
+    setAgencyLoading(true);
+    try {
+      const { error } = await supabase
+        .from("agencies")
+        .update({
+          name: agencyData.name,
+          slug: agencyData.slug,
+          email: agencyData.email,
+          whatsapp: agencyData.whatsapp,
+        })
+        .eq("id", profile.agency_id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Dados atualizados",
+        description: "Os dados da agência foram atualizados com sucesso.",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar dados da agência",
+        variant: "destructive",
+      });
+    } finally {
+      setAgencyLoading(false);
     }
   };
 
@@ -345,6 +439,20 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
                     />
                   </div>
                   <div>
+                    <Label htmlFor="client_slug">Slug do Cliente</Label>
+                    <Input
+                      id="client_slug"
+                      value={clientData.slug}
+                      onChange={(e) => setClientData({ ...clientData, slug: e.target.value })}
+                      placeholder="meu-cliente"
+                    />
+                    {clientData.agencySlug && clientData.slug && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        URL de aprovação: {window.location.origin}/{clientData.agencySlug}/{clientData.slug}
+                      </p>
+                    )}
+                  </div>
+                  <div>
                     <Label htmlFor="cnpj">CNPJ</Label>
                     <Input
                       id="cnpj"
@@ -386,19 +494,81 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
             </Card>
           )}
 
-          {/* Plano e Renovação - Apenas para usuários não-clientes */}
-          {!profile?.client_id && (
+          {/* Dados da Agência - Para agency_admin */}
+          {profile?.agency_id && profile?.role === 'agency_admin' && agencyData && (
             <Card>
               <CardContent className="pt-6 space-y-3">
-                <h3 className="font-semibold text-sm text-muted-foreground">Plano e Assinatura</h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">Dados da Agência</h3>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveAgencyData(); }} className="space-y-3">
+                  <div>
+                    <Label htmlFor="agency_name">Nome da Agência</Label>
+                    <Input
+                      id="agency_name"
+                      value={agencyData.name}
+                      onChange={(e) => setAgencyData({ ...agencyData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="agency_slug">Slug da Agência</Label>
+                    <Input
+                      id="agency_slug"
+                      value={agencyData.slug}
+                      onChange={(e) => setAgencyData({ ...agencyData, slug: e.target.value })}
+                      placeholder="minha-agencia"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      URL base: {window.location.origin}/{agencyData.slug}
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="agency_email">Email</Label>
+                    <Input
+                      id="agency_email"
+                      type="email"
+                      value={agencyData.email}
+                      onChange={(e) => setAgencyData({ ...agencyData, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="agency_whatsapp">WhatsApp</Label>
+                    <Input
+                      id="agency_whatsapp"
+                      value={agencyData.whatsapp}
+                      onChange={(e) => setAgencyData({ ...agencyData, whatsapp: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <Button type="submit" size="sm" disabled={agencyLoading}>
+                    {agencyLoading ? "Salvando..." : "Salvar Dados da Agência"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Plano e Estatísticas - Para agency_admin */}
+          {profile?.agency_id && profile?.role === 'agency_admin' && agencyData && (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">Plano e Estatísticas</h3>
                 <div className="space-y-2">
                   <div>
                     <Label className="text-xs text-muted-foreground">Plano Atual</Label>
-                    <p className="text-sm font-medium">{getPlanLabel(profile?.plan)}</p>
+                    <p className="text-sm font-medium">{getPlanLabel(agencyData.plan)}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Data de Renovação</Label>
-                    <p className="text-sm font-medium">{formatDate(profile?.plan_renewal_date)}</p>
+                    <p className="text-sm font-medium">{formatDate(agencyData.plan_renewal_date)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Clientes Cadastrados</Label>
+                    <p className="text-sm font-medium">{agencyStats.clientCount}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Conteúdos Cadastrados</Label>
+                    <p className="text-sm font-medium">{agencyStats.contentCount}</p>
                   </div>
                 </div>
               </CardContent>
