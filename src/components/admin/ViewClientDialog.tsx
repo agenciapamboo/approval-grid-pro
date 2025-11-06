@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building2, Calendar, Globe, Phone, MapPin, FileText, Share2, History } from "lucide-react";
+import { Building2, Calendar, Globe, Phone, MapPin, FileText, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { SocialAccountsDialog } from "./SocialAccountsDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientContentLogsTable } from "./ClientContentLogsTable";
 
 interface Client {
   id: string;
@@ -92,134 +91,119 @@ export function ViewClientDialog({ client, open, onOpenChange }: ViewClientDialo
             </div>
           </DialogHeader>
         
-        <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="info">
-              <Building2 className="h-4 w-4 mr-2" />
-              Informações
-            </TabsTrigger>
-            <TabsTrigger value="logs">
-              <History className="h-4 w-4 mr-2" />
-              Histórico de Conteúdos
-            </TabsTrigger>
-          </TabsList>
+          <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+            <div className="space-y-6">
+              {client.logo_url && (
+                <div className="flex justify-center">
+                  <img src={client.logo_url} alt={client.name} className="h-16 object-contain" />
+                </div>
+              )}
 
-          <TabsContent value="info" className="space-y-6">
-            {client.logo_url && (
-              <div className="flex justify-center">
-                <img src={client.logo_url} alt={client.name} className="h-16 object-contain" />
-              </div>
-            )}
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Nome</h3>
+                  <p className="text-base">{client.name}</p>
+                </div>
 
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">Nome</h3>
-                <p className="text-base">{client.name}</p>
-              </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Email</h3>
+                  <p className="text-base">{client.email || "Não informado"}</p>
+                </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">Email</h3>
-                <p className="text-base">{client.email || "Não informado"}</p>
-              </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Slug (URL)</h3>
+                  <p className="text-base">{client.slug}</p>
+                </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">Slug (URL)</h3>
-                <p className="text-base">{client.slug}</p>
-              </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    CNPJ
+                  </h3>
+                  <p className="text-base">{client.cnpj || "Não informado"}</p>
+                </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  CNPJ
-                </h3>
-                <p className="text-base">{client.cnpj || "Não informado"}</p>
-              </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Data de Vencimento
+                  </h3>
+                  <p className="text-base">
+                    {client.plan_renewal_date 
+                      ? new Date(client.plan_renewal_date).toLocaleDateString('pt-BR')
+                      : "Não informado"
+                    }
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Data de Vencimento
-                </h3>
-                <p className="text-base">
-                  {client.plan_renewal_date 
-                    ? new Date(client.plan_renewal_date).toLocaleDateString('pt-BR')
-                    : "Não informado"
-                  }
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Site
-                </h3>
-                {client.website ? (
-                  <a 
-                    href={client.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-base text-primary hover:underline"
-                  >
-                    {client.website}
-                  </a>
-                ) : (
-                  <p className="text-base">Não informado</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  WhatsApp
-                </h3>
-                <p className="text-base">{client.whatsapp || "Não informado"}</p>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Endereço
-                </h3>
-                <p className="text-base whitespace-pre-wrap">{client.address || "Não informado"}</p>
-              </div>
-
-              <Separator className="my-4" />
-
-              <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Histórico de Observações
-                </h3>
-                
-                <ScrollArea className="h-[200px] rounded-md border p-4">
-                  {loading ? (
-                    <p className="text-sm text-muted-foreground">Carregando...</p>
-                  ) : notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhuma observação registrada</p>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Site
+                  </h3>
+                  {client.website ? (
+                    <a 
+                      href={client.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-base text-primary hover:underline"
+                    >
+                      {client.website}
+                    </a>
                   ) : (
-                    <div className="space-y-4">
-                      {notes.map((note, index) => (
-                        <div key={note.id} className="space-y-1">
-                          <p className="text-sm">{note.note}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                          </p>
-                          {index < notes.length - 1 && <Separator className="mt-3" />}
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-base">Não informado</p>
                   )}
-                </ScrollArea>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    WhatsApp
+                  </h3>
+                  <p className="text-base">{client.whatsapp || "Não informado"}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Endereço
+                  </h3>
+                  <p className="text-base whitespace-pre-wrap">{client.address || "Não informado"}</p>
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Histórico de Observações
+                  </h3>
+                  
+                  <ScrollArea className="h-[200px] rounded-md border p-4">
+                    {loading ? (
+                      <p className="text-sm text-muted-foreground">Carregando...</p>
+                    ) : notes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhuma observação registrada</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {notes.map((note, index) => (
+                          <div key={note.id} className="space-y-1">
+                            <p className="text-sm">{note.note}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(note.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            </p>
+                            {index < notes.length - 1 && <Separator className="mt-3" />}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <ClientContentLogsTable clientId={client.id} />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
     {client && (
       <SocialAccountsDialog
