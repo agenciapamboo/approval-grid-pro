@@ -200,6 +200,96 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
     setHasChanges(true);
   };
 
+  // Função para gerar thumbnail de imagem
+  const generateImageThumbnail = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        // Calcular dimensões mantendo proporção (150px de largura)
+        const targetWidth = 150;
+        const scaleFactor = targetWidth / img.width;
+        const targetHeight = Math.round(img.height * scaleFactor);
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        // Desenhar imagem redimensionada
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        // Converter para blob com compressão
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create thumbnail blob'));
+            }
+          },
+          'image/jpeg',
+          0.7 // 70% de qualidade para arquivo leve
+        );
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Função para gerar thumbnail de vídeo
+  const generateVideoThumbnail = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadeddata = () => {
+        // Capturar frame em 1 segundo (ou início do vídeo)
+        video.currentTime = Math.min(1, video.duration);
+      };
+
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        // Calcular dimensões mantendo proporção (150px de largura)
+        const targetWidth = 150;
+        const scaleFactor = targetWidth / video.videoWidth;
+        const targetHeight = Math.round(video.videoHeight * scaleFactor);
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        // Desenhar frame do vídeo
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+        // Converter para blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create thumbnail blob'));
+            }
+          },
+          'image/jpeg',
+          0.7
+        );
+      };
+
+      video.onerror = () => reject(new Error('Failed to load video'));
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleSave = async () => {
     if (files.length === 0 || !date) {
       toast({
@@ -318,15 +408,39 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
         const mediaKind = file.type.startsWith('video/') ? 'video' : 'image';
 
+        // Gerar thumbnail automático para todas as mídias
+        let autoThumbUrl: string | null = null;
+        try {
+          const thumbnailBlob = mediaKind === 'video' 
+            ? await generateVideoThumbnail(file)
+            : await generateImageThumbnail(file);
+
+          const autoThumbFileName = `${content.id}/auto-thumb-${Date.now()}-${i}.jpg`;
+          const { error: autoThumbUploadError } = await supabase.storage
+            .from('content-media')
+            .upload(autoThumbFileName, thumbnailBlob);
+
+          if (!autoThumbUploadError) {
+            const { data: { publicUrl: autoThumbPublicUrl } } = supabase.storage
+              .from('content-media')
+              .getPublicUrl(autoThumbFileName);
+            autoThumbUrl = autoThumbPublicUrl;
+          }
+        } catch (thumbError) {
+          console.error('Erro ao gerar thumbnail automático:', thumbError);
+          // Continua sem thumbnail se houver erro
+        }
+
         const mediaData: any = {
           content_id: content.id,
           src_url: publicUrl,
           kind: mediaKind,
           order_index: i,
           size_bytes: file.size,
+          thumb_url: autoThumbUrl, // Thumbnail gerado automaticamente
         };
 
-        // Adiciona thumb_url sempre no registro do vídeo
+        // Se for vídeo de reels E tiver um thumbnail manual, sobrescrever
         if (thumbUrl && videoIndex === i) {
           mediaData.thumb_url = thumbUrl;
         }

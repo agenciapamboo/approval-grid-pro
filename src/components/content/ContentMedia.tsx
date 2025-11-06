@@ -98,21 +98,25 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Imagem ou vídeo sem efeito de zoom */}
+        {/* Imagem ou vídeo */}
         <div className="w-full h-full">
           {currentMedia.kind === "video" ? (
             <video
               src={currentMedia.src_url}
-              poster={currentMedia.thumb_url}
+              poster={currentMedia.thumb_url || undefined}
               controls
               className="w-full h-full object-cover"
             />
           ) : (
             <img
-              src={currentMedia.src_url}
+              src={currentMedia.thumb_url || currentMedia.src_url}
               alt={`Mídia ${currentIndex + 1}`}
               className="w-full h-full object-cover cursor-pointer"
               onClick={() => setShowModal(true)}
+              onError={(e) => {
+                // Fallback para imagem original se thumb falhar
+                e.currentTarget.src = currentMedia.src_url;
+              }}
             />
           )}
         </div>
