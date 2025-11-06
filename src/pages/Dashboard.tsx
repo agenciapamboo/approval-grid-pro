@@ -26,6 +26,7 @@ import { TestNotificationButton } from "@/components/admin/TestNotificationButto
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
 import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
 import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsButton";
+import { GenerateApprovalLinkButton } from "@/components/admin/GenerateApprovalLinkButton";
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
 import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
@@ -840,11 +841,6 @@ const Dashboard = () => {
                           )}
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{client.name}</h3>
-                            {agency?.slug && client.slug && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Acesso sem senha: https://aprovacriativos.com.br/{agency.slug}/{client.slug}
-                              </p>
-                            )}
                             {(client as any).monthly_creatives > 0 && (
                               <p className="text-sm text-muted-foreground">
                                 {(client as any).monthly_creatives} criativos/mês
@@ -907,6 +903,15 @@ const Dashboard = () => {
 
                           {/* Coluna Direita - Botões de Conteúdo */}
                           <div className="space-y-2">
+                            {agency?.slug && (
+                              <GenerateApprovalLinkButton
+                                clientId={client.id}
+                                clientName={client.name}
+                                agencySlug={agency.slug}
+                                clientSlug={client.slug}
+                              />
+                            )}
+                            
                             <Button
                               variant="success"
                               size="sm"

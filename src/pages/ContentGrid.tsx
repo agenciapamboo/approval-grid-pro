@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Lock } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogOut, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
@@ -127,7 +128,9 @@ export default function ContentGrid() {
       setApprovalToken(token);
       validateTokenAndLoadData(token);
     } else {
-      loadPublicData();
+      // Não permite mais acesso sem token
+      setTokenValid(false);
+      setLoading(false);
     }
   }, [agencySlug, clientSlug, searchParams]);
 
@@ -450,37 +453,50 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Token inválido ou expirado (com rate limiting)
-  if (approvalToken && tokenValid === false) {
+  // Token necessário - sem acesso público direto
+  if (!approvalToken || tokenValid === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full space-y-4">
-          {rateLimitError.type ? (
-            <RateLimitBlockedAlert
-              type={rateLimitError.type}
-              message={rateLimitError.message}
-              countdown={countdown}
-              blockedUntil={rateLimitError.blockedUntil}
-              ipAddress={rateLimitError.ipAddress}
-              failedAttempts={rateLimitError.failedAttempts}
-              attemptsRemaining={rateLimitError.attemptsRemaining}
-            />
-          ) : (
-            <Alert variant="destructive">
-              <Lock className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Link Expirado ou Inválido</strong>
-                <p className="mt-2">Este link de aprovação não é mais válido. Links de aprovação expiram após 7 dias.</p>
-                <p className="mt-2">Entre em contato com a agência para receber um novo link de aprovação.</p>
-              </AlertDescription>
-            </Alert>
-          )}
-          <Button 
-            onClick={() => navigate('/')} 
-            className="w-full"
-          >
-            Voltar ao Início
-          </Button>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-destructive" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Acesso Restrito</CardTitle>
+                  <CardDescription>Token de aprovação necessário</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {rateLimitError.type && (
+                <Alert variant={rateLimitError.type === 'IP_BLOCKED_PERMANENT' ? 'destructive' : 'default'}>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{rateLimitError.message}</AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="space-y-2">
+                <p className="text-muted-foreground">
+                  {approvalToken 
+                    ? 'O link de aprovação que você está usando é inválido ou expirou.'
+                    : 'Esta página requer um link de aprovação válido para acesso.'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Links de aprovação têm validade de 7 dias e são enviados por email pela agência.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium mb-2">Precisa de acesso?</p>
+                <p className="text-sm text-muted-foreground">
+                  Entre em contato com sua agência para solicitar um novo link de aprovação.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

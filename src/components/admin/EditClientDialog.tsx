@@ -214,7 +214,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               required
             />
             <p className="text-xs text-muted-foreground">
-              Acesso sem senha: https://aprovacriativos.com.br/[slug-agencia]/{formData.slug || 'slug-cliente'}
+              O slug será usado para gerar links de aprovação com tokens de acesso temporário (7 dias)
             </p>
           </div>
 

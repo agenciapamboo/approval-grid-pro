@@ -560,11 +560,9 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
                       onChange={(e) => setClientData({ ...clientData, slug: e.target.value })}
                       placeholder="meu-cliente"
                     />
-                    {clientData.agencySlug && clientData.slug && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        URL de aprovação: https://aprovacriativos.com.br/{clientData.agencySlug}/{clientData.slug}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O slug é usado para gerar links de aprovação com tokens de acesso temporário (validade de 7 dias)
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="cnpj">CNPJ</Label>
