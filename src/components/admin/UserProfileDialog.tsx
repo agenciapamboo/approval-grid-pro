@@ -386,22 +386,24 @@ export function UserProfileDialog({ user, profile, onUpdate, open: controlledOpe
             </Card>
           )}
 
-          {/* Plano e Renovação */}
-          <Card>
-            <CardContent className="pt-6 space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">Plano e Assinatura</h3>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Plano Atual</Label>
-                  <p className="text-sm font-medium">{getPlanLabel(profile?.plan)}</p>
+          {/* Plano e Renovação - Apenas para usuários não-clientes */}
+          {!profile?.client_id && (
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">Plano e Assinatura</h3>
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Plano Atual</Label>
+                    <p className="text-sm font-medium">{getPlanLabel(profile?.plan)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Data de Renovação</Label>
+                    <p className="text-sm font-medium">{formatDate(profile?.plan_renewal_date)}</p>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Data de Renovação</Label>
-                  <p className="text-sm font-medium">{formatDate(profile?.plan_renewal_date)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Alterar Senha */}
           <Card>

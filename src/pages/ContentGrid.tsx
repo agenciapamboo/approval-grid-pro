@@ -71,6 +71,7 @@ export default function ContentGrid() {
   const [user, setUser] = useState<any>(null);
   const [approvalToken, setApprovalToken] = useState<string | null>(null);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [showAllContents, setShowAllContents] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const tokenMonth = searchParams.get('month');
     if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
@@ -358,7 +359,7 @@ export default function ContentGrid() {
     console.log('=== loadContents started for client:', clientId);
     
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('Session in loadContents:', !!session, 'Token access:', tokenAccess);
+    console.log('Session in loadContents:', !!session, 'Token access:', tokenAccess, 'Show all:', showAllContents);
     
     let query = supabase
       .from("contents")
@@ -375,7 +376,12 @@ export default function ContentGrid() {
       console.log('No session - filtering only approved contents');
       query = query.eq("status", "approved");
     } 
-    // Com sessão: mostrar todos
+    // Com sessão de cliente: mostrar apenas in_review por padrão, a menos que showAllContents seja true
+    else if (session && !showAllContents) {
+      console.log('Client session - showing only in_review contents by default');
+      query = query.eq("status", "in_review");
+    }
+    // Se showAllContents for true, mostrar todos
     else {
       console.log('Session exists - loading all contents');
     }
@@ -540,12 +546,39 @@ export default function ContentGrid() {
           </Alert>
         )}
 
+        {/* Botão para ver todos os conteúdos - apenas quando logado e não em modo de aprovação */}
+        {!isPublicView && user && (
+          <div className="mb-6 flex gap-3">
+            <Button
+              variant={!showAllContents ? "default" : "outline"}
+              onClick={() => {
+                setShowAllContents(false);
+                loadContents(client!.id, selectedMonth, false);
+              }}
+            >
+              Pendentes de Aprovação
+            </Button>
+            <Button
+              variant={showAllContents ? "default" : "outline"}
+              onClick={() => {
+                setShowAllContents(true);
+                loadContents(client!.id, selectedMonth, false);
+              }}
+            >
+              Todos os Conteúdos
+            </Button>
+          </div>
+        )}
+
         {/* Seletor de Mês - desabilitado na visualização pública */}
         {!isPublicView && sortedMonthKeys.length > 0 && (
           <div className="mb-6">
             <select
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                loadContents(client!.id, e.target.value, isPublicView);
+              }}
               className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {sortedMonthKeys.map((monthKey) => {
