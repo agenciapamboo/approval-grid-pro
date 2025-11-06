@@ -26,6 +26,7 @@ interface ContentLog {
   approved_at: string | null;
   rejected_at: string | null;
   published_at: string | null;
+  thumb_url: string | null;
   is_available: boolean;
   history: Array<{
     action: string;
@@ -74,10 +75,20 @@ export default function ClientHistory() {
 
     const availableContentIds = new Set(allContentIds?.map(c => c.id) || []);
     
-    // Fetch contents for logs
+    // Fetch contents for logs with their first media thumbnail
     const { data: contents, error: contentsError } = await supabase
       .from("contents")
-      .select("id, title, status, type, version, date, created_at, published_at")
+      .select(`
+        id, 
+        title, 
+        status, 
+        type, 
+        version, 
+        date, 
+        created_at, 
+        published_at,
+        content_media!inner(thumb_url)
+      `)
       .eq("client_id", clientId)
       .order("created_at", { ascending: sortAscending });
 
@@ -153,6 +164,12 @@ export default function ClientHistory() {
       // Sort history by date
       history.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
+      // Get first thumbnail from media array
+      const mediaArray = Array.isArray(content.content_media) 
+        ? content.content_media 
+        : (content.content_media ? [content.content_media] : []);
+      const firstThumb = mediaArray.length > 0 ? mediaArray[0].thumb_url : null;
+
       return {
         id: content.id,
         title: content.title,
@@ -165,6 +182,7 @@ export default function ClientHistory() {
         approved_at: approvedLog?.created_at || null,
         rejected_at: rejectedLog?.created_at || null,
         published_at: content.published_at || null,
+        thumb_url: firstThumb,
         is_available: availableContentIds.has(content.id),
         history,
       };
@@ -237,7 +255,7 @@ export default function ClientHistory() {
                   <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Título</TableHead>
+                      <TableHead>Conteúdo</TableHead>
                       <TableHead className="w-[180px]">Status</TableHead>
                       <TableHead>Data de envio para aprovação</TableHead>
                       <TableHead className="w-[40%]">Histórico</TableHead>
@@ -247,34 +265,43 @@ export default function ClientHistory() {
                     {logs.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">
-                          {log.is_available ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => handleViewContent(log)}
-                                  className="flex items-center gap-2 text-primary hover:underline"
-                                >
-                                  {log.title}
-                                  <Eye className="w-3 h-3" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Ver detalhes do conteúdo</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">{log.title}</span>
-                                  <Badge variant="outline" className="text-xs">Indisponível</Badge>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Conteúdo expirado ou removido pela rotatividade do plano</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
+                          <div className="flex flex-col gap-2">
+                            {log.thumb_url && (
+                              <img 
+                                src={log.thumb_url} 
+                                alt={log.title}
+                                className="w-[150px] h-auto rounded object-cover"
+                              />
+                            )}
+                            {log.is_available ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => handleViewContent(log)}
+                                    className="flex items-center gap-2 text-primary hover:underline text-left"
+                                  >
+                                    {log.title}
+                                    <Eye className="w-3 h-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver detalhes do conteúdo</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">{log.title}</span>
+                                    <Badge variant="outline" className="text-xs">Indisponível</Badge>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Conteúdo expirado ou removido pela rotatividade do plano</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(log.status)}</TableCell>
                         <TableCell>{formatDate(log.created_at)}</TableCell>
