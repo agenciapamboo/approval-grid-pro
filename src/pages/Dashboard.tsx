@@ -25,6 +25,7 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
 import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
+import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsButton";
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
 import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
@@ -993,6 +994,17 @@ const Dashboard = () => {
         {/* Ferramentas e Configurações - Só para Super Admin */}
         {profile?.role === 'super_admin' && (
           <div className="mt-8 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ferramentas de Mídia</CardTitle>
+                <CardDescription>
+                  Gerar miniaturas para conteúdos antigos que não possuem thumbnails
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GenerateThumbnailsButton />
+              </CardContent>
+            </Card>
             <SystemSettingsManager />
             <OrphanedAccountsManager />
           </div>
