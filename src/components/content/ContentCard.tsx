@@ -776,27 +776,38 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
                 {isPublicApproval ? (
-                  // Visualização pública: apenas aprovar e solicitar ajustes
-                  <>
-                    <Button 
-                      size="sm"
-                      variant="success"
-                      onClick={handleApprove}
-                      className="w-full"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Aprovar Conteúdo
-                    </Button>
-                    <Button 
-                      size="sm"
-                      variant="warning"
-                      onClick={() => setShowAdjustment(true)}
-                      className="w-full"
-                    >
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      Solicitar Ajustes
-                    </Button>
-                  </>
+                  // Visualização pública via token: sempre mostrar botões de aprovação para conteúdos in_review
+                  content.status === "in_review" && (
+                    <>
+                      <Button 
+                        size="sm"
+                        variant="success"
+                        onClick={handleApprove}
+                        className="w-full"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Aprovar Conteúdo
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="warning"
+                        onClick={() => setShowAdjustment(true)}
+                        className="w-full"
+                      >
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Solicitar Ajustes
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowComments(!showComments)}
+                        className="w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                      </Button>
+                    </>
+                  )
                 ) : (
                   content.status !== "approved" && (
                     // Visualização autenticada: todas as opções
@@ -827,18 +838,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                       >
                         Reprovar
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setShowComments(!showComments)}
+                        className="w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                      </Button>
                     </>
                   )
                 )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowComments(!showComments)}
-                  className="w-full"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
-                </Button>
               </div>
             </div>
           )}

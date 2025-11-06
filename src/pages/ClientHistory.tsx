@@ -27,6 +27,7 @@ interface ContentLog {
   rejected_at: string | null;
   published_at: string | null;
   thumb_url: string | null;
+  thumb_signed_url: string | null;
   is_available: boolean;
   history: Array<{
     action: string;
@@ -120,8 +121,37 @@ export default function ClientHistory() {
       .in("entity_id", contentIds)
       .in("action", ["approved", "rejected", "submitted_for_review"]);
 
+    // Helper function to generate signed URL
+    const getSignedUrl = async (url: string | null): Promise<string | null> => {
+      if (!url) return null;
+      
+      // Se já é uma URL completa (http/https), retornar como está
+      if (url.startsWith('http')) return url;
+      
+      // Extrair o caminho do arquivo do storage
+      const filePath = url.replace(/^\//, ''); // Remove barra inicial se existir
+      
+      try {
+        const { data, error } = await supabase.storage
+          .from('content-media')
+          .createSignedUrl(filePath, 3600); // URL válida por 1 hora
+        
+        if (error) {
+          console.error('Erro ao gerar URL assinada:', error, 'para:', filePath);
+          return url;
+        }
+        
+        return data.signedUrl;
+      } catch (err) {
+        console.error('Erro ao processar URL:', err);
+        return url;
+      }
+    };
+
     // Process and combine data
-    const processedLogs: ContentLog[] = contents.map((content) => {
+    const processedLogs: ContentLog[] = [];
+    
+    for (const content of contents) {
       const contentComments = comments?.filter((c) => c.content_id === content.id) || [];
       const contentActivity = activityLogs?.filter((a) => a.entity_id === content.id) || [];
 
@@ -169,8 +199,11 @@ export default function ClientHistory() {
         ? content.content_media 
         : (content.content_media ? [content.content_media] : []);
       const firstThumb = mediaArray.length > 0 ? mediaArray[0].thumb_url : null;
+      
+      // Generate signed URL for thumbnail
+      const signedThumbUrl = await getSignedUrl(firstThumb);
 
-      return {
+      processedLogs.push({
         id: content.id,
         title: content.title,
         status: content.status,
@@ -183,10 +216,11 @@ export default function ClientHistory() {
         rejected_at: rejectedLog?.created_at || null,
         published_at: content.published_at || null,
         thumb_url: firstThumb,
+        thumb_signed_url: signedThumbUrl,
         is_available: availableContentIds.has(content.id),
         history,
-      };
-    });
+      });
+    }
 
     setLogs(processedLogs);
     setLoading(false);
@@ -266,11 +300,15 @@ export default function ClientHistory() {
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">
                           <div className="flex flex-col gap-2">
-                            {log.thumb_url && (
+                            {log.thumb_signed_url && (
                               <img 
-                                src={log.thumb_url} 
+                                src={log.thumb_signed_url} 
                                 alt={log.title}
                                 className="w-[150px] h-auto rounded object-cover"
+                                onError={(e) => {
+                                  console.error('Erro ao carregar thumbnail:', log.thumb_url);
+                                  e.currentTarget.style.display = 'none';
+                                }}
                               />
                             )}
                             {log.is_available ? (
