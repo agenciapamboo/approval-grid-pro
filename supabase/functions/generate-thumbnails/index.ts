@@ -43,8 +43,12 @@ serve(async (req) => {
     for (const media of mediaWithoutThumbs) {
       try {
         // Extrair o caminho do arquivo da URL do Supabase Storage
-        const urlParts = media.src_url.split('/storage/v1/object/public/content-media/');
-        const filePath = urlParts[1] || media.src_url.split('/content-media/').pop();
+        const urlPublic = media.src_url.split('/storage/v1/object/public/content-media/')[1];
+        const urlSigned = media.src_url.split('/storage/v1/object/sign/content-media/')[1];
+        const urlGeneric = media.src_url.split('/content-media/')[1];
+        let filePath = (urlPublic || urlSigned || urlGeneric) || '';
+        // Remover query params caso existam (ex: ?token=...)
+        filePath = filePath.split('?')[0];
         
         if (!filePath) {
           console.error(`Caminho inválido para mídia ${media.id}: ${media.src_url}`);
