@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,22 +7,29 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, ArrowUpDown, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, ArrowUpDown, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ContentMedia } from "@/components/content/ContentMedia";
+import { ContentCaption } from "@/components/content/ContentCaption";
 
 interface ContentLog {
   id: string;
   title: string;
   status: string;
+  type: string;
+  version: number;
+  date: string;
   created_at: string;
   submitted_for_review_at: string | null;
   approved_at: string | null;
   rejected_at: string | null;
+  published_at: string | null;
   is_available: boolean;
   history: Array<{
-    type: 'comment' | 'adjustment' | 'rejection';
-    text: string;
+    action: string;
+    details?: string;
     created_at: string;
   }>;
 }
@@ -34,6 +41,8 @@ export default function ClientHistory() {
   const [loading, setLoading] = useState(true);
   const [clientName, setClientName] = useState<string>("");
   const [sortAscending, setSortAscending] = useState(true);
+  const [selectedContent, setSelectedContent] = useState<ContentLog | null>(null);
+  const [showContentDialog, setShowContentDialog] = useState(false);
 
   useEffect(() => {
     if (clientId) {
@@ -68,7 +77,7 @@ export default function ClientHistory() {
     // Fetch contents for logs
     const { data: contents, error: contentsError } = await supabase
       .from("contents")
-      .select("id, title, status, created_at")
+      .select("id, title, status, type, version, date, created_at, published_at")
       .eq("client_id", clientId)
       .order("created_at", { ascending: sortAscending });
 
@@ -111,14 +120,14 @@ export default function ClientHistory() {
       contentComments.forEach((comment) => {
         if (comment.is_adjustment_request) {
           history.push({
-            type: 'adjustment',
-            text: `Solicitação de ajuste: ${comment.adjustment_reason || ''}\n${comment.body}`,
+            action: 'Solicitação de ajuste',
+            details: `${comment.adjustment_reason || ''}\n${comment.body}`,
             created_at: comment.created_at,
           });
         } else {
           history.push({
-            type: 'comment',
-            text: comment.body,
+            action: 'Comentário',
+            details: comment.body,
             created_at: comment.created_at,
           });
         }
@@ -134,8 +143,8 @@ export default function ClientHistory() {
         const reason = (rejectedLog.metadata as any)?.reason || '';
         if (reason) {
           history.push({
-            type: 'rejection',
-            text: `Justificativa de reprovação: ${reason}`,
+            action: 'Reprovado',
+            details: reason,
             created_at: rejectedLog.created_at,
           });
         }
@@ -148,10 +157,14 @@ export default function ClientHistory() {
         id: content.id,
         title: content.title,
         status: content.status,
+        type: content.type,
+        version: content.version,
+        date: content.date,
         created_at: content.created_at,
         submitted_for_review_at: submittedLog?.created_at || null,
         approved_at: approvedLog?.created_at || null,
         rejected_at: rejectedLog?.created_at || null,
+        published_at: content.published_at || null,
         is_available: availableContentIds.has(content.id),
         history,
       };
@@ -182,6 +195,11 @@ export default function ClientHistory() {
   const toggleSort = () => {
     setSortAscending(!sortAscending);
     loadLogs();
+  };
+
+  const handleViewContent = (log: ContentLog) => {
+    setSelectedContent(log);
+    setShowContentDialog(true);
   };
 
   return (
@@ -230,13 +248,20 @@ export default function ClientHistory() {
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">
                           {log.is_available ? (
-                            <Link
-                              to={`/agency/client/${clientId}`}
-                              className="flex items-center gap-2 text-primary hover:underline"
-                            >
-                              {log.title}
-                              <ExternalLink className="w-3 h-3" />
-                            </Link>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => handleViewContent(log)}
+                                  className="flex items-center gap-2 text-primary hover:underline"
+                                >
+                                  {log.title}
+                                  <Eye className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver detalhes do conteúdo</p>
+                              </TooltipContent>
+                            </Tooltip>
                           ) : (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -260,19 +285,13 @@ export default function ClientHistory() {
                             <div className="space-y-2">
                               {log.history.map((item, idx) => (
                                 <div key={idx} className="text-sm">
-                                  <Badge
-                                    variant={
-                                      item.type === 'adjustment'
-                                        ? 'warning'
-                                        : item.type === 'rejection'
-                                        ? 'destructive'
-                                        : 'default'
-                                    }
-                                    className="mb-1"
-                                  >
+                                  <Badge variant="outline" className="mb-1">
                                     {formatDate(item.created_at)}
                                   </Badge>
-                                  <p className="text-muted-foreground whitespace-pre-wrap">{item.text}</p>
+                                  <p className="font-medium">{item.action}</p>
+                                  {item.details && (
+                                    <p className="text-muted-foreground whitespace-pre-wrap">{item.details}</p>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -288,6 +307,72 @@ export default function ClientHistory() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog para visualizar conteúdo */}
+      <Dialog open={showContentDialog} onOpenChange={setShowContentDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedContent?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedContent && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                {getStatusBadge(selectedContent.status)}
+                <Badge variant="outline">{selectedContent.type}</Badge>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-semibold text-muted-foreground">Data de Postagem</p>
+                  <p>{formatDate(selectedContent.date)}</p>
+                </div>
+                {selectedContent.submitted_for_review_at && (
+                  <div>
+                    <p className="font-semibold text-muted-foreground">Enviado em</p>
+                    <p>{formatDate(selectedContent.submitted_for_review_at)}</p>
+                  </div>
+                )}
+                {selectedContent.approved_at && (
+                  <div>
+                    <p className="font-semibold text-muted-foreground">Aprovado em</p>
+                    <p>{formatDate(selectedContent.approved_at)}</p>
+                  </div>
+                )}
+                {selectedContent.published_at && (
+                  <div>
+                    <p className="font-semibold text-muted-foreground">Publicado em</p>
+                    <p>{formatDate(selectedContent.published_at)}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Mídia */}
+              <ContentMedia contentId={selectedContent.id} type={selectedContent.type} />
+
+              {/* Legenda */}
+              <ContentCaption contentId={selectedContent.id} version={selectedContent.version} />
+
+              {/* Histórico */}
+              {selectedContent.history.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Histórico de Atividades</h4>
+                  <div className="space-y-2">
+                    {selectedContent.history.map((event, idx) => (
+                      <div key={idx} className="text-sm bg-muted/50 p-3 rounded-lg">
+                        <p className="font-medium">{event.action}</p>
+                        <p className="text-muted-foreground text-xs">{formatDate(event.created_at)}</p>
+                        {event.details && (
+                          <p className="mt-1 text-muted-foreground whitespace-pre-wrap">{event.details}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
