@@ -25,10 +25,37 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, { src: string; thumb?: string }>>({});
 
   useEffect(() => {
     loadMedia();
   }, [contentId]);
+
+  const getSignedUrl = async (url: string): Promise<string> => {
+    if (!url) return "";
+    
+    // Se já é uma URL completa (http/https), retornar como está
+    if (url.startsWith('http')) return url;
+    
+    // Extrair o caminho do arquivo do storage
+    const filePath = url.replace(/^\//, ''); // Remove barra inicial se existir
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from('content-media')
+        .createSignedUrl(filePath, 3600); // URL válida por 1 hora
+      
+      if (error) {
+        console.error('Erro ao gerar URL assinada:', error);
+        return url;
+      }
+      
+      return data.signedUrl;
+    } catch (err) {
+      console.error('Erro ao processar URL:', err);
+      return url;
+    }
+  };
 
   const loadMedia = async () => {
     setLoading(true);
@@ -40,6 +67,21 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
     if (!error && data) {
       setMedia(data);
+      
+      // Gerar URLs assinadas para todas as mídias
+      const urlsMap: Record<string, { src: string; thumb?: string }> = {};
+      
+      for (const m of data) {
+        const srcUrl = await getSignedUrl(m.src_url);
+        const thumbUrl = m.thumb_url ? await getSignedUrl(m.thumb_url) : undefined;
+        
+        urlsMap[m.id] = {
+          src: srcUrl,
+          thumb: thumbUrl
+        };
+      }
+      
+      setSignedUrls(urlsMap);
     }
     setLoading(false);
   };
@@ -59,6 +101,7 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
   }
 
   const currentMedia = media[currentIndex];
+  const currentSignedUrls = signedUrls[currentMedia?.id] || { src: '', thumb: '' };
 
   // Distância mínima de swipe (em px)
   const minSwipeDistance = 50;
@@ -102,20 +145,25 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
         <div className="w-full h-full">
           {currentMedia.kind === "video" ? (
             <video
-              src={currentMedia.src_url}
-              poster={currentMedia.thumb_url || undefined}
+              src={currentSignedUrls.src}
+              poster={currentSignedUrls.thumb}
               controls
               className="w-full h-full object-cover"
-            />
+            >
+              <source src={currentSignedUrls.src} type="video/mp4" />
+              <source src={currentSignedUrls.src} type="video/webm" />
+              <source src={currentSignedUrls.src} type="video/quicktime" />
+              Seu navegador não suporta vídeos.
+            </video>
           ) : (
             <img
-              src={currentMedia.thumb_url || currentMedia.src_url}
+              src={currentSignedUrls.thumb || currentSignedUrls.src}
               alt={`Mídia ${currentIndex + 1}`}
               className="w-full h-full object-cover cursor-pointer"
               onClick={() => setShowModal(true)}
               onError={(e) => {
                 // Fallback para imagem original se thumb falhar
-                e.currentTarget.src = currentMedia.src_url;
+                e.currentTarget.src = currentSignedUrls.src;
               }}
             />
           )}
@@ -176,9 +224,12 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
                   }`}
                 >
                   <img
-                    src={m.thumb_url || m.src_url}
+                    src={signedUrls[m.id]?.thumb || signedUrls[m.id]?.src || ''}
                     alt={`Miniatura ${idx + 1}`}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = signedUrls[m.id]?.src || '';
+                    }}
                   />
                 </button>
               ))}
@@ -211,14 +262,19 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
           >
             {currentMedia.kind === "video" ? (
               <video
-                src={currentMedia.src_url}
-                poster={currentMedia.thumb_url}
+                src={currentSignedUrls.src}
+                poster={currentSignedUrls.thumb}
                 controls
                 className="max-w-full max-h-[90vh] rounded-lg"
-              />
+              >
+                <source src={currentSignedUrls.src} type="video/mp4" />
+                <source src={currentSignedUrls.src} type="video/webm" />
+                <source src={currentSignedUrls.src} type="video/quicktime" />
+                Seu navegador não suporta vídeos.
+              </video>
             ) : (
               <img
-                src={currentMedia.src_url}
+                src={currentSignedUrls.src}
                 alt={`Mídia ${currentIndex + 1}`}
                 className="max-w-full max-h-[90vh] object-contain rounded-lg"
               />
