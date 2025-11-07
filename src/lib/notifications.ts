@@ -83,12 +83,18 @@ export const createNotification = async (
         const contentDate = new Date(content.date);
         const month = `${contentDate.getFullYear()}-${String(contentDate.getMonth() + 1).padStart(2, '0')}`;
         
-        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('generate-approval-link', {
+        const { data: { session } } = await supabase.auth.getSession();
+        const invokeOptions: any = {
           body: {
             client_id: content.client_id,
             month: month
           }
-        });
+        };
+        if (session?.access_token) {
+          invokeOptions.headers = { Authorization: `Bearer ${session.access_token}` };
+        }
+        
+        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('generate-approval-link', invokeOptions);
 
         if (!tokenError && tokenData?.approval_url) {
           previewLink = tokenData.approval_url;

@@ -37,15 +37,20 @@ export function GenerateApprovalLinkButton({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      const { data, error } = await supabase.functions.invoke('generate-approval-link', {
+      const invokeOptions: any = {
         body: { 
           client_id: clientId,
           month: selectedMonth
-        },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`
         }
-      });
+      };
+
+      if (session?.access_token) {
+        invokeOptions.headers = {
+          Authorization: `Bearer ${session.access_token}`,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke('generate-approval-link', invokeOptions);
 
       if (error) throw error;
 
