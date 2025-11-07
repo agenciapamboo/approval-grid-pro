@@ -1,16 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { handleCORS, errorResponse, successResponse, corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  const corsCheck = handleCORS(req);
+  if (corsCheck) return corsCheck;
 
   try {
     const supabaseClient = createClient(
@@ -23,10 +17,7 @@ serve(async (req) => {
 
     if (!N8N_WEBHOOK_URL) {
       console.error('N8N_WEBHOOK_URL not configured')
-      return new Response(
-        JSON.stringify({ success: false, error: 'N8N webhook not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
+      return errorResponse('N8N webhook not configured', 500);
     }
 
     // Buscar notificações pendentes (deduplicação de 1 hora)

@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { notifySecurity } from "../_shared/internal-notifications.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCORS, errorResponse, successResponse, corsHeaders } from "../_shared/cors.ts";
 
 interface RequestBody {
   token: string;
@@ -26,10 +22,8 @@ interface ValidationResponse {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsCheck = handleCORS(req);
+  if (corsCheck) return corsCheck;
 
   try {
     const supabase = createClient(
@@ -40,10 +34,7 @@ serve(async (req) => {
     const { token }: RequestBody = await req.json();
 
     if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'Token é obrigatório' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Token é obrigatório', 400);
     }
 
     // Obter IP do cliente
