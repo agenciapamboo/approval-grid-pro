@@ -47,7 +47,18 @@ serve(async (req) => {
     }
     console.log('Authenticated user', user.id);
 
-    const { client_id, month }: RequestBody = await req.json();
+    // Ler corpo JSON com tratamento de erro
+    let body: RequestBody | null = null;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { client_id, month } = (body || {}) as RequestBody;
 
     // Validar inputs
     if (!client_id || !month) {
