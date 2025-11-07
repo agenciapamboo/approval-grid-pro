@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { notifySecurity } from "../_shared/internal-notifications.ts";
-import { handleCORS, errorResponse, successResponse, corsHeaders } from "../_shared/cors.ts";
+import { handleCORS, errorResponse, successResponse } from "../_shared/cors.ts";
 
 interface RequestBody {
   token: string;
@@ -33,7 +33,7 @@ serve(async (req) => {
 
     const { token }: RequestBody = await req.json();
 
-    if (!token) {
+    if (!token || typeof token !== 'string') {
       return errorResponse('Token é obrigatório', 400);
     }
 
@@ -44,7 +44,7 @@ serve(async (req) => {
     
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
-    console.log('Token validation attempt from IP:', clientIP);
+    console.log('Token validation request:', { token: token.substring(0, 10) + '...', ip: clientIP });
 
     // Verificar se o IP está bloqueado
     const { data: blockCheck, error: blockError } = await supabase
@@ -58,7 +58,7 @@ serve(async (req) => {
     const rateLimitData = blockCheck as RateLimitResponse;
 
     if (rateLimitData?.is_blocked) {
-      console.log('IP blocked:', clientIP, 'until:', rateLimitData.blocked_until, 'permanent:', rateLimitData.is_permanent);
+      console.log('IP blocked:', { ip: clientIP, until: rateLimitData.blocked_until, permanent: rateLimitData.is_permanent });
       
       // Registrar tentativa bloqueada
       await supabase.rpc('log_validation_attempt', {
@@ -68,7 +68,7 @@ serve(async (req) => {
         p_user_agent: userAgent
       });
 
-      // Enviar notificação de segurança sobre bloqueio de IP
+      // Notificar segurança sobre bloqueio
       await notifySecurity(
         '🚨 IP Bloqueado por Tentativas Falhas',
         `IP ${clientIP} foi bloqueado ${rateLimitData.is_permanent ? 'permanentemente' : 'temporariamente'}`,
@@ -78,41 +78,15 @@ serve(async (req) => {
           failed_attempts: rateLimitData.failed_attempts,
           is_permanent: rateLimitData.is_permanent,
           user_agent: userAgent,
-          token_prefix: token.substring(0, 10) + '...',
-          block_type: rateLimitData.is_permanent ? 'permanent' : 'temporary',
-          block_duration_minutes: rateLimitData.is_permanent ? null : 15
+          block_type: rateLimitData.is_permanent ? 'permanent' : 'temporary'
         },
         supabase
       );
 
       if (rateLimitData.is_permanent) {
-        // Bloqueio permanente (10+ tentativas)
-        return new Response(
-          JSON.stringify({
-            error: 'IP_BLOCKED_PERMANENT',
-            message: 'Seu IP foi bloqueado permanentemente devido a múltiplas tentativas falhas. Entre em contato com o suporte informando seu IP para desbloqueio.',
-            ip_address: clientIP,
-            blocked_until: rateLimitData.blocked_until,
-            failed_attempts: rateLimitData.failed_attempts,
-            contact_support: true,
-            is_permanent: true
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Seu IP foi bloqueado permanentemente. Entre em contato com o suporte.', 429);
       } else {
-        // Bloqueio temporário (5 tentativas)
-        return new Response(
-          JSON.stringify({
-            error: 'IP_BLOCKED_TEMPORARY',
-            message: 'Seu usuário foi bloqueado por 15 minutos por excesso de falhas no login. Volte a tentar mais tarde ou faça a recuperação da senha.',
-            ip_address: clientIP,
-            blocked_until: rateLimitData.blocked_until,
-            failed_attempts: rateLimitData.failed_attempts,
-            contact_support: false,
-            block_duration_minutes: 15
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Bloqueado temporariamente por 15 minutos. Tente novamente mais tarde.', 429);
       }
     }
 
@@ -128,7 +102,7 @@ serve(async (req) => {
     }
 
     if (recentAttempts && recentAttempts.length >= 10) {
-      console.log('Rate limit exceeded for IP:', clientIP);
+      console.log('Rate limit exceeded:', { ip: clientIP, attempts: recentAttempts.length });
       
       await supabase.rpc('log_validation_attempt', {
         p_ip_address: clientIP,
@@ -137,16 +111,7 @@ serve(async (req) => {
         p_user_agent: userAgent
       });
 
-      return new Response(
-        JSON.stringify({
-          error: 'RATE_LIMIT_EXCEEDED',
-          message: 'Limite de tentativas excedido. Aguarde 1 minuto.',
-          ip_address: clientIP,
-          retry_after: 60,
-          attempts_remaining: 0
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Limite de tentativas excedido. Aguarde 1 minuto antes de tentar novamente.', 429);
     }
 
     // Validar o token
@@ -170,9 +135,9 @@ serve(async (req) => {
     }
 
     if (!isValid) {
-      console.log('Invalid token attempt from IP:', clientIP);
+      console.log('Invalid token:', { ip: clientIP });
       
-      // Contar tentativas falhas após este registro
+      // Contar tentativas falhas na última hora
       const { data: failedCount } = await supabase
         .from('token_validation_attempts')
         .select('id')
@@ -184,68 +149,29 @@ serve(async (req) => {
       const remainingAttempts = Math.max(0, 10 - failedAttempts);
 
       let message = 'Token inválido ou expirado.';
-      let show_warning = false;
-      let show_temporary_block_warning = false;
-      let show_permanent_block_warning = false;
       
-      // Regra 1: Aviso após 3 tentativas
       if (failedAttempts >= 3 && failedAttempts < 5) {
-        message = 'Seu usuário pode ser bloqueado. Revise seu usuário e senha e tente novamente.';
-        show_warning = true;
-      }
-      // Regra 2: Aviso de bloqueio temporário após 5 tentativas
-      else if (failedAttempts >= 5 && failedAttempts < 10) {
-        message = 'Token inválido. Próximas tentativas resultarão em bloqueio temporário de 15 minutos.';
-        show_temporary_block_warning = true;
-      }
-      // Regra 3: Aviso de bloqueio permanente próximo
-      else if (failedAttempts >= 10) {
-        message = 'Token inválido. Atenção: você atingiu o limite máximo de tentativas.';
-        show_permanent_block_warning = true;
+        message = 'Token inválido. Atenção: múltiplas tentativas podem resultar em bloqueio.';
+      } else if (failedAttempts >= 5 && failedAttempts < 10) {
+        message = `Token inválido. Próximas tentativas resultarão em bloqueio temporário. Restam ${remainingAttempts} tentativas.`;
+      } else if (failedAttempts >= 10) {
+        message = 'Token inválido. Limite de tentativas atingido.';
       }
 
-      return new Response(
-        JSON.stringify({
-          error: 'INVALID_TOKEN',
-          message,
-          failed_attempts: failedAttempts,
-          attempts_remaining: remainingAttempts,
-          show_warning,
-          show_temporary_block_warning,
-          show_permanent_block_warning
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse(message, 401);
     }
 
-    console.log('Token validated successfully for client:', validation.client_slug);
+    console.log('Token validated successfully:', { client: validation.client_slug, month: validation.month });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        client_id: validation.client_id,
-        client_slug: validation.client_slug,
-        client_name: validation.client_name,
-        month: validation.month
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return successResponse({
+      client_id: validation.client_id,
+      client_slug: validation.client_slug,
+      client_name: validation.client_name,
+      month: validation.month
+    });
 
   } catch (error: any) {
-    console.error('Error in validate-approval-token:', error);
-    
-    return new Response(
-      JSON.stringify({ 
-        error: 'INTERNAL_ERROR',
-        message: 'Erro interno ao validar token.'
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    console.error('Unexpected error in validate-approval-token:', error);
+    return errorResponse('Erro interno ao validar token', 500);
   }
 });

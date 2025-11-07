@@ -1,14 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Copy, ExternalLink, Link as LinkIcon } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ExternalLink, Copy, Calendar } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
 interface GenerateApprovalLinkButtonProps {
   clientId: string;
   clientName: string;
@@ -16,133 +27,144 @@ interface GenerateApprovalLinkButtonProps {
   clientSlug: string;
 }
 
-export function GenerateApprovalLinkButton({ 
-  clientId, 
-  clientName, 
-  agencySlug, 
-  clientSlug 
+interface TokenResponse {
+  success: true;
+  token: string;
+  approval_url: string;
+  expires_at: string;
+  expires_in_days: number;
+  client_slug: string;
+  month: string;
+}
+
+export function GenerateApprovalLinkButton({
+  clientId,
+  clientName,
+  agencySlug,
+  clientSlug,
 }: GenerateApprovalLinkButtonProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [approvalLink, setApprovalLink] = useState<string>("");
-  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [months, setMonths] = useState<Array<{ value: string; label: string; count: number }>>([]);
+  const [loadingMonths, setLoadingMonths] = useState(true);
   const { toast } = useToast();
 
-  // Mês atual no formato YYYY-MM
-  const currentMonth = format(new Date(), "yyyy-MM");
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [months, setMonths] = useState<{ value: string; label: string; count: number }[]>([]);
-  const [loadingMonths, setLoadingMonths] = useState(false);
-
+  // Carregar meses com conteúdo pendente
   useEffect(() => {
-    if (!open) return;
-    const loadMonths = async () => {
-      setLoadingMonths(true);
-      try {
-        const { data, error } = await supabase
-          .from('contents')
-          .select('date, status')
-          .eq('client_id', clientId)
-          .in('status', ['in_review', 'changes_requested', 'draft']);
-        if (!error && data) {
-          const map = new Map<string, number>();
-          data.forEach((row: any) => {
-            if (!row?.date) return;
-            const d = new Date(row.date);
-            if (isNaN(d.getTime())) return;
-            const key = format(d, 'yyyy-MM');
-            map.set(key, (map.get(key) || 0) + 1);
-          });
-          const opts = Array.from(map.entries())
-            .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-            .map(([value, count]) => ({
-              value,
-              count,
-              label: `${format(new Date(`${value}-01`), "MMMM 'de' yyyy", { locale: ptBR })} (${count})`
-            }));
-          setMonths(opts);
-          if (opts.length) setSelectedMonth(opts[0].value);
-        }
-      } finally {
-        setLoadingMonths(false);
-      }
-    };
-    loadMonths();
+    if (open) {
+      loadAvailableMonths();
+    }
   }, [open, clientId]);
-  const generateLink = async () => {
-    setLoading(true);
+
+  const loadAvailableMonths = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast({
-          variant: "destructive",
-          title: "Sessão necessária",
-          description: "Faça login para gerar o link de aprovação.",
-        });
-        setLoading(false);
-        return;
-      }
-      const invokeOptions: any = {
-        body: { 
-          client_id: clientId,
-          month: selectedMonth
-        }
-      };
-
-      // Ensure auth and apikey headers are present without overriding client defaults
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      if (session?.access_token) {
-        invokeOptions.headers = {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: anonKey,
-          'Content-Type': 'application/json'
-        } as any;
-      }
-
-      const { data, error } = await supabase.functions.invoke('generate-approval-link', invokeOptions);
+      setLoadingMonths(true);
+      
+      const { data: contents, error } = await supabase
+        .from("contents")
+        .select("date, status")
+        .eq("client_id", clientId)
+        .in("status", ["in_review", "changes_requested", "draft"])
+        .order("date", { ascending: false });
 
       if (error) throw error;
 
-      if (data?.approval_url) {
-        setApprovalLink(data.approval_url);
-        // Calcular data de expiração (7 dias a partir de agora)
-        const expires = new Date();
-        expires.setDate(expires.getDate() + 7);
-        setExpiresAt(expires);
+      // Agrupar por mês
+      const monthsMap = new Map<string, number>();
+      
+      contents?.forEach((content) => {
+        const date = new Date(content.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        monthsMap.set(monthKey, (monthsMap.get(monthKey) || 0) + 1);
+      });
 
-        toast({
-          title: "Link gerado com sucesso!",
-          description: `Válido por 7 dias (até ${format(expires, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })})`,
-        });
+      // Converter para array e formatar
+      const monthsList = Array.from(monthsMap.entries())
+        .map(([month, count]) => {
+          const [year, monthNum] = month.split("-");
+          const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+          return {
+            value: month,
+            label: `${monthNames[parseInt(monthNum) - 1]}/${year}`,
+            count,
+          };
+        })
+        .sort((a, b) => b.value.localeCompare(a.value));
+
+      setMonths(monthsList);
+      
+      if (monthsList.length > 0) {
+        setSelectedMonth(monthsList[0].value);
       }
     } catch (error: any) {
-      console.error("Erro ao gerar link:", error);
-      const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
-      const errMsg = (error as any)?.message || "Não foi possível gerar o link de aprovação";
-      const nowBr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      console.error("Erro ao carregar meses:", error);
+      toast({
+        title: "Erro ao carregar meses",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMonths(false);
+    }
+  };
 
-      // Tenta extrair detalhes do erro retornado pela Edge Function
-      let serverDetail = '';
-      try {
-        const resp: Response | undefined = (error as any)?.context?.response;
-        if (resp) {
-          const clone = resp.clone();
-          const text = await clone.text();
-          try {
-            const json = JSON.parse(text || '{}');
-            serverDetail = json?.error || json?.message || text || '';
-          } catch (_) {
-            serverDetail = text || '';
-          }
-        }
-      } catch (_) {
-        // ignora
+  const generateLink = async () => {
+    if (!selectedMonth) {
+      toast({
+        title: "Selecione um mês",
+        description: "É necessário selecionar um mês para gerar o link",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error("Usuário não autenticado");
       }
 
+      const { data, error } = await supabase.functions.invoke<TokenResponse>(
+        "generate-approval-link",
+        {
+          body: { 
+            client_id: clientId,
+            month: selectedMonth 
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("Erro da função:", error);
+        throw new Error(error.message || "Falha ao gerar link");
+      }
+
+      if (!data?.success) {
+        throw new Error("Resposta inválida da função");
+      }
+
+      setApprovalLink(data.approval_url);
+      setExpiresAt(data.expires_at);
+
       toast({
+        title: "Link gerado com sucesso",
+        description: `Link válido por ${data.expires_in_days} dias`,
+      });
+    } catch (error: any) {
+      console.error("Erro ao gerar link:", error);
+      toast({
+        title: "Erro ao gerar link",
+        description: error.message || "Ocorreu um erro inesperado",
         variant: "destructive",
-        title: `Erro na função • ${nowBr}${status ? ` • ${status}` : ""}`,
-        description: serverDetail ? `${errMsg} • ${serverDetail}` : errMsg,
       });
     } finally {
       setLoading(false);
@@ -158,70 +180,96 @@ export function GenerateApprovalLinkButton({
       });
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Erro",
+        title: "Erro ao copiar",
         description: "Não foi possível copiar o link",
+        variant: "destructive",
       });
     }
   };
 
   const openLink = () => {
-    window.open(approvalLink, '_blank');
+    window.open(approvalLink, "_blank");
+  };
+
+  const formatExpiryDate = (isoDate: string) => {
+    const date = new Date(isoDate);
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full justify-start">
-          <LinkIcon className="w-4 h-4 mr-2" />
-          Gerar Link
+        <Button variant="outline" size="sm">
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Gerar Link de Aprovação
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Link de Aprovação</DialogTitle>
+          <DialogTitle>Gerar Link de Aprovação</DialogTitle>
           <DialogDescription>
-            Gere um link temporário (7 dias) para {clientName} revisar conteúdos
+            Crie um link temporário (7 dias) para {clientName} aprovar conteúdos
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="month">Mês com pendências</Label>
-            <div className="flex gap-2">
-              <Select value={selectedMonth} onValueChange={(v) => setSelectedMonth(v)}>
-                <SelectTrigger className="flex-1" id="month">
-                  <SelectValue placeholder={loadingMonths ? "Carregando..." : (months.length ? "Selecione um mês" : "Sem pendências") } />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={generateLink}
-                disabled={loading || !selectedMonth}
-                variant="default"
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                {loading ? "Gerando..." : "Gerar"}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Mostrando meses com conteúdos "Em revisão", "Ajustes solicitados" ou "Rascunho".
-            </p>
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Selecione o mês
+            </label>
+            <Select
+              value={selectedMonth}
+              onValueChange={setSelectedMonth}
+              disabled={loadingMonths || loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={loadingMonths ? "Carregando..." : "Selecione um mês"} />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <span>{month.label}</span>
+                      <Badge variant="outline" className="ml-2">
+                        {month.count} pendente{month.count !== 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {months.length === 0 && !loadingMonths && (
+              <p className="text-sm text-muted-foreground">
+                Nenhum conteúdo pendente encontrado
+              </p>
+            )}
           </div>
+
+          <Button
+            onClick={generateLink}
+            disabled={loading || !selectedMonth || loadingMonths}
+            className="w-full"
+          >
+            {loading ? "Gerando..." : "Gerar Link"}
+          </Button>
 
           {approvalLink && (
             <div className="space-y-3 pt-4 border-t">
               <div className="space-y-2">
-                <Label>Link Gerado</Label>
+                <label className="text-sm font-medium">Link gerado:</label>
                 <div className="flex gap-2">
-                  <Input
+                  <input
+                    type="text"
                     value={approvalLink}
                     readOnly
-                    className="font-mono text-xs"
+                    className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted"
                   />
                   <Button
                     variant="outline"
@@ -229,7 +277,7 @@ export function GenerateApprovalLinkButton({
                     onClick={copyToClipboard}
                     title="Copiar link"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
@@ -237,24 +285,18 @@ export function GenerateApprovalLinkButton({
                     onClick={openLink}
                     title="Abrir link"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              {expiresAt && (
-                <div className="bg-muted p-3 rounded-lg">
-                  <p className="text-sm font-medium">Validade</p>
-                  <p className="text-sm text-muted-foreground">
-                    Expira em {format(expiresAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </p>
-                </div>
-              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Expira em:</span>
+                <Badge variant="outline">{formatExpiryDate(expiresAt)}</Badge>
+              </div>
 
-              <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                <p className="text-sm text-blue-900 dark:text-blue-100">
-                  💡 Envie este link por email ou WhatsApp para o cliente revisar os conteúdos do mês selecionado.
-                </p>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                💡 <strong>Dica:</strong> Envie este link para o cliente via WhatsApp, e-mail ou o canal de preferência dele. O link permite aprovação direta sem necessidade de login.
               </div>
             </div>
           )}
