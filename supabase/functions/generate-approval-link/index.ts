@@ -78,13 +78,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Validar usuário autenticado com timeout
+    // Validar usuário autenticado com timeout (usando o token explícito para evitar problemas de headers)
+    const jwt = authHeader.replace('Bearer ', '').trim();
     const userResult = await Promise.race([
-      supabase.auth.getUser(),
+      supabase.auth.getUser(jwt),
       timeoutPromise
     ]) as { data: { user: any }, error: any };
 
-    if (userResult.error || !userResult.data.user) {
+    if (userResult?.error || !userResult?.data?.user) {
       console.error('[Auth] User validation failed');
       return errorResponse('Não autorizado', 401);
     }
