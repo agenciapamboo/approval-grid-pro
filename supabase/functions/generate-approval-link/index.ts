@@ -78,10 +78,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Validar usuário autenticado com timeout (usando o token explícito para evitar problemas de headers)
+    // Validar usuário autenticado com timeout (usando service role para validar JWT corretamente)
     const jwt = authHeader.replace('Bearer ', '').trim();
     const userResult = await Promise.race([
-      supabase.auth.getUser(jwt),
+      adminSupabase.auth.getUser(jwt),
       timeoutPromise
     ]) as { data: { user: any }, error: any };
 
