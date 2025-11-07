@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useStorageUrl } from "@/hooks/useStorageUrl";
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -17,54 +18,32 @@ interface ContentMediaProps {
   type: string;
 }
 
+// Hook auxiliar para uma mídia individual
+function useMediaUrl(media: Media | undefined) {
+  const srcFilePath = media?.src_url?.includes('/content-media/')
+    ? media.src_url.split('/content-media/')[1]
+    : media?.src_url;
+  const thumbFilePath = media?.thumb_url?.includes('/content-media/')
+    ? media.thumb_url.split('/content-media/')[1]
+    : media?.thumb_url;
+
+  const { url: srcUrl } = useStorageUrl({ bucket: 'content-media', filePath: srcFilePath });
+  const { url: thumbUrl } = useStorageUrl({ bucket: 'content-media', filePath: thumbFilePath });
+
+  return { srcUrl, thumbUrl };
+}
+
 export function ContentMedia({ contentId, type }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [signedUrls, setSignedUrls] = useState<Record<string, { src: string; thumb?: string }>>({});
 
   useEffect(() => {
     loadMedia();
   }, [contentId]);
-
-  const getSignedUrl = async (url: string): Promise<string> => {
-    if (!url) return "";
-
-    // Tentar extrair o path do bucket, independente se veio como URL pública antiga ou apenas o caminho
-    let filePath = '';
-    try {
-      if (url.includes('/content-media/')) {
-        filePath = url.split('/content-media/')[1];
-      } else if (!url.startsWith('http')) {
-        filePath = url.replace(/^\//, ''); // remove barra inicial se existir
-      }
-    } catch {
-      filePath = '';
-    }
-
-    // Se não reconhecemos como um arquivo do storage, retorna como está (pode ser URL externa)
-    if (!filePath) return url;
-
-    try {
-      const { data, error } = await supabase.storage
-        .from('content-media')
-        .createSignedUrl(filePath, 3600); // URL válida por 1 hora
-
-      if (error) {
-        console.error('Erro ao gerar URL assinada:', error);
-        return url;
-      }
-
-      return data.signedUrl;
-    } catch (err) {
-      console.error('Erro ao processar URL:', err);
-      return url;
-    }
-  };
 
   const loadMedia = async () => {
     setLoading(true);
@@ -76,21 +55,6 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
     if (!error && data) {
       setMedia(data);
-      
-      // Gerar URLs assinadas para todas as mídias
-      const urlsMap: Record<string, { src: string; thumb?: string }> = {};
-      
-      for (const m of data) {
-        const srcUrl = await getSignedUrl(m.src_url);
-        const thumbUrl = m.thumb_url ? await getSignedUrl(m.thumb_url) : undefined;
-        
-        urlsMap[m.id] = {
-          src: srcUrl,
-          thumb: thumbUrl
-        };
-      }
-      
-      setSignedUrls(urlsMap);
     }
     setLoading(false);
   };
@@ -110,7 +74,7 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
   }
 
   const currentMedia = media[currentIndex];
-  const currentSignedUrls = signedUrls[currentMedia?.id] || { src: '', thumb: '' };
+  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia);
 
   // Distância mínima de swipe (em px)
   const minSwipeDistance = 50;
@@ -144,8 +108,6 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
     <>
       <div 
         className="relative aspect-[4/5] bg-muted overflow-hidden group"
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -154,25 +116,24 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
         <div className="w-full h-full">
           {currentMedia.kind === "video" ? (
             <video
-              src={currentSignedUrls.src}
-              poster={currentSignedUrls.thumb}
+              src={srcUrl || ''}
+              poster={thumbUrl}
               controls
               className="w-full h-full object-cover"
             >
-              <source src={currentSignedUrls.src} type="video/mp4" />
-              <source src={currentSignedUrls.src} type="video/webm" />
-              <source src={currentSignedUrls.src} type="video/quicktime" />
+              <source src={srcUrl || ''} type="video/mp4" />
+              <source src={srcUrl || ''} type="video/webm" />
+              <source src={srcUrl || ''} type="video/quicktime" />
               Seu navegador não suporta vídeos.
             </video>
           ) : (
             <img
-              src={currentSignedUrls.thumb || currentSignedUrls.src}
+              src={thumbUrl || srcUrl || ''}
               alt={`Mídia ${currentIndex + 1}`}
               className="w-full h-full object-cover cursor-pointer"
               onClick={() => setShowModal(true)}
               onError={(e) => {
-                // Fallback para imagem original se thumb falhar
-                e.currentTarget.src = currentSignedUrls.src;
+                if (srcUrl) e.currentTarget.src = srcUrl;
               }}
             />
           )}
@@ -221,28 +182,6 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
                 />
               ))}
             </div>
-
-            {/* Miniaturas */}
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {media.map((m, idx) => (
-                <button
-                  key={m.id}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`w-12 h-12 rounded overflow-hidden border-2 transition-all ${
-                    idx === currentIndex ? "border-white" : "border-transparent opacity-60"
-                  }`}
-                >
-                  <img
-                    src={signedUrls[m.id]?.thumb || signedUrls[m.id]?.src || ''}
-                    alt={`Miniatura ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = signedUrls[m.id]?.src || '';
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
           </>
         )}
 
@@ -271,19 +210,19 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
           >
             {currentMedia.kind === "video" ? (
               <video
-                src={currentSignedUrls.src}
-                poster={currentSignedUrls.thumb}
+                src={srcUrl || ''}
+                poster={thumbUrl}
                 controls
                 className="max-w-full max-h-[90vh] rounded-lg"
               >
-                <source src={currentSignedUrls.src} type="video/mp4" />
-                <source src={currentSignedUrls.src} type="video/webm" />
-                <source src={currentSignedUrls.src} type="video/quicktime" />
+                <source src={srcUrl || ''} type="video/mp4" />
+                <source src={srcUrl || ''} type="video/webm" />
+                <source src={srcUrl || ''} type="video/quicktime" />
                 Seu navegador não suporta vídeos.
               </video>
             ) : (
               <img
-                src={currentSignedUrls.src}
+                src={srcUrl || ''}
                 alt={`Mídia ${currentIndex + 1}`}
                 className="max-w-full max-h-[90vh] object-contain rounded-lg"
               />

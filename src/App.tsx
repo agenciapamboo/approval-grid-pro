@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { lazy, Suspense } from "react";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Lazy load all pages for better performance
 const Index = lazy(() => import("./pages/Index"));
@@ -34,48 +36,54 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-background">
-              <div className="flex flex-col items-center gap-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-                <p className="text-sm text-muted-foreground">Carregando...</p>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+                  <p className="text-sm text-muted-foreground">Carregando...</p>
+                </div>
               </div>
-            </div>
-          }>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-              <Route path="/linkderecuperacao" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/planos" element={<Pricing />} />
-              <Route path="/success" element={<Success />} />
-              <Route path="/minha-assinatura" element={<MySubscription />} />
-              <Route path="/minha-conta" element={<MyAccount />} />
-              <Route path="/agency/client/:clientId" element={<AgencyContentManager />} />
-              <Route path="/agency/creative-requests" element={<CreativeRequests />} />
-              <Route path="/agency/creative-requests/:clientId" element={<CreativeRequests />} />
-              <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
-              <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
-              
-              <Route path="/hero" element={<HeroDemo />} />
-              <Route path="/social-connect" element={<SocialConnect />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/data-deletion" element={<DataDeletion />} />
-              <Route path="/terms-of-service" element={<TermsOfService />} />
-              <Route path="/central-de-ajuda" element={<HelpCenter />} />
-              <Route path="/admin/blocked-ips" element={<BlockedIPs />} />
-              <Route path="/client/:clientId/history" element={<ClientHistory />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
+            }>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                <Route path="/linkderecuperacao" element={<ResetPassword />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/data-deletion" element={<DataDeletion />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/central-de-ajuda" element={<HelpCenter />} />
+                
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/planos" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+                <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
+                <Route path="/minha-assinatura" element={<ProtectedRoute><MySubscription /></ProtectedRoute>} />
+                <Route path="/minha-conta" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+                <Route path="/agency/client/:clientId" element={<ProtectedRoute><AgencyContentManager /></ProtectedRoute>} />
+                <Route path="/agency/creative-requests" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />
+                <Route path="/agency/creative-requests/:clientId" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />
+                <Route path="/social-connect" element={<ProtectedRoute><SocialConnect /></ProtectedRoute>} />
+                <Route path="/admin/blocked-ips" element={<ProtectedRoute><BlockedIPs /></ProtectedRoute>} />
+                <Route path="/client/:clientId/history" element={<ProtectedRoute><ClientHistory /></ProtectedRoute>} />
+                <Route path="/hero" element={<ProtectedRoute><HeroDemo /></ProtectedRoute>} />
+                
+                {/* Public approval pages */}
+                <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
+                <Route path="/a/:agencySlug/c/:clientSlug" element={<ContentGrid />} />
+                
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

@@ -387,16 +387,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!session) {
-          navigate("/auth");
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
   const handleSignOut = async () => {

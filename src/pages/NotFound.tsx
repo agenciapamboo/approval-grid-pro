@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { AppFooter } from "@/components/layout/AppFooter";
 
@@ -15,9 +15,9 @@ const NotFound = () => {
         <div className="text-center">
           <h1 className="mb-4 text-4xl font-bold font-poppins">404</h1>
           <p className="mb-4 text-xl text-muted-foreground">Página não encontrada</p>
-          <a href="/" className="text-primary underline hover:text-primary/80">
+          <Link to="/" className="text-primary underline hover:text-primary/80">
             Voltar para o início
-          </a>
+          </Link>
         </div>
       </div>
       
