@@ -172,15 +172,25 @@ serve(async (req) => {
 
     // Gerar token com timeout
     const tokenResult = await Promise.race([
-      adminSupabase.rpc('generate_approval_token', {
+      supabase.rpc('generate_approval_token', {
         p_client_id: client_id,
         p_month: month
       }),
       timeoutPromise
     ]) as any;
 
-    if (tokenResult.error || !tokenResult.data) {
-      console.error('[RPC] Token generation failed');
+    if (tokenResult.error) {
+      console.error('[RPC] generate_approval_token error details:', {
+        message: tokenResult.error.message,
+        details: tokenResult.error.details,
+        hint: tokenResult.error.hint,
+        code: tokenResult.error.code
+      });
+      return errorResponse('Falha ao gerar token', 500);
+    }
+
+    if (!tokenResult.data) {
+      console.error('[RPC] Token generation returned no data');
       return errorResponse('Falha ao gerar token', 500);
     }
 
