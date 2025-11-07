@@ -35,10 +35,14 @@ serve(async (req) => {
       }
     );
 
-    // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Verificar autenticação usando o JWT explícito do header
+    const jwt = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : (authHeader || '');
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
     if (authError || !user) {
-      console.log('Auth check failed', { hasError: !!authError });
+      console.log('Auth check failed', { hasError: !!authError, message: authError?.message });
       throw new Error('Unauthorized');
     }
     console.log('Authenticated user', user.id);
