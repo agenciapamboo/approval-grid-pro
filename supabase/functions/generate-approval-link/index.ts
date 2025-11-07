@@ -84,21 +84,7 @@ serve(async (req) => {
 
     console.log('Generating approval token for:', { client_id, month });
 
-    // Gerar token usando a função do banco
-    const { data: tokenData, error: tokenError } = await adminSupabase
-      .rpc('generate_approval_token', {
-        p_client_id: client_id,
-        p_month: month
-      });
-
-    if (tokenError) {
-      console.error('Error generating token:', tokenError);
-      throw new Error('Failed to generate approval token');
-    }
-
-    const token = tokenData;
-
-    // Buscar dados do cliente para construir o link
+    // Buscar cliente para validar permissões
     const { data: client, error: clientError } = await adminSupabase
       .from('clients')
       .select('slug, agency_id')
@@ -107,7 +93,34 @@ serve(async (req) => {
 
     if (clientError || !client) {
       console.error('Error fetching client:', clientError);
-      throw new Error('Client not found');
+      return new Response(
+        JSON.stringify({ error: 'Client not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Buscar perfil do usuário autenticado para checar papel e agência
+    const { data: profile, error: profileError } = await adminSupabase
+      .from('profiles')
+      .select('agency_id, role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Error fetching profile:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Profile not found' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Somente admins da agência do cliente podem gerar o link
+    if (profile.role !== 'agency_admin' || profile.agency_id !== client.agency_id) {
+      console.warn('Permission denied to generate approval link', { user_id: user.id, profile_agency: profile.agency_id, client_agency: client.agency_id });
+      return new Response(
+        JSON.stringify({ error: 'Only agency admins of this client can generate approval links' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Buscar dados da agência
@@ -119,8 +132,28 @@ serve(async (req) => {
 
     if (agencyError || !agency) {
       console.error('Error fetching agency:', agencyError);
-      throw new Error('Agency not found');
+      return new Response(
+        JSON.stringify({ error: 'Agency not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Gerar token usando o contexto do usuário (para registrar created_by corretamente)
+    const { data: tokenData, error: tokenError } = await supabase
+      .rpc('generate_approval_token', {
+        p_client_id: client_id,
+        p_month: month
+      });
+
+    if (tokenError) {
+      console.error('Error generating token:', tokenError);
+      return new Response(
+        JSON.stringify({ error: `Failed to generate approval token: ${tokenError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = tokenData as string;
 
     // Construir URL de aprovação
     const approvalUrl = `https://aprovacriativos.com.br/${agency.slug}/${client.slug}?token=${token}&month=${month}`;
