@@ -117,10 +117,13 @@ export function GenerateApprovalLinkButton({
       }
     } catch (error: any) {
       console.error("Erro ao gerar link:", error);
+      const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
+      const errMsg = (error as any)?.message || "Não foi possível gerar o link de aprovação";
+      const nowBr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: error.message || "Não foi possível gerar o link de aprovação",
+        title: `Erro na função • ${nowBr}${status ? ` • ${status}` : ""}`,
+        description: errMsg,
       });
     } finally {
       setLoading(false);
