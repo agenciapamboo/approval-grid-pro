@@ -4,10 +4,15 @@ import { handleCORS, errorResponse, successResponse } from "../_shared/cors.ts";
 
 const TIMEOUT_MS = 10000;
 const BASE_URL = Deno.env.get('APPROVAL_BASE_URL') ?? 'https://aprovacriativos.com.br';
+const ALLOWED_ORIGINS = [
+  'https://aprovacriativos.com.br',
+  'http://localhost:5173',
+  'http://localhost:8080'
+];
 
 interface GenerateTokenRequest {
   client_id: string;
-  month: string; // formato YYYY-MM
+  month: string;
 }
 
 interface TokenResponse {
@@ -25,14 +30,26 @@ serve(async (req) => {
   if (corsCheck) return corsCheck;
 
   try {
+    // CSRF Protection
+    const origin = req.headers.get('origin');
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+      console.error('[Security] Origin not allowed:', origin);
+      return errorResponse('Origin não permitida', 403);
+    }
+
     // Verificar Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('[Auth] Missing or invalid Authorization header');
+      console.error('[Auth] Missing Authorization header');
       return errorResponse('Autenticação necessária', 401);
     }
 
-    // Criar cliente Supabase com timeout
+    // Timeout Promise
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), TIMEOUT_MS)
+    );
+
+    // Criar clientes Supabase
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -48,16 +65,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Validar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error('[Auth] User validation failed:', authError?.message || 'No user');
+    // Validar usuário autenticado com timeout
+    const userResult = await Promise.race([
+      supabase.auth.getUser(),
+      timeoutPromise
+    ]) as { data: { user: any }, error: any };
+
+    if (userResult.error || !userResult.data.user) {
+      console.error('[Auth] User validation failed');
       return errorResponse('Não autorizado', 401);
     }
 
-    console.log('[Auth] User authenticated:', user.id);
+    const user = userResult.data.user;
+    console.log('[Auth] Authenticated:', user.id);
 
-    // Parse e validação do corpo da requisição
+    // Parse do body
     const body = await req.json().catch(() => null) as GenerateTokenRequest | null;
     
     if (!body?.client_id || !body?.month) {
@@ -66,84 +88,113 @@ serve(async (req) => {
 
     const { client_id, month } = body;
 
-    // Validar formato do mês (YYYY-MM)
+    // Validação de formato YYYY-MM
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
-      return errorResponse('Formato de mês inválido. Use YYYY-MM', 400);
+      return errorResponse('Formato inválido. Use YYYY-MM', 400);
     }
 
-    // Buscar dados em paralelo
-    const [clientResult, profileResult] = await Promise.all([
-      adminSupabase
-        .from('clients')
-        .select('id, slug, agency_id, name')
-        .eq('id', client_id)
-        .single(),
-      adminSupabase
-        .from('profiles')
-        .select('id, agency_id, role')
-        .eq('id', user.id)
-        .single()
-    ]);
+    // Validar UUID do cliente
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(client_id)) {
+      return errorResponse('client_id inválido', 400);
+    }
 
-    // Validações
+    // Buscar dados com timeout
+    const [clientResult, profileResult] = await Promise.race([
+      Promise.all([
+        adminSupabase
+          .from('clients')
+          .select('id, slug, agency_id, name')
+          .eq('id', client_id)
+          .single(),
+        adminSupabase
+          .from('profiles')
+          .select('id, agency_id, role')
+          .eq('id', user.id)
+          .single()
+      ]),
+      timeoutPromise
+    ]) as any[];
+
     if (clientResult.error || !clientResult.data) {
-      console.error('[DB] Client not found:', client_id);
+      console.error('[DB] Client not found');
       return errorResponse('Cliente não encontrado', 404);
     }
 
     if (profileResult.error || !profileResult.data) {
-      console.error('[DB] Profile not found:', user.id);
+      console.error('[DB] Profile not found');
       return errorResponse('Perfil não encontrado', 403);
     }
 
     const client = clientResult.data;
     const profile = profileResult.data;
 
-    // Verificar permissões
+    // Verificação de permissões
     if (profile.role !== 'agency_admin') {
-      console.error('[Auth] User is not agency_admin:', profile.role);
+      console.error('[Auth] Not admin:', profile.role);
       return errorResponse('Apenas administradores podem gerar links', 403);
     }
 
     if (profile.agency_id !== client.agency_id) {
-      console.error('[Auth] Agency mismatch:', profile.agency_id, 'vs', client.agency_id);
-      return errorResponse('Você não tem acesso a este cliente', 403);
+      console.error('[Auth] Agency mismatch');
+      return errorResponse('Sem acesso a este cliente', 403);
     }
 
-    // Buscar slug da agência
-    const { data: agency, error: agencyError } = await adminSupabase
-      .from('agencies')
-      .select('slug')
-      .eq('id', client.agency_id)
-      .single();
+    // Buscar agency com timeout
+    const agencyResult = await Promise.race([
+      adminSupabase
+        .from('agencies')
+        .select('slug')
+        .eq('id', client.agency_id)
+        .single(),
+      timeoutPromise
+    ]) as any;
 
-    if (agencyError || !agency) {
-      console.error('[DB] Agency not found:', client.agency_id);
+    if (agencyResult.error || !agencyResult.data) {
+      console.error('[DB] Agency not found');
       return errorResponse('Agência não encontrada', 404);
     }
 
-    // Gerar token via RPC
-    const { data: token, error: tokenError } = await supabase.rpc(
-      'generate_approval_token',
-      {
+    const agency = agencyResult.data;
+
+    // Gerar token com timeout
+    const tokenResult = await Promise.race([
+      supabase.rpc('generate_approval_token', {
         p_client_id: client_id,
         p_month: month
-      }
-    );
+      }),
+      timeoutPromise
+    ]) as any;
 
-    if (tokenError || !token) {
-      console.error('[RPC] Token generation failed:', tokenError?.message);
+    if (tokenResult.error || !tokenResult.data) {
+      console.error('[RPC] Token generation failed');
       return errorResponse('Falha ao gerar token', 500);
     }
 
-    // Calcular data de expiração
+    const token = tokenResult.data;
+
+    // Calcular expiração (7 dias)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Montar URL
+    // Construir URL de aprovação
     const approvalUrl = `${BASE_URL}/${agency.slug}/${client.slug}?token=${token}&month=${month}`;
 
-    console.log('[Success] Token generated for client:', client.slug);
+    // Log de auditoria
+    await adminSupabase.from('approval_tokens_audit').insert({
+      token_id: null,
+      token_value: token.substring(0, 10) + '...',
+      action: 'created',
+      ip_address: req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip'),
+      user_agent: req.headers.get('user-agent'),
+      metadata: {
+        client_id,
+        client_name: client.name,
+        month,
+        created_by: user.id
+      }
+    });
+
+    console.log('[Success] Token created:', { client: client.slug, month });
 
     const response: TokenResponse = {
       success: true,
@@ -158,13 +209,12 @@ serve(async (req) => {
     return successResponse(response);
 
   } catch (error: any) {
-    console.error('[Error] Unexpected error:', error.message);
+    console.error('[Error]', error.message);
     
-    // Não expor detalhes em produção
     if (error.message === 'Request timeout') {
-      return errorResponse('Tempo limite excedido', 504);
+      return errorResponse('Timeout', 504);
     }
     
-    return errorResponse('Erro interno do servidor', 500);
+    return errorResponse('Erro interno', 500);
   }
 });

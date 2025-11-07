@@ -114,7 +114,7 @@ serve(async (req) => {
       return errorResponse('Limite de tentativas excedido. Aguarde 1 minuto antes de tentar novamente.', 429);
     }
 
-    // Validar o token
+    // Validar token
     const { data: validationData, error: validationError } = await supabase
       .rpc('validate_approval_token', { p_token: token })
       .single();
@@ -122,16 +122,27 @@ serve(async (req) => {
     const isValid = !validationError && validationData;
     const validation = validationData as ValidationResponse;
 
-    // Registrar tentativa
-    const { error: logError } = await supabase.rpc('log_validation_attempt', {
+    // Log de validação
+    await supabase.rpc('log_validation_attempt', {
       p_ip_address: clientIP,
       p_token_attempted: token.substring(0, 10) + '...',
       p_success: isValid,
       p_user_agent: userAgent
     });
 
-    if (logError) {
-      console.error('Error logging attempt:', logError);
+    // Auditoria
+    if (isValid) {
+      await supabase.from('approval_tokens_audit').insert({
+        token_id: null,
+        token_value: token.substring(0, 10) + '...',
+        action: 'validated',
+        ip_address: clientIP,
+        user_agent: userAgent,
+        metadata: {
+          client_slug: validation.client_slug,
+          month: validation.month
+        }
+      });
     }
 
     if (!isValid) {
