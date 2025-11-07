@@ -149,9 +149,8 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
 
           if (uploadError) throw uploadError;
 
-          const { data: { publicUrl } } = supabase.storage
-            .from('content-media')
-            .getPublicUrl(fileName);
+          // Salvar apenas o caminho no bucket (não URL pública)
+          const publicUrl = fileName;
 
           await supabase
             .from("content_media")

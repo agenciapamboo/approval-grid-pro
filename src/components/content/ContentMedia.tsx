@@ -33,23 +33,32 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
   const getSignedUrl = async (url: string): Promise<string> => {
     if (!url) return "";
-    
-    // Se já é uma URL completa (http/https), retornar como está
-    if (url.startsWith('http')) return url;
-    
-    // Extrair o caminho do arquivo do storage
-    const filePath = url.replace(/^\//, ''); // Remove barra inicial se existir
-    
+
+    // Tentar extrair o path do bucket, independente se veio como URL pública antiga ou apenas o caminho
+    let filePath = '';
+    try {
+      if (url.includes('/content-media/')) {
+        filePath = url.split('/content-media/')[1];
+      } else if (!url.startsWith('http')) {
+        filePath = url.replace(/^\//, ''); // remove barra inicial se existir
+      }
+    } catch {
+      filePath = '';
+    }
+
+    // Se não reconhecemos como um arquivo do storage, retorna como está (pode ser URL externa)
+    if (!filePath) return url;
+
     try {
       const { data, error } = await supabase.storage
         .from('content-media')
         .createSignedUrl(filePath, 3600); // URL válida por 1 hora
-      
+
       if (error) {
         console.error('Erro ao gerar URL assinada:', error);
         return url;
       }
-      
+
       return data.signedUrl;
     } catch (err) {
       console.error('Erro ao processar URL:', err);

@@ -350,11 +350,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           throw thumbUploadError;
         }
 
-        const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
-          .from('content-media')
-          .getPublicUrl(thumbFileName);
-        
-        thumbUrl = thumbPublicUrl;
+        // Armazenar apenas o caminho no bucket (não URL pública)
+        thumbUrl = thumbFileName;
       }
 
       // Validação de tamanho de arquivo (50MB por arquivo)
@@ -402,9 +399,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           throw uploadError;
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('content-media')
-          .getPublicUrl(fileName);
+        // Salvar apenas o caminho no bucket (não URL pública)
+        const publicUrl = fileName;
 
         const mediaKind = file.type.startsWith('video/') ? 'video' : 'image';
 
@@ -421,10 +417,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
             .upload(autoThumbFileName, thumbnailBlob);
 
           if (!autoThumbUploadError) {
-            const { data: { publicUrl: autoThumbPublicUrl } } = supabase.storage
-              .from('content-media')
-              .getPublicUrl(autoThumbFileName);
-            autoThumbUrl = autoThumbPublicUrl;
+            // Armazenar apenas o caminho (não URL pública)
+            autoThumbUrl = autoThumbFileName;
           }
         } catch (thumbError) {
           console.error('Erro ao gerar thumbnail automático:', thumbError);

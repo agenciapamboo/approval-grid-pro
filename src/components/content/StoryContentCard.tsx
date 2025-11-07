@@ -170,7 +170,7 @@ export function StoryContentCard({ content, media, isResponsible, isAgencyView =
 
       if (mediaData && mediaData.length > 0) {
         const filePaths = mediaData
-          .map(m => m.src_url.split('/content-media/')[1])
+          .map(m => m.src_url.includes('/content-media/') ? m.src_url.split('/content-media/')[1] : m.src_url)
           .filter(Boolean);
         
         if (filePaths.length > 0) {

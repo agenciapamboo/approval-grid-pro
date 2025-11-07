@@ -43,7 +43,7 @@ export function GenerateApprovalLinkButton({
           .from('contents')
           .select('date, status')
           .eq('client_id', clientId)
-          .in('status', ['in_review', 'changes_requested']);
+          .in('status', ['in_review', 'changes_requested', 'draft']);
         if (!error && data) {
           const map = new Map<string, number>();
           data.forEach((row: any) => {
@@ -187,7 +187,7 @@ export function GenerateApprovalLinkButton({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Mostrando meses com conteúdos "Em revisão" ou "Ajustes solicitados".
+              Mostrando meses com conteúdos "Em revisão", "Ajustes solicitados" ou "Rascunho".
             </p>
           </div>
 

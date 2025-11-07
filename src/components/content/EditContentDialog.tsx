@@ -170,9 +170,8 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("content-media")
-          .getPublicUrl(filePath);
+        // Salvar apenas o caminho no bucket (não URL pública)
+        const { publicUrl } = { publicUrl: filePath };
 
         // Remover mídia antiga
         const { data: oldMedia } = await supabase
@@ -188,7 +187,7 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
 
           // Deletar arquivos antigos do storage
           for (const media of oldMedia) {
-            const oldPath = media.src_url.split('/content-media/')[1];
+            const oldPath = media.src_url.includes('/content-media/') ? media.src_url.split('/content-media/')[1] : media.src_url;
             if (oldPath) {
               await supabase.storage.from('content-media').remove([oldPath]);
             }

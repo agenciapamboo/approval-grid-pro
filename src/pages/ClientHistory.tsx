@@ -124,13 +124,21 @@ export default function ClientHistory() {
     // Helper function to generate signed URL
     const getSignedUrl = async (url: string | null): Promise<string | null> => {
       if (!url) return null;
-      
-      // Se já é uma URL completa (http/https), retornar como está
-      if (url.startsWith('http')) return url;
-      
-      // Extrair o caminho do arquivo do storage
-      const filePath = url.replace(/^\//, ''); // Remove barra inicial se existir
-      
+
+      // Tentar extrair o path do bucket, independente se veio como URL pública antiga ou apenas o caminho
+      let filePath = '';
+      try {
+        if (url.includes('/content-media/')) {
+          filePath = url.split('/content-media/')[1];
+        } else if (!url.startsWith('http')) {
+          filePath = url.replace(/^\//, ''); // remove barra inicial
+        }
+      } catch {
+        filePath = '';
+      }
+
+      if (!filePath) return url; // pode ser URL externa
+
       try {
         const { data, error } = await supabase.storage
           .from('content-media')

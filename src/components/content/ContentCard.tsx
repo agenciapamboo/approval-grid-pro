@@ -269,9 +269,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('content-media')
-        .getPublicUrl(fileName);
+      // Salvar apenas o caminho no bucket (não URL pública)
+      const publicUrl = fileName;
 
       // Atualizar registro de mídia
       const { error: updateError } = await supabase
@@ -285,7 +284,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       if (updateError) throw updateError;
 
       // Deletar arquivo antigo do storage
-      const oldPath = mediaData.src_url.split('/content-media/')[1];
+      const oldPath = mediaData.src_url.includes('/content-media/')
+        ? mediaData.src_url.split('/content-media/')[1]
+        : mediaData.src_url;
       if (oldPath) {
         await supabase.storage.from('content-media').remove([oldPath]);
       }
