@@ -4,11 +4,22 @@ import { handleCORS, errorResponse, successResponse } from "../_shared/cors.ts";
 
 const TIMEOUT_MS = 10000;
 const BASE_URL = Deno.env.get('APPROVAL_BASE_URL') ?? 'https://aprovacriativos.com.br';
-const ALLOWED_ORIGINS = [
-  'https://aprovacriativos.com.br',
-  'http://localhost:5173',
-  'http://localhost:8080'
-];
+
+// Allow all Lovable preview URLs and production domain
+const isAllowedOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  
+  const allowed = [
+    'https://aprovacriativos.com.br',
+    'http://localhost:5173',
+    'http://localhost:8080'
+  ];
+  
+  // Allow all Lovable preview URLs
+  if (origin.includes('lovable.app')) return true;
+  
+  return allowed.includes(origin);
+};
 
 interface GenerateTokenRequest {
   client_id: string;
@@ -32,7 +43,7 @@ serve(async (req) => {
   try {
     // CSRF Protection
     const origin = req.headers.get('origin');
-    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    if (origin && !isAllowedOrigin(origin)) {
       console.error('[Security] Origin not allowed:', origin);
       return errorResponse('Origin não permitida', 403);
     }
