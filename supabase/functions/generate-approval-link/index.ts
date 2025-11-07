@@ -172,7 +172,7 @@ serve(async (req) => {
 
     // Gerar token com timeout
     const tokenResult = await Promise.race([
-      supabase.rpc('generate_approval_token', {
+      adminSupabase.rpc('generate_approval_token', {
         p_client_id: client_id,
         p_month: month
       }),
