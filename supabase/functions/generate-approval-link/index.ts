@@ -99,8 +99,7 @@ serve(async (req) => {
     }
 
     // Construir URL de aprovação
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://yourapp.lovable.app';
-    const approvalUrl = `${baseUrl}/${agency.slug}/${client.slug}?token=${token}&month=${month}`;
+    const approvalUrl = `https://aprovacriativos.com.br/${agency.slug}/${client.slug}?token=${token}&month=${month}`;
 
     console.log('Approval link generated successfully');
 
