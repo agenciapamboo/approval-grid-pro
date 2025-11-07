@@ -35,6 +35,12 @@ serve(async (req) => {
       }
     );
 
+    // Admin client for internal DB reads (after JWT verification), bypassing RLS safely
+    const adminSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Verificar autenticação usando o JWT explícito do header
     const jwt = authHeader?.startsWith('Bearer ')
       ? authHeader.substring(7)
@@ -79,7 +85,7 @@ serve(async (req) => {
     console.log('Generating approval token for:', { client_id, month });
 
     // Gerar token usando a função do banco
-    const { data: tokenData, error: tokenError } = await supabase
+    const { data: tokenData, error: tokenError } = await adminSupabase
       .rpc('generate_approval_token', {
         p_client_id: client_id,
         p_month: month
@@ -93,7 +99,7 @@ serve(async (req) => {
     const token = tokenData;
 
     // Buscar dados do cliente para construir o link
-    const { data: client, error: clientError } = await supabase
+    const { data: client, error: clientError } = await adminSupabase
       .from('clients')
       .select('slug, agency_id')
       .eq('id', client_id)
@@ -105,7 +111,7 @@ serve(async (req) => {
     }
 
     // Buscar dados da agência
-    const { data: agency, error: agencyError } = await supabase
+    const { data: agency, error: agencyError } = await adminSupabase
       .from('agencies')
       .select('slug')
       .eq('id', client.agency_id)

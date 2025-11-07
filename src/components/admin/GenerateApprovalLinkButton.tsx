@@ -120,10 +120,29 @@ export function GenerateApprovalLinkButton({
       const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
       const errMsg = (error as any)?.message || "Não foi possível gerar o link de aprovação";
       const nowBr = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+      // Tenta extrair detalhes do erro retornado pela Edge Function
+      let serverDetail = '';
+      try {
+        const resp: Response | undefined = (error as any)?.context?.response;
+        if (resp) {
+          const clone = resp.clone();
+          const text = await clone.text();
+          try {
+            const json = JSON.parse(text || '{}');
+            serverDetail = json?.error || json?.message || text || '';
+          } catch (_) {
+            serverDetail = text || '';
+          }
+        }
+      } catch (_) {
+        // ignora
+      }
+
       toast({
         variant: "destructive",
         title: `Erro na função • ${nowBr}${status ? ` • ${status}` : ""}`,
-        description: errMsg,
+        description: serverDetail ? `${errMsg} • ${serverDetail}` : errMsg,
       });
     } finally {
       setLoading(false);
