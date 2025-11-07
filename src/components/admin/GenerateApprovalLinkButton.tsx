@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Copy, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 interface GenerateApprovalLinkButtonProps {
   clientId: string;
   clientName: string;
@@ -31,7 +31,44 @@ export function GenerateApprovalLinkButton({
   // Mês atual no formato YYYY-MM
   const currentMonth = format(new Date(), "yyyy-MM");
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [months, setMonths] = useState<{ value: string; label: string; count: number }[]>([]);
+  const [loadingMonths, setLoadingMonths] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const loadMonths = async () => {
+      setLoadingMonths(true);
+      try {
+        const { data, error } = await supabase
+          .from('contents')
+          .select('date, status')
+          .eq('client_id', clientId)
+          .in('status', ['in_review', 'changes_requested']);
+        if (!error && data) {
+          const map = new Map<string, number>();
+          data.forEach((row: any) => {
+            if (!row?.date) return;
+            const d = new Date(row.date);
+            if (isNaN(d.getTime())) return;
+            const key = format(d, 'yyyy-MM');
+            map.set(key, (map.get(key) || 0) + 1);
+          });
+          const opts = Array.from(map.entries())
+            .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+            .map(([value, count]) => ({
+              value,
+              count,
+              label: `${format(new Date(`${value}-01`), "MMMM 'de' yyyy", { locale: ptBR })} (${count})`
+            }));
+          setMonths(opts);
+          if (opts.length) setSelectedMonth(opts[0].value);
+        }
+      } finally {
+        setLoadingMonths(false);
+      }
+    };
+    loadMonths();
+  }, [open, clientId]);
   const generateLink = async () => {
     setLoading(true);
     try {
@@ -128,18 +165,21 @@ export function GenerateApprovalLinkButton({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="month">Mês de Referência</Label>
+            <Label htmlFor="month">Mês com pendências</Label>
             <div className="flex gap-2">
-              <Input
-                id="month"
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="flex-1"
-              />
+              <Select value={selectedMonth} onValueChange={(v) => setSelectedMonth(v)}>
+                <SelectTrigger className="flex-1" id="month">
+                  <SelectValue placeholder={loadingMonths ? "Carregando..." : (months.length ? "Selecione um mês" : "Sem pendências") } />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 onClick={generateLink}
-                disabled={loading}
+                disabled={loading || !selectedMonth}
                 variant="default"
               >
                 <Calendar className="w-4 h-4 mr-2" />
@@ -147,7 +187,7 @@ export function GenerateApprovalLinkButton({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Selecione o mês dos conteúdos que serão revisados
+              Mostrando meses com conteúdos "Em revisão" ou "Ajustes solicitados".
             </p>
           </div>
 
