@@ -36,7 +36,15 @@ export function GenerateApprovalLinkButton({
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+      if (!session?.access_token) {
+        toast({
+          variant: "destructive",
+          title: "Sessão necessária",
+          description: "Faça login para gerar o link de aprovação.",
+        });
+        setLoading(false);
+        return;
+      }
       const invokeOptions: any = {
         body: { 
           client_id: clientId,
@@ -44,10 +52,14 @@ export function GenerateApprovalLinkButton({
         }
       };
 
+      // Ensure auth and apikey headers are present without overriding client defaults
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       if (session?.access_token) {
         invokeOptions.headers = {
           Authorization: `Bearer ${session.access_token}`,
-        };
+          apikey: anonKey,
+          'Content-Type': 'application/json'
+        } as any;
       }
 
       const { data, error } = await supabase.functions.invoke('generate-approval-link', invokeOptions);
