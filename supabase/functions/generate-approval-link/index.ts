@@ -15,8 +15,10 @@ const isAllowedOrigin = (origin: string | null): boolean => {
     'http://localhost:8080'
   ];
   
-  // Allow all Lovable preview URLs
-  if (origin.includes('lovable.app')) return true;
+  // Allow all Lovable preview URLs (both patterns)
+  if (origin.includes('lovable.app') || origin.includes('lovableproject.com')) {
+    return true;
+  }
   
   return allowed.includes(origin);
 };
