@@ -48,11 +48,18 @@ serve(async (req) => {
     // Get request body
     const { userIds } = await req.json();
 
-    if (!Array.isArray(userIds) || userIds.length === 0) {
+    if (!Array.isArray(userIds)) {
       return new Response(
-        JSON.stringify({ error: "userIds array is required" }),
+        JSON.stringify({ error: "userIds must be an array" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // If array is empty, return empty response immediately
+    if (userIds.length === 0) {
+      return new Response(JSON.stringify({ emails: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Check if user is super admin using RPC function
