@@ -122,6 +122,7 @@ export default function ContentGrid() {
     }
   }, [rateLimitError.type, rateLimitError.blockedUntil]);
 
+
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
@@ -371,7 +372,7 @@ export default function ContentGrid() {
     
     // Com token: mostrar "draft" OU "in_review" (ambos podem precisar de aprovação)
     if (tokenAccess) {
-      console.log('Token access - filtering draft and in_review contents');
+      console.log('[ContentGrid] Token access - filtering draft and in_review contents');
       query = query.in("status", ["draft", "in_review"]);
     }
     // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
@@ -403,11 +404,17 @@ export default function ContentGrid() {
     const { data, error } = await query.order("date", { ascending: true });
 
     if (error) {
-      console.error("Erro ao carregar conteúdos:", error);
+      console.error('[ContentGrid] Error loading contents:', error);
       return;
     }
 
-    console.log('Contents loaded:', data?.length || 0);
+    console.log('[ContentGrid] Contents fetched:', {
+      count: data?.length || 0,
+      clientId,
+      filterMonth,
+      tokenAccess,
+      statuses: data?.map(c => c.status)
+    });
     setContents(data || []);
   };
 
@@ -440,6 +447,24 @@ export default function ContentGrid() {
   
   // Filtrar pelo mês selecionado
   const filteredContents = selectedMonth ? (groupedContents[selectedMonth] || []) : contents;
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('[ContentGrid] State changed:', {
+      loading,
+      contentsCount: filteredContents.length,
+      tokenValid,
+      hasToken: !!approvalToken,
+      rateLimitError: rateLimitError.type
+    });
+    
+    if (!loading && filteredContents.length > 0) {
+      console.log('[ContentGrid] Contents visible:', filteredContents.length, 'contents');
+      console.log('[ContentGrid] First content:', filteredContents[0]);
+    } else if (!loading && filteredContents.length === 0) {
+      console.warn('[ContentGrid] No contents found after loading');
+    }
+  }, [filteredContents, loading, tokenValid, approvalToken, rateLimitError.type]);
 
   if (loading) {
     return (
