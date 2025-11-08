@@ -846,6 +846,7 @@ export type Database = {
           agency_id: string | null
           agency_name: string | null
           billing_cycle: string | null
+          blocked_by_parent: boolean
           client_id: string | null
           created_at: string
           current_period_end: string | null
@@ -884,6 +885,7 @@ export type Database = {
           agency_id?: string | null
           agency_name?: string | null
           billing_cycle?: string | null
+          blocked_by_parent?: boolean
           client_id?: string | null
           created_at?: string
           current_period_end?: string | null
@@ -922,6 +924,7 @@ export type Database = {
           agency_id?: string | null
           agency_name?: string | null
           billing_cycle?: string | null
+          blocked_by_parent?: boolean
           client_id?: string | null
           created_at?: string
           current_period_end?: string | null

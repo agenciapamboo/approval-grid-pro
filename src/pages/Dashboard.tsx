@@ -995,7 +995,7 @@ const Dashboard = () => {
 
             {/* Aba de Equipe */}
             <TabsContent value="team">
-              <TeamMembersManager agencyId={profile.agency_id!} />
+              <TeamMembersManager />
             </TabsContent>
           </Tabs>
         )}
