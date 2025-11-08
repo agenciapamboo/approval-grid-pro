@@ -656,6 +656,75 @@ export type Database = {
           },
         ]
       }
+      financial_snapshots: {
+        Row: {
+          average_ticket_brl: number | null
+          cancellations_this_month: number | null
+          churn_rate: number | null
+          created_at: string | null
+          creator_count: number | null
+          creator_mrr: number | null
+          eugencia_count: number | null
+          eugencia_mrr: number | null
+          fullservice_count: number | null
+          fullservice_mrr: number | null
+          id: string
+          projected_mrr_next_month: number | null
+          projected_new_clients: number | null
+          snapshot_date: string
+          socialmidia_count: number | null
+          socialmidia_mrr: number | null
+          total_active_subscriptions: number | null
+          total_mrr: number | null
+          unlimited_count: number | null
+          unlimited_mrr: number | null
+        }
+        Insert: {
+          average_ticket_brl?: number | null
+          cancellations_this_month?: number | null
+          churn_rate?: number | null
+          created_at?: string | null
+          creator_count?: number | null
+          creator_mrr?: number | null
+          eugencia_count?: number | null
+          eugencia_mrr?: number | null
+          fullservice_count?: number | null
+          fullservice_mrr?: number | null
+          id?: string
+          projected_mrr_next_month?: number | null
+          projected_new_clients?: number | null
+          snapshot_date?: string
+          socialmidia_count?: number | null
+          socialmidia_mrr?: number | null
+          total_active_subscriptions?: number | null
+          total_mrr?: number | null
+          unlimited_count?: number | null
+          unlimited_mrr?: number | null
+        }
+        Update: {
+          average_ticket_brl?: number | null
+          cancellations_this_month?: number | null
+          churn_rate?: number | null
+          created_at?: string | null
+          creator_count?: number | null
+          creator_mrr?: number | null
+          eugencia_count?: number | null
+          eugencia_mrr?: number | null
+          fullservice_count?: number | null
+          fullservice_mrr?: number | null
+          id?: string
+          projected_mrr_next_month?: number | null
+          projected_new_clients?: number | null
+          snapshot_date?: string
+          socialmidia_count?: number | null
+          socialmidia_mrr?: number | null
+          total_active_subscriptions?: number | null
+          total_mrr?: number | null
+          unlimited_count?: number | null
+          unlimited_mrr?: number | null
+        }
+        Relationships: []
+      }
       lgpd_pages: {
         Row: {
           content: string
@@ -1511,6 +1580,15 @@ export type Database = {
           },
         ]
       }
+      current_subscription_distribution: {
+        Row: {
+          active_count: number | null
+          plan: string | null
+          subscription_status: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_comment_for_approval: {
@@ -1572,6 +1650,9 @@ export type Database = {
           version: number
         }[]
       }
+      get_database_size_mb: { Args: never; Returns: number }
+      get_monthly_bandwidth_gb: { Args: never; Returns: number }
+      get_storage_size_gb: { Args: never; Returns: number }
       get_user_entitlements: {
         Args: { user_id: string }
         Returns: {
