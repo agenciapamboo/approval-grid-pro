@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -31,6 +31,8 @@ import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
 import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
 import { ContentKanban } from "@/components/content/ContentKanban";
+import { ClientLimitsMetrics } from "@/components/admin/ClientLimitsMetrics";
+import { AgencyLimitsOverview } from "@/components/admin/AgencyLimitsOverview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -740,10 +742,14 @@ const Dashboard = () => {
           ['creator', 'eugencia', 'social_midia', 'agencia_full'].includes(profile?.plan || '') ||
           (profile?.role === 'agency_admin' && !profile?.plan)) && profile?.agency_id && (
           <Tabs defaultValue="clients" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="clients">
                 <Building2 className="w-4 h-4 mr-2" />
                 Clientes
+              </TabsTrigger>
+              <TabsTrigger value="metrics">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Métricas
               </TabsTrigger>
               <TabsTrigger value="kanban">
                 <FileImage className="w-4 h-4 mr-2" />
@@ -980,6 +986,19 @@ const Dashboard = () => {
                 })}
               </div>
             )}
+              </div>
+            </TabsContent>
+
+            {/* Aba de Métricas */}
+            <TabsContent value="metrics">
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold">Métricas de Uso</h3>
+                </div>
+                {profile?.agency_id && (
+                  <AgencyLimitsOverview agencyId={profile.agency_id} />
+                )}
               </div>
             </TabsContent>
 
