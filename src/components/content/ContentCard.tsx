@@ -38,11 +38,12 @@ interface ContentCardProps {
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
-  isPublicApproval?: boolean; // Indica se é acesso via token de aprovação
+  isPublicApproval?: boolean;
+  approvalToken?: string;
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
@@ -118,35 +119,52 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
   const handleApprove = async () => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      if (isPublicApproval && approvalToken) {
+        // Usar RPC para aprovação via token
+        const { data, error } = await supabase.rpc('approve_content_for_approval', {
+          p_token: approvalToken,
+          p_content_id: content.id
+        });
 
-      const { error: updateErr } = await supabase
-        .from("contents")
-        .update({ status: "approved" })
-        .eq("id", content.id);
-      if (updateErr) throw updateErr;
+        if (error) throw error;
+        
+        const result = data as any;
+        if (!result?.success) throw new Error(result?.error || 'Erro ao aprovar');
 
-      // Registrar comentário automático de aprovação
-      const timestamp = new Date().toLocaleString('pt-BR');
-      await supabase.from('comments').insert({
-        content_id: content.id,
-        version: content.version,
-        author_user_id: userData?.user?.id || null,
-        body: `Cliente: Aprovado em ${timestamp}`,
-        is_adjustment_request: false,
-      });
+        toast({
+          title: "Conteúdo aprovado",
+          description: "O conteúdo foi aprovado com sucesso",
+        });
+      } else {
+        // Fluxo normal autenticado
+        const { data: userData } = await supabase.auth.getUser();
 
-      // Disparar notificação de aprovação
-      await createNotification('content.approved', content.id, {
-        title: content.title,
-        date: content.date,
-        channels: content.channels || [],
-      });
+        const { error: updateErr } = await supabase
+          .from("contents")
+          .update({ status: "approved" })
+          .eq("id", content.id);
+        if (updateErr) throw updateErr;
 
-      toast({
-        title: "Conteúdo aprovado",
-        description: "O conteúdo foi aprovado com sucesso",
-      });
+        const timestamp = new Date().toLocaleString('pt-BR');
+        await supabase.from('comments').insert({
+          content_id: content.id,
+          version: content.version,
+          author_user_id: userData?.user?.id || null,
+          body: `Cliente: Aprovado em ${timestamp}`,
+          is_adjustment_request: false,
+        });
+
+        await createNotification('content.approved', content.id, {
+          title: content.title,
+          date: content.date,
+          channels: content.channels || [],
+        });
+
+        toast({
+          title: "Conteúdo aprovado",
+          description: "O conteúdo foi aprovado com sucesso",
+        });
+      }
 
       onUpdate();
     } catch (error) {
@@ -170,42 +188,59 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
     }
 
     try {
-      // Criar comentário com o motivo da reprovação
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { error: commentError } = await supabase
-        .from("comments")
-        .insert({
-          content_id: content.id,
-          version: content.version,
-          author_user_id: user.id,
-          body: `Reprovado: ${rejectReason}`,
-          is_adjustment_request: true,
+      if (isPublicApproval && approvalToken) {
+        // Usar RPC para reprovação via token
+        const { data, error } = await supabase.rpc('reject_content_for_approval', {
+          p_token: approvalToken,
+          p_content_id: content.id,
+          p_reason: rejectReason
         });
 
-      if (commentError) throw commentError;
+        if (error) throw error;
+        
+        const result = data as any;
+        if (!result?.success) throw new Error(result?.error || 'Erro ao reprovar');
 
-      // Atualizar status para changes_requested
-      const { error: updateError } = await supabase
-        .from("contents")
-        .update({ status: "changes_requested" })
-        .eq("id", content.id);
+        toast({
+          title: "Conteúdo reprovado",
+          description: "O conteúdo foi reprovado e o motivo foi registrado",
+        });
+      } else {
+        // Fluxo normal autenticado
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Usuário não autenticado");
 
-      if (updateError) throw updateError;
+        const { error: commentError } = await supabase
+          .from("comments")
+          .insert({
+            content_id: content.id,
+            version: content.version,
+            author_user_id: user.id,
+            body: `Reprovado: ${rejectReason}`,
+            is_adjustment_request: true,
+          });
 
-      // Disparar notificação de reprovação
-      await createNotification('content.rejected', content.id, {
-        title: content.title,
-        date: content.date,
-        comment: rejectReason,
-        channels: content.channels || [],
-      });
+        if (commentError) throw commentError;
 
-      toast({
-        title: "Conteúdo reprovado",
-        description: "O conteúdo foi reprovado e o motivo foi registrado",
-      });
+        const { error: updateError } = await supabase
+          .from("contents")
+          .update({ status: "changes_requested" })
+          .eq("id", content.id);
+
+        if (updateError) throw updateError;
+
+        await createNotification('content.rejected', content.id, {
+          title: content.title,
+          date: content.date,
+          comment: rejectReason,
+          channels: content.channels || [],
+        });
+
+        toast({
+          title: "Conteúdo reprovado",
+          description: "O conteúdo foi reprovado e o motivo foi registrado",
+        });
+      }
 
       setShowRejectDialog(false);
       setRejectReason("");
@@ -767,10 +802,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
           </div>
 
           {/* Linha 2: Criativo */}
-          <ContentMedia contentId={content.id} type={content.type} />
+          <ContentMedia contentId={content.id} type={content.type} approvalToken={approvalToken} />
 
           {/* Linha 3: Legenda */}
-          <ContentCaption contentId={content.id} version={content.version} />
+          <ContentCaption contentId={content.id} version={content.version} approvalToken={approvalToken} />
 
           {/* Ações - Simplificado para visualização pública */}
           {!isAgencyView && (

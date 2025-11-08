@@ -16,6 +16,7 @@ interface Media {
 interface ContentMediaProps {
   contentId: string;
   type: string;
+  approvalToken?: string;
 }
 
 // Hook auxiliar para uma mídia individual
@@ -33,7 +34,7 @@ function useMediaUrl(media: Media | undefined) {
   return { srcUrl, thumbUrl };
 }
 
-export function ContentMedia({ contentId, type }: ContentMediaProps) {
+export function ContentMedia({ contentId, type, approvalToken }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -56,16 +57,37 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
   const loadMedia = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("content_media")
-      .select("*")
-      .eq("content_id", contentId)
-      .order("order_index");
+    try {
+      if (approvalToken) {
+        // Usar edge function para obter URLs assinadas via token
+        const { data, error } = await supabase.functions.invoke('approval-media-urls', {
+          body: { token: approvalToken, contentId }
+        });
 
-    if (!error && data) {
-      setMedia(data);
+        if (error) {
+          console.error('Erro ao carregar mídias via token:', error);
+          setMedia([]);
+        } else {
+          setMedia(data?.media || []);
+        }
+      } else {
+        // Fluxo normal autenticado
+        const { data, error } = await supabase
+          .from("content_media")
+          .select("*")
+          .eq("content_id", contentId)
+          .order("order_index");
+
+        if (error) {
+          console.error("Erro ao carregar mídias:", error);
+          setMedia([]);
+        } else {
+          setMedia(data || []);
+        }
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Calcular currentMedia de forma segura e chamar hook ANTES dos returns condicionais

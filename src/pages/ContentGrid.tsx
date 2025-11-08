@@ -703,6 +703,7 @@ export default function ContentGrid() {
                 isResponsible={false}
                 isAgencyView={false}
                 isPublicApproval={isPublicView}
+                approvalToken={approvalToken || undefined}
                 onUpdate={() => {
                   if (isPublicView && approvalToken) {
                     fetchContentsViaToken(approvalToken);

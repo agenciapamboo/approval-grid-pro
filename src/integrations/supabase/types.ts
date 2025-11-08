@@ -1432,6 +1432,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_comment_for_approval: {
+        Args: { p_body: string; p_content_id: string; p_token: string }
+        Returns: Json
+      }
+      approve_content_for_approval: {
+        Args: { p_content_id: string; p_token: string }
+        Returns: Json
+      }
       cleanup_old_validation_attempts: { Args: never; Returns: undefined }
       decrypt_social_token: {
         Args: { encrypted_token: string }
@@ -1454,6 +1462,12 @@ export type Database = {
           ip_address: string
           last_attempt: string
           user_agents: string[]
+        }[]
+      }
+      get_content_caption_for_approval: {
+        Args: { p_content_id: string; p_token: string; p_version: number }
+        Returns: {
+          caption: string
         }[]
       }
       get_contents_for_approval: {
@@ -1523,7 +1537,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      reject_content_for_approval: {
+        Args: { p_content_id: string; p_reason: string; p_token: string }
+        Returns: Json
+      }
       sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
+      save_caption_for_approval: {
+        Args: { p_caption: string; p_content_id: string; p_token: string }
+        Returns: Json
+      }
       send_notification: {
         Args: {
           p_agency_id?: string

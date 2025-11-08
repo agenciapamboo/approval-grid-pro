@@ -1,5 +1,8 @@
 project_id = "sgarwrreywadxsodnxng"
 
+[functions.approval-media-urls]
+verify_jwt = false
+
 [functions.create-checkout]
 verify_jwt = true
 

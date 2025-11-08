@@ -24,9 +24,10 @@ interface ContentCommentsProps {
   contentId: string;
   onUpdate: () => void;
   showHistory?: boolean;
+  approvalToken?: string;
 }
 
-export function ContentComments({ contentId, onUpdate, showHistory = true }: ContentCommentsProps) {
+export function ContentComments({ contentId, onUpdate, showHistory = true, approvalToken }: ContentCommentsProps) {
   const { toast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
