@@ -27,6 +27,12 @@ verify_jwt = false
 [functions.subscription-enforcement]
 verify_jwt = false
 
+[functions.check-payment-notifications]
+verify_jwt = false
+
+[functions.send-platform-notifications]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 

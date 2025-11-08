@@ -1,0 +1,15 @@
+name: Check Payment Notifications
+on:
+  schedule:
+    - cron: '0 10 * * *' # Diariamente às 10h UTC (7h BRT)
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Payment Notifications Check
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/check-payment-notifications" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"

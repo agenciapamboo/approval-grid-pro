@@ -946,6 +946,72 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          created_by: string | null
+          deduplication_key: string | null
+          error_message: string | null
+          id: string
+          message: string
+          notification_type: string
+          payload: Json | null
+          priority: string | null
+          read_at: string | null
+          send_email: boolean | null
+          send_in_app: boolean | null
+          send_whatsapp: boolean | null
+          sent_at: string | null
+          status: string
+          target_id: string | null
+          target_type: string
+          title: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deduplication_key?: string | null
+          error_message?: string | null
+          id?: string
+          message: string
+          notification_type: string
+          payload?: Json | null
+          priority?: string | null
+          read_at?: string | null
+          send_email?: boolean | null
+          send_in_app?: boolean | null
+          send_whatsapp?: boolean | null
+          sent_at?: string | null
+          status?: string
+          target_id?: string | null
+          target_type: string
+          title: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deduplication_key?: string | null
+          error_message?: string | null
+          id?: string
+          message?: string
+          notification_type?: string
+          payload?: Json | null
+          priority?: string | null
+          read_at?: string | null
+          send_email?: boolean | null
+          send_in_app?: boolean | null
+          send_whatsapp?: boolean | null
+          sent_at?: string | null
+          status?: string
+          target_id?: string | null
+          target_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accepted_terms_at: string | null

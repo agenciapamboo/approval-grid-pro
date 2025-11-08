@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, User, LogOut, Sun, Moon, CreditCard } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { useTheme } from "next-themes";
+import { PlatformNotificationsBell } from "@/components/notifications/PlatformNotificationsBell";
 
 interface AppHeaderProps {
   userName?: string;
@@ -26,6 +27,7 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
           </h1>
         </Link>
         <div className="flex items-center gap-4">
+          <PlatformNotificationsBell />
           {userName && (
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium">{userName}</p>

@@ -31,7 +31,7 @@ serve(async (req) => {
     // 1. Find users with expired grace period (excluding skip_subscription_check users)
     const { data: expiredGracePeriod, error: gracePeriodError } = await supabaseClient
       .from('profiles')
-      .select('id, name, plan, delinquent, grace_period_end, skip_subscription_check')
+      .select('id, name, plan, delinquent, grace_period_end, skip_subscription_check, account_type')
       .eq('delinquent', true)
       .eq('skip_subscription_check', false)
       .not('grace_period_end', 'is', null)
@@ -64,13 +64,31 @@ serve(async (req) => {
           count: expiredGracePeriod.length,
           userIds: expiredGracePeriod.map(u => u.id)
         });
+
+        // Criar notificações de conta bloqueada
+        for (const user of expiredGracePeriod) {
+          await supabaseClient.from('platform_notifications').insert({
+            target_type: user.account_type === 'agency' ? 'agency' : 'creator',
+            target_id: user.id,
+            notification_type: 'account_suspended',
+            title: '🚫 Conta bloqueada por inadimplência',
+            message: `Sua conta foi bloqueada devido ao não pagamento. Você foi movido para o plano gratuito Creator. Para reativar, regularize seu pagamento.`,
+            action_url: '/my-subscription',
+            priority: 'critical',
+            send_email: true,
+            send_whatsapp: true,
+            send_in_app: true,
+            status: 'pending',
+            deduplication_key: `account_suspended_${user.id}_${now}`
+          });
+        }
       }
     }
 
     // 2. Find users with canceled or unpaid subscriptions (excluding skip_subscription_check users)
     const { data: canceledUsers, error: canceledError } = await supabaseClient
       .from('profiles')
-      .select('id, name, plan, subscription_status, skip_subscription_check')
+      .select('id, name, plan, subscription_status, skip_subscription_check, account_type')
       .in('subscription_status', ['canceled', 'unpaid'])
       .eq('skip_subscription_check', false)
       .neq('plan', 'creator');
@@ -101,13 +119,31 @@ serve(async (req) => {
           count: canceledUsers.length,
           userIds: canceledUsers.map(u => u.id)
         });
+
+        // Criar notificações de conta bloqueada
+        for (const user of canceledUsers) {
+          await supabaseClient.from('platform_notifications').insert({
+            target_type: user.account_type === 'agency' ? 'agency' : 'creator',
+            target_id: user.id,
+            notification_type: 'account_suspended',
+            title: '🚫 Conta bloqueada',
+            message: `Sua assinatura foi cancelada e você foi movido para o plano gratuito Creator. Para reativar, acesse a área de assinatura.`,
+            action_url: '/my-subscription',
+            priority: 'critical',
+            send_email: true,
+            send_whatsapp: true,
+            send_in_app: true,
+            status: 'pending',
+            deduplication_key: `account_suspended_${user.id}_${now}`
+          });
+        }
       }
     }
 
     // 3. Clean up expired subscriptions (excluding skip_subscription_check users)
     const { data: expiredSubscriptions, error: expiredError } = await supabaseClient
       .from('profiles')
-      .select('id, name, plan, current_period_end, skip_subscription_check')
+      .select('id, name, plan, current_period_end, skip_subscription_check, account_type')
       .eq('skip_subscription_check', false)
       .not('current_period_end', 'is', null)
       .lt('current_period_end', now)
@@ -140,6 +176,24 @@ serve(async (req) => {
           count: expiredSubscriptions.length,
           userIds: expiredSubscriptions.map(u => u.id)
         });
+
+        // Criar notificações de conta bloqueada
+        for (const user of expiredSubscriptions) {
+          await supabaseClient.from('platform_notifications').insert({
+            target_type: user.account_type === 'agency' ? 'agency' : 'creator',
+            target_id: user.id,
+            notification_type: 'account_suspended',
+            title: '🚫 Assinatura expirada',
+            message: `Sua assinatura expirou e você foi movido para o plano gratuito Creator. Para renovar, acesse a área de assinatura.`,
+            action_url: '/my-subscription',
+            priority: 'critical',
+            send_email: true,
+            send_whatsapp: true,
+            send_in_app: true,
+            status: 'pending',
+            deduplication_key: `account_suspended_${user.id}_${now}`
+          });
+        }
       }
     }
 

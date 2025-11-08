@@ -1,0 +1,15 @@
+name: Send Platform Notifications
+on:
+  schedule:
+    - cron: '*/15 * * * *' # A cada 15 minutos
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process Pending Notifications
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-platform-notifications" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
