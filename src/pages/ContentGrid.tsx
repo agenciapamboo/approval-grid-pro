@@ -127,10 +127,19 @@ export default function ContentGrid() {
     const initializePage = async () => {
       console.log('[ContentGrid] Initializing page...');
       
-      // 1. Verificar sessão autenticada primeiro
+      // 1. PRIORIDADE: Verificar token de aprovação PRIMEIRO
+      const token = searchParams.get('token');
+      if (token) {
+        console.log('[ContentGrid] Token-based access (priority) - validating token:', token.substring(0, 10) + '...');
+        setApprovalToken(token);
+        await validateTokenAndLoadData(token);
+        return; // Token tem prioridade, encerra aqui
+      }
+      
+      // 2. Se não tem token, verificar sessão autenticada
       const { data: { session } } = await supabase.auth.getSession();
       
-      // 2. Se tem sessão, carregar dados via autenticação
+      // 3. Se tem sessão, carregar dados via autenticação
       if (session) {
         console.log('[ContentGrid] Authenticated access - loading via session');
         setUser(session.user);
@@ -138,18 +147,10 @@ export default function ContentGrid() {
         return;
       }
       
-      // 3. Se não tem sessão, verificar token de aprovação
-      const token = searchParams.get('token');
-      if (token) {
-        console.log('[ContentGrid] Token-based access - validating token:', token.substring(0, 10) + '...');
-        setApprovalToken(token);
-        await validateTokenAndLoadData(token);
-      } else {
-        // 4. Sem sessão e sem token = acesso restrito
-        console.log('[ContentGrid] No authentication and no token - restricted access');
-        setTokenValid(false);
-        setLoading(false);
-      }
+      // 4. Sem token e sem sessão = acesso restrito
+      console.log('[ContentGrid] No authentication and no token - restricted access');
+      setTokenValid(false);
+      setLoading(false);
     };
     
     initializePage();
@@ -269,7 +270,27 @@ export default function ContentGrid() {
         }
       }
 
-      await loadContents(clientData.id, data.month, true);
+      // Usar RPC para buscar conteúdos via token (bypassa RLS)
+      console.log('[ContentGrid] Fetching contents via RPC with token');
+      const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
+        p_token: token
+      });
+
+      if (rpcError) {
+        console.error('[ContentGrid] RPC error:', rpcError);
+        // Fallback para método antigo se RPC falhar
+        await loadContents(clientData.id, data.month, true);
+      } else {
+        console.log('[ContentGrid] Contents fetched via RPC:', {
+          count: contentData?.length || 0,
+          statuses: contentData?.map((c: any) => c.status)
+        });
+        setContents(contentData || []);
+        
+        if (!contentData || contentData.length === 0) {
+          console.warn('[ContentGrid] RPC returned 0 contents for token approval');
+        }
+      }
     } catch (error) {
       console.error("Error validating token:", error);
       setTokenValid(false);

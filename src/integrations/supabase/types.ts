@@ -1456,6 +1456,27 @@ export type Database = {
           user_agents: string[]
         }[]
       }
+      get_contents_for_approval: {
+        Args: { p_token: string }
+        Returns: {
+          auto_publish: boolean
+          category: string
+          channels: string[]
+          client_id: string
+          created_at: string
+          date: string
+          deadline: string
+          id: string
+          owner_user_id: string
+          publish_error: string
+          published_at: string
+          status: Database["public"]["Enums"]["content_status"]
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at: string
+          version: number
+        }[]
+      }
       get_user_entitlements: {
         Args: { user_id: string }
         Returns: {
