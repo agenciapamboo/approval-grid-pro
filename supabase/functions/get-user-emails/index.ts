@@ -45,14 +45,23 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is super admin
-    const { data: roles } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "super_admin");
+    // Check if user is super admin using RPC function
+    const { data: isSuperAdmin, error: roleError } = await supabaseAdmin
+      .rpc('has_role', { 
+        _user_id: user.id, 
+        _role: 'super_admin' 
+      });
 
-    if (!roles || roles.length === 0) {
+    if (roleError) {
+      console.error("Error checking role:", roleError);
+      return new Response(
+        JSON.stringify({ error: "Error checking user role" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isSuperAdmin) {
+      console.log(`User ${user.id} attempted access but is not super_admin`);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Only super admins can access this" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
