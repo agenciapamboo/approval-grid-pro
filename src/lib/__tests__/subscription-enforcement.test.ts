@@ -21,6 +21,9 @@ vi.mock('@/integrations/supabase/client', () => ({
         })),
       })),
     })),
+    rpc: vi.fn(() => ({
+      single: vi.fn(),
+    })),
   },
 }));
 
@@ -67,6 +70,13 @@ describe('Subscription Enforcement - Internal Users', () => {
             error: null,
           }),
         }),
+      }),
+    } as any);
+
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
       }),
     } as any);
 
@@ -119,6 +129,13 @@ describe('Subscription Enforcement - Internal Users', () => {
       }),
     } as any);
 
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
+      }),
+    } as any);
+
     const result = await canPerformProAction();
     
     expect(result.allowed).toBe(true);
@@ -161,6 +178,13 @@ describe('Subscription Enforcement - Internal Users', () => {
             error: null,
           }),
         }),
+      }),
+    } as any);
+
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
       }),
     } as any);
 
@@ -217,6 +241,13 @@ describe('Subscription Enforcement - Delinquent Users', () => {
       }),
     } as any);
 
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
+      }),
+    } as any);
+
     const status = await getUserSubscriptionStatus();
 
     expect(status?.isBlocked).toBe(false);
@@ -264,6 +295,13 @@ describe('Subscription Enforcement - Delinquent Users', () => {
       }),
     } as any);
 
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
+      }),
+    } as any);
+
     const status = await getUserSubscriptionStatus();
 
     expect(status?.isBlocked).toBe(true);
@@ -307,6 +345,13 @@ describe('Subscription Enforcement - Delinquent Users', () => {
             error: null,
           }),
         }),
+      }),
+    } as any);
+
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
       }),
     } as any);
 
@@ -362,6 +407,13 @@ describe('Plan Limits - Check Limit Function', () => {
       }),
     } as any);
 
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
+      }),
+    } as any);
+
     const result = await checkLimit('posts', 25);
 
     expect(result.withinLimit).toBe(true);
@@ -404,6 +456,13 @@ describe('Plan Limits - Check Limit Function', () => {
             error: null,
           }),
         }),
+      }),
+    } as any);
+
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
       }),
     } as any);
 
@@ -450,6 +509,13 @@ describe('Plan Limits - Check Limit Function', () => {
             error: null,
           }),
         }),
+      }),
+    } as any);
+
+    vi.mocked(supabase.rpc).mockReturnValue({
+      single: vi.fn().mockResolvedValue({
+        data: mockProfile.entitlements,
+        error: null,
       }),
     } as any);
 

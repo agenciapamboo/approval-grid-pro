@@ -24,12 +24,14 @@ const testCommands = {
   unit: 'npx vitest',
   e2e: 'npx playwright test',
   coverage: 'npx vitest --coverage',
+  all: 'bash scripts/run-all-tests.sh',
 };
 
 const testDescriptions = {
   unit: 'Executa testes unitários com Vitest para validar funções e componentes isoladamente',
   e2e: 'Executa testes end-to-end com Playwright para validar fluxos completos da aplicação',
   coverage: 'Gera relatório de cobertura de código mostrando quais partes do código estão testadas',
+  all: 'Executa TODOS os testes em sequência: unitários, coverage e E2E com relatório formatado',
 };
 
 export function TestRunner() {
@@ -109,12 +111,57 @@ export function TestRunner() {
         <Terminal className="h-4 w-4" />
         <AlertTitle>Como executar os testes</AlertTitle>
         <AlertDescription>
-          Os testes devem ser executados localmente via terminal. Abra o terminal na raiz do projeto e execute os comandos abaixo.
+          Os testes devem ser executados localmente via terminal (Codespaces, VS Code, etc). Execute os comandos abaixo na raiz do projeto.
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {Object.entries(testCommands).map(([type, command]) => (
+      {/* Execução Completa - Destaque */}
+      <Card className="border-primary/50 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Terminal className="h-5 w-5 text-primary" />
+            Executar Todos os Testes
+          </CardTitle>
+          <CardDescription>
+            Script unificado que executa unitários + coverage + E2E em sequência
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Alert className="border-yellow-500/50 bg-yellow-500/10">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-900 dark:text-yellow-100">Pré-requisito para E2E</AlertTitle>
+            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+              Os testes E2E precisam do servidor rodando. Abra um terminal separado e execute <code className="bg-yellow-100 dark:bg-yellow-900 px-1 rounded">npm run dev</code> antes de rodar os testes E2E.
+            </AlertDescription>
+          </Alert>
+          <div className="bg-muted rounded-lg p-3 font-mono text-sm">
+            {testCommands.all}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => copyToClipboard(testCommands.all, 'Todos os Testes')}
+              variant="default"
+              className="flex-1"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copiar Comando Completo
+            </Button>
+            <Button
+              onClick={() => copyToClipboard('chmod +x scripts/run-all-tests.sh && bash scripts/run-all-tests.sh', 'Script com Permissões')}
+              variant="outline"
+            >
+              <Terminal className="h-4 w-4 mr-2" />
+              Com chmod
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Testes Individuais */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground">Executar Testes Individuais</h3>
+        <div className="grid gap-4 md:grid-cols-3">
+        {Object.entries(testCommands).filter(([type]) => type !== 'all').map(([type, command]) => (
           <Card key={type} className="relative">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -141,6 +188,7 @@ export function TestRunner() {
             </CardContent>
           </Card>
         ))}
+        </div>
       </div>
 
       <Card>
