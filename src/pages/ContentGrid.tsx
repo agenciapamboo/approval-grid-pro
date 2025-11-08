@@ -369,11 +369,11 @@ export default function ContentGrid() {
       .select("*")
       .eq("client_id", clientId);
     
-    // Com token: mostrar apenas "in_review" (aguardando aprovação)
+    // Com token: mostrar "draft" OU "in_review" (ambos podem precisar de aprovação)
     if (tokenAccess) {
-      console.log('Token access - filtering in_review contents');
-      query = query.eq("status", "in_review");
-    } 
+      console.log('Token access - filtering draft and in_review contents');
+      query = query.in("status", ["draft", "in_review"]);
+    }
     // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
     else if (!session) {
       console.log('No session - filtering only approved contents');
