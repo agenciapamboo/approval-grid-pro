@@ -683,6 +683,51 @@ export type Database = {
         }
         Relationships: []
       }
+      lovable_plan_config: {
+        Row: {
+          created_at: string | null
+          database_overage_cost_per_gb_month: number | null
+          database_quota_mb: number
+          egress_overage_cost_per_gb: number | null
+          egress_quota_gb: number
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          plan_name: string
+          storage_overage_cost_per_gb: number | null
+          storage_quota_gb: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          database_overage_cost_per_gb_month?: number | null
+          database_quota_mb: number
+          egress_overage_cost_per_gb?: number | null
+          egress_quota_gb: number
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          plan_name: string
+          storage_overage_cost_per_gb?: number | null
+          storage_quota_gb: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          database_overage_cost_per_gb_month?: number | null
+          database_quota_mb?: number
+          egress_overage_cost_per_gb?: number | null
+          egress_quota_gb?: number
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          plan_name?: string
+          storage_overage_cost_per_gb?: number | null
+          storage_quota_gb?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           agency_id: string | null

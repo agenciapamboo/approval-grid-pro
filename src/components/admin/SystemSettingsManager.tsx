@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, RefreshCw } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { LovablePlanConfig } from "./LovablePlanConfig";
 
 export const SystemSettingsManager = () => {
   const { toast } = useToast();
@@ -119,16 +121,21 @@ export const SystemSettingsManager = () => {
   const hasChanges = webhookUrl !== originalWebhookUrl;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <RefreshCw className="h-5 w-5" />
-          Configurações do Sistema
-        </CardTitle>
-        <CardDescription>
-          Configure o webhook interno e atualize a documentação automática
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-6">
+      <LovablePlanConfig />
+      
+      <Separator />
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5" />
+            Webhook Interno & Documentação
+          </CardTitle>
+          <CardDescription>
+            Configure o webhook interno e atualize a documentação automática
+          </CardDescription>
+        </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -209,5 +216,6 @@ export const SystemSettingsManager = () => {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };
