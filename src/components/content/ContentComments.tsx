@@ -36,8 +36,10 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
 
   useEffect(() => {
     loadComments();
-    getCurrentUser();
-  }, [contentId]);
+    if (!approvalToken) {
+      getCurrentUser();
+    }
+  }, [contentId, approvalToken]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -65,48 +67,68 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
     if (!newComment.trim()) return;
 
     try {
-      // Pegar a versão atual do conteúdo e dados do cliente
-      const { data: contentData } = await supabase
-        .from("contents")
-        .select("version, client_id")
-        .eq("id", contentId)
-        .single();
-
-      const { error } = await supabase
-        .from("comments")
-        .insert({
-          content_id: contentId,
-          body: newComment,
-          author_user_id: currentUserId,
-          version: contentData?.version || 1,
+      if (approvalToken) {
+        // Usar RPC para adicionar comentário via token
+        const { error } = await supabase.rpc('add_comment_for_approval', {
+          p_token: approvalToken,
+          p_content_id: contentId,
+          p_body: newComment
         });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Disparar webhook de novo comentário
-      if (contentData?.client_id) {
-        const { data: clientData } = await supabase
-          .from("clients")
-          .select("agency_id")
-          .eq("id", contentData.client_id)
+        setNewComment("");
+        loadComments();
+        onUpdate();
+
+        toast({
+          title: "Comentário adicionado",
+          description: "Seu comentário foi adicionado com sucesso",
+        });
+      } else {
+        // Fluxo autenticado normal
+        const { data: contentData } = await supabase
+          .from("contents")
+          .select("version, client_id")
+          .eq("id", contentId)
           .single();
 
-        await triggerWebhook(
-          "comentario",
-          contentId,
-          contentData.client_id,
-          clientData?.agency_id
-        );
-      }
+        const { error } = await supabase
+          .from("comments")
+          .insert({
+            content_id: contentId,
+            body: newComment,
+            author_user_id: currentUserId,
+            version: contentData?.version || 1,
+          });
 
-      setNewComment("");
-      loadComments();
-      onUpdate();
-      
-      toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi adicionado com sucesso",
-      });
+        if (error) throw error;
+
+        // Disparar webhook de novo comentário
+        if (contentData?.client_id) {
+          const { data: clientData } = await supabase
+            .from("clients")
+            .select("agency_id")
+            .eq("id", contentData.client_id)
+            .single();
+
+          await triggerWebhook(
+            "comentario",
+            contentId,
+            contentData.client_id,
+            clientData?.agency_id
+          );
+        }
+
+        setNewComment("");
+        loadComments();
+        onUpdate();
+        
+        toast({
+          title: "Comentário adicionado",
+          description: "Seu comentário foi adicionado com sucesso",
+        });
+      }
     } catch (error) {
       console.error("Erro ao adicionar comentário:", error);
       toast({

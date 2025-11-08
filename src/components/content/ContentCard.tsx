@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save, XCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -812,8 +812,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
                 {isPublicApproval ? (
-                  // Visualização pública via token: sempre mostrar botões de aprovação para conteúdos in_review
-                  content.status === "in_review" && (
+                  // Visualização pública via token: mostrar botões para draft e in_review
+                  (content.status === "in_review" || content.status === "draft") && (
                     <>
                       <Button 
                         size="sm"
@@ -822,16 +822,25 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         className="w-full"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Aprovar Conteúdo
+                        Aprovar
                       </Button>
                       <Button 
                         size="sm"
                         variant="warning"
-                        onClick={() => setShowAdjustment(true)}
+                        onClick={() => setShowRejectDialog(true)}
                         className="w-full"
                       >
                         <AlertCircle className="h-4 w-4 mr-2" />
-                        Solicitar Ajustes
+                        Solicitar ajuste
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowRejectDialog(true)}
+                        className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Reprovar
                       </Button>
                       <Button 
                         variant="outline" 
@@ -1012,7 +1021,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
           {/* Comentários expandidos */}
           <div className="border-t">
-            <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} />
+            <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
           </div>
         </CardContent>
       </Card>

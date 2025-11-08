@@ -21,6 +21,14 @@ interface ContentMediaProps {
 
 // Hook auxiliar para uma mídia individual
 function useMediaUrl(media: Media | undefined) {
+  // Se já é URL assinada (começa com http), usar diretamente
+  if (media?.src_url?.startsWith('http://') || media?.src_url?.startsWith('https://')) {
+    return {
+      srcUrl: media.src_url,
+      thumbUrl: media.thumb_url || media.src_url
+    };
+  }
+
   const srcFilePath = media?.src_url?.includes('/content-media/')
     ? media.src_url.split('/content-media/')[1]
     : media?.src_url;
@@ -44,7 +52,7 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
 
   useEffect(() => {
     loadMedia();
-  }, [contentId]);
+  }, [contentId, approvalToken]);
 
   // Proteger currentIndex quando media.length mudar
   useEffect(() => {
@@ -68,7 +76,14 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
           console.error('Erro ao carregar mídias via token:', error);
           setMedia([]);
         } else {
-          setMedia(data?.media || []);
+          // Mapear para formato esperado (srcUrl -> src_url)
+          setMedia((data?.media || []).map((m: any) => ({
+            id: m.id,
+            kind: m.kind,
+            order_index: m.order_index,
+            src_url: m.srcUrl,
+            thumb_url: m.thumbUrl
+          })));
         }
       } else {
         // Fluxo normal autenticado

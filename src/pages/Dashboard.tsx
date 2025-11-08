@@ -907,12 +907,14 @@ const Dashboard = () => {
                               size="sm"
                               className="w-full justify-start"
                               onClick={() => {
-                                setSelectedClient(client);
-                                setMonthSelectorOpen(true);
+                                const aSlug = client.agencies?.slug || getClientAgency(client.agency_id)?.slug || agency?.slug;
+                                if (aSlug && client.slug) {
+                                  navigate(`/${aSlug}/${client.slug}`);
+                                }
                               }}
                             >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Aprovação
+                              <FileImage className="w-4 w-4 mr-2" />
+                              Revisar
                             </Button>
                             
                             <Button
