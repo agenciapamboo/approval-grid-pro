@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, PlayCircle, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle, XCircle, Clock, AlertCircle, Copy, Terminal, FileText, Code } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -20,10 +20,20 @@ interface TestRun {
   updated_at: string;
 }
 
+const testCommands = {
+  unit: 'npx vitest',
+  e2e: 'npx playwright test',
+  coverage: 'npx vitest --coverage',
+};
+
+const testDescriptions = {
+  unit: 'Executa testes unitários com Vitest para validar funções e componentes isoladamente',
+  e2e: 'Executa testes end-to-end com Playwright para validar fluxos completos da aplicação',
+  coverage: 'Gera relatório de cobertura de código mostrando quais partes do código estão testadas',
+};
+
 export function TestRunner() {
   const { toast } = useToast();
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentTest, setCurrentTest] = useState<string | null>(null);
   const [testHistory, setTestHistory] = useState<TestRun[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
@@ -43,51 +53,21 @@ export function TestRunner() {
       setTestHistory((data || []) as TestRun[]);
     } catch (error) {
       console.error('Error loading test history:', error);
-      toast({
-        title: "Erro ao carregar histórico",
-        description: "Não foi possível carregar o histórico de testes.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoadingHistory(false);
     }
   };
 
-  const runTests = async (testType: 'unit' | 'e2e' | 'coverage') => {
-    setIsRunning(true);
-    setCurrentTest(testType);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('run-tests', {
-        body: { testType },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Testes concluídos",
-        description: `Testes ${testType} finalizados com status: ${data.status}`,
-        variant: data.status === 'passed' ? "default" : "destructive",
-      });
-
-      await loadTestHistory();
-    } catch (error: any) {
-      console.error('Error running tests:', error);
-      toast({
-        title: "Erro ao executar testes",
-        description: error.message || "Ocorreu um erro ao executar os testes.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRunning(false);
-      setCurrentTest(null);
-    }
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado!",
+      description: `Comando de ${label} copiado para a área de transferência`,
+    });
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'running':
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
       case 'passed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'failed':
@@ -101,7 +81,6 @@ export function TestRunner() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "destructive" | "outline" | "pending" | "success" | "warning"> = {
-      running: "pending",
       passed: "success",
       failed: "destructive",
       error: "warning",
@@ -126,92 +105,133 @@ export function TestRunner() {
 
   return (
     <div className="space-y-6">
+      <Alert>
+        <Terminal className="h-4 w-4" />
+        <AlertTitle>Como executar os testes</AlertTitle>
+        <AlertDescription>
+          Os testes devem ser executados localmente via terminal. Abra o terminal na raiz do projeto e execute os comandos abaixo.
+        </AlertDescription>
+      </Alert>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {Object.entries(testCommands).map(([type, command]) => (
+          <Card key={type} className="relative">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                {getTestTypeLabel(type)}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                {testDescriptions[type as keyof typeof testDescriptions]}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="bg-muted rounded-lg p-3 font-mono text-sm">
+                {command}
+              </div>
+              <Button
+                onClick={() => copyToClipboard(command, getTestTypeLabel(type))}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar Comando
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <PlayCircle className="h-5 w-5" />
-            Executar Testes
+            <FileText className="h-5 w-5" />
+            Documentação de Testes
           </CardTitle>
           <CardDescription>
-            Execute testes unitários, E2E ou análise de cobertura de código
+            Informações detalhadas sobre a suite de testes do projeto
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Button
-              onClick={() => runTests('unit')}
-              disabled={isRunning}
-              className="h-24 flex-col gap-2"
-            >
-              {isRunning && currentTest === 'unit' ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <PlayCircle className="h-6 w-6" />
-              )}
-              <span className="text-sm font-medium">Testes Unitários</span>
-              <span className="text-xs opacity-80">Vitest</span>
-            </Button>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Testes Unitários (Vitest)
+              </h4>
+              <ul className="text-sm text-muted-foreground space-y-1 pl-6 list-disc">
+                <li>Localização: <code className="text-xs bg-muted px-1 rounded">src/lib/__tests__/</code></li>
+                <li>Cobertura mínima: 80%</li>
+                <li>Áreas críticas: 100% de cobertura</li>
+                <li>Configuração: <code className="text-xs bg-muted px-1 rounded">vitest.config.ts</code></li>
+              </ul>
+            </div>
 
-            <Button
-              onClick={() => runTests('e2e')}
-              disabled={isRunning}
-              className="h-24 flex-col gap-2"
-            >
-              {isRunning && currentTest === 'e2e' ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <PlayCircle className="h-6 w-6" />
-              )}
-              <span className="text-sm font-medium">Testes E2E</span>
-              <span className="text-xs opacity-80">Playwright</span>
-            </Button>
-
-            <Button
-              onClick={() => runTests('coverage')}
-              disabled={isRunning}
-              className="h-24 flex-col gap-2"
-            >
-              {isRunning && currentTest === 'coverage' ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : (
-                <PlayCircle className="h-6 w-6" />
-              )}
-              <span className="text-sm font-medium">Cobertura</span>
-              <span className="text-xs opacity-80">Coverage Report</span>
-            </Button>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-blue-500" />
+                Testes E2E (Playwright)
+              </h4>
+              <ul className="text-sm text-muted-foreground space-y-1 pl-6 list-disc">
+                <li>Localização: <code className="text-xs bg-muted px-1 rounded">tests/e2e/</code></li>
+                <li>Fluxos de assinatura e acesso</li>
+                <li>Validação de limites de plano</li>
+                <li>Configuração: <code className="text-xs bg-muted px-1 rounded">playwright.config.ts</code></li>
+              </ul>
+            </div>
           </div>
 
-          {isRunning && (
-            <Alert className="mt-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertDescription>
-                Executando {getTestTypeLabel(currentTest || '')}... Isso pode levar alguns minutos.
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert>
+            <FileText className="h-4 w-4" />
+            <AlertTitle>Documentação Completa</AlertTitle>
+            <AlertDescription>
+              Consulte <code className="text-xs bg-muted px-1 rounded">docs/TESTES_ASSINATURA.md</code> para documentação detalhada sobre:
+              cenários de teste, dados de teste, troubleshooting e integração CI/CD.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={() => copyToClipboard('npx vitest --ui', 'UI interativa do Vitest')}
+              variant="secondary"
+              size="sm"
+            >
+              <Terminal className="h-4 w-4 mr-2" />
+              Vitest UI
+            </Button>
+            <Button
+              onClick={() => copyToClipboard('npx playwright test --ui', 'UI interativa do Playwright')}
+              variant="secondary"
+              size="sm"
+            >
+              <Terminal className="h-4 w-4 mr-2" />
+              Playwright UI
+            </Button>
+            <Button
+              onClick={() => copyToClipboard('npx vitest --coverage', 'Relatório de cobertura')}
+              variant="secondary"
+              size="sm"
+            >
+              <Terminal className="h-4 w-4 mr-2" />
+              Coverage Report
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Histórico de Execuções
-          </CardTitle>
-          <CardDescription>
-            Últimas 10 execuções de testes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingHistory ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : testHistory.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhuma execução de teste encontrada
-            </p>
-          ) : (
+      {testHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Histórico de Execuções
+            </CardTitle>
+            <CardDescription>
+              Últimas 10 execuções de testes registradas
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Accordion type="single" collapsible className="w-full">
               {testHistory.map((run) => (
                 <AccordionItem key={run.id} value={run.id}>
@@ -239,9 +259,9 @@ export function TestRunner() {
                 </AccordionItem>
               ))}
             </Accordion>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

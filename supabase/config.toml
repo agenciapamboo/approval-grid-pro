@@ -38,6 +38,3 @@ verify_jwt = false
 
 [functions.daily-report]
 verify_jwt = false
-
-[functions.run-tests]
-verify_jwt = true
