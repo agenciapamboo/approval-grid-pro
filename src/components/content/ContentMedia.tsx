@@ -45,6 +45,15 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
     loadMedia();
   }, [contentId]);
 
+  // Proteger currentIndex quando media.length mudar
+  useEffect(() => {
+    if (media.length === 0) {
+      setCurrentIndex(0);
+    } else {
+      setCurrentIndex((i) => Math.min(i, media.length - 1));
+    }
+  }, [media.length]);
+
   const loadMedia = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -59,6 +68,10 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
     setLoading(false);
   };
 
+  // Calcular currentMedia de forma segura e chamar hook ANTES dos returns condicionais
+  const currentMedia = media.length > 0 ? media[Math.min(currentIndex, media.length - 1)] : undefined;
+  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia);
+
   if (loading) {
     return (
       <div className="aspect-[4/5] bg-muted animate-pulse" />
@@ -72,9 +85,6 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
       </div>
     );
   }
-
-  const currentMedia = media[currentIndex];
-  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia);
 
   // Distância mínima de swipe (em px)
   const minSwipeDistance = 50;
