@@ -156,6 +156,25 @@ export default function ContentGrid() {
     initializePage();
   }, [agencySlug, clientSlug, searchParams]);
 
+  const fetchContentsViaToken = async (token: string) => {
+    console.log('[ContentGrid] Fetching contents via RPC with token');
+    const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
+      p_token: token
+    });
+
+    if (rpcError) {
+      console.error('[ContentGrid] RPC error:', rpcError);
+      setContents([]);
+      return;
+    }
+
+    console.log('[ContentGrid] Contents via RPC:', {
+      count: contentData?.length || 0,
+      statuses: contentData?.map((c: any) => c.status)
+    });
+    setContents(contentData || []);
+  };
+
   const validateTokenAndLoadData = async (token: string) => {
     try {
       console.log('=== Validating approval token with rate limiting ===');
@@ -237,60 +256,48 @@ export default function ContentGrid() {
       setRateLimitError({ type: null, message: '' });
       setSelectedMonth(data.month);
 
-      // Carregar dados do cliente usando as informações do token
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("id", data.client_id)
-        .maybeSingle();
-
-      if (clientError || !clientData) {
-        console.error('Error loading client:', clientError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os dados do cliente",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      setClient(clientData);
-
-      // Carregar agência
-      if (clientData.agency_id) {
-        const { data: agencyData } = await supabase
-          .from("agencies_public")
-          .select("*")
-          .eq("id", clientData.agency_id)
+      // Load client from public table (no RLS)
+      try {
+        const { data: clientPub, error: clientPubErr } = await supabase
+          .from('clients_public')
+          .select('*')
+          .eq('id', data.client_id)
           .maybeSingle();
-        
-        if (agencyData) {
-          setAgency(agencyData);
+
+        if (clientPub) {
+          setClient({
+            id: clientPub.id,
+            name: clientPub.name,
+            slug: clientPub.slug,
+            logo_url: clientPub.logo_url || undefined,
+            agency_id: ''
+          } as any);
+        } else {
+          // Fallback: use data from token validation
+          setClient({
+            id: data.client_id,
+            name: data.client_name,
+            slug: data.client_slug,
+            logo_url: undefined,
+            agency_id: ''
+          } as any);
         }
+
+        // Load agency from public table via slug
+        if (agencySlug) {
+          const { data: agencyData } = await supabase
+            .from('agencies_public')
+            .select('*')
+            .eq('slug', agencySlug)
+            .maybeSingle();
+          if (agencyData) setAgency(agencyData);
+        }
+      } catch (e) {
+        console.warn('[ContentGrid] Public client/agency fetch skipped due to error:', e);
       }
 
-      // Usar RPC para buscar conteúdos via token (bypassa RLS)
-      console.log('[ContentGrid] Fetching contents via RPC with token');
-      const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
-        p_token: token
-      });
-
-      if (rpcError) {
-        console.error('[ContentGrid] RPC error:', rpcError);
-        // Fallback para método antigo se RPC falhar
-        await loadContents(clientData.id, data.month, true);
-      } else {
-        console.log('[ContentGrid] Contents fetched via RPC:', {
-          count: contentData?.length || 0,
-          statuses: contentData?.map((c: any) => c.status)
-        });
-        setContents(contentData || []);
-        
-        if (!contentData || contentData.length === 0) {
-          console.warn('[ContentGrid] RPC returned 0 contents for token approval');
-        }
-      }
+      // Fetch contents via RPC
+      await fetchContentsViaToken(token);
     } catch (error) {
       console.error("Error validating token:", error);
       setTokenValid(false);
@@ -696,7 +703,13 @@ export default function ContentGrid() {
                 isResponsible={false}
                 isAgencyView={false}
                 isPublicApproval={isPublicView}
-                onUpdate={() => loadContents(client!.id, selectedMonth, isPublicView)}
+                onUpdate={() => {
+                  if (isPublicView && approvalToken) {
+                    fetchContentsViaToken(approvalToken);
+                  } else {
+                    loadContents(client!.id, selectedMonth, false);
+                  }
+                }}
               />
             ))}
           </div>
