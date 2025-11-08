@@ -863,6 +863,7 @@ export type Database = {
           responsible_name: string | null
           role: Database["public"]["Enums"]["user_role"]
           selected_plan: string | null
+          skip_subscription_check: boolean
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
@@ -900,6 +901,7 @@ export type Database = {
           responsible_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           selected_plan?: string | null
+          skip_subscription_check?: boolean
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
@@ -937,6 +939,7 @@ export type Database = {
           responsible_name?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           selected_plan?: string | null
+          skip_subscription_check?: boolean
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null

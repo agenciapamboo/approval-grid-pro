@@ -23,7 +23,7 @@ export function SubscriptionAlert() {
     }
   };
 
-  if (!status) return null;
+  if (!status || status.skipSubscriptionCheck) return null;
 
   // Show alert if user is in grace period
   if (status.isInGracePeriod && status.gracePeriodEnd) {

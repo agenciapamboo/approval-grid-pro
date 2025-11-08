@@ -25,6 +25,7 @@ export interface SubscriptionStatus {
   delinquent: boolean;
   entitlements: UserEntitlements | null;
   blockReason?: string;
+  skipSubscriptionCheck: boolean;
 }
 
 /**
@@ -41,7 +42,7 @@ export async function getUserSubscriptionStatus(): Promise<SubscriptionStatus | 
     // Get user profile with subscription data
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('plan, subscription_status, is_pro, delinquent, grace_period_end, current_period_end')
+      .select('plan, subscription_status, is_pro, delinquent, grace_period_end, current_period_end, skip_subscription_check')
       .eq('id', user.id)
       .single();
 
@@ -59,33 +60,36 @@ export async function getUserSubscriptionStatus(): Promise<SubscriptionStatus | 
       console.error('Error fetching entitlements:', entitlementsError);
     }
 
+    // If user has skip_subscription_check enabled (internal/unlimited users)
+    if (profile.skip_subscription_check) {
+      return {
+        isActive: true,
+        isBlocked: false,
+        isInGracePeriod: false,
+        gracePeriodEnd: null,
+        subscriptionStatus: profile.subscription_status,
+        plan: profile.plan || 'unlimited',
+        isPro: true,
+        delinquent: false,
+        entitlements: entitlements || null,
+        skipSubscriptionCheck: true
+      };
+    }
+
     const now = new Date();
     const gracePeriodEnd = profile.grace_period_end ? new Date(profile.grace_period_end) : null;
-    const currentPeriodEnd = profile.current_period_end ? new Date(profile.current_period_end) : null;
 
     // Determine if user is in grace period
     const isInGracePeriod = profile.delinquent && gracePeriodEnd ? gracePeriodEnd > now : false;
 
-    // Determine if user is blocked
+    // Determine if user is blocked (ONLY for delinquency)
     let isBlocked = false;
     let blockReason: string | undefined;
 
-    // Block if subscription is canceled or unpaid
-    if (profile.subscription_status === 'canceled' || profile.subscription_status === 'unpaid') {
-      isBlocked = true;
-      blockReason = 'subscription_canceled';
-    }
-
-    // Block if grace period has expired
+    // Block ONLY if grace period has expired (delinquency)
     if (profile.delinquent && gracePeriodEnd && gracePeriodEnd < now) {
       isBlocked = true;
       blockReason = 'grace_period_expired';
-    }
-
-    // Block if subscription period has ended
-    if (currentPeriodEnd && currentPeriodEnd < now && profile.subscription_status !== 'active') {
-      isBlocked = true;
-      blockReason = 'subscription_expired';
     }
 
     // Determine if subscription is active
@@ -103,7 +107,8 @@ export async function getUserSubscriptionStatus(): Promise<SubscriptionStatus | 
       isPro: profile.is_pro || false,
       delinquent: profile.delinquent || false,
       entitlements: entitlements || null,
-      blockReason
+      blockReason,
+      skipSubscriptionCheck: false
     };
   } catch (error) {
     console.error('Error in getUserSubscriptionStatus:', error);
@@ -121,15 +126,14 @@ export async function canPerformProAction(): Promise<{ allowed: boolean; reason?
     return { allowed: false, reason: 'Unable to verify subscription status' };
   }
 
+  // Skip checks for internal/unlimited users
+  if (status.skipSubscriptionCheck) {
+    return { allowed: true };
+  }
+
   if (status.isBlocked) {
-    if (status.blockReason === 'subscription_canceled') {
-      return { allowed: false, reason: 'Sua assinatura foi cancelada. Reative para continuar.' };
-    }
     if (status.blockReason === 'grace_period_expired') {
       return { allowed: false, reason: 'Período de carência expirado. Atualize seu pagamento.' };
-    }
-    if (status.blockReason === 'subscription_expired') {
-      return { allowed: false, reason: 'Sua assinatura expirou. Renove para continuar.' };
     }
     return { allowed: false, reason: 'Ação bloqueada. Verifique sua assinatura.' };
   }
@@ -191,6 +195,11 @@ export async function hasFeatureAccess(
   
   if (!status || !status.entitlements) {
     return { hasAccess: false, reason: 'Não foi possível verificar as permissões' };
+  }
+
+  // Skip checks for internal/unlimited users
+  if (status.skipSubscriptionCheck) {
+    return { hasAccess: true };
   }
 
   if (status.isBlocked) {

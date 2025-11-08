@@ -28,11 +28,12 @@ serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // 1. Find users with expired grace period
+    // 1. Find users with expired grace period (excluding skip_subscription_check users)
     const { data: expiredGracePeriod, error: gracePeriodError } = await supabaseClient
       .from('profiles')
-      .select('id, name, plan, delinquent, grace_period_end')
+      .select('id, name, plan, delinquent, grace_period_end, skip_subscription_check')
       .eq('delinquent', true)
+      .eq('skip_subscription_check', false)
       .not('grace_period_end', 'is', null)
       .lt('grace_period_end', now);
 
@@ -66,11 +67,12 @@ serve(async (req) => {
       }
     }
 
-    // 2. Find users with canceled or unpaid subscriptions (but not yet downgraded)
+    // 2. Find users with canceled or unpaid subscriptions (excluding skip_subscription_check users)
     const { data: canceledUsers, error: canceledError } = await supabaseClient
       .from('profiles')
-      .select('id, name, plan, subscription_status')
+      .select('id, name, plan, subscription_status, skip_subscription_check')
       .in('subscription_status', ['canceled', 'unpaid'])
+      .eq('skip_subscription_check', false)
       .neq('plan', 'creator');
 
     if (canceledError) {
@@ -102,10 +104,11 @@ serve(async (req) => {
       }
     }
 
-    // 3. Clean up expired subscriptions (current_period_end passed)
+    // 3. Clean up expired subscriptions (excluding skip_subscription_check users)
     const { data: expiredSubscriptions, error: expiredError } = await supabaseClient
       .from('profiles')
-      .select('id, name, plan, current_period_end')
+      .select('id, name, plan, current_period_end, skip_subscription_check')
+      .eq('skip_subscription_check', false)
       .not('current_period_end', 'is', null)
       .lt('current_period_end', now)
       .not('subscription_status', 'in', '("canceled","unpaid")');
