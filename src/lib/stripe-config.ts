@@ -25,7 +25,7 @@ export const STRIPE_PRODUCTS = {
       },
     },
   },
-  socialMidia: {
+  socialmidia: {
     id: 'prod_TLUSSunwc1e3z3',
     name: 'Agência Social Mídia',
     description: 'Plano para agências de Social Mídia',
@@ -42,7 +42,7 @@ export const STRIPE_PRODUCTS = {
       },
     },
   },
-  fullService: {
+  fullservice: {
     id: 'prod_TLXZljt4VYKjyA',
     name: 'Agência Full Service',
     description: 'Plano completo para agências',
@@ -58,6 +58,12 @@ export const STRIPE_PRODUCTS = {
         interval: 'year',
       },
     },
+  },
+  unlimited: {
+    id: 'prod_internal_unlimited',
+    name: 'Sem Plano (Interno)',
+    description: 'Plano ilimitado para equipe interna',
+    free: true,
   },
 } as const;
 

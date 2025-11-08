@@ -1528,6 +1528,7 @@ export type Database = {
         }[]
       }
       is_subscription_active: { Args: { user_id: string }; Returns: boolean }
+      is_team_member: { Args: { _user_id: string }; Returns: boolean }
       log_validation_attempt: {
         Args: {
           p_ip_address: string
@@ -1572,7 +1573,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "agency_admin" | "client_user"
+      app_role: "super_admin" | "agency_admin" | "client_user" | "team_member"
       content_status: "draft" | "in_review" | "changes_requested" | "approved"
       content_type: "image" | "carousel" | "reels" | "story" | "feed"
       legal_basis: "contract" | "legitimate_interest"
@@ -1706,7 +1707,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "agency_admin", "client_user"],
+      app_role: ["super_admin", "agency_admin", "client_user", "team_member"],
       content_status: ["draft", "in_review", "changes_requested", "approved"],
       content_type: ["image", "carousel", "reels", "story", "feed"],
       legal_basis: ["contract", "legitimate_interest"],
