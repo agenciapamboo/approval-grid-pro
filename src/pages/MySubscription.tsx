@@ -52,7 +52,8 @@ export default function MySubscription() {
       creator: 'Creator (Gratuito)',
       eugencia: 'Eugência',
       socialmidia: 'Agência Social Mídia',
-      fullservice: 'Agência Full Service'
+      fullservice: 'Agência Full Service',
+      unlimited: 'Sem Plano (Interno)'
     };
     return names[plan] || plan;
   };
@@ -114,6 +115,13 @@ export default function MySubscription() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate("/dashboard")}
+            className="mb-4"
+          >
+            ← Voltar ao painel
+          </Button>
           <h1 className="text-3xl font-bold mb-2">Minha Assinatura</h1>
           <p className="text-muted-foreground">Gerencie sua assinatura e pagamentos</p>
         </div>
@@ -131,8 +139,11 @@ export default function MySubscription() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
+              <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold">{getPlanName(status.plan)}</h3>
+                {status.skipSubscriptionCheck && (
+                  <Badge variant="outline" className="ml-2 border-secondary text-secondary">Interno</Badge>
+                )}
               </div>
 
               <Separator />
@@ -246,8 +257,8 @@ export default function MySubscription() {
             </Card>
           )}
 
-          {/* Upgrade Card for Free Plan */}
-          {status.plan === 'creator' && !status.isPro && (
+          {/* Upgrade Card for Free Plan (não mostrar para usuários internos) */}
+          {status.plan === 'creator' && !status.isPro && !status.skipSubscriptionCheck && (
             <Card>
               <CardHeader>
                 <CardTitle>Fazer Upgrade</CardTitle>
@@ -262,6 +273,24 @@ export default function MySubscription() {
                 >
                   Ver Planos
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Info Card for Internal Users */}
+          {status.skipSubscriptionCheck && (
+            <Card className="border-secondary">
+              <CardHeader>
+                <CardTitle className="text-secondary">Acesso Interno</CardTitle>
+                <CardDescription>
+                  Você tem acesso ilimitado a todos os recursos da plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Como usuário interno, você não precisa se preocupar com limites de uso ou assinaturas.
+                  Todos os recursos estão desbloqueados para você.
+                </p>
               </CardContent>
             </Card>
           )}

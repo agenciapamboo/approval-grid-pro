@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, User, LogOut, Sun, Moon } from "lucide-react";
+import { CheckCircle2, User, LogOut, Sun, Moon, CreditCard } from "lucide-react";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { useTheme } from "next-themes";
 
@@ -35,6 +35,7 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
           <ExpandableTabs
             tabs={[
               { title: "Minha Conta", icon: User },
+              { title: "Minha Assinatura", icon: CreditCard },
               { title: (resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"), icon: resolvedTheme === "dark" ? Sun : Moon },
               { title: "Sair", icon: LogOut },
             ]}
@@ -42,8 +43,10 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
               if (index === 0) {
                 navigate("/minha-conta");
               } else if (index === 1) {
+                navigate("/minha-assinatura");
+              } else if (index === 2) {
                 setTheme(resolvedTheme === "dark" ? "light" : "dark");
-              } else if (index === 2 && onSignOut) {
+              } else if (index === 3 && onSignOut) {
                 onSignOut();
               }
             }}
