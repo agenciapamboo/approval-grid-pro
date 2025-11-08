@@ -332,6 +332,15 @@ const Dashboard = () => {
           if (clientData.agencies) {
             setAgencies([clientData.agencies as any]);
           }
+          
+          // Debug logging
+          console.log('Client data loaded:', {
+            clientId: clientData.id,
+            clientSlug: clientData.slug,
+            agencyId: clientData.agency_id,
+            agencySlug: clientData.agencies?.slug,
+            hasAgency: !!clientData.agencies
+          });
         }
 
         // Buscar conteúdos do cliente
@@ -580,6 +589,13 @@ const Dashboard = () => {
               const client = clients[0];
               const agency = agencies[0];
               
+              // Helper para obter slugs de forma robusta
+              const getNavigationSlugs = () => {
+                const clientSlug = client?.slug;
+                const agencySlug = agency?.slug || (client as any)?.agencies?.slug;
+                return { clientSlug, agencySlug };
+              };
+              
               // Determinar o subtítulo baseado no status
               let subtitle = '';
               if (pendingContents.length > 0) {
@@ -642,9 +658,19 @@ const Dashboard = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                if (agency?.slug && client?.slug) {
-                                  navigate(`/${agency.slug}/${client.slug}`);
+                                const { clientSlug, agencySlug } = getNavigationSlugs();
+                                
+                                if (!agencySlug || !clientSlug) {
+                                  toast({
+                                    variant: "destructive",
+                                    title: "Erro de navegação",
+                                    description: "Não foi possível encontrar os dados necessários para acessar os conteúdos.",
+                                  });
+                                  console.error('Navigation failed:', { agency, client, agencySlug, clientSlug });
+                                  return;
                                 }
+                                
+                                navigate(`/${agencySlug}/${clientSlug}`);
                               }}
                             >
                               Revisar
@@ -668,9 +694,19 @@ const Dashboard = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  if (agency?.slug && client?.slug) {
-                                    navigate(`/${agency.slug}/${client.slug}`);
+                                  const { clientSlug, agencySlug } = getNavigationSlugs();
+                                  
+                                  if (!agencySlug || !clientSlug) {
+                                    toast({
+                                      variant: "destructive",
+                                      title: "Erro de navegação",
+                                      description: "Não foi possível encontrar os dados necessários para acessar os conteúdos.",
+                                    });
+                                    console.error('Navigation failed:', { agency, client, agencySlug, clientSlug });
+                                    return;
                                   }
+                                  
+                                  navigate(`/${agencySlug}/${clientSlug}`);
                                 }}
                               >
                                 Ver detalhes
