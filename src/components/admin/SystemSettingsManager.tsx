@@ -16,10 +16,13 @@ export const SystemSettingsManager = () => {
   const [updatingDocs, setUpdatingDocs] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [originalWebhookUrl, setOriginalWebhookUrl] = useState("");
+  const [platformWebhookUrl, setPlatformWebhookUrl] = useState("");
+  const [originalPlatformWebhookUrl, setOriginalPlatformWebhookUrl] = useState("");
 
   const loadSettings = async () => {
     setLoading(true);
     try {
+      // Webhook interno
       const { data, error } = await supabase
         .from("system_settings")
         .select("value")
@@ -31,6 +34,17 @@ export const SystemSettingsManager = () => {
       const url = data?.value || "";
       setWebhookUrl(url);
       setOriginalWebhookUrl(url);
+
+      // Webhook de plataforma
+      const { data: platformData } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "platform_notifications_webhook_url")
+        .single();
+
+      const platformUrl = platformData?.value || "";
+      setPlatformWebhookUrl(platformUrl);
+      setOriginalPlatformWebhookUrl(platformUrl);
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
       toast({
@@ -90,6 +104,45 @@ export const SystemSettingsManager = () => {
     setWebhookUrl(originalWebhookUrl);
   };
 
+  const handleSavePlatformWebhook = async () => {
+    if (!platformWebhookUrl.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A URL do webhook não pode estar vazia.",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ 
+          value: platformWebhookUrl.trim(),
+          updated_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq("key", "platform_notifications_webhook_url");
+
+      if (error) throw error;
+
+      setOriginalPlatformWebhookUrl(platformWebhookUrl.trim());
+      toast({
+        title: "Configurações salvas",
+        description: "O webhook de notificações foi atualizado com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao salvar webhook de plataforma:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar o webhook de plataforma.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleUpdateDocs = async () => {
     setUpdatingDocs(true);
     try {
@@ -119,6 +172,7 @@ export const SystemSettingsManager = () => {
   };
 
   const hasChanges = webhookUrl !== originalWebhookUrl;
+  const hasPlatformChanges = platformWebhookUrl !== originalPlatformWebhookUrl;
 
   return (
     <div className="space-y-6">
@@ -211,6 +265,67 @@ export const SystemSettingsManager = () => {
                   )}
                 </Button>
               </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Webhook de Notificações de Clientes</CardTitle>
+        <CardDescription>
+          URL do N8N para envio de notificações da plataforma para agências/creators
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="platform-webhook-url">URL do Webhook (N8N)</Label>
+              <Input
+                id="platform-webhook-url"
+                type="url"
+                placeholder="https://n8n.pamboocriativos.com.br/webhook-test/..."
+                value={platformWebhookUrl}
+                onChange={(e) => setPlatformWebhookUrl(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                Este webhook recebe notificações da plataforma para clientes (vencimentos, alertas, anúncios)
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSavePlatformWebhook}
+                disabled={!hasPlatformChanges || saving}
+                className="flex items-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Salvar
+                  </>
+                )}
+              </Button>
+              {hasPlatformChanges && (
+                <Button
+                  variant="outline"
+                  onClick={() => setPlatformWebhookUrl(originalPlatformWebhookUrl)}
+                  disabled={saving}
+                >
+                  Cancelar
+                </Button>
+              )}
             </div>
           </>
         )}
