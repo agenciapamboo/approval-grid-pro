@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, TestTube } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -33,6 +33,7 @@ import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
 import { ContentKanban } from "@/components/content/ContentKanban";
 import { ClientLimitsMetrics } from "@/components/admin/ClientLimitsMetrics";
 import { AgencyLimitsOverview } from "@/components/admin/AgencyLimitsOverview";
+import { TestRunner } from "@/components/admin/TestRunner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1051,6 +1052,21 @@ const Dashboard = () => {
         {/* Ferramentas e Configurações - Só para Super Admin */}
         {profile?.role === 'super_admin' && (
           <div className="mt-8 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TestTube className="h-5 w-5" />
+                  Testes e Qualidade
+                </CardTitle>
+                <CardDescription>
+                  Execute testes unitários e E2E para garantir a qualidade do código
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestRunner />
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Ferramentas de Mídia</CardTitle>

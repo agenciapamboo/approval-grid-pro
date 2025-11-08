@@ -1025,6 +1025,36 @@ export type Database = {
         }
         Relationships: []
       }
+      test_runs: {
+        Row: {
+          created_at: string | null
+          executed_by: string | null
+          id: string
+          results: Json | null
+          status: string
+          test_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          executed_by?: string | null
+          id?: string
+          results?: Json | null
+          status: string
+          test_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          executed_by?: string | null
+          id?: string
+          results?: Json | null
+          status?: string
+          test_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       token_validation_attempts: {
         Row: {
           attempted_at: string
