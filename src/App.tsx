@@ -8,7 +8,6 @@ import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
-// Lazy load all pages for better performance
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -30,6 +29,10 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const BlockedIPs = lazy(() => import("./pages/BlockedIPs"));
 const ClientHistory = lazy(() => import("./pages/ClientHistory"));
+const Clientes = lazy(() => import("./pages/Clientes"));
+const ClienteDetalhes = lazy(() => import("./pages/ClienteDetalhes"));
+const Configuracoes = lazy(() => import("./pages/Configuracoes"));
+const Financeiro = lazy(() => import("./pages/Financeiro"));
 
 const queryClient = new QueryClient();
 
@@ -65,6 +68,10 @@ const App = () => (
                 <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
                 <Route path="/minha-assinatura" element={<ProtectedRoute><MySubscription /></ProtectedRoute>} />
                 <Route path="/minha-conta" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
+                <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+                <Route path="/clientes/:clientId" element={<ProtectedRoute><ClienteDetalhes /></ProtectedRoute>} />
+                <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+                <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
                 <Route path="/agency/client/:clientId" element={<ProtectedRoute><AgencyContentManager /></ProtectedRoute>} />
                 <Route path="/agency/creative-requests" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />
                 <Route path="/agency/creative-requests/:clientId" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />

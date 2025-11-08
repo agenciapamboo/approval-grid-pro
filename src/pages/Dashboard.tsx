@@ -522,7 +522,7 @@ const Dashboard = () => {
             </h2>
             <p className="text-muted-foreground">
               {/* Client-side role check for UX only - actual authorization via server-side RLS */}
-              {profile?.role === 'super_admin' && 'Gerencie todas as agências e clientes da plataforma'}
+              {profile?.role === 'super_admin' && 'Gerencie toda a plataforma'}
               {profile?.role === 'agency_admin' && 'Gerencie os clientes da sua agência'}
               {profile?.role === 'client_user' && 'Revise e aprove seus conteúdos'}
             </p>
@@ -544,6 +544,124 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+
+        {/* SUPER ADMIN - Dashboard Simplificado */}
+        {profile?.role === 'super_admin' && (
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Total de Clientes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{clients.length}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    MRR Total
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clients.length * 150)}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Agências
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{agencies.length}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Usuários
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{allProfiles.length}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Resource Usage */}
+            <ResourceUsagePanel />
+
+            {/* Cards de Navegação Rápida */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/clientes")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Clientes
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie todos os clientes e envie notificações
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/configuracoes")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="h-5 w-5" />
+                    Configurações
+                  </CardTitle>
+                  <CardDescription>
+                    Configure planos, roles e recursos do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/financeiro")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Financeiro
+                  </CardTitle>
+                  <CardDescription>
+                    Acompanhe métricas financeiras e custos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
 
         {/* Client User - Lista de Aprovações */}
         {profile?.role === 'client_user' && (
