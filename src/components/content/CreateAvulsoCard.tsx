@@ -11,6 +11,9 @@ import { Upload, CalendarIcon, Save, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { checkMonthlyPostsLimit, checkCreativesStorageLimit } from "@/lib/plan-limits";
+import { CreativeRotationDialog } from "./CreativeRotationDialog";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 interface CreateAvulsoCardProps {
   clientId: string;
@@ -26,8 +29,11 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
   const [date, setDate] = useState<Date>();
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showRotationDialog, setShowRotationDialog] = useState(false);
+  const [limitCheckData, setLimitCheckData] = useState<{ type: 'posts' | 'creatives'; limit: number; current: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { status } = useSubscriptionStatus();
 
   useEffect(() => {
     return () => {
@@ -98,6 +104,25 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
         variant: "destructive",
       });
       return;
+    }
+
+    // Verificar limites se não for usuário interno
+    if (status && !status.skipSubscriptionCheck) {
+      // Verificar limite de posts mensais
+      const postsCheck = await checkMonthlyPostsLimit(clientId);
+      if (!postsCheck.withinLimit) {
+        setLimitCheckData({ type: 'posts', limit: postsCheck.limit || 0, current: postsCheck.currentCount });
+        setShowRotationDialog(true);
+        return;
+      }
+
+      // Verificar limite de criativos arquivados
+      const creativesCheck = await checkCreativesStorageLimit(clientId);
+      if (!creativesCheck.withinLimit) {
+        setLimitCheckData({ type: 'creatives', limit: creativesCheck.limit || 0, current: creativesCheck.currentCount });
+        setShowRotationDialog(true);
+        return;
+      }
     }
 
     setUploading(true);
@@ -373,10 +398,28 @@ export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCar
                 <Save className="mr-2 h-4 w-4" />
                 Salvar Conteúdo
               </>
-            )}
-          </Button>
+          )}
+        </Button>
         )}
       </div>
+
+      {/* Creative Rotation Dialog */}
+      {limitCheckData && (
+        <CreativeRotationDialog
+          open={showRotationDialog}
+          onOpenChange={setShowRotationDialog}
+          clientId={clientId}
+          limitType={limitCheckData.type}
+          limit={limitCheckData.limit}
+          currentCount={limitCheckData.current}
+          onArchiveComplete={() => {
+            setShowRotationDialog(false);
+            setLimitCheckData(null);
+            // Tentar salvar novamente após arquivamento
+            handleSave();
+          }}
+        />
+      )}
     </Card>
   );
 }

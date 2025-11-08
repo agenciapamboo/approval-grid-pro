@@ -17,6 +17,9 @@ import { Input } from "@/components/ui/input";
 import { triggerWebhook } from "@/lib/webhooks";
 import { createNotification } from "@/lib/notifications";
 import { TimeInput } from "@/components/ui/time-input";
+import { checkMonthlyPostsLimit, checkCreativesStorageLimit } from "@/lib/plan-limits";
+import { CreativeRotationDialog } from "./CreativeRotationDialog";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 interface CreateContentCardProps {
   clientId: string;
@@ -41,10 +44,13 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   const [videoTypes, setVideoTypes] = useState<string[]>([]);
   const [reelsThumbnail, setReelsThumbnail] = useState<File | null>(null);
   const [reelsThumbnailPreview, setReelsThumbnailPreview] = useState<string>("");
+  const [showRotationDialog, setShowRotationDialog] = useState(false);
+  const [limitCheckData, setLimitCheckData] = useState<{ type: 'posts' | 'creatives'; limit: number; current: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const { status } = useSubscriptionStatus();
 
   useEffect(() => {
     return () => {
@@ -298,6 +304,25 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         variant: "destructive",
       });
       return;
+    }
+
+    // Verificar limites se não for usuário interno
+    if (status && !status.skipSubscriptionCheck) {
+      // Verificar limite de posts mensais
+      const postsCheck = await checkMonthlyPostsLimit(clientId);
+      if (!postsCheck.withinLimit) {
+        setLimitCheckData({ type: 'posts', limit: postsCheck.limit || 0, current: postsCheck.currentCount });
+        setShowRotationDialog(true);
+        return;
+      }
+
+      // Verificar limite de criativos arquivados
+      const creativesCheck = await checkCreativesStorageLimit(clientId);
+      if (!creativesCheck.withinLimit) {
+        setLimitCheckData({ type: 'creatives', limit: creativesCheck.limit || 0, current: creativesCheck.currentCount });
+        setShowRotationDialog(true);
+        return;
+      }
     }
 
     setUploading(true);
@@ -838,6 +863,24 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           )}
         </Button>
       </div>
+
+      {/* Creative Rotation Dialog */}
+      {limitCheckData && (
+        <CreativeRotationDialog
+          open={showRotationDialog}
+          onOpenChange={setShowRotationDialog}
+          clientId={clientId}
+          limitType={limitCheckData.type}
+          limit={limitCheckData.limit}
+          currentCount={limitCheckData.current}
+          onArchiveComplete={() => {
+            setShowRotationDialog(false);
+            setLimitCheckData(null);
+            // Tentar salvar novamente após arquivamento
+            handleSave();
+          }}
+        />
+      )}
     </Card>
   );
 }
