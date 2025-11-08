@@ -21,14 +21,7 @@ interface ContentMediaProps {
 
 // Hook auxiliar para uma mídia individual
 function useMediaUrl(media: Media | undefined) {
-  // Se já é URL assinada (começa com http), usar diretamente
-  if (media?.src_url?.startsWith('http://') || media?.src_url?.startsWith('https://')) {
-    return {
-      srcUrl: media.src_url,
-      thumbUrl: media.thumb_url || media.src_url
-    };
-  }
-
+  // Sempre chamar hooks na mesma ordem
   const srcFilePath = media?.src_url?.includes('/content-media/')
     ? media.src_url.split('/content-media/')[1]
     : media?.src_url;
@@ -38,6 +31,14 @@ function useMediaUrl(media: Media | undefined) {
 
   const { url: srcUrl } = useStorageUrl({ bucket: 'content-media', filePath: srcFilePath });
   const { url: thumbUrl } = useStorageUrl({ bucket: 'content-media', filePath: thumbFilePath });
+
+  // Se já é URL assinada (começa com http), usar diretamente
+  if (media?.src_url?.startsWith('http://') || media?.src_url?.startsWith('https://')) {
+    return {
+      srcUrl: media.src_url,
+      thumbUrl: media.thumb_url || media.src_url
+    };
+  }
 
   return { srcUrl, thumbUrl };
 }
