@@ -124,15 +124,35 @@ export default function ContentGrid() {
 
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      setApprovalToken(token);
-      validateTokenAndLoadData(token);
-    } else {
-      // Não permite mais acesso sem token
-      setTokenValid(false);
-      setLoading(false);
-    }
+    const initializePage = async () => {
+      console.log('[ContentGrid] Initializing page...');
+      
+      // 1. Verificar sessão autenticada primeiro
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // 2. Se tem sessão, carregar dados via autenticação
+      if (session) {
+        console.log('[ContentGrid] Authenticated access - loading via session');
+        setUser(session.user);
+        await loadPublicData();
+        return;
+      }
+      
+      // 3. Se não tem sessão, verificar token de aprovação
+      const token = searchParams.get('token');
+      if (token) {
+        console.log('[ContentGrid] Token-based access - validating token:', token.substring(0, 10) + '...');
+        setApprovalToken(token);
+        await validateTokenAndLoadData(token);
+      } else {
+        // 4. Sem sessão e sem token = acesso restrito
+        console.log('[ContentGrid] No authentication and no token - restricted access');
+        setTokenValid(false);
+        setLoading(false);
+      }
+    };
+    
+    initializePage();
   }, [agencySlug, clientSlug, searchParams]);
 
   const validateTokenAndLoadData = async (token: string) => {
