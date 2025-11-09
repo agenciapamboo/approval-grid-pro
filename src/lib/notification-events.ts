@@ -5,11 +5,11 @@
 
 export interface NotificationEvent {
   event: string;
-  category: 'client' | 'internal';
+  category: 'client' | 'internal' | 'platform';
   type: 'info' | 'warning' | 'error' | 'report' | 'security';
   description: string;
   trigger: string;
-  webhookType: 'client' | 'internal';
+  webhookType: 'client' | 'internal' | 'platform';
   payload: Record<string, any>;
 }
 
@@ -339,7 +339,7 @@ export const NOTIFICATION_EVENTS: NotificationEvent[] = [
 /**
  * Retorna todos os eventos de uma categoria
  */
-export function getEventsByCategory(category: 'client' | 'internal'): NotificationEvent[] {
+export function getEventsByCategory(category: 'client' | 'internal' | 'platform'): NotificationEvent[] {
   return NOTIFICATION_EVENTS.filter(e => e.category === category);
 }
 

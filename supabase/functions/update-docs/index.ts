@@ -329,12 +329,338 @@ const NOTIFICATION_EVENTS: NotificationEvent[] = [
       priority: 'high',
       timestamp: '2024-01-15T15:00:00Z'
     }
+  },
+  // Eventos de Notificações da Plataforma (Webhook Externo)
+  {
+    event: 'payment_due_7_days',
+    category: 'platform',
+    type: 'warning',
+    description: 'Lembrete enviado 7 dias antes do vencimento da assinatura',
+    trigger: 'Edge function check-payment-notifications (cron diário)',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'payment_due_7_days',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Assinatura vence em 7 dias',
+      message: 'Sua assinatura do plano EuGencia vence em 7 dias. Certifique-se de que seu método de pagamento está atualizado.',
+      priority: 'normal',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        plan_renewal_date: '2024-01-22',
+        amount_due: 'R$ 497,00',
+        days_until_due: 7
+      },
+      created_at: '2024-01-15T08:00:00Z'
+    }
+  },
+  {
+    event: 'payment_due_1_day',
+    category: 'platform',
+    type: 'warning',
+    description: 'Lembrete enviado 1 dia antes do vencimento da assinatura',
+    trigger: 'Edge function check-payment-notifications (cron diário)',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'payment_due_1_day',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Assinatura vence amanhã',
+      message: 'Sua assinatura vence amanhã. Renove agora para evitar interrupção do serviço.',
+      priority: 'high',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        plan_renewal_date: '2024-01-16',
+        amount_due: 'R$ 497,00',
+        days_until_due: 1,
+        renewal_link: 'https://app.exemplo.com/minha-assinatura'
+      },
+      created_at: '2024-01-15T08:00:00Z'
+    }
+  },
+  {
+    event: 'payment_due_today',
+    category: 'platform',
+    type: 'warning',
+    description: 'Notificação no dia do vencimento da assinatura',
+    trigger: 'Edge function check-payment-notifications (cron diário)',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'payment_due_today',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Assinatura vence hoje',
+      message: 'Sua assinatura vence hoje. Renove agora para manter acesso aos recursos.',
+      priority: 'high',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        plan_renewal_date: '2024-01-15',
+        amount_due: 'R$ 497,00',
+        days_until_due: 0,
+        renewal_link: 'https://app.exemplo.com/minha-assinatura'
+      },
+      created_at: '2024-01-15T08:00:00Z'
+    }
+  },
+  {
+    event: 'payment_processed',
+    category: 'platform',
+    type: 'info',
+    description: 'Confirmação de pagamento processado com sucesso',
+    trigger: 'Edge function stripe-webhook ao receber invoice.paid',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'payment_processed',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Pagamento confirmado',
+      message: 'Seu pagamento foi processado com sucesso. Obrigado por renovar sua assinatura!',
+      priority: 'normal',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        amount_paid: 'R$ 497,00',
+        payment_date: '2024-01-15',
+        next_renewal_date: '2024-02-15',
+        invoice_url: 'https://stripe.com/invoice/xxx'
+      },
+      created_at: '2024-01-15T10:30:00Z'
+    }
+  },
+  {
+    event: 'payment_failed',
+    category: 'platform',
+    type: 'error',
+    description: 'Notificação de falha no processamento do pagamento',
+    trigger: 'Edge function stripe-webhook ao receber invoice.payment_failed',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'payment_failed',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Falha no pagamento',
+      message: 'Não conseguimos processar seu pagamento. Atualize seu método de pagamento para evitar suspensão.',
+      priority: 'critical',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        amount_due: 'R$ 497,00',
+        failure_reason: 'Cartão recusado',
+        retry_date: '2024-01-17',
+        update_payment_link: 'https://app.exemplo.com/minha-assinatura'
+      },
+      created_at: '2024-01-15T10:30:00Z'
+    }
+  },
+  {
+    event: 'account_suspension_warning',
+    category: 'platform',
+    type: 'warning',
+    description: 'Aviso de suspensão iminente por falta de pagamento',
+    trigger: 'Edge function subscription-enforcement (3 dias após falha)',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'account_suspension_warning',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Conta será suspensa em breve',
+      message: 'Sua conta será suspensa em 24 horas se o pagamento não for realizado.',
+      priority: 'critical',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        days_overdue: 3,
+        amount_due: 'R$ 497,00',
+        suspension_date: '2024-01-19',
+        update_payment_link: 'https://app.exemplo.com/minha-assinatura'
+      },
+      created_at: '2024-01-18T08:00:00Z'
+    }
+  },
+  {
+    event: 'account_suspended',
+    category: 'platform',
+    type: 'error',
+    description: 'Notificação de suspensão de conta por falta de pagamento',
+    trigger: 'Edge function subscription-enforcement ao suspender conta',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'account_suspended',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Conta suspensa',
+      message: 'Sua conta foi suspensa por falta de pagamento. Regularize para reativar.',
+      priority: 'critical',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        plan: 'eugencia',
+        suspended_at: '2024-01-19T00:00:00Z',
+        amount_due: 'R$ 497,00',
+        reactivation_link: 'https://app.exemplo.com/minha-assinatura'
+      },
+      created_at: '2024-01-19T00:01:00Z'
+    }
+  },
+  {
+    event: 'system_update',
+    category: 'platform',
+    type: 'info',
+    description: 'Anúncio de atualização ou nova versão do sistema',
+    trigger: 'Envio manual via painel de administração',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'system_update',
+      target_type: 'all',
+      title: 'Nova atualização disponível',
+      message: 'Implementamos melhorias no sistema de aprovação de conteúdo e novos relatórios.',
+      priority: 'low',
+      payload: {
+        version: 'v2.5.0',
+        release_date: '2024-01-15',
+        features: ['Aprovação em lote', 'Relatórios personalizados', 'Modo escuro'],
+        changelog_url: 'https://app.exemplo.com/changelog'
+      },
+      created_at: '2024-01-15T09:00:00Z'
+    }
+  },
+  {
+    event: 'resource_alert',
+    category: 'platform',
+    type: 'warning',
+    description: 'Alerta de uso excessivo de recursos (storage, posts, etc)',
+    trigger: 'Monitoramento automático de limites',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'resource_alert',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Limite de posts próximo',
+      message: 'Você usou 45 de 50 posts mensais. Considere fazer upgrade.',
+      priority: 'normal',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        resource_type: 'posts',
+        current_usage: 45,
+        limit: 50,
+        usage_percentage: 90,
+        upgrade_link: 'https://app.exemplo.com/pricing'
+      },
+      created_at: '2024-01-15T14:00:00Z'
+    }
+  },
+  {
+    event: 'new_feature',
+    category: 'platform',
+    type: 'info',
+    description: 'Anúncio de nova funcionalidade disponível',
+    trigger: 'Envio manual via painel de administração',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'new_feature',
+      target_type: 'all',
+      title: 'Nova funcionalidade: Agendamento em lote',
+      message: 'Agora você pode agendar múltiplos posts de uma vez!',
+      priority: 'low',
+      payload: {
+        feature_name: 'Agendamento em lote',
+        feature_description: 'Agende vários posts simultaneamente',
+        tutorial_url: 'https://app.exemplo.com/tutorial/agendamento-lote',
+        available_for_plans: ['eugencia', 'socialmidia', 'fullservice', 'unlimited']
+      },
+      created_at: '2024-01-15T10:00:00Z'
+    }
+  },
+  {
+    event: 'maintenance',
+    category: 'platform',
+    type: 'warning',
+    description: 'Aviso de manutenção programada',
+    trigger: 'Envio manual via painel de administração',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'maintenance',
+      target_type: 'all',
+      title: 'Manutenção programada',
+      message: 'Haverá manutenção no sistema no dia 20/01 das 2h às 4h.',
+      priority: 'high',
+      payload: {
+        maintenance_date: '2024-01-20',
+        start_time: '02:00',
+        end_time: '04:00',
+        expected_downtime: '2 horas',
+        affected_services: ['Publicação automática', 'Upload de mídia'],
+        status_page: 'https://status.exemplo.com'
+      },
+      created_at: '2024-01-15T09:00:00Z'
+    }
+  },
+  {
+    event: 'critical_alert',
+    category: 'platform',
+    type: 'error',
+    description: 'Alerta crítico que requer atenção imediata',
+    trigger: 'Sistema de monitoramento ou envio manual',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'critical_alert',
+      target_type: 'agency',
+      target_id: 'uuid-da-agencia',
+      title: 'Atenção: Conta social desconectada',
+      message: 'Sua conta do Instagram foi desconectada. Reconecte para continuar publicando.',
+      priority: 'critical',
+      payload: {
+        agency_name: 'Agência Exemplo',
+        alert_type: 'social_account_disconnected',
+        platform: 'Instagram',
+        account_name: '@agencia_exemplo',
+        reconnect_url: 'https://app.exemplo.com/social-connect'
+      },
+      created_at: '2024-01-15T11:00:00Z'
+    }
+  },
+  {
+    event: 'general_announcement',
+    category: 'platform',
+    type: 'info',
+    description: 'Comunicado geral para todos os usuários',
+    trigger: 'Envio manual via painel de administração',
+    webhookType: 'platform',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      notification_type: 'general_announcement',
+      target_type: 'all',
+      title: 'Novidades de Janeiro 2024',
+      message: 'Confira as novidades e melhorias implementadas este mês.',
+      priority: 'low',
+      payload: {
+        announcement_type: 'monthly_newsletter',
+        content: 'Este mês implementamos 15 melhorias baseadas no feedback dos usuários.',
+        read_more_url: 'https://blog.exemplo.com/janeiro-2024'
+      },
+      created_at: '2024-01-15T08:00:00Z'
+    }
   }
 ];
 
 function generateEventosNotificacaoMd(): string {
   const clientEvents = NOTIFICATION_EVENTS.filter(e => e.category === 'client');
   const internalEvents = NOTIFICATION_EVENTS.filter(e => e.category === 'internal');
+  const platformEvents = NOTIFICATION_EVENTS.filter(e => e.category === 'platform');
 
   let content = `# 📬 Eventos de Notificação do Sistema
 
@@ -344,15 +670,23 @@ Este documento lista todos os eventos de notificação enviados pelo sistema par
 
 ## 📌 Configuração dos Webhooks
 
-### 1️⃣ Webhook para Notificações de Clientes
+### 1️⃣ Webhook para Notificações de Clientes (Agência → Cliente)
 - **Configurável por cliente** na tabela \`clients\`
 - Campo: \`notification_webhook_url\`
 - Eventos: Conteúdos e aprovações
+- **Webhook Type:** \`client\`
 
-### 2️⃣ Webhook para Emails Internos (FIXO)
-- **URL:** \`https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos\`
+### 2️⃣ Webhook para Emails Internos (Sistema → Dev Team)
+- **URL Fixa:** \`https://webhook.pamboocriativos.com.br/webhook/d9e34937-f301-emailsinternos\`
+- **Configurável via:** Tabela \`system_settings\` (campo: \`internal_notifications_webhook_url\`)
+- Eventos: Erros, alertas, relatórios, segurança
+- **Webhook Type:** \`internal\`
+
+### 3️⃣ Webhook para Notificações da Plataforma (Sistema → Agências/Clientes)
 - **Configurável via:** Painel de Configurações do Sistema (super_admin)
-- Eventos: Erros, alertas, relatórios
+- **Campo:** \`platform_notifications_webhook_url\` na tabela \`system_settings\`
+- Eventos: Pagamentos, avisos, anúncios, atualizações
+- **Webhook Type:** \`platform\`
 
 ---
 
@@ -386,6 +720,31 @@ Total: **${internalEvents.length} eventos**
 `;
 
   internalEvents.forEach((event, index) => {
+    content += `### ${index + 1}. \`${event.event}\`
+
+**Tipo:** ${event.type} | **Quando disparado:** ${event.trigger}
+
+**Descrição:** ${event.description}
+
+**Exemplo de Payload:**
+\`\`\`json
+${JSON.stringify(event.payload, null, 2)}
+\`\`\`
+
+---
+
+`;
+  });
+
+  content += `## 🌐 Eventos de Notificações da Plataforma
+
+Total: **${platformEvents.length} eventos**
+
+Enviados para o webhook externo configurado em \`platform_notifications_webhook_url\`.
+
+`;
+
+  platformEvents.forEach((event, index) => {
     content += `### ${index + 1}. \`${event.event}\`
 
 **Tipo:** ${event.type} | **Quando disparado:** ${event.trigger}
@@ -436,6 +795,28 @@ Todos os payloads contêm estes campos base:
 1. Use a URL fixa do sistema
 2. Adicione um nó "Switch" baseado em {{ $json.type }}
 3. Configure ações por prioridade (critical, high, medium, low)
+\`\`\`
+
+### Exemplo de Webhook para Notificações da Plataforma:
+\`\`\`
+1. Configure webhook na URL do sistema externo
+2. Adicione um nó "Switch" baseado em {{ $json.notification_type }}
+3. Filtre por target_type (all, agency, creator)
+4. Configure ações por priority (critical, high, normal, low)
+5. Use {{ $json.payload }} para dados específicos do evento
+\`\`\`
+
+### Diagrama de Fluxo Sugerido:
+
+\`\`\`mermaid
+graph LR
+    A[Webhook Platform] --> B{Switch: notification_type}
+    B -->|payment_*| C[Enviar Email Financeiro]
+    B -->|account_*| D[Enviar Alert Crítico]
+    B -->|system_update| E[Enviar Newsletter]
+    B -->|new_feature| F[Enviar Anúncio]
+    B -->|maintenance| G[Enviar Alert Manutenção]
+    B -->|resource_alert| H[Enviar Warning]
 \`\`\`
 
 ---
@@ -887,6 +1268,7 @@ Deno.serve(async (req) => {
           total_events: NOTIFICATION_EVENTS.length,
           client_events: NOTIFICATION_EVENTS.filter(e => e.category === 'client').length,
           internal_events: NOTIFICATION_EVENTS.filter(e => e.category === 'internal').length,
+          platform_events: NOTIFICATION_EVENTS.filter(e => e.category === 'platform').length,
           generated_at: new Date().toISOString()
         }
       }),
