@@ -13,6 +13,7 @@ import { RolesManager } from "@/components/admin/RolesManager";
 import { TestRunner } from "@/components/admin/TestRunner";
 import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsButton";
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
+import { PixelIntegrationManager } from "@/components/admin/PixelIntegrationManager";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, Webhook, Building2, DollarSign, Bell } from "lucide-react";
 import { Loader2 } from "lucide-react";
@@ -275,6 +276,30 @@ const Configuracoes = () => {
                 <AccordionContent>
                   <CardContent className="pt-0">
                     <OrphanedAccountsManager />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+
+            {/* Pixels e Rastreamento */}
+            <AccordionItem value="pixels" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Pixels e Rastreamento de Conversões</CardTitle>
+                        <CardDescription className="mt-1">
+                          Configure pixels para Meta, Google, TikTok, LinkedIn e Pinterest
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <PixelIntegrationManager />
                   </CardContent>
                 </AccordionContent>
               </Card>
