@@ -15,7 +15,7 @@ import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsB
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
 import { PixelIntegrationManager } from "@/components/admin/PixelIntegrationManager";
 import { NotificationSender } from "@/components/admin/NotificationSender";
-import { ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, Webhook, Building2, DollarSign, Bell } from "lucide-react";
+import { ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, Webhook, Building2, DollarSign, Bell, TrendingUp } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const Configuracoes = () => {
