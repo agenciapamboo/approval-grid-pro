@@ -37,6 +37,7 @@ const Agencias = lazy(() => import("./pages/Agencias"));
 const AgenciaDetalhes = lazy(() => import("./pages/AgenciaDetalhes"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const MyTickets = lazy(() => import("./pages/MyTickets"));
+const AgencyTicketsManager = lazy(() => import("./pages/admin/AgencyTicketsManager"));
 const SupportTicketsAdmin = lazy(() => import("./pages/admin/SupportTicketsAdmin"));
 
 const queryClient = new QueryClient();
@@ -87,7 +88,8 @@ const App = () => (
                 <Route path="/client/:clientId/history" element={<ProtectedRoute><ClientHistory /></ProtectedRoute>} />
                 <Route path="/hero" element={<ProtectedRoute><HeroDemo /></ProtectedRoute>} />
                 <Route path="/notificacoes" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                <Route path="/meus-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+          <Route path="/meus-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+          <Route path="/agencia/tickets" element={<ProtectedRoute><AgencyTicketsManager /></ProtectedRoute>} />
                 <Route path="/admin/tickets" element={<ProtectedRoute><SupportTicketsAdmin /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}

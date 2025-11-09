@@ -1301,6 +1301,51 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
+          closed_at: string | null
+          created_at: string | null
+          description: string
+          id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
+          closed_at?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
+          closed_at?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           created_at: string | null
@@ -1360,6 +1405,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      ticket_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_internal: boolean | null
+          message: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_internal?: boolean | null
+          message: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_internal?: boolean | null
+          message?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       token_validation_attempts: {
         Row: {
@@ -1932,6 +2012,15 @@ export type Database = {
       content_type: "image" | "carousel" | "reels" | "story" | "feed"
       legal_basis: "contract" | "legitimate_interest"
       media_kind: "image" | "video"
+      ticket_category: "atendimento" | "suporte" | "duvidas" | "financeiro"
+      ticket_priority: "low" | "normal" | "high" | "urgent"
+      ticket_status:
+        | "open"
+        | "in_progress"
+        | "waiting_user"
+        | "waiting_support"
+        | "resolved"
+        | "closed"
       user_role: "super_admin" | "agency_admin" | "client_user"
       webhook_status: "queued" | "sent" | "error"
     }
@@ -2066,6 +2155,16 @@ export const Constants = {
       content_type: ["image", "carousel", "reels", "story", "feed"],
       legal_basis: ["contract", "legitimate_interest"],
       media_kind: ["image", "video"],
+      ticket_category: ["atendimento", "suporte", "duvidas", "financeiro"],
+      ticket_priority: ["low", "normal", "high", "urgent"],
+      ticket_status: [
+        "open",
+        "in_progress",
+        "waiting_user",
+        "waiting_support",
+        "resolved",
+        "closed",
+      ],
       user_role: ["super_admin", "agency_admin", "client_user"],
       webhook_status: ["queued", "sent", "error"],
     },

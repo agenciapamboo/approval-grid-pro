@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -22,6 +22,7 @@ import { CreativeRequestDialog } from "@/components/admin/CreativeRequestDialog"
 import { EditCreativeRequestDialog } from "@/components/admin/EditCreativeRequestDialog";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { NotificationSender } from "@/components/admin/NotificationSender";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
 import { GenerateApprovalLinkButton } from "@/components/admin/GenerateApprovalLinkButton";
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
@@ -613,7 +614,7 @@ const Dashboard = () => {
             </div>
 
             {/* Cards de Navegação Rápida */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/agencias")}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -667,7 +668,41 @@ const Dashboard = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/tickets")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Tickets
+                  </CardTitle>
+                  <CardDescription>
+                    Gerenciar tickets de atendimento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Bloco de Enviar Notificações */}
+            <Card className="border-l-4 border-l-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Enviar Notificações da Plataforma
+                </CardTitle>
+                <CardDescription>
+                  Envie comunicados para usuários, agências ou clientes específicos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <NotificationSender />
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -898,6 +933,24 @@ const Dashboard = () => {
             {/* Aba de Clientes */}
             <TabsContent value="clients">
               <div className="space-y-6">
+                {/* Card de Tickets */}
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/agencia/tickets")}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Tickets de Suporte
+                    </CardTitle>
+                    <CardDescription>
+                      Gerenciar seus tickets e tickets dos seus clientes
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      Acessar
+                    </Button>
+                  </CardContent>
+                </Card>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-6 h-6 text-primary" />

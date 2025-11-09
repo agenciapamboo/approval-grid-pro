@@ -107,27 +107,10 @@ const Configuracoes = () => {
             </p>
           </div>
 
-          {/* Cards de Navegação Rápida */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card de Navegação - Apenas Configurações */}
+          <div className="flex justify-center">
             <Card 
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-              onClick={() => navigate("/agencias")}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                    <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Agências</CardTitle>
-                    <CardDescription className="text-xs">Gerenciar agências</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 border-2 border-primary"
+              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 border-2 border-primary max-w-sm w-full"
               onClick={() => navigate("/configuracoes")}
             >
               <CardHeader className="pb-3">
@@ -142,40 +125,7 @@ const Configuracoes = () => {
                 </div>
               </CardHeader>
             </Card>
-
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-              onClick={() => navigate("/financeiro")}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                    <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Financeiro</CardTitle>
-                    <CardDescription className="text-xs">Métricas e custos</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
           </div>
-
-          {/* Bloco de Envio de Notificações */}
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Enviar Notificações da Plataforma
-              </CardTitle>
-              <CardDescription>
-                Envie comunicados para usuários, agências ou clientes específicos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <NotificationSender />
-            </CardContent>
-          </Card>
 
           {/* Demais blocos em Accordion (começam colapsados) */}
           <Accordion type="multiple" className="space-y-4">
