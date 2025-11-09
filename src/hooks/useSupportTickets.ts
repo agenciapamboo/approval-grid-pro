@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { sendInternalNotification } from "@/lib/internal-notifications-client";
 
 export type TicketCategory = 'suporte' | 'duvidas' | 'financeiro' | 'agencia';
 export type TicketStatus = 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed';
@@ -95,6 +96,38 @@ export function useSupportTickets() {
 
       if (error) throw error;
 
+      // Enviar notificação interna
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+
+      if (data && 'id' in data && typeof data.id === 'string') {
+        await sendInternalNotification({
+          type: 'info',
+          subject: `Novo Ticket de Suporte #${(data.id as string).substring(0, 8)}`,
+          message: `Um novo ticket foi criado na categoria ${category}`,
+          details: {
+            ticket_id: data.id,
+            subject,
+            description,
+            category,
+            priority,
+            status: 'open',
+            created_by: {
+              user_id: user.id,
+              user_name: profile?.name || currentUser?.email || 'Desconhecido',
+              user_email: currentUser?.email || ''
+            },
+            created_at: 'created_at' in data ? (data.created_at as string) : new Date().toISOString()
+          },
+          source: 'support-tickets-system',
+          priority: priority === 'urgent' ? 'critical' : priority === 'high' ? 'high' : 'normal'
+        });
+      }
+
       toast({
         title: "Ticket criado com sucesso",
         description: `Seu ticket foi criado.`,
@@ -185,6 +218,39 @@ export function useSupportTickets() {
 
       if (error) throw error;
 
+      // Buscar informações do ticket
+      const ticket = tickets.find(t => t.id === ticketId);
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+
+      // Enviar notificação interna
+      if (ticket && data && 'id' in data && typeof data.id === 'string') {
+        await sendInternalNotification({
+          type: 'info',
+          subject: `Nova resposta no Ticket #${ticketId.substring(0, 8)}`,
+          message: 'Uma nova mensagem foi adicionada ao ticket',
+          details: {
+            ticket_id: ticketId,
+            ticket_subject: ticket.subject,
+            message_id: data.id,
+            message_text: message,
+            is_internal: isInternal,
+            replied_by: {
+              user_id: user.id,
+              user_name: profile?.name || currentUser?.email || 'Desconhecido',
+              user_email: currentUser?.email || ''
+            },
+            replied_at: 'created_at' in data ? (data.created_at as string) : new Date().toISOString()
+          },
+          source: 'support-tickets-system',
+          priority: 'normal'
+        });
+      }
+
       // Atualizar mensagens localmente
       setMessages(prev => ({
         ...prev,
@@ -223,6 +289,48 @@ export function useSupportTickets() {
         .eq('id', ticketId);
 
       if (error) throw error;
+
+      // Enviar notificação interna se fechado/resolvido
+      if (status === 'resolved' || status === 'closed') {
+        const ticket = tickets.find(t => t.id === ticketId);
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', currentUser?.id || '')
+          .single();
+
+        if (ticket) {
+          const ticketMessages = messages[ticketId] || [];
+          const createdAt = new Date(ticket.created_at);
+          const closedAt = new Date();
+          const resolutionHours = Math.round((closedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60));
+
+          await sendInternalNotification({
+            type: 'info',
+            subject: `Ticket #${ticketId.substring(0, 8)} foi ${status === 'closed' ? 'fechado' : 'resolvido'}`,
+            message: `Ticket ${status === 'closed' ? 'fechado' : 'resolvido'}`,
+            details: {
+              ticket_id: ticketId,
+              ticket_subject: ticket.subject,
+              category: ticket.category,
+              priority: ticket.priority,
+              status,
+              created_at: ticket.created_at,
+              closed_at: closedAt.toISOString(),
+              resolution_time_hours: resolutionHours,
+              total_messages: ticketMessages.length,
+              closed_by: {
+                user_id: currentUser?.id || '',
+                user_name: profile?.name || currentUser?.email || 'Sistema',
+                user_email: currentUser?.email || ''
+              }
+            },
+            source: 'support-tickets-system',
+            priority: 'low'
+          });
+        }
+      }
 
       // Atualizar ticket localmente
       setTickets(prev => prev.map(t => 

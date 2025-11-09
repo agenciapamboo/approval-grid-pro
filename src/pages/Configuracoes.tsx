@@ -107,26 +107,6 @@ const Configuracoes = () => {
             </p>
           </div>
 
-          {/* Card de Navegação - Apenas Configurações */}
-          <div className="flex justify-center">
-            <Card 
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 border-2 border-primary max-w-sm w-full"
-              onClick={() => navigate("/configuracoes")}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Settings className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Configurações</CardTitle>
-                    <CardDescription className="text-xs">Você está aqui</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
-
           {/* Demais blocos em Accordion (começam colapsados) */}
           <Accordion type="multiple" className="space-y-4">
             {/* 2. Segurança */}

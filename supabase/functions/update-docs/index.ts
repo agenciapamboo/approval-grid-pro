@@ -330,6 +330,98 @@ const NOTIFICATION_EVENTS: NotificationEvent[] = [
       timestamp: '2024-01-15T15:00:00Z'
     }
   },
+  {
+    event: 'ticket.created',
+    category: 'internal',
+    type: 'info',
+    description: 'Notificação enviada quando um novo ticket de suporte é criado',
+    trigger: 'Ao inserir ticket na tabela support_tickets',
+    webhookType: 'internal',
+    payload: {
+      type: 'info',
+      subject: 'Novo Ticket de Suporte #12345678',
+      message: 'Um novo ticket foi criado na categoria Suporte',
+      details: {
+        ticket_id: 'uuid-do-ticket',
+        subject: 'Erro ao carregar dashboard',
+        description: 'Não consigo acessar o dashboard após fazer login',
+        category: 'suporte',
+        priority: 'high',
+        status: 'open',
+        created_by: {
+          user_id: 'uuid-usuario',
+          user_name: 'João Silva',
+          user_email: 'joao@empresa.com'
+        },
+        created_at: '2024-01-15T10:00:00Z'
+      },
+      source: 'support-tickets-system',
+      priority: 'high',
+      timestamp: '2024-01-15T10:00:00Z'
+    }
+  },
+  {
+    event: 'ticket.reply_added',
+    category: 'internal',
+    type: 'info',
+    description: 'Notificação quando uma nova resposta é adicionada ao ticket',
+    trigger: 'Ao inserir mensagem na tabela ticket_messages',
+    webhookType: 'internal',
+    payload: {
+      type: 'info',
+      subject: 'Nova resposta no Ticket #12345678',
+      message: 'Uma nova mensagem foi adicionada ao ticket',
+      details: {
+        ticket_id: 'uuid-do-ticket',
+        ticket_subject: 'Erro ao carregar dashboard',
+        message_id: 'uuid-mensagem',
+        message_text: 'Obrigado por reportar. Estamos investigando...',
+        is_internal: false,
+        replied_by: {
+          user_id: 'uuid-atendente',
+          user_name: 'Maria Suporte',
+          user_email: 'suporte@empresa.com',
+          role: 'super_admin'
+        },
+        replied_at: '2024-01-15T10:30:00Z'
+      },
+      source: 'support-tickets-system',
+      priority: 'normal',
+      timestamp: '2024-01-15T10:30:00Z'
+    }
+  },
+  {
+    event: 'ticket.closed',
+    category: 'internal',
+    type: 'info',
+    description: 'Notificação quando um ticket é resolvido ou fechado',
+    trigger: 'Ao atualizar status do ticket para "resolved" ou "closed"',
+    webhookType: 'internal',
+    payload: {
+      type: 'info',
+      subject: 'Ticket #12345678 foi fechado',
+      message: 'Ticket resolvido e fechado',
+      details: {
+        ticket_id: 'uuid-do-ticket',
+        ticket_subject: 'Erro ao carregar dashboard',
+        category: 'suporte',
+        priority: 'high',
+        status: 'closed',
+        created_at: '2024-01-15T10:00:00Z',
+        closed_at: '2024-01-15T14:00:00Z',
+        resolution_time_hours: 4,
+        total_messages: 5,
+        closed_by: {
+          user_id: 'uuid-atendente',
+          user_name: 'Maria Suporte',
+          user_email: 'suporte@empresa.com'
+        }
+      },
+      source: 'support-tickets-system',
+      priority: 'low',
+      timestamp: '2024-01-15T14:00:00Z'
+    }
+  },
   // Eventos de Notificações da Plataforma (Webhook Externo)
   {
     event: 'payment_due_7_days',
