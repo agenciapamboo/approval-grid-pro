@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Calendar, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RequestCard } from "./RequestCard";
+import { RequestDetailsDialog } from "./RequestDetailsDialog";
 
 interface Content {
   id: string;
@@ -42,6 +44,34 @@ interface KanbanColumn {
   is_system: boolean;
 }
 
+interface CreativeRequestData {
+  id: string;
+  type: 'creative_request';
+  title: string;
+  clientName: string;
+  clientEmail?: string;
+  clientWhatsapp?: string;
+  createdAt: string;
+  status?: string;
+  requestType?: string;
+  text?: string;
+  caption?: string;
+  observations?: string;
+  referenceFiles?: string[];
+}
+
+interface AdjustmentRequestData {
+  id: string;
+  type: 'adjustment_request';
+  title: string;
+  clientName: string;
+  createdAt: string;
+  contentTitle: string;
+  reason: string;
+  details: string;
+  version: number;
+}
+
 interface ContentKanbanProps {
   agencyId: string;
 }
@@ -51,10 +81,17 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [contents, setContents] = useState<Content[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<(CreativeRequestData | AdjustmentRequestData)[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<{
+    type: 'creative_request' | 'adjustment_request';
+    data: any;
+  } | null>(null);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
 
   useEffect(() => {
     loadColumns();
     loadContents();
+    loadRequests();
     
     // Realtime updates para colunas
     const columnsChannel = supabase
@@ -89,9 +126,44 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       )
       .subscribe();
 
+    // Realtime updates para notificações (creative requests)
+    const notificationsChannel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `agency_id=eq.${agencyId}`
+        },
+        () => {
+          loadRequests();
+        }
+      )
+      .subscribe();
+
+    // Realtime updates para comentários (adjustment requests)
+    const commentsChannel = supabase
+      .channel('comments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments'
+        },
+        () => {
+          loadRequests();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(columnsChannel);
       supabase.removeChannel(contentsChannel);
+      supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(commentsChannel);
     };
   }, [agencyId]);
 
@@ -198,6 +270,105 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  const loadRequests = async () => {
+    try {
+      // Buscar clientes da agência
+      const { data: clients, error: clientsError } = await supabase
+        .from("clients")
+        .select("id, name, email, whatsapp")
+        .eq("agency_id", agencyId);
+
+      if (clientsError) throw clientsError;
+
+      if (!clients || clients.length === 0) {
+        setRequests([]);
+        return;
+      }
+
+      const clientIds = clients.map((c) => c.id);
+      const clientMap = new Map(clients.map((c) => [c.id, c]));
+
+      // Buscar creative requests (notifications com event=novojob)
+      const { data: creativeNotifications, error: creativeError } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("event", "novojob")
+        .eq("agency_id", agencyId)
+        .in("client_id", clientIds)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (creativeError) throw creativeError;
+
+      const creativeRequests: CreativeRequestData[] = (creativeNotifications || []).map((notif: any) => {
+        const client = clientMap.get(notif.client_id);
+        return {
+          id: notif.id,
+          type: 'creative_request' as const,
+          title: notif.payload?.title || 'Sem título',
+          clientName: client?.name || 'Cliente',
+          clientEmail: client?.email,
+          clientWhatsapp: client?.whatsapp,
+          createdAt: notif.created_at,
+          status: notif.payload?.job_status || 'pending',
+          requestType: notif.payload?.type,
+          text: notif.payload?.text,
+          caption: notif.payload?.caption,
+          observations: notif.payload?.observations,
+          referenceFiles: notif.payload?.reference_files || [],
+        };
+      });
+
+      // Buscar adjustment requests (comments com is_adjustment_request=true nos últimos 30 dias)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: contentsList } = await supabase
+        .from("contents")
+        .select("id, title, client_id")
+        .in("client_id", clientIds)
+        .gte("created_at", thirtyDaysAgo.toISOString());
+
+      if (contentsList && contentsList.length > 0) {
+        const contentIds = contentsList.map((c) => c.id);
+        const contentMap = new Map(contentsList.map((c) => [c.id, c]));
+
+        const { data: adjustmentComments, error: adjustmentError } = await supabase
+          .from("comments")
+          .select("*")
+          .in("content_id", contentIds)
+          .eq("is_adjustment_request", true)
+          .order("created_at", { ascending: false });
+
+        if (!adjustmentError && adjustmentComments) {
+          const adjustmentRequests: AdjustmentRequestData[] = adjustmentComments.map((comment: any) => {
+            const content = contentMap.get(comment.content_id);
+            const client = clientMap.get(content?.client_id);
+            return {
+              id: comment.id,
+              type: 'adjustment_request' as const,
+              title: `Ajuste: ${content?.title || 'Conteúdo'}`,
+              clientName: client?.name || 'Cliente',
+              createdAt: comment.created_at,
+              contentTitle: content?.title || 'Sem título',
+              reason: comment.adjustment_reason || 'Não especificado',
+              details: comment.body || '',
+              version: comment.version || 1,
+            };
+          });
+
+          setRequests([...creativeRequests, ...adjustmentRequests]);
+        } else {
+          setRequests(creativeRequests);
+        }
+      } else {
+        setRequests(creativeRequests);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar solicitações:", error);
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -294,9 +465,67 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                 if (column.column_id === 'scheduled') {
                   statusFilter = 'approved'; // "Agendado" mostra conteúdos aprovados
                 }
+                
+                // Coluna de solicitações
                 if (column.column_id === 'requests') {
-                  // Coluna de solicitações (será implementada depois)
-                  return null;
+                  return (
+                    <KanbanBoard 
+                      key={column.column_id} 
+                      id={column.column_id}
+                      className="w-80"
+                    >
+                      <KanbanHeader 
+                        name={column.column_name} 
+                        color={column.column_color} 
+                      />
+                      <KanbanCards>
+                        {requests.map((request, index) => (
+                          <div key={request.id} className="mb-2">
+                            <RequestCard
+                              request={{
+                                id: request.id,
+                                type: request.type,
+                                title: request.title,
+                                clientName: request.clientName,
+                                createdAt: request.createdAt,
+                                status: request.type === 'creative_request' ? (request as CreativeRequestData).status : undefined,
+                              }}
+                              onClick={() => {
+                                setSelectedRequest({
+                                  type: request.type,
+                                  data: request.type === 'creative_request' 
+                                    ? {
+                                        id: request.id,
+                                        clientName: request.clientName,
+                                        clientEmail: (request as CreativeRequestData).clientEmail,
+                                        clientWhatsapp: (request as CreativeRequestData).clientWhatsapp,
+                                        title: request.title,
+                                        type: (request as CreativeRequestData).requestType,
+                                        text: (request as CreativeRequestData).text,
+                                        caption: (request as CreativeRequestData).caption,
+                                        observations: (request as CreativeRequestData).observations,
+                                        referenceFiles: (request as CreativeRequestData).referenceFiles,
+                                        createdAt: request.createdAt,
+                                        status: (request as CreativeRequestData).status,
+                                      }
+                                    : {
+                                        id: request.id,
+                                        contentTitle: (request as AdjustmentRequestData).contentTitle,
+                                        clientName: request.clientName,
+                                        reason: (request as AdjustmentRequestData).reason,
+                                        details: (request as AdjustmentRequestData).details,
+                                        createdAt: request.createdAt,
+                                        version: (request as AdjustmentRequestData).version,
+                                      }
+                                });
+                                setShowRequestDialog(true);
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </KanbanCards>
+                    </KanbanBoard>
+                  );
                 }
 
                 const columnContents = contents.filter((content) => {
@@ -365,6 +594,12 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           </div>
         )}
       </CardContent>
+
+      <RequestDetailsDialog
+        open={showRequestDialog}
+        onOpenChange={setShowRequestDialog}
+        request={selectedRequest}
+      />
     </Card>
   );
 }
