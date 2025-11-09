@@ -35,6 +35,9 @@ const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Agencias = lazy(() => import("./pages/Agencias"));
 const AgenciaDetalhes = lazy(() => import("./pages/AgenciaDetalhes"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const MyTickets = lazy(() => import("./pages/MyTickets"));
+const SupportTicketsAdmin = lazy(() => import("./pages/admin/SupportTicketsAdmin"));
 
 const queryClient = new QueryClient();
 
@@ -83,6 +86,9 @@ const App = () => (
                 <Route path="/admin/blocked-ips" element={<ProtectedRoute><BlockedIPs /></ProtectedRoute>} />
                 <Route path="/client/:clientId/history" element={<ProtectedRoute><ClientHistory /></ProtectedRoute>} />
                 <Route path="/hero" element={<ProtectedRoute><HeroDemo /></ProtectedRoute>} />
+                <Route path="/notificacoes" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/meus-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+                <Route path="/admin/tickets" element={<ProtectedRoute><SupportTicketsAdmin /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}
                 <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />

@@ -61,13 +61,17 @@ export async function createPlatformNotification(
   return { success: true, data };
 }
 
-export async function getMyPlatformNotifications(status = 'pending') {
-  const { data, error } = await supabase
+export async function getMyPlatformNotifications(status?: string) {
+  let query = supabase
     .from('platform_notifications')
     .select('*')
-    .eq('status', status)
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .order('created_at', { ascending: false });
+  
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  const { data, error } = await query.limit(50);
 
   if (error) {
     console.error('Erro ao buscar notificações:', error);
@@ -88,6 +92,37 @@ export async function markPlatformNotificationAsRead(notificationId: string) {
 
   if (error) {
     console.error('Erro ao marcar notificação como lida:', error);
+    return { success: false, error };
+  }
+
+  return { success: true };
+}
+
+export async function deletePlatformNotification(notificationId: string) {
+  const { error } = await supabase
+    .from('platform_notifications')
+    .delete()
+    .eq('id', notificationId);
+
+  if (error) {
+    console.error('Erro ao deletar notificação:', error);
+    return { success: false, error };
+  }
+
+  return { success: true };
+}
+
+export async function markAllNotificationsAsRead() {
+  const { error } = await supabase
+    .from('platform_notifications')
+    .update({ 
+      status: 'read',
+      read_at: new Date().toISOString()
+    })
+    .eq('status', 'pending');
+
+  if (error) {
+    console.error('Erro ao marcar todas as notificações como lidas:', error);
     return { success: false, error };
   }
 

@@ -1,9 +1,29 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Mail, BookOpen, Building2, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Mail, BookOpen, Building2, UserCircle, LifeBuoy, HelpCircle, CreditCard, MessageSquare } from "lucide-react";
 import { AppFooter } from "@/components/layout/AppFooter";
+import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
+import { useNavigate } from "react-router-dom";
+import { TicketCategory } from "@/hooks/useSupportTickets";
+import { useAuth } from "@/hooks/useAuth";
 
 const HelpCenter = () => {
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<TicketCategory>('suporte');
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleOpenTicket = (category: TicketCategory) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    setSelectedCategory(category);
+    setTicketDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
@@ -13,6 +33,81 @@ const HelpCenter = () => {
             Encontre respostas para suas dúvidas e aprenda a usar o sistema
           </p>
         </div>
+
+        {/* Ticket Section - Only for logged users */}
+        {user && (
+          <Card className="mb-12">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LifeBuoy className="h-5 w-5" />
+                Precisa de Ajuda? Abra um Ticket
+              </CardTitle>
+              <CardDescription>
+                Selecione o setor apropriado para sua solicitação
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  onClick={() => handleOpenTicket('suporte')}
+                >
+                  <LifeBuoy className="h-6 w-6 mb-2" />
+                  <span className="font-semibold">Suporte Técnico</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Relativo a defeitos e erros do sistema
+                  </span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  onClick={() => handleOpenTicket('duvidas')}
+                >
+                  <HelpCircle className="h-6 w-6 mb-2" />
+                  <span className="font-semibold">Dúvidas</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Dúvidas de qualquer natureza
+                  </span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  onClick={() => handleOpenTicket('financeiro')}
+                >
+                  <CreditCard className="h-6 w-6 mb-2" />
+                  <span className="font-semibold">Financeiro</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Erros de pagamento e vencimento
+                  </span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  onClick={() => handleOpenTicket('agencia')}
+                >
+                  <MessageSquare className="h-6 w-6 mb-2" />
+                  <span className="font-semibold">Comunicação</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Comunicações com a agência
+                  </span>
+                </Button>
+              </div>
+
+              <div className="mt-4 text-center">
+                <Button
+                  variant="link"
+                  onClick={() => navigate('/meus-tickets')}
+                >
+                  Ver Meus Tickets →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Contact Section */}
         <Card className="mb-12">
@@ -309,6 +404,12 @@ const HelpCenter = () => {
           </CardContent>
         </Card>
       </div>
+
+      <CreateTicketDialog
+        open={ticketDialogOpen}
+        onOpenChange={setTicketDialogOpen}
+        defaultCategory={selectedCategory}
+      />
 
       <AppFooter />
     </div>
