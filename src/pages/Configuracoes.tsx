@@ -6,26 +6,25 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LovablePlanConfig } from "@/components/admin/LovablePlanConfig";
 import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
 import { PlanEntitlementsEditor } from "@/components/admin/PlanEntitlementsEditor";
 import { RolesManager } from "@/components/admin/RolesManager";
 import { TestRunner } from "@/components/admin/TestRunner";
-import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
 import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsButton";
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
-import { ArrowLeft, Settings, Shield, Database, Bell, TestTube, Image, Users } from "lucide-react";
+import { NotificationSender } from "@/components/admin/NotificationSender";
+import { ArrowLeft, Settings, Shield, Database, Bell, TestTube, Image, Users, Webhook } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const Configuracoes = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [notificationStats, setNotificationStats] = useState<any>(null);
 
   useEffect(() => {
     checkAuth();
-    loadNotificationStats();
   }, []);
 
   const checkAuth = async () => {
@@ -52,27 +51,6 @@ const Configuracoes = () => {
       console.error("Error loading profile:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadNotificationStats = async () => {
-    try {
-      const { data } = await supabase
-        .from("notifications")
-        .select("status")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (data) {
-        const stats = {
-          pending: data.filter(n => n.status === 'pending').length,
-          sent: data.filter(n => n.status === 'sent').length,
-          failed: data.filter(n => n.status === 'failed').length,
-        };
-        setNotificationStats(stats);
-      }
-    } catch (error) {
-      console.error("Error loading notification stats:", error);
     }
   };
 
@@ -130,188 +108,221 @@ const Configuracoes = () => {
             </p>
           </div>
 
-          {/* 1. Plano Lovable */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Plano Lovable
-              </CardTitle>
-              <CardDescription>
-                Configure limites de recursos e custos de overage
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LovablePlanConfig />
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* 2. Editor de Planos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Planos de Assinatura
-              </CardTitle>
-              <CardDescription>
-                Configure limites e recursos de cada plano (Creator, Eugência, Social Mídia, Full Service, Unlimited)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PlanEntitlementsEditor />
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* 3. Webhooks */}
+          {/* 1. Notificações (sempre aberto) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Webhooks
+                Notificações
               </CardTitle>
               <CardDescription>
-                Configure URLs de webhooks para notificações externas
+                Envie comunicados para usuários, agências ou clientes
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SystemSettingsManager />
+              <NotificationSender />
             </CardContent>
           </Card>
 
           <Separator />
 
-          {/* 4. Gerenciamento de Roles */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Gerenciamento de Roles
-              </CardTitle>
-              <CardDescription>
-                Configure permissões por role e altere roles de usuários
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RolesManager />
-            </CardContent>
-          </Card>
+          {/* Demais blocos em Accordion (começam colapsados) */}
+          <Accordion type="multiple" className="space-y-4">
+            {/* 2. Segurança */}
+            <AccordionItem value="security" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Segurança</CardTitle>
+                        <CardDescription className="mt-1">
+                          Gerencie IPs bloqueados e configurações de segurança
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <Button onClick={() => navigate("/admin/blocked-ips")} variant="outline" className="w-full">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Gerenciar IPs Bloqueados
+                    </Button>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          <Separator />
+            {/* 3. Webhooks */}
+            <AccordionItem value="webhooks" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Webhook className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Webhooks</CardTitle>
+                        <CardDescription className="mt-1">
+                          Configure URLs de webhooks para notificações externas
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <SystemSettingsManager />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          {/* 5. Notificações Automáticas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notificações Automáticas
-              </CardTitle>
-              <CardDescription>
-                Status das notificações automáticas do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {notificationStats ? (
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-2xl font-bold text-yellow-600">{notificationStats.pending}</p>
-                    <p className="text-sm text-muted-foreground">Pendentes</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">{notificationStats.sent}</p>
-                    <p className="text-sm text-muted-foreground">Enviadas</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-2xl font-bold text-red-600">{notificationStats.failed}</p>
-                    <p className="text-sm text-muted-foreground">Falhadas</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">Carregando estatísticas...</p>
-              )}
-            </CardContent>
-          </Card>
+            {/* 4. Plano Lovable */}
+            <AccordionItem value="lovable-plan" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Plano Lovable</CardTitle>
+                        <CardDescription className="mt-1">
+                          Configure limites de recursos e custos de overage
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <LovablePlanConfig />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          <Separator />
+            {/* 5. Editor de Planos */}
+            <AccordionItem value="subscription-plans" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Planos de Assinatura</CardTitle>
+                        <CardDescription className="mt-1">
+                          Configure limites e recursos de cada plano
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <PlanEntitlementsEditor />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          {/* 6. Testes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TestTube className="h-5 w-5" />
-                Testes do Sistema
-              </CardTitle>
-              <CardDescription>
-                Execute testes automatizados e envie notificações de teste
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <TestRunner />
-              <div className="pt-4 border-t">
-                <TestNotificationButton />
-              </div>
-            </CardContent>
-          </Card>
+            {/* 6. Roles */}
+            <AccordionItem value="roles" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Gerenciamento de Roles</CardTitle>
+                        <CardDescription className="mt-1">
+                          Configure permissões por role e altere roles de usuários
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <RolesManager />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          <Separator />
+            {/* 7. Testes */}
+            <AccordionItem value="tests" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <TestTube className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Testes do Sistema</CardTitle>
+                        <CardDescription className="mt-1">
+                          Execute testes automatizados
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <TestRunner />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          {/* 7. Ferramentas de Mídia */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Image className="h-5 w-5" />
-                Ferramentas de Mídia
-              </CardTitle>
-              <CardDescription>
-                Gere thumbnails e processe arquivos de mídia
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <GenerateThumbnailsButton />
-            </CardContent>
-          </Card>
+            {/* 8. Ferramentas de Mídia */}
+            <AccordionItem value="media" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Image className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Ferramentas de Mídia</CardTitle>
+                        <CardDescription className="mt-1">
+                          Gere thumbnails e processe arquivos de mídia
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <GenerateThumbnailsButton />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
 
-          <Separator />
-
-          {/* 8. Contas Órfãs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Contas Órfãs
-              </CardTitle>
-              <CardDescription>
-                Gerencie contas sem agência ou cliente vinculado
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OrphanedAccountsManager />
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* 9. IPs Bloqueados */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Segurança
-              </CardTitle>
-              <CardDescription>
-                Gerencie IPs bloqueados e configurações de segurança
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => navigate("/admin/blocked-ips")} variant="outline">
-                <Shield className="h-4 w-4 mr-2" />
-                Gerenciar IPs Bloqueados
-              </Button>
-            </CardContent>
-          </Card>
+            {/* 9. Contas Órfãs */}
+            <AccordionItem value="orphaned" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      <div className="text-left">
+                        <CardTitle>Contas Órfãs</CardTitle>
+                        <CardDescription className="mt-1">
+                          Gerencie contas sem agência ou cliente vinculado
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0">
+                    <OrphanedAccountsManager />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          </Accordion>
         </div>
       </main>
 

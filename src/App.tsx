@@ -33,6 +33,8 @@ const Clientes = lazy(() => import("./pages/Clientes"));
 const ClienteDetalhes = lazy(() => import("./pages/ClienteDetalhes"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
+const Agencias = lazy(() => import("./pages/Agencias"));
+const AgenciaDetalhes = lazy(() => import("./pages/AgenciaDetalhes"));
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,8 @@ const App = () => (
                 <Route path="/clientes/:clientId" element={<ProtectedRoute><ClienteDetalhes /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
                 <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
+                <Route path="/agencias" element={<ProtectedRoute><Agencias /></ProtectedRoute>} />
+                <Route path="/agencias/:id" element={<ProtectedRoute><AgenciaDetalhes /></ProtectedRoute>} />
                 <Route path="/agency/client/:clientId" element={<ProtectedRoute><AgencyContentManager /></ProtectedRoute>} />
                 <Route path="/agency/creative-requests" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />
                 <Route path="/agency/creative-requests/:clientId" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />

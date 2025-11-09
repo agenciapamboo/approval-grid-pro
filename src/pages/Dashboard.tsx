@@ -550,7 +550,7 @@ const Dashboard = () => {
           <div className="space-y-6">
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clientes")}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
@@ -576,7 +576,7 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/agencias")}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
@@ -606,14 +606,14 @@ const Dashboard = () => {
 
             {/* Cards de Navegação Rápida */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/clientes")}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/agencias")}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5" />
-                    Clientes
+                    Agências
                   </CardTitle>
                   <CardDescription>
-                    Gerencie todos os clientes e envie notificações
+                    Gerencie agências, planos e dados de pagamento
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
