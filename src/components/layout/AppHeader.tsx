@@ -1,5 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, User, LogOut, Sun, Moon, CreditCard } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { CheckCircle2, User, LogOut, Sun, Moon, CreditCard, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { useTheme } from "next-themes";
 import { PlatformNotificationsBell } from "@/components/notifications/PlatformNotificationsBell";
@@ -14,18 +15,34 @@ interface AppHeaderProps {
 export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: AppHeaderProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isOnDashboard = location.pathname === '/dashboard';
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-        <Link to="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glass transition-all duration-300 group-hover:shadow-glass-lg group-hover:scale-105">
-            <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-xl font-semibold transition-all duration-300 group-hover:text-primary">
-            Aprova Criativos
-          </h1>
-        </Link>
+        <div className="flex items-center gap-4">
+          {!isOnDashboard && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Voltar ao Dashboard</span>
+            </Button>
+          )}
+          <Link to="/dashboard" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glass transition-all duration-300 group-hover:shadow-glass-lg group-hover:scale-105">
+              <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-semibold transition-all duration-300 group-hover:text-primary">
+              Aprova Criativos
+            </h1>
+          </Link>
+        </div>
         <div className="flex items-center gap-4">
           <PlatformNotificationsBell />
           {userName && (
