@@ -98,29 +98,52 @@ serve(async (req) => {
 
     logStep("Request parsed", { agency_id, new_plan, billing_cycle });
 
-    // Buscar email do admin da agência
-    const { data: adminEmail, error: emailError } = await supabaseClient
-      .rpc('get_agency_admin_email', { agency_id_param: agency_id });
+    // Buscar agência primeiro
+    const { data: agency, error: agencyError } = await supabaseClient
+      .from('agencies')
+      .select('email')
+      .eq('id', agency_id)
+      .single();
 
-    if (emailError || !adminEmail) {
-      throw new Error("Agency admin email not found");
+    if (agencyError || !agency) {
+      throw new Error("Agency not found");
     }
 
-    logStep("Agency admin email found", { adminEmail });
+    // Buscar email do admin da agência via RPC
+    const { data: adminEmailFromRpc, error: emailError } = await supabaseClient
+      .rpc('get_agency_admin_email', { agency_id_param: agency_id });
 
-    // Buscar perfil do admin
-    const { data: profiles, error: profileError } = await supabaseClient
+    // Usar email do RPC se disponível, senão usar email da agência
+    const adminEmail = adminEmailFromRpc || agency.email;
+
+    if (!adminEmail) {
+      throw new Error("Agency email not found. Please configure an email for the agency.");
+    }
+
+    logStep("Agency email found", { adminEmail, source: adminEmailFromRpc ? 'admin_profile' : 'agency_table' });
+
+    // Buscar perfil do admin se existir, ou buscar qualquer perfil da agência
+    let adminProfile = null;
+    
+    const { data: adminProfiles, error: adminProfileError } = await supabaseClient
       .from('profiles')
       .select('id, stripe_customer_id, stripe_subscription_id')
       .eq('agency_id', agency_id)
       .limit(1);
 
-    if (profileError || !profiles || profiles.length === 0) {
-      throw new Error("Agency admin profile not found");
+    if (!adminProfileError && adminProfiles && adminProfiles.length > 0) {
+      adminProfile = adminProfiles[0];
+      logStep("Agency profile found", { adminId: adminProfile.id });
+    } else {
+      // Se não houver perfil com agency_id, criar um perfil virtual para a agência
+      // Vamos buscar na tabela de agencies o plan atual
+      logStep("No agency profile found, will use agency email directly");
+      adminProfile = {
+        id: null, // Será tratado como novo customer
+        stripe_customer_id: null,
+        stripe_subscription_id: null,
+      };
     }
-
-    const adminProfile = profiles[0];
-    logStep("Admin profile found", { adminId: adminProfile.id });
 
     // Inicializar Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -149,11 +172,13 @@ serve(async (req) => {
         logStep("New Stripe customer created", { customerId });
       }
 
-      // Atualizar perfil com customer_id
-      await supabaseClient
-        .from('profiles')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', adminProfile.id);
+      // Atualizar perfil com customer_id (se existir perfil)
+      if (adminProfile.id) {
+        await supabaseClient
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', adminProfile.id);
+      }
     }
 
     // Verificar se é plano gratuito
@@ -173,22 +198,24 @@ serve(async (req) => {
         logStep("Subscription canceled");
       }
 
-      // Atualizar perfil
-      await supabaseClient
-        .from('profiles')
-        .update({
-          stripe_subscription_id: null,
-          plan: new_plan,
-          billing_cycle: null,
-          subscription_status: null,
-          current_period_end: null,
-          is_pro: false,
-          plan_renewal_date: null,
-          delinquent: false,
-          grace_period_end: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', adminProfile.id);
+      // Atualizar perfil (se existir)
+      if (adminProfile.id) {
+        await supabaseClient
+          .from('profiles')
+          .update({
+            stripe_subscription_id: null,
+            plan: new_plan,
+            billing_cycle: null,
+            subscription_status: null,
+            current_period_end: null,
+            is_pro: false,
+            plan_renewal_date: null,
+            delinquent: false,
+            grace_period_end: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', adminProfile.id);
+      }
 
       // Atualizar agência
       await supabaseClient
@@ -269,22 +296,24 @@ serve(async (req) => {
 
     const nextBillingDate = new Date(subscription.current_period_end * 1000).toISOString();
 
-    // Atualizar perfil
-    await supabaseClient
-      .from('profiles')
-      .update({
-        stripe_subscription_id: subscription.id,
-        plan: new_plan,
-        billing_cycle: billing_cycle,
-        subscription_status: subscription.status,
-        current_period_end: nextBillingDate,
-        is_pro: subscription.status === 'active' || subscription.status === 'trialing',
-        plan_renewal_date: nextBillingDate,
-        delinquent: false,
-        grace_period_end: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', adminProfile.id);
+    // Atualizar perfil (se existir)
+    if (adminProfile.id) {
+      await supabaseClient
+        .from('profiles')
+        .update({
+          stripe_subscription_id: subscription.id,
+          plan: new_plan,
+          billing_cycle: billing_cycle,
+          subscription_status: subscription.status,
+          current_period_end: nextBillingDate,
+          is_pro: subscription.status === 'active' || subscription.status === 'trialing',
+          plan_renewal_date: nextBillingDate,
+          delinquent: false,
+          grace_period_end: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', adminProfile.id);
+    }
 
     // Atualizar agência
     await supabaseClient
