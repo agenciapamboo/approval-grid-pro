@@ -60,6 +60,9 @@ const AgenciaDetalhes = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [changePlanOpen, setChangePlanOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [selectedCycle, setSelectedCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [changingPlan, setChangingPlan] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -312,47 +315,168 @@ const AgenciaDetalhes = () => {
         />
       )}
 
-      <Dialog open={changePlanOpen} onOpenChange={setChangePlanOpen}>
-        <DialogContent>
+      <Dialog open={changePlanOpen} onOpenChange={(open) => {
+        setChangePlanOpen(open);
+        if (!open) {
+          setSelectedPlan('');
+          setSelectedCycle('monthly');
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Alterar Plano</DialogTitle>
             <DialogDescription>
               Selecione o novo plano para {agency.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <Select
-              value={agency.plan || 'free'}
-              onValueChange={async (newPlan) => {
-                try {
-                  const { error } = await supabase
-                    .from('agencies')
-                    .update({ plan: newPlan })
-                    .eq('id', agency.id);
-                  
-                  if (error) throw error;
-                  
-                  toast.success('Plano alterado com sucesso');
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Plano</label>
+              <Select
+                value={selectedPlan || agency.plan || 'free'}
+                onValueChange={setSelectedPlan}
+                disabled={changingPlan}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free (Gratuito)</SelectItem>
+                  <SelectItem value="creator">Creator (Gratuito)</SelectItem>
+                  <SelectItem value="eugencia">Eugência</SelectItem>
+                  <SelectItem value="socialmidia">Social Mídia</SelectItem>
+                  <SelectItem value="fullservice">Full Service</SelectItem>
+                  <SelectItem value="unlimited">Unlimited (Interno)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedPlan && !['free', 'creator', 'unlimited'].includes(selectedPlan) && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Ciclo de Cobrança</label>
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCycle('monthly')}
+                    disabled={changingPlan}
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                      selectedCycle === 'monthly'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        selectedCycle === 'monthly' ? 'border-primary' : 'border-border'
+                      }`}>
+                        {selectedCycle === 'monthly' && (
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <span className="font-medium">Mensal</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedPlan === 'eugencia' && 'R$ 29,70/mês'}
+                      {selectedPlan === 'socialmidia' && 'R$ 49,50/mês'}
+                      {selectedPlan === 'fullservice' && 'R$ 97,20/mês'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCycle('annual')}
+                    disabled={changingPlan}
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                      selectedCycle === 'annual'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        selectedCycle === 'annual' ? 'border-primary' : 'border-border'
+                      }`}>
+                        {selectedCycle === 'annual' && (
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Anual</span>
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded bg-primary/10 text-primary">
+                          10% OFF
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedPlan === 'eugencia' && 'R$ 270,00/ano'}
+                      {selectedPlan === 'socialmidia' && 'R$ 495,00/ano'}
+                      {selectedPlan === 'fullservice' && 'R$ 972,00/ano'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
                   setChangePlanOpen(false);
-                  loadData();
-                } catch (error) {
-                  console.error('Erro ao alterar plano:', error);
-                  toast.error('Erro ao alterar plano');
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">Free</SelectItem>
-                <SelectItem value="creator">Creator</SelectItem>
-                <SelectItem value="eugencia">Eugência</SelectItem>
-                <SelectItem value="socialmidia">Social Mídia</SelectItem>
-                <SelectItem value="fullservice">Full Service</SelectItem>
-                <SelectItem value="unlimited">Unlimited</SelectItem>
-              </SelectContent>
-            </Select>
+                  setSelectedPlan('');
+                  setSelectedCycle('monthly');
+                }}
+                disabled={changingPlan}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!selectedPlan) {
+                    toast.error('Selecione um plano');
+                    return;
+                  }
+
+                  setChangingPlan(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke('admin-change-plan', {
+                      body: {
+                        agency_id: agency.id,
+                        new_plan: selectedPlan,
+                        billing_cycle: ['eugencia', 'socialmidia', 'fullservice'].includes(selectedPlan) 
+                          ? selectedCycle 
+                          : null,
+                      },
+                    });
+
+                    if (error) throw error;
+
+                    if (data.payment_url) {
+                      toast.success('Plano alterado! Aguardando pagamento...', {
+                        description: 'Um link de pagamento foi gerado.',
+                      });
+                      window.open(data.payment_url, '_blank');
+                    } else {
+                      toast.success(data.message || 'Plano alterado com sucesso');
+                    }
+
+                    setChangePlanOpen(false);
+                    setSelectedPlan('');
+                    setSelectedCycle('monthly');
+                    loadData();
+                  } catch (error: any) {
+                    console.error('Erro ao alterar plano:', error);
+                    toast.error(error.message || 'Erro ao alterar plano');
+                  } finally {
+                    setChangingPlan(false);
+                  }
+                }}
+                disabled={changingPlan || !selectedPlan}
+                className="flex-1"
+              >
+                {changingPlan ? 'Processando...' : 'Confirmar Alteração'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

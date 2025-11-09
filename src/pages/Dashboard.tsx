@@ -534,7 +534,17 @@ const Dashboard = () => {
             )}
             {/* Client-side role check for UX only - server validates actual permissions */}
             {profile?.role === 'super_admin' && (
-              <TestNotificationButton />
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/admin/blocked-ips')}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  IPs Bloqueados
+                </Button>
+                <AddAgencyDialog onAgencyAdded={checkAuth} />
+                <TestNotificationButton />
+              </>
             )}
           </div>
         </div>
@@ -1136,33 +1146,6 @@ const Dashboard = () => {
         )}
 
 
-        {/* Agências - Só para Super Admin */}
-        {profile?.role === 'super_admin' && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Users className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-bold">Usuários Cadastrados</h3>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/admin/blocked-ips')}
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  IPs Bloqueados
-                </Button>
-                <AddAgencyDialog onAgencyAdded={checkAuth} />
-              </div>
-            </div>
-
-            <ProfilesManager 
-              profiles={allProfiles} 
-              getRoleLabel={getRoleLabel}
-              onProfileUpdated={checkAuth}
-            />
-          </div>
-        )}
 
         {/* Recursos - Só para Super Admin */}
         {profile?.role === 'super_admin' && (

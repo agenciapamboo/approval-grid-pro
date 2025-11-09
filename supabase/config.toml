@@ -1,5 +1,8 @@
 project_id = "sgarwrreywadxsodnxng"
 
+[functions.admin-change-plan]
+verify_jwt = true
+
 [functions.approval-media-urls]
 verify_jwt = false
 
