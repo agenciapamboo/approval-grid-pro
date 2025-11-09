@@ -7,6 +7,7 @@ import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PLAN_ORDER, PLAN_DISPLAY_NAMES } from "@/lib/stripe-config";
 import {
   Dialog,
   DialogContent,
@@ -87,8 +88,8 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
   const planGroups: Record<string, Profile[]> = {
     'creator': [],
     'eugencia': [],
-    'social_midia': [],
-    'agencia_full': [],
+    'socialmidia': [],
+    'fullservice': [],
     'unlimited': []
   };
 
@@ -102,7 +103,7 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
     // Decide target group key
     let key = '';
     if (isCreator) key = 'creator';
-    else if (['eugencia', 'social_midia', 'agencia_full'].includes(prof.plan || '')) key = prof.plan as string;
+    else if (['eugencia', 'socialmidia', 'fullservice'].includes(prof.plan || '')) key = prof.plan as string;
     else key = 'unlimited';
 
     if (!planGroups[key]) planGroups[key] = [];
@@ -112,8 +113,8 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
   const planConfigs = [
     { key: 'creator', title: 'Influencer/Creator (Plano Creator)', icon: '👤' },
     { key: 'eugencia', title: 'Agência Individual (Plano Eugência)', icon: '🏢' },
-    { key: 'social_midia', title: 'Agência Social Mídia (Plano Social Mídia)', icon: '📱' },
-    { key: 'agencia_full', title: 'Agência Full (Plano Agência Full)', icon: '🏭' },
+    { key: 'socialmidia', title: 'Agência Social Mídia (Plano Social Mídia)', icon: '📱' },
+    { key: 'fullservice', title: 'Agência Full Service (Plano Full Service)', icon: '🏭' },
     { key: 'unlimited', title: 'Agências sem plano (Recursos Ilimitados)', icon: '♾️' }
   ];
 
@@ -378,9 +379,9 @@ export function ProfilesManager({ profiles, getRoleLabel, onProfileUpdated }: Pr
                   <SelectContent>
                     <SelectItem value="creator">Creator</SelectItem>
                     <SelectItem value="eugencia">Eugência</SelectItem>
-                    <SelectItem value="social_midia">Social Mídia</SelectItem>
-                    <SelectItem value="agencia_full">Agência Full</SelectItem>
-                    <SelectItem value="unlimited">Sem plano (Ilimitado)</SelectItem>
+                    <SelectItem value="socialmidia">Social Mídia</SelectItem>
+                    <SelectItem value="fullservice">Full Service</SelectItem>
+                    <SelectItem value="unlimited">Sem Plano (Interno)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

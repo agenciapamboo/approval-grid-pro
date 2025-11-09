@@ -862,7 +862,7 @@ const Dashboard = () => {
 
         {/* Painel de Agência com Tabs */}
         {(profile?.role === 'agency_admin' || 
-          ['creator', 'eugencia', 'social_midia', 'agencia_full'].includes(profile?.plan || '') ||
+          ['creator', 'eugencia', 'socialmidia', 'fullservice'].includes(profile?.plan || '') ||
           (profile?.role === 'agency_admin' && !profile?.plan)) && profile?.agency_id && (
           <Tabs defaultValue="clients" className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">

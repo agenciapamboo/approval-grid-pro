@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PLAN_DISPLAY_NAMES } from "@/lib/stripe-config";
 
 interface Agency {
   id: string;
@@ -39,16 +40,10 @@ interface Client {
 }
 
 const getPlanDisplayName = (plan?: string | null): string => {
-  const planMap: Record<string, string> = {
-    'creator': 'Creator',
-    'eugencia': 'Eugência',
-    'socialmidia': 'Social Mídia',
-    'social_midia': 'Social Mídia',
-    'fullservice': 'Full Service',
-    'unlimited': 'Unlimited',
-    'free': 'Free'
-  };
-  return planMap[plan?.toLowerCase() || ''] || plan || 'Free';
+  if (!plan) return 'Free';
+  const key = plan.toLowerCase();
+  if (key === 'free') return 'Free';
+  return PLAN_DISPLAY_NAMES[key as keyof typeof PLAN_DISPLAY_NAMES] || plan;
 };
 
 const AgenciaDetalhes = () => {

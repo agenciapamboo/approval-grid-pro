@@ -71,6 +71,28 @@ export type StripePlan = keyof typeof STRIPE_PRODUCTS;
 export type StripePriceInterval = 'monthly' | 'annual';
 
 /**
+ * Ordem padronizada dos planos para exibição em toda a aplicação
+ */
+export const PLAN_ORDER: StripePlan[] = [
+  'creator',
+  'eugencia', 
+  'socialmidia',
+  'fullservice',
+  'unlimited'
+] as const;
+
+/**
+ * Nomes de exibição dos planos
+ */
+export const PLAN_DISPLAY_NAMES: Record<StripePlan, string> = {
+  creator: 'Creator',
+  eugencia: 'Eugência',
+  socialmidia: 'Social Mídia',
+  fullservice: 'Full Service',
+  unlimited: 'Sem Plano (Interno)'
+} as const;
+
+/**
  * Get lookup_key for a specific plan and interval
  */
 export const getPriceLookupKey = (plan: StripePlan, interval: StripePriceInterval): string | null => {

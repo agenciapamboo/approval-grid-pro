@@ -10,7 +10,7 @@ import { Loader2, CheckCircle2, Check, ChevronLeft } from "lucide-react";
 import { createInitialUsers } from "@/lib/createUsers";
 import { z } from "zod";
 import { AppFooter } from "@/components/layout/AppFooter";
-import { STRIPE_PRODUCTS, StripePlan, StripePriceInterval } from "@/lib/stripe-config";
+import { STRIPE_PRODUCTS, StripePlan, StripePriceInterval, PLAN_ORDER } from "@/lib/stripe-config";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -692,7 +692,8 @@ const Auth = () => {
                     
                     <RadioGroup value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as StripePlan)}>
                       <div className="space-y-3">
-                        {Object.entries(STRIPE_PRODUCTS).map(([key, product]) => {
+                        {PLAN_ORDER.map((key) => {
+                          const product = STRIPE_PRODUCTS[key];
                           const isCreator = 'free' in product && product.free;
                           const price = !isCreator && 'prices' in product ? product.prices[billingCycle] : null;
                           
