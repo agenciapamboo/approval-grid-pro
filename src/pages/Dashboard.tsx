@@ -568,10 +568,10 @@ const Dashboard = () => {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    MRR Total
-                  </CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Receitas/mês
+              </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold">

@@ -58,7 +58,7 @@ export function ResourceUsagePanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Uso de Recursos - Lovable Cloud</CardTitle>
+        <CardTitle>Uso de Recursos</CardTitle>
         <CardDescription>
           Plano: {usage.planName}
         </CardDescription>
