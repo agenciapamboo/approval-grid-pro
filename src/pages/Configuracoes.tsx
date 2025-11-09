@@ -14,8 +14,7 @@ import { RolesManager } from "@/components/admin/RolesManager";
 import { TestRunner } from "@/components/admin/TestRunner";
 import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsButton";
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
-import { NotificationSender } from "@/components/admin/NotificationSender";
-import { ArrowLeft, Settings, Shield, Database, Bell, TestTube, Image, Users, Webhook } from "lucide-react";
+import { ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, Webhook } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const Configuracoes = () => {
@@ -108,23 +107,6 @@ const Configuracoes = () => {
             </p>
           </div>
 
-          {/* 1. Notificações (sempre aberto) */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notificações
-              </CardTitle>
-              <CardDescription>
-                Envie comunicados para usuários, agências ou clientes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <NotificationSender />
-            </CardContent>
-          </Card>
-
-          <Separator />
 
           {/* Demais blocos em Accordion (começam colapsados) */}
           <Accordion type="multiple" className="space-y-4">

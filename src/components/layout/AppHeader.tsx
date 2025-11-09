@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { CheckCircle2, User, LogOut, Sun, Moon, CreditCard, ArrowLeft } from "lucide-react";
+import { CheckCircle2, User, LogOut, Sun, Moon, CreditCard, ArrowLeft, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { useTheme } from "next-themes";
 import { PlatformNotificationsBell } from "@/components/notifications/PlatformNotificationsBell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AppHeaderProps {
   userName?: string;
@@ -16,11 +18,24 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
   const { theme, resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   
   const isOnDashboard = location.pathname === '/dashboard';
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
+    <>
+      <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+        <DialogContent className="max-w-2xl max-h-[600px]">
+          <DialogHeader>
+            <DialogTitle>Minhas Notificações</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto">
+            <PlatformNotificationsBell />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {!isOnDashboard && (
@@ -44,7 +59,6 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          <PlatformNotificationsBell />
           {userName && (
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium">{userName}</p>
@@ -56,6 +70,7 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
               { title: "Minha Conta", icon: User },
               { title: "Minha Assinatura", icon: CreditCard },
               { title: (resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"), icon: resolvedTheme === "dark" ? Sun : Moon },
+              { title: "Notificações", icon: Bell },
               { title: "Sair", icon: LogOut },
             ]}
             onChange={(index) => {
@@ -65,7 +80,9 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
                 navigate("/minha-assinatura");
               } else if (index === 2) {
                 setTheme(resolvedTheme === "dark" ? "light" : "dark");
-              } else if (index === 3 && onSignOut) {
+              } else if (index === 3) {
+                setNotificationsOpen(true);
+              } else if (index === 4 && onSignOut) {
                 onSignOut();
               }
             }}
@@ -73,6 +90,7 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
           />
         </div>
       </div>
-    </header>
+      </header>
+    </>
   );
 }
