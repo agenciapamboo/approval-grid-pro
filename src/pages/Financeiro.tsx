@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FinancialOverviewCards } from "@/components/admin/FinancialOverviewCards";
 import { CostPerClientTable } from "@/components/admin/CostPerClientTable";
 import { LovablePlanConfig } from "@/components/admin/LovablePlanConfig";
+import { RevenueTaxesManager } from "@/components/admin/RevenueTaxesManager";
 import { OperationalCostsManager } from "@/components/admin/OperationalCostsManager";
 import { ArrowLeft, DollarSign, Database } from "lucide-react";
 import { Loader2 } from "lucide-react";
@@ -97,6 +98,9 @@ const Financeiro = () => {
               <LovablePlanConfig />
             </CardContent>
           </Card>
+
+          {/* Taxas sobre Receita */}
+          <RevenueTaxesManager />
 
           {/* Gestão de Custos Operacionais */}
           <OperationalCostsManager />

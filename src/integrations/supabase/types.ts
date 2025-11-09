@@ -899,6 +899,7 @@ export type Database = {
         Row: {
           category: string | null
           cost_name: string
+          cost_type: string | null
           cost_value: number
           created_at: string | null
           id: string
@@ -909,6 +910,7 @@ export type Database = {
         Insert: {
           category?: string | null
           cost_name: string
+          cost_type?: string | null
           cost_value?: number
           created_at?: string | null
           id?: string
@@ -919,6 +921,7 @@ export type Database = {
         Update: {
           category?: string | null
           cost_name?: string
+          cost_type?: string | null
           cost_value?: number
           created_at?: string | null
           id?: string
@@ -1234,6 +1237,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      revenue_taxes: {
+        Row: {
+          applies_to: string
+          category: string | null
+          created_at: string | null
+          id: string
+          is_fixed: boolean
+          notes: string | null
+          tax_name: string
+          tax_rate: number
+          updated_at: string | null
+        }
+        Insert: {
+          applies_to?: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_fixed?: boolean
+          notes?: string | null
+          tax_name: string
+          tax_rate?: number
+          updated_at?: string | null
+        }
+        Update: {
+          applies_to?: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_fixed?: boolean
+          notes?: string | null
+          tax_name?: string
+          tax_rate?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       role_permissions: {
         Row: {

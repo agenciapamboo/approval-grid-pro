@@ -7,6 +7,7 @@ export interface OperationalCost {
   cost_name: string;
   cost_value: number;
   is_fixed: boolean;
+  cost_type?: 'operational' | 'marketing' | 'sales';
   category?: string;
   notes?: string;
 }
@@ -25,7 +26,10 @@ export const useOperationalCosts = () => {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setCosts(data || []);
+      setCosts((data || []).map(item => ({
+        ...item,
+        cost_type: (item.cost_type || 'operational') as 'operational' | 'marketing' | 'sales'
+      })));
     } catch (error) {
       console.error("Erro ao carregar custos:", error);
       toast.error("Erro ao carregar custos operacionais");
@@ -51,7 +55,12 @@ export const useOperationalCosts = () => {
     }
   };
 
-  const addCustomCost = async (name: string, value: number, category?: string) => {
+  const addCustomCost = async (
+    name: string, 
+    value: number, 
+    category?: string,
+    costType: 'operational' | 'marketing' | 'sales' = 'operational'
+  ) => {
     try {
       const { error } = await supabase
         .from("operational_costs")
@@ -60,6 +69,7 @@ export const useOperationalCosts = () => {
           cost_value: value,
           is_fixed: false,
           category,
+          cost_type: costType,
         });
 
       if (error) throw error;
@@ -96,10 +106,29 @@ export const useOperationalCosts = () => {
 
   const totalCosts = costs.reduce((sum, cost) => sum + cost.cost_value, 0);
 
+  // Separar custos por tipo
+  const marketingCosts = costs
+    .filter(c => c.cost_type === 'marketing')
+    .reduce((sum, c) => sum + c.cost_value, 0);
+
+  const salesCosts = costs
+    .filter(c => c.cost_type === 'sales')
+    .reduce((sum, c) => sum + c.cost_value, 0);
+
+  const operationalCosts = costs
+    .filter(c => c.cost_type === 'operational' || !c.cost_type)
+    .reduce((sum, c) => sum + c.cost_value, 0);
+
+  const cacCosts = marketingCosts + salesCosts;
+
   return {
     costs,
     loading,
     totalCosts,
+    marketingCosts,
+    salesCosts,
+    operationalCosts,
+    cacCosts,
     updateCost,
     addCustomCost,
     deleteCost,
