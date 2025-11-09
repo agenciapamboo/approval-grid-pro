@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -34,7 +34,6 @@ import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { NotificationSender } from "@/components/admin/NotificationSender";
 import { NewClientsAlert } from "@/components/admin/NewClientsAlert";
 
 
@@ -551,29 +550,14 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Avisos de Novos Clientes - apenas para super_admin */}
-        {profile?.role === 'super_admin' && (
-          <NewClientsAlert />
-        )}
+            {/* Avisos de Novos Clientes - apenas para super_admin */}
+            {profile?.role === 'super_admin' && (
+              <NewClientsAlert />
+            )}
 
-        {/* SUPER ADMIN - Dashboard Simplificado */}
-        {profile?.role === 'super_admin' && (
-          <div className="space-y-6">
-            {/* Bloco de Envio de Notificações */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Enviar Notificações
-                </CardTitle>
-                <CardDescription>
-                  Envie comunicados para usuários, agências ou clientes da plataforma
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NotificationSender />
-              </CardContent>
-            </Card>
+            {/* SUPER ADMIN - Dashboard Simplificado */}
+            {profile?.role === 'super_admin' && (
+              <div className="space-y-6">
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

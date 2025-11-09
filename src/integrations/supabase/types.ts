@@ -895,6 +895,39 @@ export type Database = {
           },
         ]
       }
+      operational_costs: {
+        Row: {
+          category: string | null
+          cost_name: string
+          cost_value: number
+          created_at: string | null
+          id: string
+          is_fixed: boolean
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          cost_name: string
+          cost_value?: number
+          created_at?: string | null
+          id?: string
+          is_fixed?: boolean
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          cost_name?: string
+          cost_value?: number
+          created_at?: string | null
+          id?: string
+          is_fixed?: boolean
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       plan_entitlements: {
         Row: {
           created_at: string | null

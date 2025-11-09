@@ -50,10 +50,10 @@ export function FinancialOverviewCards() {
         </CardContent>
       </Card>
 
-      {/* Card 2: MRR Atual */}
+      {/* Card 2: Receitas/mês */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">MRR Atual</CardTitle>
+          <CardTitle className="text-sm font-medium">Receitas/mês</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>

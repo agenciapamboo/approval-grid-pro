@@ -4,9 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinancialOverviewCards } from "@/components/admin/FinancialOverviewCards";
 import { CostPerClientTable } from "@/components/admin/CostPerClientTable";
-import { ArrowLeft, DollarSign } from "lucide-react";
+import { LovablePlanConfig } from "@/components/admin/LovablePlanConfig";
+import { OperationalCostsManager } from "@/components/admin/OperationalCostsManager";
+import { ArrowLeft, DollarSign, Database } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const Financeiro = () => {
@@ -78,7 +81,26 @@ const Financeiro = () => {
 
           {/* Métricas Gerais */}
           <FinancialOverviewCards />
+          
+          {/* Plano Lovable - Recursos Contratados */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Plano Lovable Cloud
+              </CardTitle>
+              <CardDescription>
+                Configure limites de recursos e custos de overage do backend
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LovablePlanConfig />
+            </CardContent>
+          </Card>
 
+          {/* Gestão de Custos Operacionais */}
+          <OperationalCostsManager />
+          
           {/* Custo por Cliente */}
           <CostPerClientTable />
         </div>
