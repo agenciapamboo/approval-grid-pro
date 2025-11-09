@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, RefreshCw } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { LovablePlanConfig } from "./LovablePlanConfig";
 
 export const SystemSettingsManager = () => {
   const { toast } = useToast();
@@ -175,74 +174,131 @@ export const SystemSettingsManager = () => {
   const hasPlatformChanges = platformWebhookUrl !== originalPlatformWebhookUrl;
 
   return (
-    <div className="space-y-6">
-      <LovablePlanConfig />
-      
-      <Separator />
-      
-      <Card>
+    <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Webhook Interno & Documentação
-          </CardTitle>
-          <CardDescription>
-            Configure o webhook interno e atualize a documentação automática
-          </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <RefreshCw className="h-5 w-5" />
+          Webhooks & Documentação
+        </CardTitle>
+        <CardDescription>
+          Configure os webhooks do sistema e atualize a documentação automática
+        </CardDescription>
         </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="webhook-url">URL do Webhook Interno (N8N)</Label>
-              <Input
-                id="webhook-url"
-                type="url"
-                placeholder="https://webhook.example.com/..."
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Este webhook recebe notificações internas do sistema (erros, bloqueios de IP, relatórios, etc.)
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || saving}
-                className="flex items-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Salvar
-                  </>
-                )}
-              </Button>
-              {hasChanges && (
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  disabled={saving}
-                >
-                  Cancelar
-                </Button>
-              )}
-            </div>
-
-            <div className="pt-6 mt-6 border-t space-y-4">
+            {/* Webhook Interno */}
+            <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium mb-2">Documentação Automática</h3>
+                <h3 className="text-lg font-medium mb-1">Webhook Interno (N8N)</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Recebe notificações internas do sistema (erros, bloqueios de IP, relatórios)
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="webhook-url">URL do Webhook</Label>
+                <Input
+                  id="webhook-url"
+                  type="url"
+                  placeholder="https://webhook.example.com/..."
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={!hasChanges || saving}
+                  className="flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Salvar Webhook Interno
+                    </>
+                  )}
+                </Button>
+                {hasChanges && (
+                  <Button
+                    variant="outline"
+                    onClick={handleReset}
+                    disabled={saving}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Webhook de Notificações de Clientes */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-1">Webhook de Notificações de Clientes</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Recebe notificações da plataforma para agências/creators (vencimentos, alertas, anúncios)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="platform-webhook-url">URL do Webhook (N8N)</Label>
+                <Input
+                  id="platform-webhook-url"
+                  type="url"
+                  placeholder="https://n8n.pamboocriativos.com.br/webhook-test/..."
+                  value={platformWebhookUrl}
+                  onChange={(e) => setPlatformWebhookUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSavePlatformWebhook}
+                  disabled={!hasPlatformChanges || saving}
+                  className="flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Salvar Webhook de Clientes
+                    </>
+                  )}
+                </Button>
+                {hasPlatformChanges && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setPlatformWebhookUrl(originalPlatformWebhookUrl)}
+                    disabled={saving}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Documentação Automática */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-1">Documentação Automática</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Atualize os documentos de eventos (EVENTOS_NOTIFICACAO.md) e configuração do N8N (CONFIGURACAO_N8N.md) com base nas definições atuais do sistema.
                 </p>
@@ -270,67 +326,5 @@ export const SystemSettingsManager = () => {
         )}
       </CardContent>
     </Card>
-
-    <Card>
-      <CardHeader>
-        <CardTitle>Webhook de Notificações de Clientes</CardTitle>
-        <CardDescription>
-          URL do N8N para envio de notificações da plataforma para agências/creators
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="platform-webhook-url">URL do Webhook (N8N)</Label>
-              <Input
-                id="platform-webhook-url"
-                type="url"
-                placeholder="https://n8n.pamboocriativos.com.br/webhook-test/..."
-                value={platformWebhookUrl}
-                onChange={(e) => setPlatformWebhookUrl(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Este webhook recebe notificações da plataforma para clientes (vencimentos, alertas, anúncios)
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSavePlatformWebhook}
-                disabled={!hasPlatformChanges || saving}
-                className="flex items-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Salvar
-                  </>
-                )}
-              </Button>
-              {hasPlatformChanges && (
-                <Button
-                  variant="outline"
-                  onClick={() => setPlatformWebhookUrl(originalPlatformWebhookUrl)}
-                  disabled={saving}
-                >
-                  Cancelar
-                </Button>
-              )}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-    </div>
   );
 };

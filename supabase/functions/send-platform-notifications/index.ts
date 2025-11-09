@@ -80,6 +80,29 @@ serve(async (req) => {
           recipientEmail = user?.email;
           recipientWhatsApp = profile?.whatsapp;
           recipientName = profile?.name;
+        } else if ((notif.target_type === 'team_member' || notif.target_type === 'client_user') && notif.target_id) {
+          // Buscar usuários por role específica
+          const { data: users } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .eq('role', notif.target_type);
+
+          // Para target_type com role específica, buscar todos os usuários dessa role
+          if (users && users.length > 0) {
+            // Pegar o primeiro usuário (ou você pode iterar por todos)
+            const userId = users[0].user_id;
+            
+            const { data: user } = await supabase.auth.admin.getUserById(userId);
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('name, whatsapp')
+              .eq('id', userId)
+              .single();
+            
+            recipientEmail = user?.user?.email;
+            recipientWhatsApp = profile?.whatsapp;
+            recipientName = profile?.name;
+          }
         }
 
         // Construir parâmetros para N8N

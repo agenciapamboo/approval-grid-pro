@@ -18,7 +18,7 @@ export type PlatformNotificationType =
   | 'account_suspended';
 
 export interface CreatePlatformNotification {
-  targetType: 'agency' | 'creator' | 'all';
+  targetType: 'agency' | 'creator' | 'all' | 'team_member' | 'client_user';
   targetId?: string;
   notificationType: PlatformNotificationType;
   title: string;

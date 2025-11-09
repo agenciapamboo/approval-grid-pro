@@ -10,7 +10,7 @@ import { createPlatformNotification } from "@/lib/platform-notifications";
 export const NotificationSender = () => {
   const [message, setMessage] = useState("");
   const [title, setTitle] = useState("");
-  const [targetType, setTargetType] = useState<"all" | "agency" | "creator">("all");
+  const [targetType, setTargetType] = useState<"all" | "agency" | "team_member" | "client_user" | "creator">("all");
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
@@ -77,7 +77,9 @@ export const NotificationSender = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Usuários</SelectItem>
-            <SelectItem value="agency">Agências</SelectItem>
+            <SelectItem value="agency">Agências (Agency Admins)</SelectItem>
+            <SelectItem value="team_member">Membros de Equipe (Team Members)</SelectItem>
+            <SelectItem value="client_user">Usuários de Clientes (Client Users)</SelectItem>
             <SelectItem value="creator">Creators (Clientes Finais)</SelectItem>
           </SelectContent>
         </Select>
