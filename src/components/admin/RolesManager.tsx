@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Shield, Users, Search } from "lucide-react";
+import { Loader2, Shield, Search as SearchIcon, Save } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface UserWithRole {
   id: string;
@@ -19,6 +20,15 @@ interface UserWithRole {
   agency_name?: string;
 }
 
+interface RolePermission {
+  id: string;
+  role: string;
+  permission_key: string;
+  enabled: boolean;
+}
+
+type PermissionsByRole = Record<string, Record<string, boolean>>;
+
 export const RolesManager = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -27,6 +37,9 @@ export const RolesManager = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [changingRole, setChangingRole] = useState<Record<string, boolean>>({});
+  const [permissions, setPermissions] = useState<PermissionsByRole>({});
+  const [editedPermissions, setEditedPermissions] = useState<PermissionsByRole>({});
+  const [savingPermissions, setSavingPermissions] = useState(false);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -115,8 +128,83 @@ export const RolesManager = () => {
     }
   };
 
+  const loadPermissions = async () => {
+    const { data, error } = await supabase
+      .from("role_permissions")
+      .select("*");
+
+    if (error) {
+      console.error("Erro ao carregar permissões:", error);
+      return;
+    }
+
+    const permsByRole: PermissionsByRole = {};
+    (data || []).forEach((perm: RolePermission) => {
+      if (!permsByRole[perm.role]) permsByRole[perm.role] = {};
+      permsByRole[perm.role][perm.permission_key] = perm.enabled;
+    });
+
+    setPermissions(permsByRole);
+    setEditedPermissions(JSON.parse(JSON.stringify(permsByRole)));
+  };
+
+  const handlePermissionChange = (role: string, permKey: string, enabled: boolean) => {
+    setEditedPermissions(prev => ({
+      ...prev,
+      [role]: {
+        ...(prev[role] || {}),
+        [permKey]: enabled
+      }
+    }));
+  };
+
+  const handleSavePermissions = async () => {
+    setSavingPermissions(true);
+    try {
+      const updates: Array<{ role: string; permission_key: string; enabled: boolean }> = [];
+      
+      Object.entries(editedPermissions).forEach(([role, perms]) => {
+        Object.entries(perms).forEach(([permKey, enabled]) => {
+          if (permissions[role]?.[permKey] !== enabled) {
+            updates.push({ role, permission_key: permKey, enabled });
+          }
+        });
+      });
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("role_permissions")
+          .update({ enabled: update.enabled })
+          .eq("role", update.role as any)
+          .eq("permission_key", update.permission_key);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Permissões atualizadas com sucesso!",
+      });
+      await loadPermissions();
+    } catch (error) {
+      console.error("Erro ao salvar permissões:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao salvar permissões",
+      });
+    } finally {
+      setSavingPermissions(false);
+    }
+  };
+
+  const hasChanges = () => {
+    return JSON.stringify(permissions) !== JSON.stringify(editedPermissions);
+  };
+
   useEffect(() => {
     loadUsers();
+    loadPermissions();
   }, []);
 
   useEffect(() => {
@@ -154,7 +242,7 @@ export const RolesManager = () => {
 
       if (roleError) throw roleError;
 
-      // Atualizar profiles.role para compatibilidade
+      // Atualizar profiles
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ role: newRole as any })
@@ -163,40 +251,33 @@ export const RolesManager = () => {
       if (profileError) throw profileError;
 
       toast({
-        title: "Role atualizada",
-        description: "A role do usuário foi atualizada com sucesso.",
+        title: "Sucesso",
+        description: "Role atualizada com sucesso!",
       });
 
       await loadUsers();
     } catch (error) {
-      console.error("Erro ao alterar role:", error);
+      console.error("Erro ao atualizar role:", error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível alterar a role do usuário.",
+        description: "Não foi possível atualizar a role.",
       });
     } finally {
       setChangingRole({ ...changingRole, [userId]: false });
     }
   };
 
-  const getRoleBadgeVariant = (role: string): "default" | "destructive" | "outline" | "success" | "warning" | "pending" => {
-    switch (role) {
-      case "super_admin":
-        return "destructive";
-      case "agency_admin":
-        return "default";
-      case "team_member":
-        return "outline";
-      default:
-        return "outline";
-    }
+  const getRoleBadgeVariant = (role: string): "default" | "outline" | "destructive" => {
+    if (role === "super_admin") return "destructive";
+    if (role === "agency_admin") return "default";
+    return "outline";
   };
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       super_admin: "Super Admin",
-      agency_admin: "Admin da Agência",
+      agency_admin: "Admin de Agência",
       team_member: "Membro da Equipe",
       client_user: "Usuário Cliente",
     };
@@ -223,7 +304,7 @@ export const RolesManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Card 1: Permissões por Função (Documentação Visual) */}
+      {/* Card 1: Permissões por Função (Agora Editável) */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -231,7 +312,7 @@ export const RolesManager = () => {
             Permissões por Função
           </CardTitle>
           <CardDescription>
-            Visualize as permissões de cada role (documentação)
+            Configure as permissões de cada role (clique para editar)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -248,32 +329,19 @@ export const RolesManager = () => {
                 Super Administradores têm acesso total ao sistema.
               </p>
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Acesso a Módulos</h4>
+                <h4 className="text-sm font-medium">Permissões</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Dashboard Completo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Gerenciar Clientes</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Gerenciar Usuários</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Ver Financeiro</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Editar Planos</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Gerenciar Roles</Label>
-                  </div>
+                  {Object.entries(editedPermissions.super_admin || {}).map(([key, enabled]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox 
+                        checked={enabled}
+                        onCheckedChange={(checked) => handlePermissionChange('super_admin', key, !!checked)}
+                      />
+                      <Label className="cursor-pointer">
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </TabsContent>
@@ -283,106 +351,88 @@ export const RolesManager = () => {
                 Administradores de Agência gerenciam seus clientes e equipe.
               </p>
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Acesso a Módulos</h4>
+                <h4 className="text-sm font-medium">Permissões</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Dashboard da Agência</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Gerenciar Clientes</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Criar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Aprovar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Ver Financeiro (Limitado)</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Editar Planos</Label>
-                  </div>
+                  {Object.entries(editedPermissions.agency_admin || {}).map(([key, enabled]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox 
+                        checked={enabled}
+                        onCheckedChange={(checked) => handlePermissionChange('agency_admin', key, !!checked)}
+                      />
+                      <Label className="cursor-pointer">
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="client_user" className="space-y-4 pt-4">
               <p className="text-sm text-muted-foreground">
-                Usuários Clientes visualizam e aprovam conteúdo.
+                Usuários Cliente podem visualizar e aprovar conteúdos.
               </p>
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Acesso a Módulos</h4>
+                <h4 className="text-sm font-medium">Permissões</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Ver Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Aprovar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Solicitar Ajustes</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Criar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Deletar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Ver Financeiro</Label>
-                  </div>
+                  {Object.entries(editedPermissions.client_user || {}).map(([key, enabled]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox 
+                        checked={enabled}
+                        onCheckedChange={(checked) => handlePermissionChange('client_user', key, !!checked)}
+                      />
+                      <Label className="cursor-pointer">
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="team_member" className="space-y-4 pt-4">
               <p className="text-sm text-muted-foreground">
-                Membros da Equipe colaboram no conteúdo.
+                Membros da Equipe colaboram na criação de conteúdo.
               </p>
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Acesso a Módulos</h4>
+                <h4 className="text-sm font-medium">Permissões</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Ver Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox checked disabled />
-                    <Label>Criar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Aprovar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Deletar Conteúdo</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Ver Financeiro</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox disabled />
-                    <Label>Gerenciar Clientes</Label>
-                  </div>
+                  {Object.entries(editedPermissions.team_member || {}).map(([key, enabled]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox 
+                        checked={enabled}
+                        onCheckedChange={(checked) => handlePermissionChange('team_member', key, !!checked)}
+                      />
+                      <Label className="cursor-pointer">
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </TabsContent>
           </Tabs>
+
+          {hasChanges() && (
+            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+              <Button variant="outline" onClick={loadPermissions} disabled={savingPermissions}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSavePermissions} disabled={savingPermissions}>
+                {savingPermissions ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Permissões
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -390,72 +440,79 @@ export const RolesManager = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <SearchIcon className="h-5 w-5" />
             Alterar Role de Usuários
           </CardTitle>
           <CardDescription>
-            Pesquise e altere a role de usuários específicos
+            Pesquise e altere a role de qualquer usuário do sistema
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="search">Buscar usuário</Label>
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="search"
-                placeholder="Digite o nome ou email do usuário..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
-            </div>
+          {/* Busca */}
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {filteredUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum usuário encontrado.
-              </p>
-            ) : (
-              filteredUsers.map((user) => (
+          {/* Lista de Usuários */}
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {filteredUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors"
                 >
-                  <div className="space-y-1">
-                    <p className="font-medium">{user.name}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{user.name}</p>
+                      {user.agency_name && (
+                        <Badge variant="outline" className="text-xs">
+                          {user.agency_name}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
-                    {user.agency_name && (
-                      <p className="text-xs text-muted-foreground">
-                        Agência: {user.agency_name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getRoleBadgeVariant(user.role)}>
+                    <Badge variant={getRoleBadgeVariant(user.role)} className="mt-1">
                       {getRoleLabel(user.role)}
                     </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <Select
                       value={user.role}
                       onValueChange={(newRole) => handleChangeUserRole(user.id, newRole)}
-                      disabled={changingRole[user.id] || user.id === currentUserId}
+                      disabled={user.id === currentUserId || changingRole[user.id]}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="super_admin">Super Admin</SelectItem>
-                        <SelectItem value="agency_admin">Admin da Agência</SelectItem>
+                        <SelectItem value="agency_admin">Admin de Agência</SelectItem>
                         <SelectItem value="team_member">Membro da Equipe</SelectItem>
                         <SelectItem value="client_user">Usuário Cliente</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {changingRole[user.id] && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+
+              {filteredUsers.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>
