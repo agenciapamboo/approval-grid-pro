@@ -818,6 +818,64 @@ export type Database = {
         }
         Relationships: []
       }
+      kanban_columns: {
+        Row: {
+          agency_id: string
+          column_color: string
+          column_id: string
+          column_name: string
+          column_order: number
+          created_at: string | null
+          id: string
+          is_system: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id: string
+          column_color?: string
+          column_id: string
+          column_name: string
+          column_order: number
+          created_at?: string | null
+          id?: string
+          is_system?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string
+          column_color?: string
+          column_id?: string
+          column_name?: string
+          column_order?: number
+          created_at?: string | null
+          id?: string
+          is_system?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_columns_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_columns_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_columns_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lgpd_pages: {
         Row: {
           content: string
@@ -2161,7 +2219,12 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "agency_admin" | "client_user" | "team_member"
-      content_status: "draft" | "in_review" | "changes_requested" | "approved"
+      content_status:
+        | "draft"
+        | "in_review"
+        | "changes_requested"
+        | "approved"
+        | "archived"
       content_type: "image" | "carousel" | "reels" | "story" | "feed"
       legal_basis: "contract" | "legitimate_interest"
       media_kind: "image" | "video"
@@ -2304,7 +2367,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "agency_admin", "client_user", "team_member"],
-      content_status: ["draft", "in_review", "changes_requested", "approved"],
+      content_status: [
+        "draft",
+        "in_review",
+        "changes_requested",
+        "approved",
+        "archived",
+      ],
       content_type: ["image", "carousel", "reels", "story", "feed"],
       legal_basis: ["contract", "legitimate_interest"],
       media_kind: ["image", "video"],
