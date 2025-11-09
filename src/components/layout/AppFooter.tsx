@@ -49,10 +49,20 @@ export function AppFooter() {
         <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
           <p>© 2025 Aprova Criativos. Todos os direitos reservados.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-primary transition-colors">
+            <a 
+              href="https://www.instagram.com/aprovacriativos" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
               <Instagram className="w-5 h-5" />
             </a>
-            <a href="#" className="hover:text-primary transition-colors">
+            <a 
+              href="https://facebook.com/aprovacriativos" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
               <Facebook className="w-5 h-5" />
             </a>
           </div>

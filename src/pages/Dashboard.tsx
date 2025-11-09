@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, TestTube, DollarSign, Server } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -23,9 +23,6 @@ import { EditCreativeRequestDialog } from "@/components/admin/EditCreativeReques
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
-import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
-import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
-import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsButton";
 import { GenerateApprovalLinkButton } from "@/components/admin/GenerateApprovalLinkButton";
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
@@ -33,10 +30,7 @@ import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
 import { ContentKanban } from "@/components/content/ContentKanban";
 import { ClientLimitsMetrics } from "@/components/admin/ClientLimitsMetrics";
 import { AgencyLimitsOverview } from "@/components/admin/AgencyLimitsOverview";
-import { TestRunner } from "@/components/admin/TestRunner";
-import { FinancialOverviewCards } from "@/components/admin/FinancialOverviewCards";
 import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
-import { CostPerClientTable } from "@/components/admin/CostPerClientTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1170,65 +1164,23 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Ferramentas e Configurações - Só para Super Admin */}
+        {/* Recursos - Só para Super Admin */}
         {profile?.role === 'super_admin' && (
           <div className="mt-8 space-y-6">
-            <Tabs defaultValue="tools">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="tools">
-                  <TestTube className="w-4 h-4 mr-2" />
-                  Ferramentas
-                </TabsTrigger>
-                <TabsTrigger value="financial">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Financeiro
-                </TabsTrigger>
-                <TabsTrigger value="resources">
-                  <Server className="w-4 h-4 mr-2" />
-                  Recursos
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="tools" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TestTube className="h-5 w-5" />
-                      Testes e Qualidade
-                    </CardTitle>
-                    <CardDescription>
-                      Execute testes unitários e E2E para garantir a qualidade do código
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <TestRunner />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ferramentas de Mídia</CardTitle>
-                    <CardDescription>
-                      Gerar miniaturas para conteúdos antigos que não possuem thumbnails
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <GenerateThumbnailsButton />
-                  </CardContent>
-                </Card>
-                <SystemSettingsManager />
-                <OrphanedAccountsManager />
-              </TabsContent>
-
-              <TabsContent value="financial" className="space-y-6">
-                <FinancialOverviewCards />
-                <CostPerClientTable />
-              </TabsContent>
-
-              <TabsContent value="resources" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Server className="h-5 w-5" />
+                  Recursos do Sistema
+                </CardTitle>
+                <CardDescription>
+                  Monitore o uso de recursos do Lovable Cloud
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <ResourceUsagePanel />
-              </TabsContent>
-            </Tabs>
+              </CardContent>
+            </Card>
           </div>
         )}
 

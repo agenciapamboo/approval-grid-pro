@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
-import { Building2, Search, Users, Calendar, Plus, Eye } from "lucide-react";
+import { Building2, Search, Users, Calendar, Plus, Eye, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { format } from "date-fns";
@@ -130,7 +130,16 @@ const Agencias = () => {
               Gerencie todas as agências do sistema
             </p>
           </div>
-          <AddAgencyDialog onAgencyAdded={loadAgencies} />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/admin/blocked-ips')}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              IPs Bloqueados
+            </Button>
+            <AddAgencyDialog onAgencyAdded={loadAgencies} />
+          </div>
         </div>
 
         <div className="mb-6">
@@ -211,10 +220,6 @@ const Agencias = () => {
       </main>
 
       <AppFooter />
-
-      <AddAgencyDialog
-        onAgencyAdded={loadAgencies}
-      />
     </div>
   );
 };

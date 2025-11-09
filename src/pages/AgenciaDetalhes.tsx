@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
-import { ArrowLeft, Building2, Users, Calendar, Mail, Phone, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Building2, Users, Calendar, Mail, Phone, Edit, Trash2, Lock, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { EditAgencyDialog } from "@/components/admin/EditAgencyDialog";
 import { format } from "date-fns";
@@ -35,6 +38,19 @@ interface Client {
   logo_url?: string | null;
 }
 
+const getPlanDisplayName = (plan?: string | null): string => {
+  const planMap: Record<string, string> = {
+    'creator': 'Creator',
+    'eugencia': 'Eugência',
+    'socialmidia': 'Social Mídia',
+    'social_midia': 'Social Mídia',
+    'fullservice': 'Full Service',
+    'unlimited': 'Unlimited',
+    'free': 'Free'
+  };
+  return planMap[plan?.toLowerCase() || ''] || plan || 'Free';
+};
+
 const AgenciaDetalhes = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -42,6 +58,8 @@ const AgenciaDetalhes = () => {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [changePlanOpen, setChangePlanOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -174,11 +192,20 @@ const AgenciaDetalhes = () => {
                     <CardTitle className="text-2xl">{agency.name}</CardTitle>
                     <CardDescription>@{agency.slug}</CardDescription>
                     <Badge variant="default" className="mt-2">
-                      {agency.plan || "free"} {agency.plan_type && `(${agency.plan_type})`}
+                      {getPlanDisplayName(agency.plan)}
+                      {agency.plan_type && ` (${agency.plan_type === 'monthly' ? 'Mensal' : 'Anual'})`}
                     </Badge>
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setChangePlanOpen(true)}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Alterar Plano
+                  </Button>
+                  <Button variant="outline" onClick={() => setChangePasswordOpen(true)}>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Alterar Senha
+                  </Button>
                   <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
@@ -284,6 +311,98 @@ const AgenciaDetalhes = () => {
           onAgencyUpdated={loadData}
         />
       )}
+
+      <Dialog open={changePlanOpen} onOpenChange={setChangePlanOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Plano</DialogTitle>
+            <DialogDescription>
+              Selecione o novo plano para {agency.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select
+              value={agency.plan || 'free'}
+              onValueChange={async (newPlan) => {
+                try {
+                  const { error } = await supabase
+                    .from('agencies')
+                    .update({ plan: newPlan })
+                    .eq('id', agency.id);
+                  
+                  if (error) throw error;
+                  
+                  toast.success('Plano alterado com sucesso');
+                  setChangePlanOpen(false);
+                  loadData();
+                } catch (error) {
+                  console.error('Erro ao alterar plano:', error);
+                  toast.error('Erro ao alterar plano');
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="creator">Creator</SelectItem>
+                <SelectItem value="eugencia">Eugência</SelectItem>
+                <SelectItem value="socialmidia">Social Mídia</SelectItem>
+                <SelectItem value="fullservice">Full Service</SelectItem>
+                <SelectItem value="unlimited">Unlimited</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+            <DialogDescription>
+              Redefinir senha do administrador da agência {agency.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Esta ação irá enviar um e-mail de redefinição de senha para o administrador da agência.
+              </AlertDescription>
+            </Alert>
+            <Button
+              className="w-full"
+              onClick={async () => {
+                try {
+                  const { data: adminEmail } = await supabase
+                    .rpc('get_agency_admin_email', { agency_id_param: agency.id });
+                  
+                  if (!adminEmail) {
+                    toast.error('Email do administrador não encontrado');
+                    return;
+                  }
+                  
+                  const { error } = await supabase.auth.resetPasswordForEmail(adminEmail, {
+                    redirectTo: `${window.location.origin}/auth/reset-password`,
+                  });
+                  
+                  if (error) throw error;
+                  
+                  toast.success('E-mail de redefinição enviado com sucesso');
+                  setChangePasswordOpen(false);
+                } catch (error) {
+                  console.error('Erro ao enviar e-mail:', error);
+                  toast.error('Erro ao enviar e-mail de redefinição');
+                }
+              }}
+            >
+              Enviar E-mail de Redefinição
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
