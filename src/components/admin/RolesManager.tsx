@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Shield, Search as SearchIcon, Save } from "lucide-react";
+import { Loader2, Shield, Search as SearchIcon, Save, Package, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,7 +27,30 @@ interface RolePermission {
   enabled: boolean;
 }
 
+interface PlanPermission {
+  id: string;
+  plan: string;
+  permission_key: string;
+  enabled: boolean;
+}
+
+interface PlanEntitlement {
+  id: string;
+  plan: string;
+  posts_limit: number | null;
+  creatives_limit: number | null;
+  history_days: number;
+  team_members_limit: number | null;
+  whatsapp_support: boolean;
+  graphics_approval: boolean;
+  supplier_link: boolean;
+  global_agenda: boolean;
+  team_kanban: boolean;
+  team_notifications: boolean;
+}
+
 type PermissionsByRole = Record<string, Record<string, boolean>>;
+type PermissionsByPlan = Record<string, Record<string, boolean>>;
 
 export const RolesManager = () => {
   const { toast } = useToast();
@@ -40,6 +63,16 @@ export const RolesManager = () => {
   const [permissions, setPermissions] = useState<PermissionsByRole>({});
   const [editedPermissions, setEditedPermissions] = useState<PermissionsByRole>({});
   const [savingPermissions, setSavingPermissions] = useState(false);
+  
+  // Plan Permissions State
+  const [planPermissions, setPlanPermissions] = useState<PermissionsByPlan>({});
+  const [editedPlanPermissions, setEditedPlanPermissions] = useState<PermissionsByPlan>({});
+  const [savingPlanPermissions, setSavingPlanPermissions] = useState(false);
+  
+  // Plan Entitlements State
+  const [planEntitlements, setPlanEntitlements] = useState<PlanEntitlement[]>([]);
+  const [editingPlan, setEditingPlan] = useState<Record<string, PlanEntitlement>>({});
+  const [savingPlan, setSavingPlan] = useState<Record<string, boolean>>({});
 
   const loadUsers = async () => {
     setLoading(true);
@@ -202,9 +235,172 @@ export const RolesManager = () => {
     return JSON.stringify(permissions) !== JSON.stringify(editedPermissions);
   };
 
+  const loadPlanPermissions = async () => {
+    const { data, error } = await supabase
+      .from("plan_permissions")
+      .select("*");
+
+    if (error) {
+      console.error("Erro ao carregar permissões de planos:", error);
+      return;
+    }
+
+    const permsByPlan: PermissionsByPlan = {};
+    (data || []).forEach((perm: PlanPermission) => {
+      if (!permsByPlan[perm.plan]) permsByPlan[perm.plan] = {};
+      permsByPlan[perm.plan][perm.permission_key] = perm.enabled;
+    });
+
+    setPlanPermissions(permsByPlan);
+    setEditedPlanPermissions(JSON.parse(JSON.stringify(permsByPlan)));
+  };
+
+  const handlePlanPermissionChange = (plan: string, permKey: string, enabled: boolean) => {
+    setEditedPlanPermissions(prev => ({
+      ...prev,
+      [plan]: {
+        ...(prev[plan] || {}),
+        [permKey]: enabled
+      }
+    }));
+  };
+
+  const handleSavePlanPermissions = async () => {
+    setSavingPlanPermissions(true);
+    try {
+      const updates: Array<{ plan: string; permission_key: string; enabled: boolean }> = [];
+      
+      Object.entries(editedPlanPermissions).forEach(([plan, perms]) => {
+        Object.entries(perms).forEach(([permKey, enabled]) => {
+          if (planPermissions[plan]?.[permKey] !== enabled) {
+            updates.push({ plan, permission_key: permKey, enabled });
+          }
+        });
+      });
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("plan_permissions")
+          .update({ enabled: update.enabled })
+          .eq("plan", update.plan)
+          .eq("permission_key", update.permission_key);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Permissões de planos atualizadas com sucesso!",
+      });
+      await loadPlanPermissions();
+    } catch (error) {
+      console.error("Erro ao salvar permissões de planos:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao salvar permissões de planos",
+      });
+    } finally {
+      setSavingPlanPermissions(false);
+    }
+  };
+
+  const hasPlanChanges = () => {
+    return JSON.stringify(planPermissions) !== JSON.stringify(editedPlanPermissions);
+  };
+
+  const loadPlanEntitlements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("plan_entitlements")
+        .select("*")
+        .order("plan");
+
+      if (error) throw error;
+
+      setPlanEntitlements(data || []);
+      const editMap: Record<string, PlanEntitlement> = {};
+      (data || []).forEach((plan) => {
+        editMap[plan.plan] = { ...plan };
+      });
+      setEditingPlan(editMap);
+    } catch (error) {
+      console.error("Erro ao carregar planos:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os planos.",
+      });
+    }
+  };
+
+  const handleSavePlanEntitlement = async (planKey: string) => {
+    setSavingPlan({ ...savingPlan, [planKey]: true });
+    try {
+      const planData = editingPlan[planKey];
+      
+      const { error } = await supabase
+        .from("plan_entitlements")
+        .update({
+          posts_limit: planData.posts_limit,
+          creatives_limit: planData.creatives_limit,
+          history_days: planData.history_days,
+          team_members_limit: planData.team_members_limit,
+          whatsapp_support: planData.whatsapp_support,
+          graphics_approval: planData.graphics_approval,
+          supplier_link: planData.supplier_link,
+          global_agenda: planData.global_agenda,
+          team_kanban: planData.team_kanban,
+          team_notifications: planData.team_notifications,
+        })
+        .eq("plan", planKey);
+
+      if (error) throw error;
+
+      toast({
+        title: "Plano atualizado",
+        description: `O plano ${getPlanLabel(planKey)} foi atualizado com sucesso.`,
+      });
+
+      await loadPlanEntitlements();
+    } catch (error) {
+      console.error("Erro ao salvar plano:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar o plano.",
+      });
+    } finally {
+      setSavingPlan({ ...savingPlan, [planKey]: false });
+    }
+  };
+
+  const updatePlanField = (planKey: string, field: keyof PlanEntitlement, value: any) => {
+    setEditingPlan({
+      ...editingPlan,
+      [planKey]: {
+        ...editingPlan[planKey],
+        [field]: value,
+      },
+    });
+  };
+
+  const getPlanLabel = (plan: string) => {
+    const labels: Record<string, string> = {
+      creator: "Creator (Gratuito)",
+      eugencia: "Eugência",
+      socialmidia: "Social Mídia",
+      fullservice: "Full Service",
+      unlimited: "Sem Plano (Interno)",
+    };
+    return labels[plan] || plan;
+  };
+
   useEffect(() => {
     loadUsers();
     loadPermissions();
+    loadPlanPermissions();
+    loadPlanEntitlements();
   }, []);
 
   useEffect(() => {
@@ -304,135 +500,414 @@ export const RolesManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Card 1: Permissões por Função (Agora Editável) */}
+      {/* Card Principal com Tabs */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Permissões por Função
+            Gerenciamento de Regras
           </CardTitle>
           <CardDescription>
-            Configure as permissões de cada role (clique para editar)
+            Configure permissões por função, permissões por plano e recursos disponíveis
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="super_admin">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="super_admin">Super Admin</TabsTrigger>
-              <TabsTrigger value="agency_admin">Agency Admin</TabsTrigger>
-              <TabsTrigger value="client_user">Client User</TabsTrigger>
-              <TabsTrigger value="team_member">Team Member</TabsTrigger>
+          <Tabs defaultValue="roles" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="roles">
+                <Shield className="h-4 w-4 mr-2" />
+                Permissões por Função
+              </TabsTrigger>
+              <TabsTrigger value="plans">
+                <Settings className="h-4 w-4 mr-2" />
+                Permissões por Plano
+              </TabsTrigger>
+              <TabsTrigger value="resources">
+                <Package className="h-4 w-4 mr-2" />
+                Recursos por Plano
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="super_admin" className="space-y-4 pt-4">
-              <p className="text-sm text-muted-foreground">
-                Super Administradores têm acesso total ao sistema.
-              </p>
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Permissões</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(editedPermissions.super_admin || {}).map(([key, enabled]) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox 
-                        checked={enabled}
-                        onCheckedChange={(checked) => handlePermissionChange('super_admin', key, !!checked)}
-                      />
-                      <Label className="cursor-pointer">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Label>
+            {/* Aba 1: Permissões por Função */}
+            <TabsContent value="roles" className="space-y-4">
+              <Tabs defaultValue="super_admin">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="super_admin">Super Admin</TabsTrigger>
+                  <TabsTrigger value="agency_admin">Agency Admin</TabsTrigger>
+                  <TabsTrigger value="client_user">Client User</TabsTrigger>
+                  <TabsTrigger value="team_member">Team Member</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="super_admin" className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Super Administradores têm acesso total ao sistema.
+                  </p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Permissões</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.super_admin || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('super_admin', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="agency_admin" className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Administradores de Agência gerenciam seus clientes e equipe.
+                  </p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Permissões</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.agency_admin || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('agency_admin', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="client_user" className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Usuários Cliente podem visualizar e aprovar conteúdos.
+                  </p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Permissões</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.client_user || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('client_user', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="team_member" className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Membros da Equipe colaboram na criação de conteúdo.
+                  </p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Permissões</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.team_member || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('team_member', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              {hasChanges() && (
+                <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+                  <Button variant="outline" onClick={loadPermissions} disabled={savingPermissions}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSavePermissions} disabled={savingPermissions}>
+                    {savingPermissions ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar Permissões
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="agency_admin" className="space-y-4 pt-4">
-              <p className="text-sm text-muted-foreground">
-                Administradores de Agência gerenciam seus clientes e equipe.
-              </p>
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Permissões</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(editedPermissions.agency_admin || {}).map(([key, enabled]) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox 
-                        checked={enabled}
-                        onCheckedChange={(checked) => handlePermissionChange('agency_admin', key, !!checked)}
-                      />
-                      <Label className="cursor-pointer">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Label>
+            {/* Aba 2: Permissões por Plano */}
+            <TabsContent value="plans" className="space-y-4">
+              <Tabs defaultValue="creator">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="creator">Creator</TabsTrigger>
+                  <TabsTrigger value="eugencia">Eugência</TabsTrigger>
+                  <TabsTrigger value="socialmidia">Social Mídia</TabsTrigger>
+                  <TabsTrigger value="fullservice">Full Service</TabsTrigger>
+                  <TabsTrigger value="unlimited">Unlimited</TabsTrigger>
+                </TabsList>
+
+                {['creator', 'eugencia', 'socialmidia', 'fullservice', 'unlimited'].map((plan) => (
+                  <TabsContent key={plan} value={plan} className="space-y-4 pt-4">
+                    <p className="text-sm text-muted-foreground">
+                      Configure as permissões disponíveis para o plano {getPlanLabel(plan)}
+                    </p>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Permissões</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(editedPlanPermissions[plan] || {}).map(([key, enabled]) => (
+                          <div key={key} className="flex items-center space-x-2">
+                            <Checkbox 
+                              checked={enabled}
+                              onCheckedChange={(checked) => handlePlanPermissionChange(plan, key, !!checked)}
+                            />
+                            <Label className="cursor-pointer">
+                              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  </TabsContent>
+                ))}
+              </Tabs>
+
+              {hasPlanChanges() && (
+                <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+                  <Button variant="outline" onClick={loadPlanPermissions} disabled={savingPlanPermissions}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSavePlanPermissions} disabled={savingPlanPermissions}>
+                    {savingPlanPermissions ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar Permissões
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </div>
+              )}
             </TabsContent>
 
-            <TabsContent value="client_user" className="space-y-4 pt-4">
-              <p className="text-sm text-muted-foreground">
-                Usuários Cliente podem visualizar e aprovar conteúdos.
-              </p>
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Permissões</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(editedPermissions.client_user || {}).map(([key, enabled]) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox 
-                        checked={enabled}
-                        onCheckedChange={(checked) => handlePermissionChange('client_user', key, !!checked)}
-                      />
-                      <Label className="cursor-pointer">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
+            {/* Aba 3: Recursos por Plano */}
+            <TabsContent value="resources" className="space-y-4">
+              <Tabs defaultValue="creator">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="creator">Creator</TabsTrigger>
+                  <TabsTrigger value="eugencia">Eugência</TabsTrigger>
+                  <TabsTrigger value="socialmidia">Social Mídia</TabsTrigger>
+                  <TabsTrigger value="fullservice">Full Service</TabsTrigger>
+                  <TabsTrigger value="unlimited">Unlimited</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="team_member" className="space-y-4 pt-4">
-              <p className="text-sm text-muted-foreground">
-                Membros da Equipe colaboram na criação de conteúdo.
-              </p>
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Permissões</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(editedPermissions.team_member || {}).map(([key, enabled]) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox 
-                        checked={enabled}
-                        onCheckedChange={(checked) => handlePermissionChange('team_member', key, !!checked)}
-                      />
-                      <Label className="cursor-pointer">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Label>
+                {planEntitlements.map((plan) => (
+                  <TabsContent key={plan.plan} value={plan.plan} className="space-y-6 pt-4">
+                    {/* Limites Numéricos */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-4">Limites Numéricos</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Posts por mês</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editingPlan[plan.plan]?.posts_limit || ""}
+                              onChange={(e) =>
+                                updatePlanField(plan.plan, "posts_limit", e.target.value ? parseInt(e.target.value) : null)
+                              }
+                              disabled={editingPlan[plan.plan]?.posts_limit === null}
+                              placeholder="Limite"
+                            />
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={editingPlan[plan.plan]?.posts_limit === null}
+                                onCheckedChange={(checked) =>
+                                  updatePlanField(plan.plan, "posts_limit", checked ? null : 0)
+                                }
+                              />
+                              <span className="text-sm">Ilimitado</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Criativos por mês</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editingPlan[plan.plan]?.creatives_limit || ""}
+                              onChange={(e) =>
+                                updatePlanField(plan.plan, "creatives_limit", e.target.value ? parseInt(e.target.value) : null)
+                              }
+                              disabled={editingPlan[plan.plan]?.creatives_limit === null}
+                              placeholder="Limite"
+                            />
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={editingPlan[plan.plan]?.creatives_limit === null}
+                                onCheckedChange={(checked) =>
+                                  updatePlanField(plan.plan, "creatives_limit", checked ? null : 0)
+                                }
+                              />
+                              <span className="text-sm">Ilimitado</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Histórico em dias</Label>
+                          <Input
+                            type="number"
+                            value={editingPlan[plan.plan]?.history_days || ""}
+                            onChange={(e) =>
+                              updatePlanField(plan.plan, "history_days", parseInt(e.target.value))
+                            }
+                            placeholder="Dias"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Membros do time</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editingPlan[plan.plan]?.team_members_limit || ""}
+                              onChange={(e) =>
+                                updatePlanField(plan.plan, "team_members_limit", e.target.value ? parseInt(e.target.value) : null)
+                              }
+                              disabled={editingPlan[plan.plan]?.team_members_limit === null}
+                              placeholder="Limite"
+                            />
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={editingPlan[plan.plan]?.team_members_limit === null}
+                                onCheckedChange={(checked) =>
+                                  updatePlanField(plan.plan, "team_members_limit", checked ? null : 0)
+                                }
+                              />
+                              <span className="text-sm">Ilimitado</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+
+                    {/* Recursos Booleanos */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-4">Recursos Disponíveis</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={editingPlan[plan.plan]?.whatsapp_support || false}
+                            onCheckedChange={(checked) =>
+                              updatePlanField(plan.plan, "whatsapp_support", checked)
+                            }
+                          />
+                          <Label>Suporte via WhatsApp</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={editingPlan[plan.plan]?.graphics_approval || false}
+                            onCheckedChange={(checked) =>
+                              updatePlanField(plan.plan, "graphics_approval", checked)
+                            }
+                          />
+                          <Label>Aprovação de Artes</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={editingPlan[plan.plan]?.supplier_link || false}
+                            onCheckedChange={(checked) =>
+                              updatePlanField(plan.plan, "supplier_link", checked)
+                            }
+                          />
+                          <Label>Link de Fornecedor</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={editingPlan[plan.plan]?.global_agenda || false}
+                            onCheckedChange={(checked) =>
+                              updatePlanField(plan.plan, "global_agenda", checked)
+                            }
+                          />
+                          <Label>Agenda Global</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={editingPlan[plan.plan]?.team_kanban || false}
+                            onCheckedChange={(checked) =>
+                              updatePlanField(plan.plan, "team_kanban", checked)
+                            }
+                          />
+                          <Label>Kanban de Equipe</Label>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={editingPlan[plan.plan]?.team_notifications || false}
+                            onCheckedChange={(checked) =>
+                              updatePlanField(plan.plan, "team_notifications", checked)
+                            }
+                          />
+                          <Label>Notificações de Equipe</Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões */}
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button
+                        onClick={() => handleSavePlanEntitlement(plan.plan)}
+                        disabled={savingPlan[plan.plan]}
+                        className="flex items-center gap-2"
+                      >
+                        {savingPlan[plan.plan] ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" />
+                            Salvar Alterações
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => loadPlanEntitlements()}
+                        disabled={savingPlan[plan.plan]}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
             </TabsContent>
           </Tabs>
-
-          {hasChanges() && (
-            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-              <Button variant="outline" onClick={loadPermissions} disabled={savingPermissions}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSavePermissions} disabled={savingPermissions}>
-                {savingPermissions ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Permissões
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 

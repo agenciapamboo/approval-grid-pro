@@ -946,6 +946,33 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_permissions: {
+        Row: {
+          created_at: string | null
+          enabled: boolean
+          id: string
+          permission_key: string
+          plan: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean
+          id?: string
+          permission_key: string
+          plan: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean
+          id?: string
+          permission_key?: string
+          plan?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       platform_notifications: {
         Row: {
           action_url: string | null
