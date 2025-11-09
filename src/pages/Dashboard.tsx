@@ -1197,13 +1197,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   {profile?.agency_id && (
-                    <KanbanColumnManager 
-                      agencyId={profile.agency_id} 
-                      onColumnsChanged={() => {
-                        // Força recarregamento do kanban
-                        window.location.reload();
-                      }}
-                    />
+                    <KanbanColumnManager agencyId={profile.agency_id} />
                   )}
                 </div>
                 <ContentKanban agencyId={profile.agency_id!} />
