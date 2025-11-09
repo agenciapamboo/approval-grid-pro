@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { STRIPE_PRODUCTS } from "@/lib/stripe-config";
+import { useConversionTracking } from "@/hooks/useConversionTracking";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -104,6 +105,7 @@ export default function Pricing() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { trackEvent } = useConversionTracking();
 
   const getPrice = (plan: Plan) => {
     return billingCycle === "monthly" ? plan.monthlyPrice : plan.annualPrice;
@@ -148,6 +150,17 @@ export default function Pricing() {
         toast.success("Plano Creator ativado!");
         navigate("/dashboard");
         return;
+      }
+
+      // Rastrear evento InitiateCheckout
+      const plan = plans.find(p => p.id === planId);
+      if (plan) {
+        await trackEvent('InitiateCheckout', {
+          value: billingCycle === 'monthly' ? plan.monthlyPrice : plan.annualPrice,
+          currency: 'BRL',
+          subscription_plan: planId,
+          subscription_type: billingCycle,
+        });
       }
 
       // Create checkout session for paid plans

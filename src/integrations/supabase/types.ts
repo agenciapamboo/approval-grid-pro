@@ -658,7 +658,6 @@ export type Database = {
       }
       conversion_events: {
         Row: {
-          client_id: string | null
           content_category: string | null
           content_ids: string[] | null
           content_type: string | null
@@ -673,9 +672,12 @@ export type Database = {
           num_items: number | null
           platforms: string[] | null
           send_status: Json | null
+          subscription_plan: string | null
+          subscription_value: number | null
           user_agent: string | null
           user_email_hash: string | null
           user_external_id: string | null
+          user_id: string | null
           user_ip: string | null
           user_phone_hash: string | null
           utm_campaign: string | null
@@ -686,7 +688,6 @@ export type Database = {
           value: number | null
         }
         Insert: {
-          client_id?: string | null
           content_category?: string | null
           content_ids?: string[] | null
           content_type?: string | null
@@ -701,9 +702,12 @@ export type Database = {
           num_items?: number | null
           platforms?: string[] | null
           send_status?: Json | null
+          subscription_plan?: string | null
+          subscription_value?: number | null
           user_agent?: string | null
           user_email_hash?: string | null
           user_external_id?: string | null
+          user_id?: string | null
           user_ip?: string | null
           user_phone_hash?: string | null
           utm_campaign?: string | null
@@ -714,7 +718,6 @@ export type Database = {
           value?: number | null
         }
         Update: {
-          client_id?: string | null
           content_category?: string | null
           content_ids?: string[] | null
           content_type?: string | null
@@ -729,9 +732,12 @@ export type Database = {
           num_items?: number | null
           platforms?: string[] | null
           send_status?: Json | null
+          subscription_plan?: string | null
+          subscription_value?: number | null
           user_agent?: string | null
           user_email_hash?: string | null
           user_external_id?: string | null
+          user_id?: string | null
           user_ip?: string | null
           user_phone_hash?: string | null
           utm_campaign?: string | null
@@ -741,29 +747,7 @@ export type Database = {
           utm_term?: string | null
           value?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "conversion_events_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversion_events_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversion_events_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       financial_snapshots: {
         Row: {
@@ -1582,7 +1566,6 @@ export type Database = {
       }
       tracking_pixels: {
         Row: {
-          client_id: string | null
           created_at: string | null
           google_ads_conversion_id: string | null
           google_ads_conversion_label: string | null
@@ -1602,7 +1585,6 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          client_id?: string | null
           created_at?: string | null
           google_ads_conversion_id?: string | null
           google_ads_conversion_label?: string | null
@@ -1622,7 +1604,6 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          client_id?: string | null
           created_at?: string | null
           google_ads_conversion_id?: string | null
           google_ads_conversion_label?: string | null
@@ -1641,29 +1622,7 @@ export type Database = {
           tiktok_pixel_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracking_pixels_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: true
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tracking_pixels_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: true
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tracking_pixels_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: true
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_preferences: {
         Row: {
@@ -1718,82 +1677,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      utm_campaigns: {
-        Row: {
-          base_url: string
-          client_id: string | null
-          created_at: string | null
-          description: string | null
-          end_date: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          start_date: string | null
-          updated_at: string | null
-          utm_campaign: string
-          utm_content: string | null
-          utm_medium: string
-          utm_source: string
-          utm_term: string | null
-        }
-        Insert: {
-          base_url: string
-          client_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          start_date?: string | null
-          updated_at?: string | null
-          utm_campaign: string
-          utm_content?: string | null
-          utm_medium: string
-          utm_source: string
-          utm_term?: string | null
-        }
-        Update: {
-          base_url?: string
-          client_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          start_date?: string | null
-          updated_at?: string | null
-          utm_campaign?: string
-          utm_content?: string | null
-          utm_medium?: string
-          utm_source?: string
-          utm_term?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "utm_campaigns_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utm_campaigns_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utm_campaigns_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       webhook_events: {
         Row: {

@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useConversionTracking } from "@/hooks/useConversionTracking";
 
 export default function Success() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [planInfo, setPlanInfo] = useState<{ plan: string; billingCycle: string } | null>(null);
+  const { trackEvent } = useConversionTracking();
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
@@ -43,6 +45,26 @@ export default function Success() {
           plan: profile.plan || '',
           billingCycle: profile.billing_cycle || ''
         });
+
+        // Rastrear evento de Purchase
+        if (profile.plan && profile.plan !== 'creator') {
+          const planPrices: Record<string, { monthly: number; annual: number }> = {
+            eugencia: { monthly: 29.70, annual: 270 },
+            socialmidia: { monthly: 49.50, annual: 495 },
+            fullservice: { monthly: 97.20, annual: 972 },
+          };
+
+          const prices = planPrices[profile.plan];
+          if (prices) {
+            const value = profile.billing_cycle === 'monthly' ? prices.monthly : prices.annual;
+            await trackEvent('Purchase', {
+              value,
+              currency: 'BRL',
+              subscription_plan: profile.plan,
+              subscription_type: profile.billing_cycle as 'monthly' | 'annual',
+            });
+          }
+        }
       } catch (error) {
         console.error('Error fetching plan info:', error);
       } finally {

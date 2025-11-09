@@ -281,7 +281,7 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* Pixels e Rastreamento */}
+            {/* 10. Pixels Globais */}
             <AccordionItem value="pixels" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
@@ -289,9 +289,9 @@ const Configuracoes = () => {
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5" />
                       <div className="text-left">
-                        <CardTitle>Pixels e Rastreamento de Conversões</CardTitle>
+                        <CardTitle>Pixels de Rastreamento Global</CardTitle>
                         <CardDescription className="mt-1">
-                          Configure pixels para Meta, Google, TikTok, LinkedIn e Pinterest
+                          Configure os pixels da plataforma Aprova Criativos para rastreamento de conversões
                         </CardDescription>
                       </div>
                     </div>

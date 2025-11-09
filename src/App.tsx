@@ -4,9 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useConversionTracking } from "@/hooks/useConversionTracking";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -42,6 +43,19 @@ const SupportTicketsAdmin = lazy(() => import("./pages/admin/SupportTicketsAdmin
 
 const queryClient = new QueryClient();
 
+// Componente para gerenciar pixels e PageView
+function PixelManager() {
+  const { pixelsLoaded } = useConversionTracking();
+
+  useEffect(() => {
+    if (pixelsLoaded) {
+      console.log('✅ Pixels globais carregados');
+    }
+  }, [pixelsLoaded]);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -50,6 +64,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <PixelManager />
             <Suspense fallback={
               <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="flex flex-col items-center gap-4">
@@ -88,8 +103,8 @@ const App = () => (
                 <Route path="/client/:clientId/history" element={<ProtectedRoute><ClientHistory /></ProtectedRoute>} />
                 <Route path="/hero" element={<ProtectedRoute><HeroDemo /></ProtectedRoute>} />
                 <Route path="/notificacoes" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-          <Route path="/meus-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
-          <Route path="/agencia/tickets" element={<ProtectedRoute><AgencyTicketsManager /></ProtectedRoute>} />
+                <Route path="/meus-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+                <Route path="/agencia/tickets" element={<ProtectedRoute><AgencyTicketsManager /></ProtectedRoute>} />
                 <Route path="/admin/tickets" element={<ProtectedRoute><SupportTicketsAdmin /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}
