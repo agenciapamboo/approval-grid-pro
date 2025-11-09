@@ -36,6 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { NewClientsAlert } from "@/components/admin/NewClientsAlert";
+import { KanbanColumnManager } from "@/components/admin/KanbanColumnManager";
 
 
 
@@ -1187,7 +1188,26 @@ const Dashboard = () => {
 
             {/* Aba de Kanban */}
             <TabsContent value="kanban">
-              <ContentKanban agencyId={profile.agency_id!} />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold">Quadro Kanban</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Gerencie o fluxo de trabalho dos seus conteúdos
+                    </p>
+                  </div>
+                  {profile?.agency_id && (
+                    <KanbanColumnManager 
+                      agencyId={profile.agency_id} 
+                      onColumnsChanged={() => {
+                        // Força recarregamento do kanban
+                        window.location.reload();
+                      }}
+                    />
+                  )}
+                </div>
+                <ContentKanban agencyId={profile.agency_id!} />
+              </div>
             </TabsContent>
 
             {/* Aba de Agenda Geral */}
