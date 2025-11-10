@@ -30,14 +30,14 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    // Check if user is super admin
-    const { data: roles } = await supabaseClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userData.user.id)
-      .single();
+    // Check if user is super admin using RPC function
+    const { data: userRole, error: roleError } = await supabaseClient.rpc("get_user_role", {
+      _user_id: userData.user.id
+    });
 
-    if (!roles || roles.role !== "super_admin") {
+    console.log("User role check:", { userRole, roleError });
+
+    if (roleError || userRole !== "super_admin") {
       throw new Error("Only super admins can list products");
     }
 
@@ -48,6 +48,8 @@ serve(async (req) => {
     });
 
     const products = await stripe.products.list({ limit });
+    
+    console.log("Stripe products fetched:", products.data.length);
 
     return new Response(
       JSON.stringify({ products: products.data }),
