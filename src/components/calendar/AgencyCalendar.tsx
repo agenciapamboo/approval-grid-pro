@@ -364,6 +364,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             contents={contents}
             clientColors={clientColors}
             onContentClick={handleContentClick}
+            onDayClick={handleDayClick}
             onViewDayIdeas={handleViewDayIdeas}
             hasEventsForDate={dayHasEvents}
           />

@@ -21,6 +21,7 @@ interface DayViewProps {
   contents: Content[];
   clientColors: Record<string, string>;
   onContentClick: (contentId: string) => void;
+  onDayClick?: (date: Date) => void;
   onViewDayIdeas: (date: Date) => void;
   hasEventsForDate: (date: Date) => boolean;
 }
@@ -30,6 +31,7 @@ export function DayView({
   contents, 
   clientColors, 
   onContentClick,
+  onDayClick,
   onViewDayIdeas,
   hasEventsForDate
 }: DayViewProps) {
@@ -88,6 +90,8 @@ export function DayView({
       <div className="flex-1 overflow-y-auto">
         {hours.map(hour => {
           const hourContents = getContentsForHour(hour);
+          const hourDate = new Date(currentDay);
+          hourDate.setHours(hour, 0, 0, 0);
           
           return (
             <div key={hour} className="flex border-b border-border min-h-[80px]">
@@ -96,10 +100,23 @@ export function DayView({
                 {String(hour).padStart(2, '0')}:00
               </div>
               
-              {/* Conteúdos */}
+              {/* Conteúdos ou área clicável vazia */}
               <div className="flex-1 p-2 space-y-2">
-                {hourContents.map(content => (
-                  <Card
+                {hourContents.length === 0 ? (
+                  <div 
+                    className={cn(
+                      "h-full min-h-[64px] rounded border-2 border-dashed border-transparent",
+                      "hover:border-primary/30 hover:bg-accent/5 cursor-pointer transition-all",
+                      "flex items-center justify-center text-sm text-muted-foreground"
+                    )}
+                    onClick={() => onDayClick?.(hourDate)}
+                    title="Clique para criar conteúdo neste horário"
+                  >
+                    <span className="opacity-0 group-hover:opacity-100">+ Adicionar conteúdo</span>
+                  </div>
+                ) : (
+                  hourContents.map(content => (
+                    <Card
                     key={content.id}
                     className="p-3 cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => onContentClick(content.id)}
@@ -151,7 +168,7 @@ export function DayView({
                       </div>
                     </div>
                   </Card>
-                ))}
+                )))}
               </div>
             </div>
           );
