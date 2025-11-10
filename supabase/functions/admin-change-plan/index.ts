@@ -278,20 +278,20 @@ serve(async (req) => {
       const STRIPE_PRODUCTS_FALLBACK: any = {
         eugencia: {
           prices: {
-            monthly: { price_id: "price_1Rrj1RH1QsWUILSq8YF8OBNm" },
-            annual: { price_id: "price_1Rrj1RH1QsWUILSqKo6aaS8J" },
+            monthly: { price_id: "price_1SOnIVH3HtGAQtCFzBULcf82" },
+            annual: { price_id: "price_1SOnIVH3HtGAQtCFzWjKEOHT" },
           },
         },
         socialmidia: {
           prices: {
-            monthly: { price_id: "price_1Rrj2AH1QsWUILSqVh8nIz3Y" },
-            annual: { price_id: "price_1Rrj2AH1QsWUILSqc7bZfGxK" },
+            monthly: { price_id: "price_1SOnTYH3HtGAQtCFEOcgf8es" },
+            annual: { price_id: "price_1SOnTYH3HtGAQtCFpT8ozygI" },
           },
         },
         fullservice: {
           prices: {
-            monthly: { price_id: "price_1Rrj2sH1QsWUILSqZN9xGk4L" },
-            annual: { price_id: "price_1Rrj2sH1QsWUILSqM8pQr3vW" },
+            monthly: { price_id: "price_1SOqUQH3HtGAQtCFgUwrjiiR" },
+            annual: { price_id: "price_1SOqUQH3HtGAQtCFjkpz8CbF" },
           },
         },
       };
