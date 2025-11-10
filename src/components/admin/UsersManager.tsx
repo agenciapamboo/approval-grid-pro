@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { RefreshCw, Trash2, User, Mail, Search, AlertTriangle } from "lucide-react";
+import { RefreshCw, Trash2, User, Search, AlertTriangle, Edit, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { EditUserDialog } from "./EditUserDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface UserData {
   id: string;
@@ -19,6 +21,10 @@ interface UserData {
   role: string | null;
   plan: string | null;
   is_active: boolean;
+  client_id?: string | null;
+  agency_id?: string | null;
+  client_name?: string | null;
+  agency_name?: string | null;
 }
 
 export const UsersManager = () => {
@@ -27,11 +33,14 @@ export const UsersManager = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [issuesFilter, setIssuesFilter] = useState<boolean>(false);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Fetch all profiles with role information
+      // Fetch all profiles with role information and related data
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select(`
@@ -40,11 +49,22 @@ export const UsersManager = () => {
           account_type,
           plan,
           is_active,
+          client_id,
+          agency_id,
           user_roles (role)
         `)
         .order("created_at", { ascending: false });
 
       if (profilesError) throw profilesError;
+
+      // Get clients and agencies for names
+      const { data: clients } = await supabase
+        .from("clients")
+        .select("id, name");
+
+      const { data: agencies } = await supabase
+        .from("agencies")
+        .select("id, name");
 
       // Get auth users data
       const { data: orphanedData } = await supabase.functions.invoke('list-orphaned-accounts');
@@ -57,6 +77,9 @@ export const UsersManager = () => {
           ? profile.user_roles[0]?.role 
           : null;
         
+        const client = clients?.find(c => c.id === profile?.client_id);
+        const agency = agencies?.find(a => a.id === profile?.agency_id);
+        
         return {
           id: authUser.id,
           email: authUser.email,
@@ -66,11 +89,15 @@ export const UsersManager = () => {
           role: userRole,
           plan: profile?.plan || null,
           is_active: profile?.is_active ?? false,
+          client_id: profile?.client_id || null,
+          agency_id: profile?.agency_id || null,
+          client_name: client?.name || null,
+          agency_name: agency?.name || null,
         };
       });
 
       setUsers(usersData);
-      setFilteredUsers(usersData);
+      applyFilters(usersData, searchTerm, roleFilter, issuesFilter);
       
       toast.success(`${usersData.length} usuário(s) carregado(s)`);
     } catch (error) {
@@ -115,25 +142,71 @@ export const UsersManager = () => {
     }
   };
 
+  const detectInconsistencies = (user: UserData): string[] => {
+    const issues: string[] = [];
+    
+    if (user.role === 'client_user' && !user.client_id) {
+      issues.push('Sem cliente');
+    }
+    
+    if (user.role === 'agency_admin' && !user.agency_id) {
+      issues.push('Sem agência');
+    }
+    
+    if (user.account_type === 'agency' && user.role !== 'agency_admin') {
+      issues.push('Role inconsistente');
+    }
+    
+    if (user.account_type === 'creator' && (user.client_id || user.agency_id)) {
+      issues.push('Vínculos indevidos');
+    }
+
+    if (user.account_type === 'client' && user.role !== 'client_user') {
+      issues.push('Role inconsistente');
+    }
+    
+    return issues;
+  };
+
+  const applyFilters = (
+    usersList: UserData[], 
+    search: string, 
+    role: string, 
+    showIssues: boolean
+  ) => {
+    let filtered = usersList;
+
+    // Search filter
+    if (search.trim() !== "") {
+      const term = search.toLowerCase();
+      filtered = filtered.filter(
+        u =>
+          u.email.toLowerCase().includes(term) ||
+          u.name?.toLowerCase().includes(term) ||
+          u.id.toLowerCase().includes(term)
+      );
+    }
+
+    // Role filter
+    if (role !== "all") {
+      filtered = filtered.filter(u => u.role === role);
+    }
+
+    // Issues filter
+    if (showIssues) {
+      filtered = filtered.filter(u => detectInconsistencies(u).length > 0);
+    }
+
+    setFilteredUsers(filtered);
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredUsers(users);
-    } else {
-      const term = searchTerm.toLowerCase();
-      setFilteredUsers(
-        users.filter(
-          u =>
-            u.email.toLowerCase().includes(term) ||
-            u.name?.toLowerCase().includes(term) ||
-            u.id.toLowerCase().includes(term)
-        )
-      );
-    }
-  }, [searchTerm, users]);
+    applyFilters(users, searchTerm, roleFilter, issuesFilter);
+  }, [searchTerm, roleFilter, issuesFilter, users]);
 
   return (
     <div className="space-y-6">
@@ -161,14 +234,40 @@ export const UsersManager = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por email, nome ou ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          {/* Filters */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por email, nome ou ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as roles</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="agency_admin">Agency Admin</SelectItem>
+                <SelectItem value="client_user">Client User</SelectItem>
+                <SelectItem value="creator">Creator</SelectItem>
+                <SelectItem value="team_member">Team Member</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant={issuesFilter ? "default" : "outline"}
+              onClick={() => setIssuesFilter(!issuesFilter)}
+              className="w-full"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              {issuesFilter ? "Mostrando apenas com problemas" : "Mostrar apenas com problemas"}
+            </Button>
           </div>
 
           {filteredUsers.length === 0 ? (
@@ -183,75 +282,145 @@ export const UsersManager = () => {
               <p className="text-sm text-muted-foreground">
                 {filteredUsers.length} usuário(s) {searchTerm && `encontrado(s)`}
               </p>
-              {filteredUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-card"
-                >
-                  <div className="flex items-start gap-3 flex-1">
-                    <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{user.email}</span>
-                        {!user.is_active && (
-                          <Badge variant="outline" className="text-xs bg-muted">Inativo</Badge>
-                        )}
-                        {!user.name && (
-                          <Badge variant="outline" className="text-xs">Sem Perfil</Badge>
-                        )}
-                      </div>
-                      {user.name && (
-                        <div className="text-sm text-muted-foreground">
-                          {user.name}
+              {filteredUsers.map((user) => {
+                const issues = detectInconsistencies(user);
+                return (
+                  <div
+                    key={user.id}
+                    className="flex items-start justify-between p-4 border rounded-lg bg-card gap-4"
+                  >
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <User className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="space-y-2 flex-1 min-w-0">
+                        {/* Email and status */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium truncate">{user.email}</span>
+                          {!user.is_active && (
+                            <Badge variant="outline" className="text-xs bg-muted">Inativo</Badge>
+                          )}
+                          {!user.name && (
+                            <Badge variant="outline" className="text-xs">Sem Perfil</Badge>
+                          )}
+                          {issues.length > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {issues.length} problema{issues.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
                         </div>
-                      )}
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <span>Criado: {format(new Date(user.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
-                        {user.role && (
-                          <Badge variant="outline" className="text-xs">
-                            {user.role}
-                          </Badge>
+
+                        {/* Name */}
+                        {user.name && (
+                          <div className="text-sm text-muted-foreground truncate">
+                            👤 {user.name}
+                          </div>
                         )}
-                        {user.account_type && (
-                          <Badge variant="outline" className="text-xs">
-                            {user.account_type}
-                          </Badge>
+
+                        {/* Role and Account Type */}
+                        <div className="flex flex-wrap gap-2">
+                          {user.role && (
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                user.role === 'super_admin' ? 'bg-purple-100 dark:bg-purple-900' :
+                                user.role === 'agency_admin' ? 'bg-blue-100 dark:bg-blue-900' :
+                                user.role === 'client_user' ? 'bg-green-100 dark:bg-green-900' :
+                                'bg-gray-100 dark:bg-gray-800'
+                              }`}
+                            >
+                              🏷️ {user.role}
+                            </Badge>
+                          )}
+                          {user.account_type && (
+                            <Badge variant="outline" className="text-xs">
+                              📋 {user.account_type}
+                            </Badge>
+                          )}
+                          {user.plan && (
+                            <Badge variant="outline" className="text-xs">
+                              💎 {user.plan}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Client/Agency links */}
+                        {(user.client_name || user.agency_name) && (
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            {user.client_name && (
+                              <span className="text-muted-foreground">
+                                🏢 Cliente: <span className="font-medium">{user.client_name}</span>
+                              </span>
+                            )}
+                            {user.agency_name && (
+                              <span className="text-muted-foreground">
+                                🏭 Agência: <span className="font-medium">{user.agency_name}</span>
+                              </span>
+                            )}
+                          </div>
                         )}
-                        {user.plan && (
-                          <Badge variant="outline" className="text-xs">
-                            {user.plan}
-                          </Badge>
+
+                        {/* Issues */}
+                        {issues.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {issues.map((issue, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs bg-destructive/10">
+                                ⚠️ {issue}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                      <div className="text-xs text-muted-foreground font-mono">
-                        ID: {user.id}
+
+                        {/* Meta info */}
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          <div>📅 {format(new Date(user.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</div>
+                          <div className="font-mono truncate">ID: {user.id}</div>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingUser(user)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteUser(user.id, user.email)}
+                        disabled={deleting === user.id}
+                      >
+                        {deleting === user.id ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Excluindo...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteUser(user.id, user.email)}
-                    disabled={deleting === user.id}
-                  >
-                    {deleting === user.id ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Excluindo...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <EditUserDialog
+        user={editingUser}
+        open={!!editingUser}
+        onOpenChange={(open) => !open && setEditingUser(null)}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 };
