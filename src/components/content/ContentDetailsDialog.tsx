@@ -134,9 +134,10 @@ export function ContentDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex flex-col gap-2">
+      <DialogContent className="max-w-4xl h-[90vh] overflow-hidden">
+        <div className="flex flex-col h-full p-6">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
               <span className="text-lg font-semibold">{content?.title || "Carregando..."}</span>
               {content && getStatusBadge(content.status)}
@@ -162,7 +163,7 @@ export function ContentDetailsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 h-full pr-4">
+        <ScrollArea className="flex-1 mt-4 pr-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <p className="text-muted-foreground">Carregando...</p>
@@ -230,6 +231,7 @@ export function ContentDetailsDialog({
             </div>
           )}
         </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
