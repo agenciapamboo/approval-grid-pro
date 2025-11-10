@@ -41,6 +41,11 @@ serve(async (req) => {
 
     const isSuperAdmin = roles?.some(r => r.role === 'super_admin');
     if (!isSuperAdmin) {
+      logStep("Authorization failed", { 
+        userId: userData.user.id,
+        roles: roles?.map(r => r.role),
+        required: 'super_admin'
+      });
       throw new Error("Unauthorized: Only super admins can fix orphaned users");
     }
 
@@ -80,11 +85,16 @@ serve(async (req) => {
 
         if (agencyError) throw agencyError;
 
-        // Update user role to agency_admin
+        // Update or insert user role to agency_admin
         const { error: roleUpdateError } = await supabaseClient
           .from('user_roles')
-          .update({ role: 'agency_admin' })
-          .eq('user_id', user.id);
+          .upsert({ 
+            user_id: user.id,
+            role: 'agency_admin',
+            created_by: user.id
+          }, { 
+            onConflict: 'user_id,role' 
+          });
 
         if (roleUpdateError) throw roleUpdateError;
 
@@ -136,15 +146,21 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isAuthError = errorMessage.includes("Unauthorized");
+    
     logStep("ERROR", { 
-      error: error instanceof Error ? error.message : String(error) 
+      error: errorMessage,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      isAuthError
     });
 
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : String(error) 
+      error: errorMessage,
+      isAuthError
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: isAuthError ? 403 : 500,
     });
   }
 });

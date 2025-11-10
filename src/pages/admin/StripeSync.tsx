@@ -3,23 +3,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, RefreshCw, UserCog } from "lucide-react";
+import { Loader2, RefreshCw, UserCog, ShieldAlert } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function StripeSync() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [syncingSubscriptions, setSyncingSubscriptions] = useState(false);
   const [fixingOrphans, setFixingOrphans] = useState(false);
   const [syncResult, setSyncResult] = useState<any>(null);
   const [orphanResult, setOrphanResult] = useState<any>(null);
+  const [authError, setAuthError] = useState(false);
 
   const handleSyncSubscriptions = async () => {
     setSyncingSubscriptions(true);
     setSyncResult(null);
+    setAuthError(false);
+    
     try {
       const { data, error } = await supabase.functions.invoke('sync-stripe-subscriptions');
 
       if (error) throw error;
+
+      if (data?.isAuthError) {
+        setAuthError(true);
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Apenas super admins podem sincronizar assinaturas",
+        });
+        return;
+      }
 
       setSyncResult(data);
       toast({
@@ -27,11 +43,20 @@ export default function StripeSync() {
         description: `${data.synced} assinaturas sincronizadas. ${data.errors} erros.`,
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao sincronizar",
-        description: error.message,
-      });
+      if (error.message?.includes('Unauthorized')) {
+        setAuthError(true);
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Apenas super admins podem sincronizar assinaturas",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro ao sincronizar",
+          description: error.message,
+        });
+      }
     } finally {
       setSyncingSubscriptions(false);
     }
@@ -40,10 +65,22 @@ export default function StripeSync() {
   const handleFixOrphans = async () => {
     setFixingOrphans(true);
     setOrphanResult(null);
+    setAuthError(false);
+    
     try {
       const { data, error } = await supabase.functions.invoke('fix-orphaned-users');
 
       if (error) throw error;
+
+      if (data?.isAuthError) {
+        setAuthError(true);
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Apenas super admins podem corrigir usuários órfãos",
+        });
+        return;
+      }
 
       setOrphanResult(data);
       toast({
@@ -51,11 +88,20 @@ export default function StripeSync() {
         description: `${data.fixed} usuários corrigidos de ${data.total} encontrados.`,
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao corrigir usuários",
-        description: error.message,
-      });
+      if (error.message?.includes('Unauthorized')) {
+        setAuthError(true);
+        toast({
+          variant: "destructive",
+          title: "Acesso negado",
+          description: "Apenas super admins podem corrigir usuários órfãos",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro ao corrigir usuários",
+          description: error.message,
+        });
+      }
     } finally {
       setFixingOrphans(false);
     }
@@ -70,7 +116,22 @@ export default function StripeSync() {
           <p className="text-muted-foreground">
             Ferramentas de manutenção e sincronização de dados do Stripe
           </p>
+          {user && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Logado como: {user.email}
+            </p>
+          )}
         </div>
+
+        {authError && (
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Acesso Negado:</strong> Apenas usuários com role <code>super_admin</code> podem executar estas operações.
+              Faça login com uma conta de super administrador para continuar.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Sync Subscriptions */}
