@@ -8,53 +8,53 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
 // Lookup keys mapping based on plan and billing cycle
 const LOOKUP_KEYS: Record<string, Record<string, string>> = {
   eugencia: {
-    monthly: 'plano_eugencia_mensal',
-    annual: 'plano_eugencia_anual',
+    monthly: "plano_eugencia_mensal",
+    annual: "plano_eugencia_anual",
   },
   socialmidia: {
-    monthly: 'plano_mensal_socialmidia',
-    annual: 'plano_anual_socialmidia',
+    monthly: "plano_mensal_socialmidia",
+    annual: "plano_anual_socialmidia",
   },
   fullservice: {
-    monthly: 'plano_agencia_mensal',
-    annual: 'plano_agencia_anual',
+    monthly: "plano_agencia_mensal",
+    annual: "plano_agencia_anual",
   },
 };
 
 // Validation schema
 interface CheckoutRequest {
-  plan: 'eugencia' | 'socialmidia' | 'fullservice';
-  billingCycle: 'monthly' | 'annual';
+  plan: "eugencia" | "socialmidia" | "fullservice";
+  billingCycle: "monthly" | "annual";
 }
 
 const validateRequest = (body: any): { valid: boolean; error?: string; data?: CheckoutRequest } => {
   if (!body.plan || !body.billingCycle) {
-    return { valid: false, error: 'Missing required fields: plan and billingCycle' };
+    return { valid: false, error: "Missing required fields: plan and billingCycle" };
   }
 
-  const validPlans = ['eugencia', 'socialmidia', 'fullservice'];
+  const validPlans = ["eugencia", "socialmidia", "fullservice"];
   if (!validPlans.includes(body.plan)) {
-    return { valid: false, error: `Invalid plan. Must be one of: ${validPlans.join(', ')}` };
+    return { valid: false, error: `Invalid plan. Must be one of: ${validPlans.join(", ")}` };
   }
 
-  const validCycles = ['monthly', 'annual'];
+  const validCycles = ["monthly", "annual"];
   if (!validCycles.includes(body.billingCycle)) {
-    return { valid: false, error: `Invalid billingCycle. Must be one of: ${validCycles.join(', ')}` };
+    return { valid: false, error: `Invalid billingCycle. Must be one of: ${validCycles.join(", ")}` };
   }
 
-  return { 
-    valid: true, 
-    data: { 
-      plan: body.plan as CheckoutRequest['plan'], 
-      billingCycle: body.billingCycle as CheckoutRequest['billingCycle'] 
-    } 
+  return {
+    valid: true,
+    data: {
+      plan: body.plan as CheckoutRequest["plan"],
+      billingCycle: body.billingCycle as CheckoutRequest["billingCycle"],
+    },
   };
 };
 
@@ -72,10 +72,7 @@ serve(async (req) => {
     logStep("Stripe key verified");
 
     // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
 
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
@@ -116,7 +113,7 @@ serve(async (req) => {
 
     // Try to get price using lookup key first, then fallback to price_id
     let priceId: string | null = null;
-    
+
     try {
       const prices = await stripe.prices.list({ lookup_keys: [lookupKey], limit: 1 });
       if (prices.data && prices.data.length > 0) {
@@ -126,47 +123,49 @@ serve(async (req) => {
     } catch (error: any) {
       logStep("Failed to find price via lookup_key", { lookupKey, error: error?.message || String(error) });
     }
-    
+
     // Fallback to price_id from config if lookup_key failed
     if (!priceId) {
       // Import STRIPE_PRODUCTS configuration
       const STRIPE_PRODUCTS_CONFIG: any = {
         eugencia: {
           prices: {
-            monthly: { price_id: 'price_1Rrj1RH1QsWUILSq8YF8OBNm' },
-            annual: { price_id: 'price_1Rrj1RH1QsWUILSqKo6aaS8J' },
+            monthly: { price_id: "price_1SOnIVH3HtGAQtCFzBULcf82" },
+            annual: { price_id: "price_1SOnIVH3HtGAQtCFzWjKEOHT" },
           },
         },
         socialmidia: {
           prices: {
-            monthly: { price_id: 'price_1Rrj2AH1QsWUILSqVh8nIz3Y' },
-            annual: { price_id: 'price_1Rrj2AH1QsWUILSqc7bZfGxK' },
+            monthly: { price_id: "price_1SOnTYH3HtGAQtCFEOcgf8es" },
+            annual: { price_id: "price_1SOnTYH3HtGAQtCFpT8ozygI" },
           },
         },
         fullservice: {
           prices: {
-            monthly: { price_id: 'price_1Rrj2sH1QsWUILSqZN9xGk4L' },
-            annual: { price_id: 'price_1Rrj2sH1QsWUILSqM8pQr3vW' },
+            monthly: { price_id: "price_1SOqUQH3HtGAQtCFgUwrjiiR" },
+            annual: { price_id: "price_1SOqUQH3HtGAQtCFjkpz8CbF" },
           },
         },
       };
-      
+
       priceId = STRIPE_PRODUCTS_CONFIG[plan]?.prices?.[billingCycle]?.price_id;
       if (priceId) {
         logStep("Using fallback price_id from config", { priceId });
       } else {
         logStep("ERROR: No price found via lookup_key or price_id", { plan, billingCycle, lookupKey });
-        throw new Error(`Erro ao processar plano. Configure os preços no Stripe com lookup_key "${lookupKey}" ou adicione price_id na configuração.`);
+        throw new Error(
+          `Erro ao processar plano. Configure os preços no Stripe com lookup_key "${lookupKey}" ou adicione price_id na configuração.`,
+        );
       }
     }
 
     // Get user profile to check for existing Stripe customer ID
     const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('stripe_customer_id')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
       .single();
-    
+
     let customerId = profile?.stripe_customer_id;
     logStep("Profile checked", { hasExistingCustomer: !!customerId });
 
@@ -190,7 +189,7 @@ serve(async (req) => {
 
     // Create checkout session
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: 'subscription',
+      mode: "subscription",
       line_items: [
         {
           price: priceId,
@@ -212,7 +211,7 @@ serve(async (req) => {
       sessionParams.customer = customerId;
       logStep("Using existing customer");
     } else {
-      sessionParams.customer_creation = 'always';
+      sessionParams.customer_creation = "always";
       sessionParams.customer_email = user.email;
       logStep("Will create new customer");
     }
@@ -221,45 +220,37 @@ serve(async (req) => {
       idempotencyKey,
     });
 
-    logStep("Checkout session created", { 
-      sessionId: session.id, 
+    logStep("Checkout session created", {
+      sessionId: session.id,
       url: session.url,
-      customer: session.customer 
+      customer: session.customer,
     });
 
     // If a new customer was created, store the customer ID
     if (!customerId && session.customer) {
-      const newCustomerId = typeof session.customer === 'string' 
-        ? session.customer 
-        : session.customer.id;
-      
-      await supabaseClient
-        .from('profiles')
-        .update({ stripe_customer_id: newCustomerId })
-        .eq('id', user.id);
-      
+      const newCustomerId = typeof session.customer === "string" ? session.customer : session.customer.id;
+
+      await supabaseClient.from("profiles").update({ stripe_customer_id: newCustomerId }).eq("id", user.id);
+
       logStep("Customer ID saved to profile", { customerId: newCustomerId });
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         url: session.url,
-        sessionId: session.id 
-      }), 
+        sessionId: session.id,
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-checkout", { message: errorMessage });
-    return new Response(
-      JSON.stringify({ error: errorMessage }), 
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
