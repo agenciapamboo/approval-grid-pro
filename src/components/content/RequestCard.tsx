@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageSquare } from "lucide-react";
+import { Calendar, MessageSquare, User } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -11,6 +11,7 @@ interface RequestCardProps {
     clientName: string;
     createdAt: string;
     status?: string;
+    assigneeName?: string;
   };
   onClick: () => void;
 }
@@ -46,7 +47,7 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
         </div>
         {getStatusBadge()}
       </div>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           {request.type === 'creative_request' ? (
             <MessageSquare className="h-3 w-3" />
@@ -59,6 +60,12 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
           <Calendar className="h-3 w-3" />
           {format(new Date(request.createdAt), "dd/MM", { locale: ptBR })}
         </div>
+        {request.assigneeName && (
+          <div className="flex items-center gap-1">
+            <User className="h-3 w-3" />
+            <span>{request.assigneeName}</span>
+          </div>
+        )}
       </div>
     </div>
   );

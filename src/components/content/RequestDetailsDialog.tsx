@@ -2,9 +2,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, FileText, Image as ImageIcon, MessageSquare } from "lucide-react";
+import { Calendar, FileText, Image as ImageIcon, MessageSquare, Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 interface CreativeRequest {
   id: string;
@@ -38,9 +42,118 @@ interface RequestDetailsDialogProps {
     type: 'creative_request' | 'adjustment_request';
     data: CreativeRequest | AdjustmentRequest;
   } | null;
+  agencyId?: string;
 }
 
-export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDetailsDialogProps) {
+interface TeamMember {
+  id: string;
+  name: string;
+}
+
+export function RequestDetailsDialog({ open, onOpenChange, request, agencyId }: RequestDetailsDialogProps) {
+  const { toast } = useToast();
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (open && request?.type === 'creative_request' && agencyId) {
+      loadTeamMembers();
+      loadCurrentAssignee();
+    }
+  }, [open, request, agencyId]);
+
+  const loadTeamMembers = async () => {
+    if (!agencyId) return;
+
+    try {
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'team_member');
+
+      if (roleError) throw roleError;
+
+      const userIds = roleData?.map(r => r.user_id) || [];
+
+      if (userIds.length === 0) {
+        setTeamMembers([]);
+        return;
+      }
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('agency_id', agencyId)
+        .in('id', userIds);
+
+      if (profileError) throw profileError;
+
+      setTeamMembers((profiles as TeamMember[]) || []);
+    } catch (error) {
+      console.error('Erro ao carregar membros da equipe:', error);
+    }
+  };
+
+  const loadCurrentAssignee = () => {
+    if (request?.type === 'creative_request') {
+      const data = request.data as CreativeRequest;
+      const payload = (data as any).payload;
+      if (payload?.assignee_user_id) {
+        setSelectedAssignee(payload.assignee_user_id);
+      } else {
+        setSelectedAssignee("");
+      }
+    }
+  };
+
+  const handleAssigneeChange = async (userId: string) => {
+    if (!request || request.type !== 'creative_request') return;
+
+    setIsUpdating(true);
+    try {
+      const memberName = teamMembers.find(m => m.id === userId)?.name || "";
+      
+      const { data: currentNotif, error: fetchError } = await supabase
+        .from('notifications')
+        .select('payload')
+        .eq('id', request.data.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentPayload = (currentNotif?.payload || {}) as Record<string, any>;
+      
+      const updatedPayload = {
+        ...currentPayload,
+        assignee_user_id: userId,
+        assignee_name: memberName,
+      };
+
+      const { error: updateError } = await supabase
+        .from('notifications')
+        .update({ payload: updatedPayload })
+        .eq('id', request.data.id);
+
+      if (updateError) throw updateError;
+
+      setSelectedAssignee(userId);
+      toast({
+        title: "Responsável atribuído",
+        description: `${memberName} foi definido como responsável.`,
+      });
+    } catch (error) {
+      console.error('Erro ao atribuir responsável:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atribuir o responsável.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (!request) return null;
 
   const renderCreativeRequest = (data: CreativeRequest) => {
@@ -59,6 +172,33 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
             <h3 className="font-semibold text-lg">Solicitação de Criativo</h3>
             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
           </div>
+
+          {teamMembers.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Responsável
+              </h4>
+              <Select
+                value={selectedAssignee}
+                onValueChange={handleAssigneeChange}
+                disabled={isUpdating}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um responsável..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <Separator />
 
           <div>
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">

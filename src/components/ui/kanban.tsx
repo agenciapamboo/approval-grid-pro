@@ -7,6 +7,9 @@ import {
   rectIntersection,
   useDraggable,
   useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
@@ -73,6 +76,7 @@ export const KanbanCard = ({
 
   return (
     <Card
+      data-kanban-card
       className={cn(
         'rounded-md p-3 shadow-sm',
         isDragging && 'cursor-grabbing',
@@ -141,16 +145,27 @@ export const KanbanProvider = ({
   onDragEnd,
   onDragStart,
   className,
-}: KanbanProviderProps) => (
-  <DndContext 
-    collisionDetection={rectIntersection} 
-    onDragEnd={onDragEnd}
-    onDragStart={onDragStart}
-  >
-    <div
-      className={cn('grid w-full auto-cols-fr grid-flow-col gap-4', className)}
+}: KanbanProviderProps) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    })
+  );
+
+  return (
+    <DndContext 
+      sensors={sensors}
+      collisionDetection={rectIntersection} 
+      onDragEnd={onDragEnd}
+      onDragStart={onDragStart}
     >
-      {children}
-    </div>
-  </DndContext>
-);
+      <div
+        className={cn('grid w-full auto-cols-fr grid-flow-col gap-4', className)}
+      >
+        {children}
+      </div>
+    </DndContext>
+  );
+};

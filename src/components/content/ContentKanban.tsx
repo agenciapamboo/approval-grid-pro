@@ -25,12 +25,13 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
 import { ContentDetailsDialog } from "./ContentDetailsDialog";
+import { CreateContentWrapper } from "./CreateContentWrapper";
 
 interface Content {
   id: string;
@@ -159,6 +160,11 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   
+  // Estados para novo conteúdo
+  const [isNewContentOpen, setIsNewContentOpen] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [showClientSelector, setShowClientSelector] = useState(false);
+  
   // Estados para filtro de data
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: (() => {
@@ -173,10 +179,11 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [focusedColumn, setFocusedColumn] = useState<number>(0);
   const [focusedCard, setFocusedCard] = useState<number>(0);
   const [keyboardNavigationActive, setKeyboardNavigationActive] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Estados para drag-to-scroll
   const [isScrolling, setIsScrolling] = useState(false);
-  const [scrollStartX, setScrollStartX] = useState(0);
+  const [scrollStart, setScrollStart] = useState({ x: 0, y: 0 });
   const [scrollLeft, setScrollLeft] = useState(0);
   const kanbanContainerRef = useRef<HTMLDivElement>(null);
 
@@ -253,12 +260,22 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
             handleArchiveContent(contentToArchive.id);
           }
           break;
+        case 'Enter':
+          if (!keyboardNavigationActive) return;
+          const contentToView = getContentsByColumnIndex(focusedColumn)[focusedCard];
+          if (contentToView) {
+            handleCardClick(contentToView.id);
+          }
+          break;
+        case '?':
+          setShowShortcuts(!showShortcuts);
+          break;
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [focusedColumn, focusedCard, columns, contents, keyboardNavigationActive]);
+  }, [focusedColumn, focusedCard, columns, contents, keyboardNavigationActive, showShortcuts]);
 
   useEffect(() => {
     loadColumns();
@@ -984,10 +1001,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   // Drag-to-scroll handlers
   const handleMouseDownScroll = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement)?.closest('[data-kanban-card]')) return;
     if (!kanbanContainerRef.current) return;
     
     setIsScrolling(true);
-    setScrollStartX(e.pageX - kanbanContainerRef.current.offsetLeft);
+    setScrollStart({ 
+      x: e.pageX - kanbanContainerRef.current.offsetLeft,
+      y: e.pageY - kanbanContainerRef.current.offsetTop
+    });
     setScrollLeft(kanbanContainerRef.current.scrollLeft);
     
     kanbanContainerRef.current.style.cursor = 'grabbing';
@@ -999,7 +1020,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     
     e.preventDefault();
     const x = e.pageX - kanbanContainerRef.current.offsetLeft;
-    const walk = (x - scrollStartX) * 2;
+    const walk = (x - scrollStart.x) * 2;
     kanbanContainerRef.current.scrollLeft = scrollLeft - walk;
   };
 
@@ -1025,7 +1046,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <CardTitle>Kanban de Conteúdos</CardTitle>
             <CardDescription>
@@ -1034,6 +1055,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowClientSelector(true)}
+              className="gap-2"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Conteúdo
+            </Button>
             {/* Indicadores de atalhos */}
             <TooltipProvider>
               <Tooltip>
@@ -1047,6 +1076,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                   <div className="space-y-1 text-xs">
                     <p><kbd className="px-1.5 py-0.5 rounded bg-muted">←→</kbd> Navegar colunas</p>
                     <p><kbd className="px-1.5 py-0.5 rounded bg-muted">↑↓</kbd> Navegar cards</p>
+                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Enter</kbd> Abrir detalhes</p>
                     <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Del</kbd> Arquivar</p>
                     <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Esc</kbd> Sair</p>
                   </div>
@@ -1797,6 +1827,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         open={showRequestDialog}
         onOpenChange={setShowRequestDialog}
         request={selectedRequest}
+        agencyId={agencyId}
       />
 
       {selectedContentId && (
@@ -1807,6 +1838,58 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           onUpdate={loadContents}
           isAgencyView={true}
         />
+      )}
+
+      {/* Dialog de seleção de cliente para novo conteúdo */}
+      <Dialog open={showClientSelector} onOpenChange={setShowClientSelector}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Selecione o Cliente</DialogTitle>
+            <DialogDescription>
+              Escolha o cliente para criar o novo conteúdo
+            </DialogDescription>
+          </DialogHeader>
+          <Select
+            value={selectedClientId || ""}
+            onValueChange={(value) => {
+              setSelectedClientId(value);
+              setShowClientSelector(false);
+              setIsNewContentOpen(true);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione um cliente..." />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de criação de conteúdo */}
+      {selectedClientId && (
+        <Dialog open={isNewContentOpen} onOpenChange={(open) => {
+          setIsNewContentOpen(open);
+          if (!open) {
+            setSelectedClientId(null);
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <CreateContentWrapper
+              clientId={selectedClientId}
+              onContentCreated={() => {
+                setIsNewContentOpen(false);
+                setSelectedClientId(null);
+                loadContents();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </Card>
   );
