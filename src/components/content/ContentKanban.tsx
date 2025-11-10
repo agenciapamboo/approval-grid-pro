@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   KanbanBoard,
   KanbanCard,
@@ -91,6 +92,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [sendingForReview, setSendingForReview] = useState<string | null>(null);
+  const [requestTypeFilter, setRequestTypeFilter] = useState<'all' | 'creative' | 'adjustment'>('all');
+  const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -382,6 +385,23 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  // Filtrar solicitações baseado nos filtros selecionados
+  const filteredRequests = useMemo(() => {
+    return requests.filter(request => {
+      // Filtro de tipo
+      if (requestTypeFilter === 'creative' && request.type !== 'creative_request') return false;
+      if (requestTypeFilter === 'adjustment' && request.type !== 'adjustment_request') return false;
+      
+      // Filtro de status (apenas para creative requests)
+      if (requestStatusFilter !== 'all' && request.type === 'creative_request') {
+        const creativeReq = request as CreativeRequestData;
+        if (creativeReq.status !== requestStatusFilter) return false;
+      }
+      
+      return true;
+    });
+  }, [requests, requestTypeFilter, requestStatusFilter]);
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     setIsDragging(true);
@@ -545,8 +565,47 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                         name={column.column_name} 
                         color={column.column_color} 
                       />
+                      <div className="space-y-3 mb-4 px-3">
+                        <Select value={requestTypeFilter} onValueChange={(value: any) => setRequestTypeFilter(value)}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os tipos</SelectItem>
+                            <SelectItem value="creative">Criativos</SelectItem>
+                            <SelectItem value="adjustment">Ajustes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={requestStatusFilter} onValueChange={(value: any) => setRequestStatusFilter(value)}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os status</SelectItem>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="in_progress">Em Progresso</SelectItem>
+                            <SelectItem value="completed">Concluído</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{filteredRequests.length} de {requests.length}</span>
+                          {(requestTypeFilter !== 'all' || requestStatusFilter !== 'all') && (
+                            <button 
+                              onClick={() => {
+                                setRequestTypeFilter('all');
+                                setRequestStatusFilter('all');
+                              }}
+                              className="text-primary hover:underline"
+                            >
+                              Limpar
+                            </button>
+                          )}
+                        </div>
+                      </div>
                       <KanbanCards>
-                        {requests.map((request, index) => (
+                        {filteredRequests.map((request, index) => (
                           <div key={request.id} className="mb-2">
                             <RequestCard
                               request={{
