@@ -1205,13 +1205,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         ) : (
           <div 
             ref={kanbanContainerRef}
-            className="min-w-max pb-4 cursor-grab active:cursor-grabbing"
+            className="overflow-x-auto cursor-grab active:cursor-grabbing scroll-smooth"
             onMouseDown={handleMouseDownScroll}
             onMouseMove={handleMouseMoveScroll}
             onMouseUp={handleMouseUpScroll}
             onMouseLeave={handleMouseLeaveScroll}
           >
-            <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+            <div className="min-w-max pb-4">
+              <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
               {columns.map((column) => {
                 // Mapear column_id para status do banco
                 let statusFilter = column.column_id;
@@ -1801,6 +1802,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                 ) : null}
               </DragOverlay>
             </KanbanProvider>
+            </div>
           </div>
         )}
       </CardContent>
