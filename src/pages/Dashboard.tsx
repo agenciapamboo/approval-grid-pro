@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
@@ -101,6 +102,7 @@ const Dashboard = () => {
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [clientDataLoaded, setClientDataLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [viewClientOpen, setViewClientOpen] = useState(false);
@@ -320,6 +322,8 @@ const Dashboard = () => {
           setClientNotifications(notifications);
         }
       } else if (userRole === 'client_user' && enrichedProfile.client_id) {
+        console.log('🔄 Loading client data for client_id:', enrichedProfile.client_id);
+        
         // Client user vê seu cliente
         const { data: clientData, error: clientError } = await supabase
           .from("clients")
@@ -328,10 +332,17 @@ const Dashboard = () => {
           .maybeSingle();
         
         if (clientError) {
-          console.error("Error fetching client:", clientError);
+          console.error("❌ Error fetching client:", clientError);
+          setClientDataLoaded(false);
         }
         
         if (clientData) {
+          console.log('✅ Client data loaded:', {
+            clientId: clientData.id,
+            clientSlug: clientData.slug,
+            agencyId: clientData.agency_id
+          });
+          
           setClients([clientData]);
           
           // Buscar agência separadamente para garantir que o slug seja carregado
@@ -343,21 +354,29 @@ const Dashboard = () => {
               .maybeSingle();
             
             if (agencyError) {
-              console.error("Error fetching agency:", agencyError);
+              console.error("❌ Error fetching agency:", agencyError);
+              setClientDataLoaded(false);
             }
             
             if (agencyData) {
-              setAgencies([agencyData]);
-              
-              // Debug logging
-              console.log('Client and agency data loaded:', {
-                clientId: clientData.id,
-                clientSlug: clientData.slug,
+              console.log('✅ Agency data loaded:', {
                 agencyId: agencyData.id,
                 agencySlug: agencyData.slug
               });
+              
+              setAgencies([agencyData]);
+              setClientDataLoaded(true);
+            } else {
+              console.warn('⚠️ Agency data not found for agency_id:', clientData.agency_id);
+              setClientDataLoaded(false);
             }
+          } else {
+            console.warn('⚠️ Client has no agency_id');
+            setClientDataLoaded(false);
           }
+        } else {
+          console.warn('⚠️ Client data not found for client_id:', enrichedProfile.client_id);
+          setClientDataLoaded(false);
         }
 
         // Buscar conteúdos do cliente
@@ -726,42 +745,53 @@ const Dashboard = () => {
           <div className="space-y-6">
             {/* Botões de ação */}
             <div className="mb-6 flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => setRequestCreativeOpen(true)}
-                className="w-full sm:w-auto"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Solicitar Criativo
-              </Button>
-              
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  const clientSlug = clients[0]?.slug;
-                  const agencySlug = agencies[0]?.slug;
+              {!clientDataLoaded ? (
+                <>
+                  <Skeleton className="h-10 w-full sm:w-[200px]" />
+                  <Skeleton className="h-10 w-full sm:w-[260px]" />
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => setRequestCreativeOpen(true)}
+                    className="w-full sm:w-auto"
+                    disabled={!clients[0] || !agencies[0]}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Solicitar Criativo
+                  </Button>
                   
-                  if (!agencySlug || !clientSlug) {
-                    toast({
-                      variant: "destructive",
-                      title: "Erro de navegação",
-                      description: "Não foi possível carregar os dados da sua conta. Por favor, recarregue a página.",
-                    });
-                    console.error('Navigation failed - Missing slugs:', { 
-                      agencySlug, 
-                      clientSlug,
-                      agency: agencies[0],
-                      client: clients[0]
-                    });
-                    return;
-                  }
-                  
-                  navigate(`/${agencySlug}/${clientSlug}`);
-                }}
-                className="w-full sm:w-auto"
-              >
-                <FileImage className="h-4 w-4 mr-2" />
-                Ver Todos os Meus Conteúdos
-              </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      const clientSlug = clients[0]?.slug;
+                      const agencySlug = agencies[0]?.slug;
+                      
+                      if (!agencySlug || !clientSlug) {
+                        toast({
+                          variant: "destructive",
+                          title: "Erro de navegação",
+                          description: "Não foi possível carregar os dados da sua conta. Por favor, recarregue a página.",
+                        });
+                        console.error('Navigation failed - Missing slugs:', { 
+                          agencySlug, 
+                          clientSlug,
+                          agency: agencies[0],
+                          client: clients[0]
+                        });
+                        return;
+                      }
+                      
+                      navigate(`/${agencySlug}/${clientSlug}`);
+                    }}
+                    className="w-full sm:w-auto"
+                    disabled={!clients[0] || !agencies[0]}
+                  >
+                    <FileImage className="h-4 w-4 mr-2" />
+                    Ver Todos os Meus Conteúdos
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Solicitações Criativas */}
@@ -797,36 +827,36 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-            {Object.entries(contentsByMonth)
-              .sort(([a], [b]) => b.localeCompare(a)) // Ordenar por mês decrescente
-              .map(([monthKey, monthContents]) => {
-              const [year, month] = monthKey.split('-');
-              const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-              
-              const pendingContents = monthContents.filter(c => c.status === 'in_review' || c.status === 'draft');
-              const partialContents = monthContents.filter(c => c.status === 'changes_requested');
-              const approvedContents = monthContents.filter(c => c.status === 'approved');
-              const rejectedContents = monthContents.filter(c => c.status === 'rejected');
-              
-              const client = clients[0];
-              const agency = agencies[0];
-              
-              // Helper para obter slugs de forma robusta
+            {(() => {
               const getNavigationSlugs = () => {
-                const clientSlug = client?.slug;
+                const clientSlug = clients[0]?.slug;
                 const agencySlug = agencies[0]?.slug;
                 
                 console.log('🔍 Navigation slugs:', { 
                   clientSlug, 
                   agencySlug,
-                  hasClient: !!client,
+                  hasClient: !!clients[0],
                   hasAgency: !!agencies[0],
-                  clientId: client?.id,
+                  clientId: clients[0]?.id,
                   agencyId: agencies[0]?.id
                 });
                 
                 return { clientSlug, agencySlug };
               };
+
+              return Object.entries(contentsByMonth)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([monthKey, monthContents]) => {
+                const [year, month] = monthKey.split('-');
+                const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                
+                const pendingContents = monthContents.filter(c => c.status === 'in_review' || c.status === 'draft');
+                const partialContents = monthContents.filter(c => c.status === 'changes_requested');
+                const approvedContents = monthContents.filter(c => c.status === 'approved');
+                const rejectedContents = monthContents.filter(c => c.status === 'rejected');
+                
+                const client = clients[0];
+                const agency = agencies[0];
               
               // Determinar o subtítulo baseado no status
               let subtitle = '';
@@ -886,32 +916,34 @@ const Dashboard = () => {
                                 )}
                               </p>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const { clientSlug, agencySlug } = getNavigationSlugs();
-                                
-                                if (!agencySlug || !clientSlug) {
-                                  toast({
-                                    variant: "destructive",
-                                    title: "Erro de navegação",
-                                    description: `Não foi possível carregar os dados da ${!agencySlug ? 'agência' : 'conta'}. Por favor, recarregue a página.`,
-                                  });
-                                  console.error('Navigation failed - Missing slugs:', { 
-                                    agencySlug, 
-                                    clientSlug,
-                                    agency: agencies[0],
-                                    client: clients[0]
-                                  });
-                                  return;
-                                }
-                                
-                                navigate(`/${agencySlug}/${clientSlug}`);
-                              }}
-                            >
-                              Revisar
-                            </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!clientDataLoaded || !clients[0] || !agencies[0]}
+                    onClick={() => {
+                      const { clientSlug, agencySlug } = getNavigationSlugs();
+                      
+                      if (!agencySlug || !clientSlug) {
+                        toast({
+                          variant: "destructive",
+                          title: "Erro de navegação",
+                          description: `Não foi possível carregar os dados da ${!agencySlug ? 'agência' : 'conta'}. Por favor, recarregue a página.`,
+                        });
+                        console.error('Navigation failed - Missing slugs:', { 
+                          agencySlug, 
+                          clientSlug,
+                          agency: agencies[0],
+                          client: clients[0],
+                          clientDataLoaded
+                        });
+                        return;
+                      }
+                      
+                      navigate(`/${agencySlug}/${clientSlug}`);
+                    }}
+                  >
+                    Revisar
+                  </Button>
                           </div>
                         ))}</div>
                       )}
@@ -959,9 +991,10 @@ const Dashboard = () => {
                       )}
                     </div>
                   </CardContent>
-                </Card>
-              );
-            })}
+              </Card>
+            );
+          });
+        })()}
             <Alert>
               <AlertTitle>Workflow</AlertTitle>
               <AlertDescription>
@@ -1384,15 +1417,23 @@ const Dashboard = () => {
         />
       )}
 
-      {profile?.role === 'client_user' && clients[0] && agencies[0] && (
+      {profile?.role === 'client_user' && (
         <RequestCreativeDialog
-          open={requestCreativeOpen}
+          open={requestCreativeOpen && clientDataLoaded && !!clients[0] && !!agencies[0]}
           onOpenChange={(open) => {
+            if (open && (!clients[0] || !agencies[0])) {
+              toast({
+                variant: "destructive",
+                title: "Dados incompletos",
+                description: "Aguarde o carregamento dos dados ou recarregue a página.",
+              });
+              return;
+            }
             setRequestCreativeOpen(open);
             if (!open) checkAuth();
           }}
-          clientId={clients[0].id}
-          agencyId={agencies[0].id}
+          clientId={clients[0]?.id || ''}
+          agencyId={agencies[0]?.id || ''}
         />
       )}
 
