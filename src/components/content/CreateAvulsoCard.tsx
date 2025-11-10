@@ -18,15 +18,16 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 interface CreateAvulsoCardProps {
   clientId: string;
   onContentCreated: () => void;
+  initialDate?: Date;
 }
 
-export function CreateAvulsoCard({ clientId, onContentCreated }: CreateAvulsoCardProps) {
+export function CreateAvulsoCard({ clientId, onContentCreated, initialDate }: CreateAvulsoCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>(initialDate);
   const [uploading, setUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showRotationDialog, setShowRotationDialog] = useState(false);

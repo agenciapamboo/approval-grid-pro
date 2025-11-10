@@ -25,17 +25,18 @@ interface CreateContentCardProps {
   clientId: string;
   onContentCreated: () => void;
   category?: 'social' | 'avulso';
+  initialDate?: Date;
 }
 
 const CHANNELS = ['Facebook', 'Instagram', 'LinkedIn', 'TikTok', 'YouTube'] as const;
 
-export function CreateContentCard({ clientId, onContentCreated, category = 'social' }: CreateContentCardProps) {
+export function CreateContentCard({ clientId, onContentCreated, category = 'social', initialDate }: CreateContentCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState("12:00");
   const [channels, setChannels] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);

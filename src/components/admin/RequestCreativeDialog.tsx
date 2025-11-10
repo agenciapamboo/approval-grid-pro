@@ -15,9 +15,11 @@ interface RequestCreativeDialogProps {
   onOpenChange: (open: boolean) => void;
   clientId: string;
   agencyId: string;
+  onSuccess?: () => void;
+  initialDate?: Date | null;
 }
 
-export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }: RequestCreativeDialogProps) {
+export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, onSuccess, initialDate }: RequestCreativeDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,6 +28,7 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }
     text: "",
     caption: "",
     observations: "",
+    deadline: initialDate ? initialDate.toISOString().split('T')[0] : "",
   });
   const [files, setFiles] = useState<File[]>([]);
 
@@ -89,8 +92,9 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }
         description: "A agência foi notificada sobre sua solicitação.",
       });
 
+      onSuccess?.();
       onOpenChange(false);
-      setFormData({ title: "", type: "", text: "", caption: "", observations: "" });
+      setFormData({ title: "", type: "", text: "", caption: "", observations: "", deadline: "" });
       setFiles([]);
     } catch (error) {
       console.error("Erro ao enviar solicitação:", error);
@@ -176,6 +180,17 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId }
               onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
               placeholder="Qualquer informação adicional relevante"
               className="glass min-h-[80px]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="deadline">Deadline</Label>
+            <Input
+              id="deadline"
+              type="date"
+              value={formData.deadline}
+              onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+              className="glass"
             />
           </div>
 

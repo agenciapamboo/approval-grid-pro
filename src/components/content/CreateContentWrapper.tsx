@@ -6,9 +6,10 @@ import { CreateAvulsoCard } from "./CreateAvulsoCard";
 interface CreateContentWrapperProps {
   clientId: string;
   onContentCreated: () => void;
+  initialDate?: Date;
 }
 
-export function CreateContentWrapper({ clientId, onContentCreated }: CreateContentWrapperProps) {
+export function CreateContentWrapper({ clientId, onContentCreated, initialDate }: CreateContentWrapperProps) {
   const [selectedCategory, setSelectedCategory] = useState<'social' | 'avulso' | null>(null);
 
   const handleCategorySelect = (category: 'social' | 'avulso') => {
@@ -41,6 +42,7 @@ export function CreateContentWrapper({ clientId, onContentCreated }: CreateConte
         clientId={clientId}
         onContentCreated={handleContentCreated}
         category="social"
+        initialDate={initialDate}
       />
     );
   }
@@ -50,6 +52,7 @@ export function CreateContentWrapper({ clientId, onContentCreated }: CreateConte
       <CreateAvulsoCard
         clientId={clientId}
         onContentCreated={handleContentCreated}
+        initialDate={initialDate}
       />
     );
   }
