@@ -538,6 +538,58 @@ export type Database = {
           },
         ]
       }
+      content_suggestions_feedback: {
+        Row: {
+          client_id: string
+          context: Json | null
+          created_at: string | null
+          event_title: string
+          event_type: string
+          id: string
+          used_at: string | null
+        }
+        Insert: {
+          client_id: string
+          context?: Json | null
+          created_at?: string | null
+          event_title: string
+          event_type: string
+          id?: string
+          used_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          context?: Json | null
+          created_at?: string | null
+          event_title?: string
+          event_type?: string
+          id?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_suggestions_feedback_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_suggestions_feedback_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_suggestions_feedback_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_texts: {
         Row: {
           caption: string | null

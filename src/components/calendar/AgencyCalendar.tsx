@@ -421,6 +421,8 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
         cities={cities}
         states={states}
         regions={regions}
+        clientId={selectedClient}
+        clientName={clients.find(c => c.id === selectedClient)?.name || ''}
         onSelectEvent={handleSelectHistoricalEvent}
       />
     </div>
