@@ -90,7 +90,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
       issues.push('agency_admin deve ter uma agência vinculada');
     }
     
-    if (formData.role === 'creator' && (formData.client_id || formData.agency_id)) {
+    if (formData.role === 'creator' && (formData.client_id && formData.client_id !== "" || formData.agency_id && formData.agency_id !== "")) {
       issues.push('creator não deve ter vínculos com cliente ou agência');
     }
     
@@ -126,8 +126,8 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
             name: formData.name,
             client_id: formData.client_id || null,
             agency_id: formData.agency_id || null,
-            role: formData.role,
-            account_type: formData.account_type
+            role: formData.role || null,
+            account_type: formData.account_type || null
           }
         }
       });
@@ -186,13 +186,14 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
           <div className="space-y-2">
             <Label htmlFor="account_type">Tipo de Conta</Label>
             <Select
-              value={formData.account_type}
+              value={formData.account_type || ""}
               onValueChange={(value) => setFormData({ ...formData, account_type: value })}
             >
               <SelectTrigger id="account_type">
                 <SelectValue placeholder="Selecione o tipo de conta" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
                 <SelectItem value="creator">Creator</SelectItem>
                 <SelectItem value="agency">Agência</SelectItem>
                 <SelectItem value="client">Cliente</SelectItem>
@@ -204,13 +205,14 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
             <Select
-              value={formData.role}
+              value={formData.role || ""}
               onValueChange={(value) => setFormData({ ...formData, role: value })}
             >
               <SelectTrigger id="role">
                 <SelectValue placeholder="Selecione a role" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Nenhuma</SelectItem>
                 <SelectItem value="creator">Creator</SelectItem>
                 <SelectItem value="client_user">Client User</SelectItem>
                 <SelectItem value="agency_admin">Agency Admin</SelectItem>
