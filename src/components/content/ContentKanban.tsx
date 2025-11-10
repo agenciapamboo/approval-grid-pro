@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { z } from "zod";
 import {
   KanbanBoard,
@@ -21,7 +22,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
@@ -82,6 +83,12 @@ interface AdjustmentRequestData {
   version: number;
 }
 
+interface UploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'completed' | 'error';
+}
+
 interface ContentKanbanProps {
   agencyId: string;
 }
@@ -126,6 +133,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -614,12 +622,23 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     try {
       setUploadingFiles(true);
       const uploadedUrls: Array<{ name: string; url: string; size: number; type: string }> = [];
+      
+      // Inicializar progresso para todos os arquivos
+      const initialProgress = Array.from(files).map(file => ({
+        fileName: file.name,
+        progress: 0,
+        status: 'uploading' as const
+      }));
+      setUploadProgress(initialProgress);
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
         // Validar tamanho (max 20MB)
         if (file.size > 20 * 1024 * 1024) {
+          setUploadProgress(prev => prev.map((p, idx) => 
+            idx === i ? { ...p, status: 'error' as const, progress: 0 } : p
+          ));
           toast({
             variant: "destructive",
             title: "Arquivo muito grande",
@@ -633,6 +652,9 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
         
         if (!isAllowed) {
+          setUploadProgress(prev => prev.map((p, idx) => 
+            idx === i ? { ...p, status: 'error' as const, progress: 0 } : p
+          ));
           toast({
             variant: "destructive",
             title: "Tipo não permitido",
@@ -640,6 +662,16 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           });
           continue;
         }
+
+        // Simular progresso durante upload
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => prev.map((p, idx) => {
+            if (idx === i && p.progress < 90) {
+              return { ...p, progress: Math.min(p.progress + 10, 90) };
+            }
+            return p;
+          }));
+        }, 100);
 
         // Upload para Supabase Storage
         const fileExt = file.name.split('.').pop();
@@ -653,8 +685,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
             upsert: false
           });
 
+        clearInterval(progressInterval);
+
         if (error) {
           console.error('Erro ao fazer upload:', error);
+          setUploadProgress(prev => prev.map((p, idx) => 
+            idx === i ? { ...p, status: 'error' as const, progress: 0 } : p
+          ));
           toast({
             variant: "destructive",
             title: "Erro no upload",
@@ -662,6 +699,11 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           });
           continue;
         }
+
+        // Completar progresso
+        setUploadProgress(prev => prev.map((p, idx) => 
+          idx === i ? { ...p, status: 'completed' as const, progress: 100 } : p
+        ));
 
         // Obter URL pública
         const { data: { publicUrl } } = supabase.storage
@@ -677,6 +719,11 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       }
 
       setUploadedFiles(prev => [...prev, ...uploadedUrls]);
+      
+      // Limpar progresso após 1 segundo
+      setTimeout(() => {
+        setUploadProgress([]);
+      }, 1000);
       
       toast({
         title: "Arquivos enviados",
@@ -980,6 +1027,33 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                   </p>
                                 </label>
                               </div>
+                              
+                              {/* Progresso de upload */}
+                              {uploadProgress.length > 0 && (
+                                <div className="space-y-2 mt-2">
+                                  <Label className="text-xs">Enviando arquivos...</Label>
+                                  {uploadProgress.map((progress, index) => (
+                                    <div key={index} className="space-y-1 p-2 bg-muted/50 rounded-md">
+                                      <div className="flex items-center gap-2">
+                                        {progress.status === 'uploading' && (
+                                          <Loader2 className="h-3 w-3 animate-spin text-primary flex-shrink-0" />
+                                        )}
+                                        {progress.status === 'completed' && (
+                                          <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                        )}
+                                        {progress.status === 'error' && (
+                                          <X className="h-3 w-3 text-destructive flex-shrink-0" />
+                                        )}
+                                        <span className="text-xs truncate flex-1">{progress.fileName}</span>
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                          {progress.progress}%
+                                        </span>
+                                      </div>
+                                      <Progress value={progress.progress} className="h-1" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                               
                               {/* Preview de arquivos enviados */}
                               {uploadedFiles.length > 0 && (
