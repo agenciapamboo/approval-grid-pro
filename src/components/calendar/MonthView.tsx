@@ -116,6 +116,10 @@ export function MonthView({
 
   const days = generateMonthDays();
   const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+  
+  // Calcular número de semanas e altura dinâmica
+  const weeks = Math.ceil(days.length / 7);
+  const minRowHeight = weeks === 6 ? 110 : weeks === 5 ? 130 : 145;
 
   return (
     <DndContext
@@ -136,7 +140,10 @@ export function MonthView({
         </div>
         
         {/* Grid dos dias */}
-        <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border" style={{ minHeight: '650px' }}>
+        <div 
+          className="flex-1 grid grid-cols-7 gap-px bg-border" 
+          style={{ gridTemplateRows: `repeat(${weeks}, minmax(${minRowHeight}px, 1fr))` }}
+        >
           {days.map((day) => {
             const dayContents = getContentsForDay(day);
             const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -218,7 +225,7 @@ function DayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-background p-3 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors overflow-hidden relative group min-h-[120px]",
+        "bg-background p-3 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors relative group",
         !isCurrentMonth && "bg-muted/30",
         isOver && "ring-2 ring-primary ring-inset bg-primary/5"
       )}
@@ -249,8 +256,8 @@ function DayCell({
         )}
       </div>
       
-      {/* Lista de conteúdos com scroll */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+      {/* Lista de conteúdos */}
+      <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
         {visibleContents.map(content => (
           <ContentPill
             key={content.id}
