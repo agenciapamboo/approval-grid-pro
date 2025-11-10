@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { z } from "zod";
 import {
   KanbanBoard,
@@ -1176,16 +1177,38 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                 {/* Indicadores de comentários e anexos */}
                                 <div className="flex items-center gap-2">
                                   {content.comments_count !== undefined && content.comments_count > 0 && (
-                                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                      <MessageSquare className="h-3 w-3" />
-                                      <span>{content.comments_count}</span>
-                                    </div>
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center gap-0.5 text-xs text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                            <MessageSquare className="h-3 w-3" />
+                                            <span>{content.comments_count}</span>
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">
+                                          <p>
+                                            {content.comments_count} {content.comments_count === 1 ? 'comentário' : 'comentários'}
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   )}
                                   {content.media_count !== undefined && content.media_count > 0 && (
-                                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                      <Paperclip className="h-3 w-3" />
-                                      <span>{content.media_count}</span>
-                                    </div>
+                                    <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <div className="flex items-center gap-0.5 text-xs text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                            <Paperclip className="h-3 w-3" />
+                                            <span>{content.media_count}</span>
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">
+                                          <p>
+                                            {content.media_count} {content.media_count === 1 ? 'arquivo anexo' : 'arquivos anexos'}
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   )}
                                 </div>
                               </div>
@@ -1249,16 +1272,38 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                           {/* Indicadores de comentários e anexos no overlay */}
                           <div className="flex items-center gap-2">
                             {activeContent.comments_count !== undefined && activeContent.comments_count > 0 && (
-                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                <MessageSquare className="h-3 w-3" />
-                                <span>{activeContent.comments_count}</span>
-                              </div>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                      <MessageSquare className="h-3 w-3" />
+                                      <span>{activeContent.comments_count}</span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    <p>
+                                      {activeContent.comments_count} {activeContent.comments_count === 1 ? 'comentário' : 'comentários'}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                             {activeContent.media_count !== undefined && activeContent.media_count > 0 && (
-                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                <Paperclip className="h-3 w-3" />
-                                <span>{activeContent.media_count}</span>
-                              </div>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                      <Paperclip className="h-3 w-3" />
+                                      <span>{activeContent.media_count}</span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    <p>
+                                      {activeContent.media_count} {activeContent.media_count === 1 ? 'arquivo anexo' : 'arquivos anexos'}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                         </div>
