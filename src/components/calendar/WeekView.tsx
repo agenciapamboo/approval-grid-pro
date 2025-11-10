@@ -204,6 +204,7 @@ function WeekDayCell({
         isOver && "ring-2 ring-primary ring-inset bg-primary/5"
       )}
       onClick={() => onDayClick(day)}
+      title="Clique para criar conteúdo"
     >
       {/* Cabeçalho do dia e botão de ideias */}
       <div className="flex flex-col items-center mb-3 pb-2 border-b border-border">

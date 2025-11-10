@@ -230,6 +230,7 @@ function DayCell({
         isOver && "ring-2 ring-primary ring-inset bg-primary/5"
       )}
       onClick={() => onDayClick(day)}
+      title="Clique para criar conteúdo"
     >
       {/* Número do dia e botão de ideias */}
       <div className="flex items-center justify-between mb-1">
