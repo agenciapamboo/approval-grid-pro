@@ -3,6 +3,19 @@ import { ptBR } from "date-fns/locale";
 import { ContentPill } from "./ContentPill";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+} from "@dnd-kit/core";
+
 
 interface Content {
   id: string;
@@ -20,6 +33,7 @@ interface WeekViewProps {
   clientColors: Record<string, string>;
   onContentClick: (contentId: string) => void;
   onDayClick: (date: Date) => void;
+  onContentReschedule: (contentId: string, newDate: Date) => Promise<void>;
 }
 
 const MAX_VISIBLE_CONTENTS = 8;
@@ -29,8 +43,46 @@ export function WeekView({
   contents, 
   clientColors, 
   onContentClick,
-  onDayClick 
+  onDayClick,
+  onContentReschedule
 }: WeekViewProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeContent, setActiveContent] = useState<Content | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const content = contents.find(c => c.id === active.id);
+    setActiveId(active.id as string);
+    setActiveContent(content || null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) {
+      setActiveId(null);
+      setActiveContent(null);
+      return;
+    }
+
+    const newDate = new Date(over.id as string);
+    const contentId = active.id as string;
+    
+    if (contentId && newDate) {
+      await onContentReschedule(contentId, newDate);
+    }
+    
+    setActiveId(null);
+    setActiveContent(null);
+  };
   
   const generateWeekDays = () => {
     const start = startOfWeek(currentWeek, { locale: ptBR });
@@ -56,60 +108,124 @@ export function WeekView({
   };
 
   const days = generateWeekDays();
-  const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Grid da semana */}
-      <div className="flex-1 grid grid-cols-7 gap-px bg-border">
-        {days.map((day, index) => {
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={[]}
+    >
+      <div className="grid grid-cols-7 gap-px bg-border h-full">
+        {days.map((day) => {
           const dayContents = getContentsForDay(day);
-          const visibleContents = dayContents.slice(0, MAX_VISIBLE_CONTENTS);
-          const hiddenCount = dayContents.length - MAX_VISIBLE_CONTENTS;
           const isDayToday = isToday(day);
           
           return (
-            <div
+            <WeekDayCell
               key={day.toISOString()}
-              className="bg-background p-2 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors min-h-[400px]"
-              onClick={() => onDayClick(day)}
-            >
-              {/* Header do dia */}
-              <div className="mb-3 text-center pb-2 border-b border-border">
-                <div className="text-xs text-muted-foreground font-medium">
-                  {weekDays[index]}
-                </div>
-                <div className={cn(
-                  "text-2xl font-bold mt-1",
-                  isDayToday && "text-primary"
-                )}>
-                  {format(day, 'd')}
-                </div>
-              </div>
-              
-              {/* Lista de conteúdos com scroll */}
-              <div className="flex-1 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                {visibleContents.map(content => (
-                  <ContentPill
-                    key={content.id}
-                    content={content}
-                    clientColor={clientColors[content.client_id] || '#6B7280'}
-                    onClick={onContentClick}
-                  />
-                ))}
-              </div>
-              
-              {/* Indicador de mais conteúdos */}
-              {hiddenCount > 0 && (
-                <div className="flex items-center justify-center gap-1 text-xs text-primary hover:underline mt-2 py-1">
-                  <span>+{hiddenCount} mais</span>
-                  <ChevronDown className="h-3 w-3" />
-                </div>
-              )}
-            </div>
+              day={day}
+              dayContents={dayContents}
+              isDayToday={isDayToday}
+              clientColors={clientColors}
+              onContentClick={onContentClick}
+              onDayClick={onDayClick}
+              activeId={activeId}
+            />
           );
         })}
       </div>
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeContent && (
+          <div
+            className="text-xs px-2 py-1 rounded shadow-lg"
+            style={{ 
+              backgroundColor: clientColors[activeContent.client_id] || '#6B7280',
+              color: 'white',
+              textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+              cursor: 'grabbing'
+            }}
+          >
+            <span className="font-medium">{format(new Date(activeContent.date), 'HH:mm')}</span>
+            {' '}
+            {activeContent.title}
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+function WeekDayCell({ 
+  day, 
+  dayContents, 
+  isDayToday, 
+  clientColors, 
+  onContentClick, 
+  onDayClick,
+  activeId 
+}: {
+  day: Date;
+  dayContents: Content[];
+  isDayToday: boolean;
+  clientColors: Record<string, string>;
+  onContentClick: (id: string) => void;
+  onDayClick: (date: Date) => void;
+  activeId: string | null;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: day.toISOString(),
+  });
+
+  const visibleContents = dayContents.slice(0, MAX_VISIBLE_CONTENTS);
+  const hiddenCount = dayContents.length - MAX_VISIBLE_CONTENTS;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "bg-background p-2 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors min-h-[400px]",
+        isDayToday && "bg-accent/10",
+        isOver && "ring-2 ring-primary ring-inset bg-primary/5"
+      )}
+      onClick={() => onDayClick(day)}
+    >
+      {/* Cabeçalho do dia */}
+      <div className="flex flex-col items-center mb-3 pb-2 border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground uppercase">
+          {format(day, 'EEE', { locale: ptBR })}
+        </span>
+        <span className={cn(
+          "text-2xl font-bold mt-1",
+          isDayToday && "text-primary"
+        )}>
+          {format(day, 'd')}
+        </span>
+      </div>
+      
+      {/* Lista de conteúdos */}
+      <div className="flex-1 overflow-y-auto space-y-2">
+        {visibleContents.map(content => (
+          <ContentPill
+            key={content.id}
+            content={content}
+            clientColor={clientColors[content.client_id] || '#6B7280'}
+            onClick={onContentClick}
+            isDragging={activeId === content.id}
+          />
+        ))}
+      </div>
+      
+      {/* Indicador de mais conteúdos */}
+      {hiddenCount > 0 && (
+        <div className="flex items-center justify-center gap-1 text-xs text-primary hover:underline mt-2 py-1">
+          <span>+{hiddenCount} mais</span>
+          <ChevronDown className="h-3 w-3" />
+        </div>
+      )}
     </div>
   );
 }

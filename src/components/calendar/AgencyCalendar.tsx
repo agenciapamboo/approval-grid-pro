@@ -152,6 +152,41 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
     }
   };
 
+  const handleContentReschedule = async (contentId: string, newDate: Date) => {
+    try {
+      const content = contents.find(c => c.id === contentId);
+      if (!content) return;
+
+      const originalDate = new Date(content.date);
+      
+      const updatedDate = new Date(newDate);
+      updatedDate.setHours(originalDate.getHours());
+      updatedDate.setMinutes(originalDate.getMinutes());
+      updatedDate.setSeconds(originalDate.getSeconds());
+
+      const { error } = await supabase
+        .from('contents')
+        .update({ date: updatedDate.toISOString() })
+        .eq('id', contentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Conteúdo reagendado",
+        description: `Movido para ${format(updatedDate, "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}`,
+      });
+
+      await loadContents();
+    } catch (error) {
+      console.error('Erro ao reagendar conteúdo:', error);
+      toast({
+        title: "Erro ao reagendar",
+        description: "Não foi possível mover o conteúdo. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] p-6 gap-4">
       {/* Header com controles */}
@@ -243,6 +278,27 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             </Tabs>
           </div>
         </div>
+
+        {/* Legenda de Cores */}
+        {!selectedClient && clients.length > 0 && (
+          <div className="flex items-center gap-3 px-3 py-2 bg-muted/30 rounded-md border border-border">
+            <span className="text-xs font-medium text-muted-foreground">Clientes:</span>
+            <div className="flex flex-wrap gap-2">
+              {clients.map((client) => (
+                <div 
+                  key={client.id} 
+                  className="flex items-center gap-1.5"
+                >
+                  <div 
+                    className="w-3 h-3 rounded-full shadow-sm" 
+                    style={{ backgroundColor: clientColors[client.id] }}
+                  />
+                  <span className="text-xs font-medium">{client.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Área do calendário */}
@@ -254,6 +310,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             clientColors={clientColors}
             onContentClick={handleContentClick}
             onDayClick={handleDayClick}
+            onContentReschedule={handleContentReschedule}
           />
         )}
         {viewMode === 'week' && (
@@ -263,6 +320,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             clientColors={clientColors}
             onContentClick={handleContentClick}
             onDayClick={handleDayClick}
+            onContentReschedule={handleContentReschedule}
           />
         )}
         {viewMode === 'day' && (
