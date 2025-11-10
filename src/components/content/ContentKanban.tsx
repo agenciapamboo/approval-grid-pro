@@ -20,7 +20,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
@@ -33,6 +33,8 @@ interface Content {
   type: string;
   client_id: string;
   owner_user_id: string;
+  comments_count?: number;
+  media_count?: number;
   clients?: {
     name: string;
   };
@@ -273,15 +275,42 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       if (error) throw error;
 
-      // Buscar informações dos donos
+      // Buscar informações dos donos, comentários e mídias
       if (data && data.length > 0) {
+        const contentIds = data.map((c) => c.id);
         const ownerIds = [...new Set(data.map((c) => c.owner_user_id))];
+        
+        // Buscar profiles
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, name")
           .in("id", ownerIds);
 
         const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+        // Buscar contagem de comentários
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("content_id")
+          .in("content_id", contentIds);
+
+        const commentsCountMap = new Map<string, number>();
+        commentsData?.forEach((comment) => {
+          const count = commentsCountMap.get(comment.content_id) || 0;
+          commentsCountMap.set(comment.content_id, count + 1);
+        });
+
+        // Buscar contagem de mídias
+        const { data: mediaData } = await supabase
+          .from("content_media")
+          .select("content_id")
+          .in("content_id", contentIds);
+
+        const mediaCountMap = new Map<string, number>();
+        mediaData?.forEach((media) => {
+          const count = mediaCountMap.get(media.content_id) || 0;
+          mediaCountMap.set(media.content_id, count + 1);
+        });
 
         // Filtrar conteúdos aprovados com data passada
         const enrichedContents = data
@@ -294,6 +323,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           .map((content) => ({
             ...content,
             profiles: profileMap.get(content.owner_user_id),
+            comments_count: commentsCountMap.get(content.id) || 0,
+            media_count: mediaCountMap.get(content.id) || 0,
           }));
 
         setContents(enrichedContents as Content[]);
@@ -931,9 +962,27 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                               )}
                             </div>
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                {format(new Date(content.date), "dd/MM", { locale: ptBR })}
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Calendar className="h-3 w-3" />
+                                  {format(new Date(content.date), "dd/MM", { locale: ptBR })}
+                                </div>
+                                
+                                {/* Indicadores de comentários e anexos */}
+                                <div className="flex items-center gap-2">
+                                  {content.comments_count !== undefined && content.comments_count > 0 && (
+                                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                      <MessageSquare className="h-3 w-3" />
+                                      <span>{content.comments_count}</span>
+                                    </div>
+                                  )}
+                                  {content.media_count !== undefined && content.media_count > 0 && (
+                                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                      <Paperclip className="h-3 w-3" />
+                                      <span>{content.media_count}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               <Badge variant="outline" className="text-xs">
                                 {content.type}
@@ -986,9 +1035,27 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(activeContent.date), "dd/MM", { locale: ptBR })}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(activeContent.date), "dd/MM", { locale: ptBR })}
+                          </div>
+                          
+                          {/* Indicadores de comentários e anexos no overlay */}
+                          <div className="flex items-center gap-2">
+                            {activeContent.comments_count !== undefined && activeContent.comments_count > 0 && (
+                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                <MessageSquare className="h-3 w-3" />
+                                <span>{activeContent.comments_count}</span>
+                              </div>
+                            )}
+                            {activeContent.media_count !== undefined && activeContent.media_count > 0 && (
+                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                <Paperclip className="h-3 w-3" />
+                                <span>{activeContent.media_count}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <Badge variant="outline" className="text-xs">
                           {activeContent.type}
