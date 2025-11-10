@@ -1605,10 +1605,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                     <TooltipTrigger asChild>
                                       <Badge 
                                         variant={deadlineStatus.variant}
-                                        className={cn(
-                                          "gap-1 text-xs cursor-help",
-                                          deadlineStatus.status === 'overdue' && "animate-pulse"
-                                        )}
+                                        className="gap-1 text-xs cursor-help"
                                       >
                                         {(deadlineStatus.status === 'overdue' || deadlineStatus.status === 'urgent') && (
                                           <AlertCircle className="h-3 w-3" />
