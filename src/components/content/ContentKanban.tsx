@@ -3,6 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { z } from "zod";
 import {
   KanbanBoard,
   KanbanCard,
@@ -16,7 +20,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw, Send } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
@@ -78,6 +82,14 @@ interface ContentKanbanProps {
   agencyId: string;
 }
 
+// Schema de validação para novo creative request
+const newRequestSchema = z.object({
+  title: z.string().trim().min(3, "Título deve ter no mínimo 3 caracteres").max(100, "Título muito longo"),
+  client_id: z.string().uuid("Selecione um cliente"),
+  request_type: z.string().min(1, "Selecione o tipo de solicitação"),
+  observations: z.string().max(500, "Observações muito longas").optional(),
+});
+
 export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const { toast } = useToast();
   const [contents, setContents] = useState<Content[]>([]);
@@ -94,6 +106,18 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [sendingForReview, setSendingForReview] = useState<string | null>(null);
   const [requestTypeFilter, setRequestTypeFilter] = useState<'all' | 'creative' | 'adjustment'>('all');
   const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
+  
+  // Estados para o formulário inline
+  const [showInlineForm, setShowInlineForm] = useState(false);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+  const [creatingRequest, setCreatingRequest] = useState(false);
+  const [newRequest, setNewRequest] = useState({
+    title: '',
+    client_id: '',
+    request_type: '',
+    observations: '',
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -109,6 +133,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     loadColumns();
     loadContents();
     loadRequests();
+    loadClients();
+    
     
     // Realtime updates para colunas
     const columnsChannel = supabase
@@ -385,6 +411,21 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  const loadClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name")
+        .eq("agency_id", agencyId)
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar clientes:", error);
+    }
+  };
+
   // Filtrar solicitações baseado nos filtros selecionados
   const filteredRequests = useMemo(() => {
     return requests.filter(request => {
@@ -508,6 +549,74 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  const handleCreateRequest = async () => {
+    try {
+      // Validar dados
+      const validated = newRequestSchema.parse(newRequest);
+      setFormErrors({});
+      setCreatingRequest(true);
+
+      // Buscar informações do cliente
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("name, email, whatsapp")
+        .eq("id", validated.client_id)
+        .single();
+
+      // Criar notification com evento novojob
+      const { error } = await supabase
+        .from("notifications")
+        .insert({
+          event: "novojob",
+          agency_id: agencyId,
+          client_id: validated.client_id,
+          status: "pending",
+          payload: {
+            title: validated.title,
+            type: validated.request_type,
+            observations: validated.observations || "",
+            job_status: "pending",
+          },
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Solicitação criada",
+        description: `Nova solicitação "${validated.title}" foi adicionada`,
+      });
+
+      // Limpar formulário e recarregar
+      setNewRequest({
+        title: '',
+        client_id: '',
+        request_type: '',
+        observations: '',
+      });
+      setShowInlineForm(false);
+      loadRequests();
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setFormErrors(errors);
+      } else {
+        console.error("Erro ao criar solicitação:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao criar",
+          description: error.message || "Ocorreu um erro inesperado",
+        });
+      }
+    } finally {
+      setCreatingRequest(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -566,6 +675,122 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                         color={column.column_color} 
                       />
                       <div className="space-y-3 mb-4 px-3">
+                        {/* Botão para expandir/recolher formulário */}
+                        <Button
+                          variant={showInlineForm ? "secondary" : "default"}
+                          size="sm"
+                          className="w-full gap-2 text-xs h-8"
+                          onClick={() => setShowInlineForm(!showInlineForm)}
+                        >
+                          {showInlineForm ? (
+                            <>
+                              <ChevronUp className="h-3 w-3" />
+                              Cancelar
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-3 w-3" />
+                              Nova Solicitação
+                            </>
+                          )}
+                        </Button>
+
+                        {/* Formulário inline */}
+                        {showInlineForm && (
+                          <div className="bg-muted/30 border rounded-lg p-3 space-y-3">
+                            <div className="space-y-1.5">
+                              <Label htmlFor="request-title" className="text-xs">Título *</Label>
+                              <Input
+                                id="request-title"
+                                placeholder="Ex: Arte para post Instagram"
+                                value={newRequest.title}
+                                onChange={(e) => setNewRequest(prev => ({ ...prev, title: e.target.value }))}
+                                className="h-8 text-xs"
+                                maxLength={100}
+                              />
+                              {formErrors.title && (
+                                <p className="text-xs text-destructive">{formErrors.title}</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <Label htmlFor="request-client" className="text-xs">Cliente *</Label>
+                              <Select 
+                                value={newRequest.client_id} 
+                                onValueChange={(value) => setNewRequest(prev => ({ ...prev, client_id: value }))}
+                              >
+                                <SelectTrigger id="request-client" className="h-8 text-xs">
+                                  <SelectValue placeholder="Selecione o cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {clients.map(client => (
+                                    <SelectItem key={client.id} value={client.id}>
+                                      {client.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {formErrors.client_id && (
+                                <p className="text-xs text-destructive">{formErrors.client_id}</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <Label htmlFor="request-type" className="text-xs">Tipo *</Label>
+                              <Select 
+                                value={newRequest.request_type} 
+                                onValueChange={(value) => setNewRequest(prev => ({ ...prev, request_type: value }))}
+                              >
+                                <SelectTrigger id="request-type" className="h-8 text-xs">
+                                  <SelectValue placeholder="Tipo de solicitação" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="post">Post</SelectItem>
+                                  <SelectItem value="story">Story</SelectItem>
+                                  <SelectItem value="reels">Reels</SelectItem>
+                                  <SelectItem value="carousel">Carrossel</SelectItem>
+                                  <SelectItem value="other">Outro</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {formErrors.request_type && (
+                                <p className="text-xs text-destructive">{formErrors.request_type}</p>
+                              )}
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <Label htmlFor="request-obs" className="text-xs">Observações</Label>
+                              <Textarea
+                                id="request-obs"
+                                placeholder="Detalhes adicionais..."
+                                value={newRequest.observations}
+                                onChange={(e) => setNewRequest(prev => ({ ...prev, observations: e.target.value }))}
+                                className="text-xs min-h-16 resize-none"
+                                maxLength={500}
+                              />
+                              {formErrors.observations && (
+                                <p className="text-xs text-destructive">{formErrors.observations}</p>
+                              )}
+                            </div>
+
+                            <Button
+                              onClick={handleCreateRequest}
+                              disabled={creatingRequest}
+                              className="w-full h-8 text-xs gap-2"
+                              size="sm"
+                            >
+                              {creatingRequest ? (
+                                <>Criando...</>
+                              ) : (
+                                <>
+                                  <Plus className="h-3 w-3" />
+                                  Criar Solicitação
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Filtros existentes */}
                         <Select value={requestTypeFilter} onValueChange={(value: any) => setRequestTypeFilter(value)}>
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="Tipo" />
