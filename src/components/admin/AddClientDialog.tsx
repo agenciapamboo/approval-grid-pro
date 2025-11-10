@@ -63,7 +63,10 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
           email: formData.email,
           password: formData.password,
           options: {
-            data: { name: formData.name },
+            data: { 
+              name: formData.name,
+              accountType: 'creator'
+            },
           },
         });
 

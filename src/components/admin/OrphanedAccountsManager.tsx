@@ -75,15 +75,18 @@ export const OrphanedAccountsManager = () => {
     }
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(accountId);
-      
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId: accountId },
+      });
+
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Erro ao excluir conta");
 
       toast.success(`Conta ${email} excluída com sucesso`);
       setOrphanedAccounts(prev => prev.filter(acc => acc.id !== accountId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao excluir conta:', error);
-      toast.error("Erro ao excluir conta");
+      toast.error(error.message || "Erro ao excluir conta");
     }
   };
 

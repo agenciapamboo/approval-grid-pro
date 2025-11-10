@@ -54,7 +54,7 @@ export function AddTeamMemberDialog({
         options: {
           data: {
             name: formData.name,
-            account_type: 'agency',
+            accountType: 'agency',
           },
           emailRedirectTo: `${window.location.origin}/`,
         },

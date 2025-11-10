@@ -63,7 +63,10 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
           email: formData.email,
           password: formData.password,
           options: {
-            data: { name: formData.name },
+            data: { 
+              name: formData.name,
+              accountType: 'agency'
+            },
           },
         });
 

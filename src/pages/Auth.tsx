@@ -168,33 +168,102 @@ const Auth = () => {
   const handleSignUp = async () => {
     setLoading(true);
     try {
+      // Normalize document
+      const normalizedDocument = document.replace(/\D/g, '');
+      
       // Check for duplicate CPF/CNPJ
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
-        .eq('document', document)
+        .eq('document', normalizedDocument)
         .maybeSingle();
 
       if (existingProfile) {
         throw new Error("Este CPF/CNPJ já está cadastrado.");
       }
 
+      // Determine correct accountType (force 'agency' if paid plan)
+      const finalAccountType = selectedPlan !== 'creator' ? 'agency' : accountType;
+
       // Create user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { name },
+          data: { 
+            name,
+            accountType: finalAccountType,
+            agencyName,
+            selectedPlan,
+            billingCycle
+          },
           emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
-      if (authError) {
-        if (authError.message.includes("already registered")) {
-          throw new Error("Este email já está cadastrado. Tente fazer login.");
+      // Handle "already registered" - try login fallback
+      if (authError?.message.includes("already registered") || authError?.message.includes("User already registered")) {
+        toast({
+          title: "Email já cadastrado",
+          description: "Tentando fazer login...",
+        });
+
+        // Try to login with credentials
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (loginError) {
+          throw new Error("Email já cadastrado. Entre ou use 'Esqueci minha senha'.");
         }
-        throw authError;
+
+        // Login successful, use this session for checkout
+        if (loginData.user && selectedPlan !== 'creator') {
+          // Update profile if needed
+          await supabase
+            .from('profiles')
+            .update({
+              selected_plan: selectedPlan,
+              plan: selectedPlan,
+              billing_cycle: billingCycle,
+            })
+            .eq('id', loginData.user.id);
+
+          // Proceed to checkout
+          const paymentWindow = window.open('about:blank', '_blank');
+          
+          const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
+            body: {
+              plan: selectedPlan,
+              billingCycle: billingCycle,
+            },
+          });
+
+          if (checkoutError) throw checkoutError;
+
+          if (checkoutData?.url && paymentWindow) {
+            paymentWindow.location.href = checkoutData.url;
+            toast({
+              title: "Redirecionando para pagamento",
+              description: "Complete o pagamento na janela aberta.",
+            });
+          } else {
+            throw new Error("URL de checkout não recebida");
+          }
+          return;
+        }
+
+        // Free plan - just redirect to login
+        toast({
+          title: "Conta existente",
+          description: "Use a opção Entrar.",
+        });
+        setIsSignUp(false);
+        return;
       }
+
+      if (authError) throw authError;
 
       if (!authData.user) {
         throw new Error("Erro ao criar conta");
@@ -204,11 +273,11 @@ const Auth = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          account_type: accountType,
+          account_type: finalAccountType,
           agency_name: agencyName,
           responsible_name: responsibleName,
           whatsapp,
-          document,
+          document: normalizedDocument,
           instagram_handle: instagramHandle ? instagramHandle.replace('@', '') : null,
           address_zip: addressZip,
           address_street: addressStreet,
@@ -219,6 +288,8 @@ const Auth = () => {
           address_state: addressState,
           selected_plan: selectedPlan,
           plan: selectedPlan,
+          billing_cycle: billingCycle,
+          is_active: true,
         })
         .eq('id', authData.user.id);
 
@@ -233,23 +304,38 @@ const Auth = () => {
         setIsSignUp(false);
         setCurrentStep(1);
       } else {
+        // Ensure we have a session before checkout
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          // Try to login again to get session
+          await supabase.auth.signInWithPassword({ email, password });
+        }
+
+        // Pre-open window to avoid popup blocker
+        const paymentWindow = window.open('about:blank', '_blank');
+        
         // Create checkout session for paid plan
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
           body: {
             plan: selectedPlan,
-            billing_cycle: billingCycle,
+            billingCycle: billingCycle,
           },
         });
 
-        if (checkoutError) throw checkoutError;
+        if (checkoutError) {
+          if (paymentWindow) paymentWindow.close();
+          throw checkoutError;
+        }
 
-        if (checkoutData?.url) {
-          window.open(checkoutData.url, '_blank');
+        if (checkoutData?.url && paymentWindow) {
+          paymentWindow.location.href = checkoutData.url;
           toast({
             title: "Redirecionando para pagamento",
             description: "Complete o pagamento na janela aberta.",
           });
         } else {
+          if (paymentWindow) paymentWindow.close();
           throw new Error("URL de checkout não recebida");
         }
       }
