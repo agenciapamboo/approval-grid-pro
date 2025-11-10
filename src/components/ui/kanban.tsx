@@ -8,7 +8,7 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { ReactNode } from 'react';
 
 export type Status = {
@@ -125,15 +125,21 @@ export const KanbanHeader = (props: KanbanHeaderProps) =>
 export type KanbanProviderProps = {
   children: ReactNode;
   onDragEnd: (event: DragEndEvent) => void;
+  onDragStart?: (event: DragStartEvent) => void;
   className?: string;
 };
 
 export const KanbanProvider = ({
   children,
   onDragEnd,
+  onDragStart,
   className,
 }: KanbanProviderProps) => (
-  <DndContext collisionDetection={rectIntersection} onDragEnd={onDragEnd}>
+  <DndContext 
+    collisionDetection={rectIntersection} 
+    onDragEnd={onDragEnd}
+    onDragStart={onDragStart}
+  >
     <div
       className={cn('grid w-full auto-cols-fr grid-flow-col gap-4', className)}
     >

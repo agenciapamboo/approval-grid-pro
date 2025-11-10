@@ -9,7 +9,8 @@ import {
   KanbanHeader,
   KanbanProvider,
 } from "@/components/ui/kanban";
-import type { DragEndEvent } from "@dnd-kit/core";
+import { DragOverlay, defaultDropAnimationSideEffects } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent, DropAnimation } from "@dnd-kit/core";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +88,18 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     data: any;
   } | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: '0.5',
+        },
+      },
+    }),
+  };
 
   useEffect(() => {
     loadColumns();
@@ -369,8 +382,16 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    setIsDragging(true);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    
+    setActiveId(null);
+    setIsDragging(false);
 
     if (!over) return;
 
@@ -421,6 +442,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  const activeContent = activeId ? contents.find(c => c.id === activeId) : null;
+
   return (
     <Card>
       <CardHeader>
@@ -458,7 +481,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           </div>
         ) : (
           <div className="min-w-max pb-4">
-            <KanbanProvider onDragEnd={handleDragEnd}>
+            <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
               {columns.map((column) => {
                 // Mapear column_id para status do banco
                 let statusFilter = column.column_id;
@@ -554,6 +577,11 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                           name={content.title}
                           parent={column.column_id}
                           index={index}
+                          className={`transition-all duration-200 ${
+                            isDragging && activeId === content.id 
+                              ? 'opacity-40 scale-95' 
+                              : 'hover:shadow-lg hover:-translate-y-0.5'
+                          }`}
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
@@ -590,6 +618,41 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                   </KanbanBoard>
                 );
               })}
+              <DragOverlay dropAnimation={dropAnimation}>
+                {activeContent ? (
+                  <div className="w-80 bg-card border rounded-lg shadow-2xl p-4 animate-scale-in rotate-3">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="m-0 font-medium text-sm truncate">
+                            {activeContent.title}
+                          </p>
+                          <p className="m-0 text-xs text-muted-foreground truncate">
+                            {activeContent.clients?.name}
+                          </p>
+                        </div>
+                        {activeContent.profiles && (
+                          <Avatar className="h-6 w-6 shrink-0">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${activeContent.profiles.name}`} />
+                            <AvatarFallback className="text-xs">
+                              {activeContent.profiles.name?.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(activeContent.date), "dd/MM", { locale: ptBR })}
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {activeContent.type}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </DragOverlay>
             </KanbanProvider>
           </div>
         )}
