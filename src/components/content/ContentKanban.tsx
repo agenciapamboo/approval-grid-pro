@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
@@ -90,6 +90,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [sendingForReview, setSendingForReview] = useState<string | null>(null);
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -444,6 +445,50 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const activeContent = activeId ? contents.find(c => c.id === activeId) : null;
 
+  const handleSendForReview = async (contentId: string, contentTitle: string) => {
+    try {
+      setSendingForReview(contentId);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "send-for-review",
+        {
+          body: { content_id: contentId },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("Erro da função:", error);
+        throw new Error(error.message || "Falha ao enviar para revisão");
+      }
+
+      toast({
+        title: "Enviado para revisão",
+        description: `"${contentTitle}" foi enviado para aprovação do cliente`,
+      });
+
+      // Recarregar conteúdos para refletir a mudança
+      loadContents();
+    } catch (error: any) {
+      console.error("Erro ao enviar para revisão:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar",
+        description: error.message || "Ocorreu um erro inesperado",
+      });
+    } finally {
+      setSendingForReview(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -611,6 +656,23 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                 {content.type}
                               </Badge>
                             </div>
+                            
+                            {/* Botão Enviar para Aprovação (apenas para draft) */}
+                            {column.column_id === 'draft' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-2 gap-2 text-xs h-7"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSendForReview(content.id, content.title);
+                                }}
+                                disabled={sendingForReview === content.id}
+                              >
+                                <Send className="h-3 w-3" />
+                                {sendingForReview === content.id ? 'Enviando...' : 'Enviar para Aprovação'}
+                              </Button>
+                            )}
                           </div>
                         </KanbanCard>
                       ))}
