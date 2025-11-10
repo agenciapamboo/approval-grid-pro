@@ -686,7 +686,10 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer hover:shadow-md transition-shadow" 
+                onClick={() => navigate("/admin/usuarios")}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Users className="h-4 w-4" />
