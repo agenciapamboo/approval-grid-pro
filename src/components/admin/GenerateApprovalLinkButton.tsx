@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Copy, Calendar } from "lucide-react";
+import { ExternalLink, Copy, Calendar, MessageCircle } from "lucide-react";
+import { hasFeatureAccess } from "@/lib/subscription-enforcement";
 import {
   Select,
   SelectContent,
@@ -50,7 +51,23 @@ export function GenerateApprovalLinkButton({
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [months, setMonths] = useState<Array<{ value: string; label: string; count: number }>>([]);
   const [loadingMonths, setLoadingMonths] = useState(true);
+  const [hasWhatsAppAccess, setHasWhatsAppAccess] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const { toast } = useToast();
+
+  // Verificar permissão WhatsApp ao abrir o diálogo
+  useEffect(() => {
+    const checkWhatsAppAccess = async () => {
+      setCheckingAccess(true);
+      const { hasAccess } = await hasFeatureAccess('whatsapp');
+      setHasWhatsAppAccess(hasAccess);
+      setCheckingAccess(false);
+    };
+    
+    if (open) {
+      checkWhatsAppAccess();
+    }
+  }, [open]);
 
   // Carregar meses com conteúdo pendente
   useEffect(() => {
@@ -202,6 +219,31 @@ export function GenerateApprovalLinkButton({
     });
   };
 
+  const sendViaWhatsApp = () => {
+    if (!hasWhatsAppAccess) {
+      toast({
+        title: "Recurso não disponível",
+        description: "O envio via WhatsApp não está disponível no seu plano atual",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const [year, monthNum] = selectedMonth.split("-");
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const monthLabel = monthNames[parseInt(monthNum) - 1];
+
+    const message = `Olá! 👋\n\nSeguem os criativos de *${monthLabel}/${year}* para sua aprovação:\n\n🔗 ${approvalLink}\n\n⏰ *Link válido até:* ${formatExpiryDate(expiresAt)}\n\nClique no link para visualizar, comentar e aprovar os conteúdos.\n\nQualquer dúvida, estamos à disposição!`;
+    
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
+
+    toast({
+      title: "WhatsApp aberto",
+      description: "Selecione o contato para enviar o link",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -287,6 +329,16 @@ export function GenerateApprovalLinkButton({
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={sendViaWhatsApp}
+                    title={hasWhatsAppAccess ? "Enviar via WhatsApp" : "WhatsApp não disponível no seu plano"}
+                    disabled={!hasWhatsAppAccess || checkingAccess}
+                    className={hasWhatsAppAccess ? "text-green-600 hover:text-green-700 hover:bg-green-50" : ""}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
@@ -296,7 +348,7 @@ export function GenerateApprovalLinkButton({
               </div>
 
               <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-                💡 <strong>Dica:</strong> Envie este link para o cliente via WhatsApp, e-mail ou o canal de preferência dele. O link permite aprovação direta sem necessidade de login.
+                💡 <strong>Dica:</strong> {hasWhatsAppAccess ? "Use o botão WhatsApp para enviar o link com mensagem pré-formatada ou" : "Envie este link para o cliente via WhatsApp, e-mail ou o canal de preferência dele. O link permite aprovação direta sem necessidade de login."}
               </div>
             </div>
           )}
