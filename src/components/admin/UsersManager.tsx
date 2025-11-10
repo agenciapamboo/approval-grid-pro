@@ -40,20 +40,16 @@ export const UsersManager = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Fetch all profiles with role information and related data
+      // Fetch profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          id,
-          name,
-          account_type,
-          plan,
-          is_active,
-          client_id,
-          agency_id,
-          user_roles (role)
-        `)
+        .select("id, name, account_type, plan, is_active, client_id, agency_id, created_at")
         .order("created_at", { ascending: false });
+
+      // Fetch roles separately
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
 
       if (profilesError) throw profilesError;
 
@@ -72,13 +68,10 @@ export const UsersManager = () => {
 
       // Merge data
       const usersData: UserData[] = allAuthUsers.map((authUser: any) => {
-        const profile = profilesData?.find(p => p.id === authUser.id);
-        const userRole = Array.isArray(profile?.user_roles) && profile.user_roles.length > 0 
-          ? profile.user_roles[0]?.role 
-          : null;
-        
-        const client = clients?.find(c => c.id === profile?.client_id);
-        const agency = agencies?.find(a => a.id === profile?.agency_id);
+        const profile = profilesData?.find((p) => p.id === authUser.id);
+        const roleEntry = rolesData?.find((r) => r.user_id === authUser.id);
+        const client = clients?.find((c) => c.id === profile?.client_id);
+        const agency = agencies?.find((a) => a.id === profile?.agency_id);
         
         return {
           id: authUser.id,
@@ -86,7 +79,7 @@ export const UsersManager = () => {
           created_at: authUser.created_at,
           name: profile?.name || authUser.user_metadata?.name || null,
           account_type: profile?.account_type || null,
-          role: userRole,
+          role: roleEntry?.role || null,
           plan: profile?.plan || null,
           is_active: profile?.is_active ?? false,
           client_id: profile?.client_id || null,
