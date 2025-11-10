@@ -53,6 +53,7 @@ export type KanbanCardProps = Pick<Feature, 'id' | 'name'> & {
   parent: string;
   children?: ReactNode;
   className?: string;
+  onClick?: () => void;
 };
 
 export const KanbanCard = ({
@@ -62,6 +63,7 @@ export const KanbanCard = ({
   parent,
   children,
   className,
+  onClick,
 }: KanbanCardProps) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -84,6 +86,11 @@ export const KanbanCard = ({
       {...listeners}
       {...attributes}
       ref={setNodeRef}
+      onClick={(e) => {
+        if (!isDragging && onClick) {
+          onClick();
+        }
+      }}
     >
       {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
     </Card>

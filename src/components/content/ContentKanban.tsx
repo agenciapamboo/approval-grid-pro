@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
+import { ContentDetailsDialog } from "./ContentDetailsDialog";
 
 interface Content {
   id: string;
@@ -138,6 +139,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [sendingForReview, setSendingForReview] = useState<string | null>(null);
   const [requestTypeFilter, setRequestTypeFilter] = useState<'all' | 'creative' | 'adjustment'>('all');
   const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   
   // Estados para o formulário inline
   const [showInlineForm, setShowInlineForm] = useState(false);
@@ -878,6 +881,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleCardClick = (contentId: string) => {
+    if (!isDraggingCard) {
+      setSelectedContentId(contentId);
+      setShowDetailsDialog(true);
+    }
+  };
+
   const handleArchiveContent = async (contentId: string) => {
     try {
       const { error } = await supabase
@@ -1560,14 +1570,12 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                           name={content.title}
                           parent={column.column_id}
                           index={index}
+                          onClick={() => handleCardClick(content.id)}
                           className={cn(
-                            "transition-all duration-200",
-                            isDraggingCard && activeId === content.id 
-                              ? 'opacity-40 scale-95' 
-                              : 'hover:shadow-lg hover:-translate-y-0.5',
-                            deadlineStatus.status === 'overdue' && 'border-2 border-destructive animate-pulse',
-                            deadlineStatus.status === 'urgent' && 'border-2 border-warning',
-                            isKeyboardFocused && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                            "relative cursor-pointer hover:shadow-lg transition-all",
+                            deadlineStatus.status === 'overdue' && "border-2 border-destructive bg-gradient-to-br from-destructive/5 to-transparent",
+                            deadlineStatus.status === 'urgent' && "border-l-4 border-l-warning",
+                            isKeyboardFocused && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                           )}
                         >
                           <div className="space-y-2">
@@ -1793,6 +1801,16 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         onOpenChange={setShowRequestDialog}
         request={selectedRequest}
       />
+
+      {selectedContentId && (
+        <ContentDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          contentId={selectedContentId}
+          onUpdate={loadContents}
+          isAgencyView={true}
+        />
+      )}
     </Card>
   );
 }
