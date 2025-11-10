@@ -3,7 +3,7 @@ import { ptBR } from "date-fns/locale";
 import { ContentPill } from "./ContentPill";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -53,6 +53,10 @@ export function MonthView({
 }: MonthViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<Content | null>(null);
+  const [rowHeightPx, setRowHeightPx] = useState(120);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -117,9 +121,34 @@ export function MonthView({
   const days = generateMonthDays();
   const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
   
-  // Calcular número de semanas e altura dinâmica
+  // Calcular número de semanas
   const weeks = Math.ceil(days.length / 7);
-  const minRowHeight = weeks === 6 ? 110 : weeks === 5 ? 130 : 145;
+
+  // Calcular altura dinâmica baseada no espaço disponível
+  useLayoutEffect(() => {
+    const calculateRowHeight = () => {
+      if (!containerRef.current || !headerRef.current) return;
+      
+      const containerHeight = containerRef.current.clientHeight;
+      const headerHeight = headerRef.current.clientHeight;
+      const gapPixels = Math.max(weeks - 1, 0); // gap-px = 1px entre linhas
+      const availableHeight = containerHeight - headerHeight - gapPixels;
+      const calculatedHeight = Math.floor(availableHeight / weeks);
+      
+      // Aplicar altura mínima de 90px
+      setRowHeightPx(Math.max(90, calculatedHeight));
+    };
+
+    const resizeObserver = new ResizeObserver(calculateRowHeight);
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
+    calculateRowHeight();
+
+    return () => resizeObserver.disconnect();
+  }, [weeks]);
 
   return (
     <DndContext
@@ -129,9 +158,9 @@ export function MonthView({
       onDragEnd={handleDragEnd}
       modifiers={[]}
     >
-      <div className="flex flex-col h-full">
+      <div ref={containerRef} className="flex flex-col h-full">
         {/* Header com dias da semana */}
-        <div className="grid grid-cols-7 border-b border-border">
+        <div ref={headerRef} className="grid grid-cols-7 border-b border-border">
           {weekDays.map(day => (
             <div key={day} className="p-2 text-center font-medium text-sm text-muted-foreground">
               {day}
@@ -142,7 +171,7 @@ export function MonthView({
         {/* Grid dos dias */}
         <div 
           className="flex-1 grid grid-cols-7 gap-px bg-border" 
-          style={{ gridTemplateRows: `repeat(${weeks}, minmax(${minRowHeight}px, 1fr))` }}
+          style={{ gridTemplateRows: `repeat(${weeks}, ${rowHeightPx}px)` }}
         >
           {days.map((day) => {
             const dayContents = getContentsForDay(day);

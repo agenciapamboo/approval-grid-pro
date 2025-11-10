@@ -333,7 +333,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       </div>
 
       {/* Área do calendário */}
-      <Card className="flex-1 min-h-0 overflow-hidden">
+      <Card className="flex-1 min-h-0 overflow-auto">
         {viewMode === 'month' && (
           <MonthView
             currentMonth={currentDate}
