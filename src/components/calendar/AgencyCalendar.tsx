@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus } from "lucide-react";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
+import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Content {
@@ -53,6 +54,8 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [showCreateContent, setShowCreateContent] = useState(false);
   const [showCreateRequest, setShowCreateRequest] = useState(false);
   const [selectedDateForCreation, setSelectedDateForCreation] = useState<Date | null>(null);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -172,6 +175,11 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
     setSelectedDateForCreation(date || null);
   };
 
+  const handleCardClick = (contentId: string) => {
+    setSelectedContentId(contentId);
+    setShowDetailsDialog(true);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
       {/* Card do Calendário - Coluna esquerda */}
@@ -277,18 +285,26 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
               </p>
             ) : (
               selectedDateContents.map((content) => (
-                <Card key={content.id} className="p-3">
+                <Card 
+                  key={content.id} 
+                  className="p-3 cursor-pointer hover:shadow-lg hover:border-primary/50 transition-all"
+                  onClick={() => handleCardClick(content.id)}
+                >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-medium text-sm">{content.title}</h4>
                       <Badge variant="outline" className="text-xs">
-                        {content.type}
+                        {content.type === 'feed' ? 'Feed' : 
+                         content.type === 'story' ? 'Story' : 
+                         content.type === 'reel' ? 'Reel' : 
+                         content.type}
                       </Badge>
                     </div>
+                    
                     {content.clients && (
                       <div className="flex items-center gap-2">
                         <div 
-                          className="w-3 h-3 rounded-full border border-border" 
+                          className="w-3 h-3 rounded-full shadow-sm" 
                           style={{ backgroundColor: clientColors[content.client_id] }}
                         />
                         <p className="text-xs text-muted-foreground">
@@ -296,9 +312,18 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
                         </p>
                       </div>
                     )}
+                    
                     <div className="flex items-center gap-2">
-                      <Badge variant={content.status === 'approved' ? 'success' : 'outline'}>
-                        {content.status === 'approved' ? 'Aprovado' : content.status}
+                      <Badge variant={
+                        content.status === 'approved' ? 'success' : 
+                        content.status === 'in_review' ? 'warning' :
+                        content.status === 'changes_requested' ? 'destructive' :
+                        'outline'
+                      }>
+                        {content.status === 'approved' ? 'Aprovado' : 
+                         content.status === 'in_review' ? 'Em Revisão' :
+                         content.status === 'changes_requested' ? 'Ajustes Solicitados' :
+                         'Rascunho'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(content.date), "HH:mm")}
@@ -339,6 +364,16 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
         }}
         initialDate={selectedDateForCreation}
       />
+
+      {/* Dialog de Detalhes do Conteúdo */}
+      {selectedContentId && (
+        <ContentDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          contentId={selectedContentId}
+          onUpdate={loadContents}
+        />
+      )}
     </div>
   );
 }
