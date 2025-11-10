@@ -334,84 +334,102 @@ const Dashboard = () => {
           return;
         }
 
-        console.log('🔄 Loading client data for client_id:', enrichedProfile.client_id);
+      console.log('🔄 Loading client data for client_id:', enrichedProfile.client_id);
+      
+      try {
+        // PASSO 1: Buscar apenas o cliente
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("id", enrichedProfile.client_id)
+          .maybeSingle();
         
-        try {
-          // Buscar cliente com INNER JOIN para garantir que a agência exista
-          const { data: clientWithAgency, error: clientError } = await supabase
-            .from("clients")
-            .select(`
-              *,
-              agency:agencies(
-                id,
-                name,
-                slug,
-                brand_primary,
-                brand_secondary,
-                logo_url,
-                email,
-                whatsapp
-              )
-            `)
-            .eq("id", enrichedProfile.client_id)
-            .maybeSingle();
-          
-          if (clientError) {
-            console.error("❌ Error fetching client with agency:", clientError);
-            toast({
-              variant: "destructive",
-              title: "Erro ao carregar dados",
-              description: "Não foi possível carregar seus dados. Por favor, recarregue a página.",
-            });
-            setClientDataLoaded(false);
-            return;
-          }
-          
-          if (!clientWithAgency) {
-            console.warn('⚠️ Cliente não encontrado para client_id:', enrichedProfile.client_id);
-            toast({
-              variant: "destructive",
-              title: "Cliente não encontrado",
-              description: "Seu cadastro não foi encontrado. Entre em contato com o suporte.",
-            });
-            setClientDataLoaded(false);
-            return;
-          }
-          
-          if (!clientWithAgency.agency) {
-            console.warn('⚠️ Agência não encontrada para client:', clientWithAgency.id);
-            toast({
-              variant: "destructive",
-              title: "Agência não encontrada",
-              description: "A agência associada ao seu cadastro não foi encontrada. Entre em contato com o suporte.",
-            });
-            setClientDataLoaded(false);
-            return;
-          }
-          
-          console.log('✅ Client and Agency data loaded:', {
-            clientId: clientWithAgency.id,
-            clientSlug: clientWithAgency.slug,
-            agencyId: clientWithAgency.agency.id,
-            agencySlug: clientWithAgency.agency.slug,
-          });
-          
-          // Separar dados do cliente e da agência
-          const { agency, ...clientDataOnly } = clientWithAgency;
-          
-          setClients([clientDataOnly]);
-          setAgencies([agency]);
-          setClientDataLoaded(true);
-          
-        } catch (error) {
-          console.error('❌ Unexpected error loading client data:', error);
+        if (clientError) {
+          console.error("❌ Error fetching client:", clientError);
           toast({
             variant: "destructive",
-            title: "Erro inesperado",
-            description: "Ocorreu um erro ao carregar seus dados. Por favor, recarregue a página.",
+            title: "Erro ao carregar dados",
+            description: "Não foi possível carregar seus dados. Por favor, recarregue a página.",
           });
           setClientDataLoaded(false);
+          return;
         }
+        
+        if (!clientData) {
+          console.warn('⚠️ Cliente não encontrado para client_id:', enrichedProfile.client_id);
+          toast({
+            variant: "destructive",
+            title: "Cliente não encontrado",
+            description: "Seu cadastro não foi encontrado. Entre em contato com o suporte.",
+          });
+          setClientDataLoaded(false);
+          return;
+        }
+        
+        console.log('✅ Client data loaded:', {
+          clientId: clientData.id,
+          clientSlug: clientData.slug,
+          agencyId: clientData.agency_id,
+        });
+        
+        // PASSO 2: Buscar a agência usando o agency_id do cliente
+        if (!clientData.agency_id) {
+          console.warn('⚠️ Cliente sem agência associada:', clientData.id);
+          toast({
+            variant: "destructive",
+            title: "Agência não encontrada",
+            description: "Seu cliente não está associado a uma agência. Entre em contato com o suporte.",
+          });
+          setClientDataLoaded(false);
+          return;
+        }
+        
+        const { data: agencyData, error: agencyError } = await supabase
+          .from("agencies")
+          .select("id, name, slug, brand_primary, brand_secondary, logo_url, email, whatsapp")
+          .eq("id", clientData.agency_id)
+          .maybeSingle();
+        
+        if (agencyError) {
+          console.error("❌ Error fetching agency:", agencyError);
+          toast({
+            variant: "destructive",
+            title: "Erro ao carregar agência",
+            description: "Não foi possível carregar dados da agência. Por favor, recarregue a página.",
+          });
+          setClientDataLoaded(false);
+          return;
+        }
+        
+        if (!agencyData) {
+          console.warn('⚠️ Agência não encontrada:', clientData.agency_id);
+          toast({
+            variant: "destructive",
+            title: "Agência não encontrada",
+            description: "A agência associada ao seu cadastro não foi encontrada. Entre em contato com o suporte.",
+          });
+          setClientDataLoaded(false);
+          return;
+        }
+        
+        console.log('✅ Agency data loaded:', {
+          agencyId: agencyData.id,
+          agencySlug: agencyData.slug,
+        });
+        
+        setClients([clientData]);
+        setAgencies([agencyData]);
+        setClientDataLoaded(true);
+        
+      } catch (error) {
+        console.error('❌ Unexpected error loading client data:', error);
+        toast({
+          variant: "destructive",
+          title: "Erro inesperado",
+          description: "Ocorreu um erro ao carregar seus dados. Por favor, recarregue a página.",
+        });
+        setClientDataLoaded(false);
+      }
 
         // Buscar conteúdos do cliente
         const { data: contentsData, error: contentsError } = await supabase
