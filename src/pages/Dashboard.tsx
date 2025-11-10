@@ -80,6 +80,7 @@ interface Client {
   website?: string | null;
   whatsapp?: string | null;
   address?: string | null;
+  monthly_creatives?: number | null;
   agencies?: Agency | null;
 }
 
@@ -745,54 +746,116 @@ const Dashboard = () => {
           <div className="space-y-6">
             {/* Botões de ação */}
             <div className="mb-6 flex flex-col sm:flex-row gap-3">
-              {!clientDataLoaded ? (
-                <>
-                  <Skeleton className="h-10 w-full sm:w-[200px]" />
-                  <Skeleton className="h-10 w-full sm:w-[260px]" />
-                </>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => setRequestCreativeOpen(true)}
-                    className="w-full sm:w-auto"
-                    disabled={!clients[0] || !agencies[0]}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Solicitar Criativo
-                  </Button>
+              <Button
+                onClick={() => {
+                  if (!clients[0] || !agencies[0]) {
+                    toast({
+                      variant: "destructive",
+                      title: "Aguarde",
+                      description: "Os dados ainda estão sendo carregados. Tente novamente em instantes.",
+                    });
+                    return;
+                  }
+                  setRequestCreativeOpen(true);
+                }}
+                className="w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Solicitar Criativo
+              </Button>
+              
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const clientSlug = clients[0]?.slug;
+                  const agencySlug = agencies[0]?.slug;
                   
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      const clientSlug = clients[0]?.slug;
-                      const agencySlug = agencies[0]?.slug;
-                      
-                      if (!agencySlug || !clientSlug) {
-                        toast({
-                          variant: "destructive",
-                          title: "Erro de navegação",
-                          description: "Não foi possível carregar os dados da sua conta. Por favor, recarregue a página.",
-                        });
-                        console.error('Navigation failed - Missing slugs:', { 
-                          agencySlug, 
-                          clientSlug,
-                          agency: agencies[0],
-                          client: clients[0]
-                        });
-                        return;
-                      }
-                      
-                      navigate(`/${agencySlug}/${clientSlug}`);
-                    }}
-                    className="w-full sm:w-auto"
-                    disabled={!clients[0] || !agencies[0]}
-                  >
-                    <FileImage className="h-4 w-4 mr-2" />
-                    Ver Todos os Meus Conteúdos
-                  </Button>
-                </>
-              )}
+                  if (!agencySlug || !clientSlug) {
+                    toast({
+                      variant: "destructive",
+                      title: "Aguarde",
+                      description: "Os dados ainda estão sendo carregados. Tente novamente em instantes.",
+                    });
+                    return;
+                  }
+                  
+                  navigate(`/${agencySlug}/${clientSlug}`);
+                }}
+                className="w-full sm:w-auto"
+              >
+                <FileImage className="h-4 w-4 mr-2" />
+                Ver Todos os Meus Conteúdos
+              </Button>
             </div>
+
+            {/* Indicador de Quota de Criativos */}
+            {(() => {
+              const monthlyQuota = clients[0]?.monthly_creatives || 0;
+              
+              if (monthlyQuota === 0) return null;
+              
+              const now = new Date();
+              const currentMonth = format(now, 'yyyy-MM');
+              
+              const currentMonthCreatives = contents.filter(c => {
+                const contentMonth = format(new Date(c.date), 'yyyy-MM');
+                return contentMonth === currentMonth;
+              }).length;
+              
+              const remainingCreatives = monthlyQuota - currentMonthCreatives;
+              const exceededCreatives = currentMonthCreatives > monthlyQuota ? currentMonthCreatives - monthlyQuota : 0;
+              
+              return (
+                <Card className="mb-6">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">Criativos deste Mês</CardTitle>
+                      </div>
+                      <Badge variant={exceededCreatives > 0 ? "destructive" : remainingCreatives <= 2 ? "warning" : "default"}>
+                        {currentMonthCreatives} / {monthlyQuota}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Enviados para aprovação:</span>
+                        <span className="font-semibold">{currentMonthCreatives}</span>
+                      </div>
+                      
+                      {exceededCreatives > 0 ? (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Quota excedida</AlertTitle>
+                          <AlertDescription>
+                            Você excedeu a quota contratada em {exceededCreatives} criativo{exceededCreatives > 1 ? 's' : ''}. 
+                            Entre em contato com a agência para ajustar seu plano.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Restantes na quota:</span>
+                          <span className={`font-semibold ${remainingCreatives <= 2 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}`}>
+                            {remainingCreatives}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {remainingCreatives <= 2 && remainingCreatives > 0 && (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            Você está próximo do limite da sua quota mensal.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Solicitações Criativas */}
             {creativeRequests.length > 0 && (
@@ -919,7 +982,6 @@ const Dashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={!clientDataLoaded || !clients[0] || !agencies[0]}
                     onClick={() => {
                       const { clientSlug, agencySlug } = getNavigationSlugs();
                       
@@ -927,14 +989,7 @@ const Dashboard = () => {
                         toast({
                           variant: "destructive",
                           title: "Erro de navegação",
-                          description: `Não foi possível carregar os dados da ${!agencySlug ? 'agência' : 'conta'}. Por favor, recarregue a página.`,
-                        });
-                        console.error('Navigation failed - Missing slugs:', { 
-                          agencySlug, 
-                          clientSlug,
-                          agency: agencies[0],
-                          client: clients[0],
-                          clientDataLoaded
+                          description: "Dados não carregados. Aguarde ou recarregue a página.",
                         });
                         return;
                       }
