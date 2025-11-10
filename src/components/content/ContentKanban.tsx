@@ -21,7 +21,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
@@ -121,9 +122,10 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     observations: '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; url: string; size: number }>>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; url: string; size: number; type: string }>>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -611,7 +613,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
     try {
       setUploadingFiles(true);
-      const uploadedUrls: Array<{ name: string; url: string; size: number }> = [];
+      const uploadedUrls: Array<{ name: string; url: string; size: number; type: string }> = [];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -669,7 +671,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         uploadedUrls.push({
           name: file.name,
           url: publicUrl,
-          size: file.size
+          size: file.size,
+          type: file.type
         });
       }
 
@@ -978,31 +981,63 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                 </label>
                               </div>
                               
-                              {/* Lista de arquivos enviados */}
+                              {/* Preview de arquivos enviados */}
                               {uploadedFiles.length > 0 && (
                                 <div className="space-y-2 mt-2">
-                                  {uploadedFiles.map((file, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex items-center justify-between bg-muted/50 rounded px-2 py-1.5"
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                        <span className="text-xs truncate">{file.name}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                          ({(file.size / 1024).toFixed(1)} KB)
-                                        </span>
-                                      </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0"
-                                        onClick={() => removeFile(index)}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ))}
+                                  <Label className="text-xs">Arquivos anexados ({uploadedFiles.length})</Label>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {uploadedFiles.map((file, index) => {
+                                      const isImage = file.type.startsWith('image/');
+                                      return (
+                                        <div key={index} className="relative group">
+                                          {isImage ? (
+                                            <div 
+                                              className="aspect-square rounded-md overflow-hidden bg-muted cursor-pointer relative"
+                                              onClick={() => setPreviewImage(file.url)}
+                                            >
+                                              <img 
+                                                src={file.url} 
+                                                alt={file.name}
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                              />
+                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                                <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                              </div>
+                                              <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  removeFile(index);
+                                                }}
+                                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="aspect-square rounded-md bg-muted p-2 flex flex-col items-center justify-center gap-1 relative group">
+                                              <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                              <span className="text-xs text-center truncate w-full px-1">{file.name}</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                {(file.size / 1024).toFixed(1)} KB
+                                              </span>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeFile(index)}
+                                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -1319,6 +1354,24 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Dialog para preview de imagem em tamanho maior */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Preview da Imagem</DialogTitle>
+          </DialogHeader>
+          {previewImage && (
+            <div className="w-full">
+              <img 
+                src={previewImage} 
+                alt="Preview"
+                className="w-full h-auto rounded-md"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <RequestDetailsDialog
         open={showRequestDialog}
