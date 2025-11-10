@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
         orphaned_found: orphaned.length
       },
       orphaned_accounts: orphaned,
+      all_auth_users: authUsers?.users || [],
       timestamp: new Date().toISOString()
     }
 
