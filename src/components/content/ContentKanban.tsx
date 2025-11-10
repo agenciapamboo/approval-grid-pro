@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/kanban";
 import { DragOverlay, defaultDropAnimationSideEffects } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent, DropAnimation } from "@dnd-kit/core";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
@@ -104,6 +104,24 @@ const newRequestSchema = z.object({
   observations: z.string().max(500, "Observações muito longas").optional(),
 });
 
+// Helper para calcular status do deadline
+const getDeadlineStatus = (contentDate: string) => {
+  const now = new Date();
+  const deadline = new Date(contentDate);
+  const diffInDays = differenceInDays(deadline, now);
+  
+  if (diffInDays < 0) {
+    return { status: 'overdue', color: 'hsl(var(--destructive))', label: 'Atrasado', variant: 'destructive' as const };
+  } else if (diffInDays === 0) {
+    return { status: 'today', color: 'hsl(var(--warning))', label: 'Hoje', variant: 'warning' as const };
+  } else if (diffInDays <= 2) {
+    return { status: 'urgent', color: 'hsl(var(--warning))', label: 'Urgente', variant: 'warning' as const };
+  } else if (diffInDays <= 7) {
+    return { status: 'soon', color: 'hsl(45 100% 50%)', label: 'Próximo', variant: 'outline' as const };
+  }
+  return { status: 'normal', color: 'hsl(var(--muted-foreground))', label: 'Normal', variant: 'outline' as const };
+};
+
 export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const { toast } = useToast();
   const [contents, setContents] = useState<Content[]>([]);
@@ -148,6 +166,17 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     to: new Date()
   });
 
+  // Estados para navegação por teclado
+  const [focusedColumn, setFocusedColumn] = useState<number>(0);
+  const [focusedCard, setFocusedCard] = useState<number>(0);
+  const [keyboardNavigationActive, setKeyboardNavigationActive] = useState(false);
+
+  // Estados para drag-to-scroll
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollStartX, setScrollStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const kanbanContainerRef = useRef<HTMLDivElement>(null);
+
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
       styles: {
@@ -157,6 +186,76 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       },
     }),
   };
+
+  // Keyboard navigation effect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar se estiver em input/textarea ou dialog aberto
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      const getContentsByColumnIndex = (colIndex: number) => {
+        const column = columns[colIndex];
+        if (!column) return [];
+        
+        let statusFilter = column.column_id;
+        if (column.column_id === 'scheduled') {
+          statusFilter = 'approved';
+        }
+        
+        if (column.column_id === 'requests') {
+          return [];
+        }
+        
+        return contents.filter((content) => {
+          if (column.column_id === 'scheduled') {
+            return content.status === 'approved' && new Date(content.date) > new Date();
+          }
+          return content.status === statusFilter;
+        });
+      };
+
+      switch(e.key) {
+        case 'ArrowRight':
+          e.preventDefault();
+          setFocusedColumn(prev => Math.min(prev + 1, columns.length - 1));
+          setFocusedCard(0);
+          setKeyboardNavigationActive(true);
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setFocusedColumn(prev => Math.max(prev - 1, 0));
+          setFocusedCard(0);
+          setKeyboardNavigationActive(true);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          const currentColumnContents = getContentsByColumnIndex(focusedColumn);
+          setFocusedCard(prev => Math.min(prev + 1, currentColumnContents.length - 1));
+          setKeyboardNavigationActive(true);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedCard(prev => Math.max(prev - 1, 0));
+          setKeyboardNavigationActive(true);
+          break;
+        case 'Escape':
+          setKeyboardNavigationActive(false);
+          break;
+        case 'Delete':
+          if (!keyboardNavigationActive) return;
+          const contentToArchive = getContentsByColumnIndex(focusedColumn)[focusedCard];
+          if (contentToArchive && confirm(`Arquivar "${contentToArchive.title}"?`)) {
+            handleArchiveContent(contentToArchive.id);
+          }
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedColumn, focusedCard, columns, contents, keyboardNavigationActive]);
 
   useEffect(() => {
     loadColumns();
@@ -779,6 +878,30 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleArchiveContent = async (contentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ status: 'archived' as any })
+        .eq("id", contentId);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Conteúdo arquivado",
+        description: "O conteúdo foi movido para o arquivo.",
+      });
+      
+      loadContents();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao arquivar",
+        description: "Não foi possível arquivar o conteúdo.",
+      });
+    }
+  };
+
   const handleCreateRequest = async () => {
     try {
       // Validar dados
@@ -849,6 +972,46 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  // Drag-to-scroll handlers
+  const handleMouseDownScroll = (e: React.MouseEvent) => {
+    if (!kanbanContainerRef.current) return;
+    
+    setIsScrolling(true);
+    setScrollStartX(e.pageX - kanbanContainerRef.current.offsetLeft);
+    setScrollLeft(kanbanContainerRef.current.scrollLeft);
+    
+    kanbanContainerRef.current.style.cursor = 'grabbing';
+    kanbanContainerRef.current.style.userSelect = 'none';
+  };
+
+  const handleMouseMoveScroll = (e: React.MouseEvent) => {
+    if (!isScrolling || !kanbanContainerRef.current) return;
+    
+    e.preventDefault();
+    const x = e.pageX - kanbanContainerRef.current.offsetLeft;
+    const walk = (x - scrollStartX) * 2;
+    kanbanContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUpScroll = () => {
+    setIsScrolling(false);
+    
+    if (kanbanContainerRef.current) {
+      kanbanContainerRef.current.style.cursor = 'grab';
+      kanbanContainerRef.current.style.userSelect = 'auto';
+    }
+  };
+
+  const handleMouseLeaveScroll = () => {
+    if (isScrolling) {
+      setIsScrolling(false);
+      if (kanbanContainerRef.current) {
+        kanbanContainerRef.current.style.cursor = 'grab';
+        kanbanContainerRef.current.style.userSelect = 'auto';
+      }
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -861,6 +1024,40 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Indicadores de atalhos */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+                    <Keyboard className="h-3.5 w-3.5" />
+                    <span>Atalhos</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-1 text-xs">
+                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">←→</kbd> Navegar colunas</p>
+                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">↑↓</kbd> Navegar cards</p>
+                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Del</kbd> Arquivar</p>
+                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Esc</kbd> Sair</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+                    <Hand className="h-3.5 w-3.5" />
+                    <span>Arraste</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  <p>Clique e arraste para rolar horizontalmente</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             {/* Filtro de data */}
             <Popover>
               <PopoverTrigger asChild>
@@ -966,7 +1163,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
             Nenhum conteúdo nos últimos 30 dias.
           </div>
         ) : (
-          <div className="min-w-max pb-4">
+          <div 
+            ref={kanbanContainerRef}
+            className="min-w-max pb-4 cursor-grab active:cursor-grabbing"
+            onMouseDown={handleMouseDownScroll}
+            onMouseMove={handleMouseMoveScroll}
+            onMouseUp={handleMouseUpScroll}
+            onMouseLeave={handleMouseLeaveScroll}
+          >
             <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
               {columns.map((column) => {
                 // Mapear column_id para status do banco
@@ -1343,18 +1547,28 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                       color={column.column_color} 
                     />
                     <KanbanCards>
-                      {columnContents.map((content, index) => (
+                      {columnContents.map((content, index) => {
+                        const deadlineStatus = getDeadlineStatus(content.date);
+                        const isKeyboardFocused = keyboardNavigationActive && 
+                          columns[focusedColumn]?.column_id === column.column_id && 
+                          focusedCard === index;
+                        
+                        return (
                         <KanbanCard
                           key={content.id}
                           id={content.id}
                           name={content.title}
                           parent={column.column_id}
                           index={index}
-                          className={`transition-all duration-200 ${
+                          className={cn(
+                            "transition-all duration-200",
                             isDraggingCard && activeId === content.id 
                               ? 'opacity-40 scale-95' 
-                              : 'hover:shadow-lg hover:-translate-y-0.5'
-                          }`}
+                              : 'hover:shadow-lg hover:-translate-y-0.5',
+                            deadlineStatus.status === 'overdue' && 'border-2 border-destructive animate-pulse',
+                            deadlineStatus.status === 'urgent' && 'border-2 border-warning',
+                            isKeyboardFocused && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                          )}
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
@@ -1377,10 +1591,37 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                             </div>
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(new Date(content.date), "dd/MM", { locale: ptBR })}
-                                </div>
+                                {/* Badge de deadline com urgência */}
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge 
+                                        variant={deadlineStatus.variant}
+                                        className={cn(
+                                          "gap-1 text-xs cursor-help",
+                                          deadlineStatus.status === 'overdue' && "animate-pulse"
+                                        )}
+                                      >
+                                        {(deadlineStatus.status === 'overdue' || deadlineStatus.status === 'urgent') && (
+                                          <AlertCircle className="h-3 w-3" />
+                                        )}
+                                        <Calendar className="h-3 w-3" />
+                                        {format(new Date(content.date), "dd/MM", { locale: ptBR })}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold">{deadlineStatus.label}</p>
+                                        <p>{format(new Date(content.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                                        {deadlineStatus.status !== 'normal' && (
+                                          <p className="text-muted-foreground">
+                                            {differenceInDays(new Date(content.date), new Date())} dias restantes
+                                          </p>
+                                        )}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                                 
                                 {/* Indicadores de comentários e anexos */}
                                 <div className="flex items-center gap-2">
@@ -1443,7 +1684,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                             )}
                           </div>
                         </KanbanCard>
-                      ))}
+                        );
+                      })}
                     </KanbanCards>
                   </KanbanBoard>
                 );
