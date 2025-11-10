@@ -8,48 +8,48 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[ADMIN-CHANGE-PLAN] ${step}${detailsStr}`);
 };
 
 const logError = (error: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.error(`[ADMIN-CHANGE-PLAN ERROR] ${error}${detailsStr}`);
 };
 
 // Stripe product configuration
 const STRIPE_PRODUCTS = {
   creator: {
-    id: 'prod_TLU5r2YFEPikQ7',
+    id: "prod_TLU5r2YFEPikQ7",
     free: true,
   },
   eugencia: {
-    id: 'prod_TLUHBx7ZnfIvX7',
+    id: "prod_TLUHBx7ZnfIvX7",
     prices: {
-      monthly: { lookup_key: 'plano_eugencia_mensal', amount: 2970 },
-      annual: { lookup_key: 'plano_eugencia_anual', amount: 27000 },
+      monthly: { lookup_key: "plano_eugencia_mensal", amount: 2970 },
+      annual: { lookup_key: "plano_eugencia_anual", amount: 27000 },
     },
   },
   socialmidia: {
-    id: 'prod_TLUSSunwc1e3z3',
+    id: "prod_TLUSSunwc1e3z3",
     prices: {
-      monthly: { lookup_key: 'plano_mensal_socialmidia', amount: 4950 },
-      annual: { lookup_key: 'plano_anual_socialmidia', amount: 49500 },
+      monthly: { lookup_key: "plano_mensal_socialmidia", amount: 4950 },
+      annual: { lookup_key: "plano_anual_socialmidia", amount: 49500 },
     },
   },
   fullservice: {
-    id: 'prod_TLXZljt4VYKjyA',
+    id: "prod_TLXZljt4VYKjyA",
     prices: {
-      monthly: { lookup_key: 'plano_agencia_mensal', amount: 9720 },
-      annual: { lookup_key: 'plano_agencia_anual', amount: 97200 },
+      monthly: { lookup_key: "plano_agencia_mensal", amount: 9720 },
+      annual: { lookup_key: "plano_agencia_anual", amount: 97200 },
     },
   },
   unlimited: {
-    id: 'prod_internal_unlimited',
+    id: "prod_internal_unlimited",
     free: true,
   },
   free: {
-    id: 'prod_free',
+    id: "prod_free",
     free: true,
   },
 } as const;
@@ -62,7 +62,7 @@ serve(async (req) => {
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
@@ -75,15 +75,14 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Auth error: ${userError.message}`);
-    
+
     const user = userData.user;
     if (!user) throw new Error("User not found");
 
     // Verificar se é super_admin
-    const { data: roleData, error: roleError } = await supabaseClient
-      .rpc('get_user_role', { _user_id: user.id });
+    const { data: roleData, error: roleError } = await supabaseClient.rpc("get_user_role", { _user_id: user.id });
 
-    if (roleError || roleData !== 'super_admin') {
+    if (roleError || roleData !== "super_admin") {
       throw new Error("Unauthorized: Only super_admin can change plans");
     }
 
@@ -91,7 +90,7 @@ serve(async (req) => {
 
     // Parse request
     const { agency_id, new_plan, billing_cycle } = await req.json();
-    
+
     if (!agency_id || !new_plan) {
       throw new Error("Missing required fields: agency_id and new_plan");
     }
@@ -100,9 +99,9 @@ serve(async (req) => {
 
     // Buscar agência primeiro
     const { data: agency, error: agencyError } = await supabaseClient
-      .from('agencies')
-      .select('email')
-      .eq('id', agency_id)
+      .from("agencies")
+      .select("email")
+      .eq("id", agency_id)
       .single();
 
     if (agencyError || !agency) {
@@ -110,8 +109,9 @@ serve(async (req) => {
     }
 
     // Buscar email do admin da agência via RPC
-    const { data: adminEmailFromRpc, error: emailError } = await supabaseClient
-      .rpc('get_agency_admin_email', { agency_id_param: agency_id });
+    const { data: adminEmailFromRpc, error: emailError } = await supabaseClient.rpc("get_agency_admin_email", {
+      agency_id_param: agency_id,
+    });
 
     // Usar email do RPC se disponível, senão usar email da agência
     const adminEmail = adminEmailFromRpc || agency.email;
@@ -120,15 +120,15 @@ serve(async (req) => {
       throw new Error("Agency email not found. Please configure an email for the agency.");
     }
 
-    logStep("Agency email found", { adminEmail, source: adminEmailFromRpc ? 'admin_profile' : 'agency_table' });
+    logStep("Agency email found", { adminEmail, source: adminEmailFromRpc ? "admin_profile" : "agency_table" });
 
     // Buscar perfil do admin se existir, ou buscar qualquer perfil da agência
     let adminProfile = null;
-    
+
     const { data: adminProfiles, error: adminProfileError } = await supabaseClient
-      .from('profiles')
-      .select('id, stripe_customer_id, stripe_subscription_id')
-      .eq('agency_id', agency_id)
+      .from("profiles")
+      .select("id, stripe_customer_id, stripe_subscription_id")
+      .eq("agency_id", agency_id)
       .limit(1);
 
     if (!adminProfileError && adminProfiles && adminProfiles.length > 0) {
@@ -148,15 +148,15 @@ serve(async (req) => {
     // Inicializar Stripe
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe key not configured");
-    
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Verificar/criar Stripe customer
     let customerId = adminProfile.stripe_customer_id;
-    
+
     if (!customerId) {
       const customers = await stripe.customers.list({ email: adminEmail, limit: 1 });
-      
+
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
         logStep("Existing Stripe customer found", { customerId });
@@ -174,10 +174,7 @@ serve(async (req) => {
 
       // Atualizar perfil com customer_id (se existir perfil)
       if (adminProfile.id) {
-        await supabaseClient
-          .from('profiles')
-          .update({ stripe_customer_id: customerId })
-          .eq('id', adminProfile.id);
+        await supabaseClient.from("profiles").update({ stripe_customer_id: customerId }).eq("id", adminProfile.id);
       }
     }
 
@@ -187,13 +184,13 @@ serve(async (req) => {
       throw new Error(`Invalid plan: ${new_plan}`);
     }
 
-    const isFree = 'free' in productConfig && productConfig.free;
+    const isFree = "free" in productConfig && productConfig.free;
 
     // Se plano gratuito, cancelar subscription existente
     if (isFree) {
       if (adminProfile.stripe_subscription_id) {
         logStep("Canceling existing subscription", { subscriptionId: adminProfile.stripe_subscription_id });
-        
+
         await stripe.subscriptions.cancel(adminProfile.stripe_subscription_id);
         logStep("Subscription canceled");
       }
@@ -201,7 +198,7 @@ serve(async (req) => {
       // Atualizar perfil (se existir)
       if (adminProfile.id) {
         await supabaseClient
-          .from('profiles')
+          .from("profiles")
           .update({
             stripe_subscription_id: null,
             plan: new_plan,
@@ -214,12 +211,12 @@ serve(async (req) => {
             grace_period_end: null,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', adminProfile.id);
+          .eq("id", adminProfile.id);
       }
 
       // Atualizar agência
       await supabaseClient
-        .from('agencies')
+        .from("agencies")
         .update({
           plan: new_plan,
           plan_type: null,
@@ -227,7 +224,7 @@ serve(async (req) => {
           plan_renewal_date: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', agency_id);
+        .eq("id", agency_id);
 
       logStep("Plan updated to free");
 
@@ -239,12 +236,12 @@ serve(async (req) => {
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
-        }
+        },
       );
     }
 
     // Plano pago - requer billing_cycle
-    if (!billing_cycle || !['monthly', 'annual'].includes(billing_cycle)) {
+    if (!billing_cycle || !["monthly", "annual"].includes(billing_cycle)) {
       throw new Error("Billing cycle required for paid plans (monthly or annual)");
     }
 
@@ -258,49 +255,54 @@ serve(async (req) => {
 
     // Try to get price using lookup_key first, then fallback to price_id
     let priceId: string | null = null;
-    
+
     try {
       const prices = await stripe.prices.list({
         lookup_keys: [priceConfig.lookup_key],
         limit: 1,
       });
-      
+
       if (prices.data.length > 0) {
         priceId = prices.data[0].id;
         logStep("Stripe price found via lookup_key", { priceId });
       }
     } catch (error: any) {
-      logStep("Failed to find price via lookup_key", { lookupKey: priceConfig.lookup_key, error: error?.message || String(error) });
+      logStep("Failed to find price via lookup_key", {
+        lookupKey: priceConfig.lookup_key,
+        error: error?.message || String(error),
+      });
     }
-    
+
     // Fallback to price_id from config if lookup_key failed
     if (!priceId) {
       const STRIPE_PRODUCTS_FALLBACK: any = {
         eugencia: {
           prices: {
-            monthly: { price_id: 'price_1Rrj1RH1QsWUILSq8YF8OBNm' },
-            annual: { price_id: 'price_1Rrj1RH1QsWUILSqKo6aaS8J' },
+            monthly: { price_id: "price_1Rrj1RH1QsWUILSq8YF8OBNm" },
+            annual: { price_id: "price_1Rrj1RH1QsWUILSqKo6aaS8J" },
           },
         },
         socialmidia: {
           prices: {
-            monthly: { price_id: 'price_1Rrj2AH1QsWUILSqVh8nIz3Y' },
-            annual: { price_id: 'price_1Rrj2AH1QsWUILSqc7bZfGxK' },
+            monthly: { price_id: "price_1Rrj2AH1QsWUILSqVh8nIz3Y" },
+            annual: { price_id: "price_1Rrj2AH1QsWUILSqc7bZfGxK" },
           },
         },
         fullservice: {
           prices: {
-            monthly: { price_id: 'price_1Rrj2sH1QsWUILSqZN9xGk4L' },
-            annual: { price_id: 'price_1Rrj2sH1QsWUILSqM8pQr3vW' },
+            monthly: { price_id: "price_1Rrj2sH1QsWUILSqZN9xGk4L" },
+            annual: { price_id: "price_1Rrj2sH1QsWUILSqM8pQr3vW" },
           },
         },
       };
-      
+
       priceId = STRIPE_PRODUCTS_FALLBACK[new_plan]?.prices?.[billing_cycle]?.price_id;
       if (priceId) {
         logStep("Using fallback price_id from config", { priceId });
       } else {
-        throw new Error(`Erro ao processar plano. Configure os preços no Stripe com lookup_key "${priceConfig.lookup_key}" ou adicione price_id na configuração.`);
+        throw new Error(
+          `Erro ao processar plano. Configure os preços no Stripe com lookup_key "${priceConfig.lookup_key}" ou adicione price_id na configuração.`,
+        );
       }
     }
 
@@ -312,15 +314,15 @@ serve(async (req) => {
 
     // Criar nova subscription
     logStep("Creating new subscription", { customerId, priceId });
-    
+
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
-      payment_behavior: 'default_incomplete',
+      payment_behavior: "default_incomplete",
       payment_settings: {
-        save_default_payment_method: 'on_subscription',
+        save_default_payment_method: "on_subscription",
       },
-      expand: ['latest_invoice.payment_intent'],
+      expand: ["latest_invoice.payment_intent"],
     });
 
     logStep("Subscription created", {
@@ -334,25 +336,25 @@ serve(async (req) => {
     // Atualizar perfil (se existir)
     if (adminProfile.id) {
       await supabaseClient
-        .from('profiles')
+        .from("profiles")
         .update({
           stripe_subscription_id: subscription.id,
           plan: new_plan,
           billing_cycle: billing_cycle,
           subscription_status: subscription.status,
           current_period_end: nextBillingDate,
-          is_pro: subscription.status === 'active' || subscription.status === 'trialing',
+          is_pro: subscription.status === "active" || subscription.status === "trialing",
           plan_renewal_date: nextBillingDate,
           delinquent: false,
           grace_period_end: null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', adminProfile.id);
+        .eq("id", adminProfile.id);
     }
 
     // Atualizar agência
     await supabaseClient
-      .from('agencies')
+      .from("agencies")
       .update({
         plan: new_plan,
         plan_type: billing_cycle,
@@ -360,13 +362,13 @@ serve(async (req) => {
         plan_renewal_date: nextBillingDate,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', agency_id);
+      .eq("id", agency_id);
 
     logStep("Database updated successfully");
 
     // Pegar payment intent URL se necessário
     let paymentUrl = null;
-    if (subscription.status === 'incomplete') {
+    if (subscription.status === "incomplete") {
       const latestInvoice = subscription.latest_invoice as any;
       if (latestInvoice?.payment_intent?.client_secret) {
         paymentUrl = `https://checkout.stripe.com/pay/${latestInvoice.payment_intent.client_secret}`;
@@ -376,7 +378,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Plano alterado para ${new_plan} (${billing_cycle === 'monthly' ? 'mensal' : 'anual'})`,
+        message: `Plano alterado para ${new_plan} (${billing_cycle === "monthly" ? "mensal" : "anual"})`,
         subscription_id: subscription.id,
         subscription_status: subscription.status,
         next_billing_date: nextBillingDate,
@@ -385,19 +387,15 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logError("ERROR", { message: errorMessage });
-    
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
