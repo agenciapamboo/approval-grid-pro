@@ -235,7 +235,7 @@ function DayCell({
             e.stopPropagation();
             onViewDayIdeas(day);
           }}
-          title="Ver ideias do dia"
+          title="Dicas de conteúdo"
         >
           <Lightbulb className="h-3.5 w-3.5 text-primary" />
         </button>

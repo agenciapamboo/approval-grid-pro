@@ -28,10 +28,10 @@ export function HistoricalEventsDialog({
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            💡 Aconteceu em {format(date, "d 'de' MMMM", { locale: ptBR })}
+            💡 Dicas de Conteúdo - {format(date, "d 'de' MMMM", { locale: ptBR })}
           </DialogTitle>
           <DialogDescription>
-            Datas comemorativas e fatos históricos que podem inspirar conteúdos
+            Datas comemorativas e fatos históricos para inspirar suas publicações
           </DialogDescription>
         </DialogHeader>
         

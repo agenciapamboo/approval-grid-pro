@@ -205,7 +205,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] p-6 gap-4">
+    <div className="flex flex-col h-[calc(100vh-80px)] p-6 gap-4">
       {/* Header com controles */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
@@ -319,7 +319,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       </div>
 
       {/* Área do calendário */}
-      <Card className="flex-1 overflow-hidden">
+      <Card className="flex-1 min-h-0 overflow-hidden">
         {viewMode === 'month' && (
           <MonthView
             currentMonth={currentDate}
@@ -392,6 +392,14 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           onUpdate={loadContents}
         />
       )}
+
+      {/* Dialog de Dicas de Conteúdo */}
+      <HistoricalEventsDialog
+        open={showHistoricalEvents}
+        onOpenChange={setShowHistoricalEvents}
+        date={selectedDateForIdeas || new Date()}
+        onSelectEvent={handleSelectHistoricalEvent}
+      />
     </div>
   );
 }

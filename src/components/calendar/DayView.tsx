@@ -71,7 +71,7 @@ export function DayView({
             onClick={() => onViewDayIdeas(currentDay)}
           >
             <Lightbulb className="h-4 w-4 mr-2" />
-            💡 Ideias do Dia
+            💡 Dicas de Conteúdo
           </Button>
         </div>
       </div>

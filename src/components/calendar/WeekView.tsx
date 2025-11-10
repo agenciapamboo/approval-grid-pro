@@ -206,14 +206,14 @@ function WeekDayCell({
             {format(day, 'EEE', { locale: ptBR })}
           </span>
           
-          {/* Botão "Aconteceu Neste Dia" */}
+          {/* Botão "Dicas de Conteúdo" */}
           <button
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
             onClick={(e) => {
               e.stopPropagation();
               onViewDayIdeas(day);
             }}
-            title="Ver ideias do dia"
+            title="Dicas de conteúdo"
           >
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
           </button>
