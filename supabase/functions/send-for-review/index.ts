@@ -75,7 +75,7 @@ serve(async (req) => {
         status,
         client_id,
         owner_user_id,
-        clients!inner (
+        clients (
           id,
           name,
           agency_id,
@@ -83,8 +83,9 @@ serve(async (req) => {
           email,
           whatsapp,
           notify_email,
+          notify_whatsapp,
           notify_webhook,
-          agencies!inner (
+          agencies (
             id,
             name,
             webhook_url
@@ -94,10 +95,14 @@ serve(async (req) => {
       .eq('id', content_id)
       .maybeSingle();
 
-    if (contentError || !content) {
+    if (contentError || !content || !content.clients) {
       console.error('[DB] Content not found or error:', contentError);
       return errorResponse('Conteúdo não encontrado', 404);
     }
+
+    // Cast para o tipo correto (clients vem como objeto, não array)
+    const client = Array.isArray(content.clients) ? content.clients[0] : content.clients;
+    const agency = client?.agencies ? (Array.isArray(client.agencies) ? client.agencies[0] : client.agencies) : null;
 
     // Validar status atual
     if (content.status !== 'draft') {
@@ -116,7 +121,7 @@ serve(async (req) => {
     }
 
     const isOwner = content.owner_user_id === user.id;
-    const isAgencyAdmin = profile.agency_id === content.clients.agency_id && profile.role === 'agency_admin';
+    const isAgencyAdmin = profile.agency_id === client?.agency_id && profile.role === 'agency_admin';
 
     if (!isOwner && !isAgencyAdmin) {
       return errorResponse('Sem permissão para enviar este conteúdo para aprovação', 403);
@@ -140,8 +145,8 @@ serve(async (req) => {
     const notificationPayload = {
       content_id: content.id,
       content_title: content.title,
-      client_name: content.clients.name,
-      agency_name: content.clients.agencies.name,
+      client_name: client?.name || 'N/A',
+      agency_name: agency?.name || 'N/A',
       previous_status: 'draft',
       new_status: 'in_review',
       sent_by_user_id: user.id,
@@ -152,13 +157,13 @@ serve(async (req) => {
     const notificationPromises = [];
 
     // Email (se habilitado)
-    if (content.clients.notify_email && content.clients.email) {
+    if (client?.notify_email && client.email) {
       notificationPromises.push(
         adminSupabase.from('notifications').insert({
           event: 'conteudo_em_revisao',
           content_id: content.id,
           client_id: content.client_id,
-          agency_id: content.clients.agency_id,
+          agency_id: client.agency_id,
           channel: 'email',
           status: 'pending',
           payload: notificationPayload,
@@ -167,13 +172,13 @@ serve(async (req) => {
     }
 
     // WhatsApp (se habilitado)
-    if (content.clients.notify_whatsapp && content.clients.whatsapp) {
+    if (client?.notify_whatsapp && client.whatsapp) {
       notificationPromises.push(
         adminSupabase.from('notifications').insert({
           event: 'conteudo_em_revisao',
           content_id: content.id,
           client_id: content.client_id,
-          agency_id: content.clients.agency_id,
+          agency_id: client.agency_id,
           channel: 'whatsapp',
           status: 'pending',
           payload: notificationPayload,
@@ -182,36 +187,36 @@ serve(async (req) => {
     }
 
     // Webhook (se habilitado) - Cliente
-    if (content.clients.notify_webhook && content.clients.webhook_url) {
+    if (client?.notify_webhook && client.webhook_url) {
       notificationPromises.push(
         adminSupabase.from('notifications').insert({
           event: 'conteudo_em_revisao',
           content_id: content.id,
           client_id: content.client_id,
-          agency_id: content.clients.agency_id,
+          agency_id: client.agency_id,
           channel: 'webhook',
           status: 'pending',
           payload: {
             ...notificationPayload,
-            webhook_url: content.clients.webhook_url,
+            webhook_url: client.webhook_url,
           },
         })
       );
     }
 
     // Webhook - Agência (se configurado)
-    if (content.clients.agencies.webhook_url) {
+    if (agency?.webhook_url) {
       notificationPromises.push(
         adminSupabase.from('notifications').insert({
           event: 'conteudo_em_revisao',
           content_id: content.id,
           client_id: content.client_id,
-          agency_id: content.clients.agency_id,
+          agency_id: client?.agency_id,
           channel: 'webhook',
           status: 'pending',
           payload: {
             ...notificationPayload,
-            webhook_url: content.clients.agencies.webhook_url,
+            webhook_url: agency.webhook_url,
           },
         })
       );
@@ -229,9 +234,9 @@ serve(async (req) => {
       metadata: {
         content_title: content.title,
         client_id: content.client_id,
-        client_name: content.clients.name,
-        agency_id: content.clients.agency_id,
-        agency_name: content.clients.agencies.name,
+        client_name: client?.name || 'N/A',
+        agency_id: client?.agency_id,
+        agency_name: agency?.name || 'N/A',
         previous_status: 'draft',
         new_status: 'in_review',
       }
@@ -240,12 +245,12 @@ serve(async (req) => {
     // Notificação interna (N8N) para acompanhamento
     await notifyReport(
       'Conteúdo enviado para revisão',
-      `Cliente: ${content.clients.name} | Conteúdo: ${content.title}`,
+      `Cliente: ${client?.name || 'N/A'} | Conteúdo: ${content.title}`,
       {
         content_id: content.id,
         content_title: content.title,
-        client_name: content.clients.name,
-        agency_name: content.clients.agencies.name,
+        client_name: client?.name || 'N/A',
+        agency_name: agency?.name || 'N/A',
         sent_by: user.id,
       },
       adminSupabase
@@ -254,7 +259,7 @@ serve(async (req) => {
     console.log('[Success] Content sent for review:', { 
       content_id, 
       title: content.title,
-      client: content.clients.name 
+      client: client?.name || 'N/A' 
     });
 
     return successResponse({
