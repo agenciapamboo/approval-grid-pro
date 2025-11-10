@@ -584,6 +584,7 @@ export type Database = {
           publish_error: string | null
           published_at: string | null
           status: Database["public"]["Enums"]["content_status"]
+          supplier_link: string | null
           title: string
           type: Database["public"]["Enums"]["content_type"]
           updated_at: string
@@ -602,6 +603,7 @@ export type Database = {
           publish_error?: string | null
           published_at?: string | null
           status?: Database["public"]["Enums"]["content_status"]
+          supplier_link?: string | null
           title: string
           type: Database["public"]["Enums"]["content_type"]
           updated_at?: string
@@ -620,6 +622,7 @@ export type Database = {
           publish_error?: string | null
           published_at?: string | null
           status?: Database["public"]["Enums"]["content_status"]
+          supplier_link?: string | null
           title?: string
           type?: Database["public"]["Enums"]["content_type"]
           updated_at?: string
