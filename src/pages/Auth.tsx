@@ -185,7 +185,7 @@ const Auth = () => {
       // Determine correct accountType (force 'agency' if paid plan)
       const finalAccountType = selectedPlan !== 'creator' ? 'agency' : accountType;
 
-      // Create user account
+      // Create user account with metadata for webhook
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -272,11 +272,41 @@ const Auth = () => {
         throw new Error("Erro ao criar conta");
       }
 
+      // For paid plans, create agency and update role
+      let agencyId: string | null = null;
+      if (selectedPlan !== 'creator') {
+        // Create agency
+        const { data: newAgency, error: agencyError } = await supabase
+          .from('agencies')
+          .insert({
+            name: agencyName,
+            slug: agencyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+            email: email,
+            whatsapp: whatsapp,
+            plan: selectedPlan,
+            plan_type: billingCycle,
+          })
+          .select()
+          .single();
+
+        if (agencyError) throw agencyError;
+        agencyId = newAgency.id;
+
+        // Update user role to agency_admin
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .update({ role: 'agency_admin' })
+          .eq('user_id', authData.user.id);
+
+        if (roleError) throw roleError;
+      }
+
       // Save profile data
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           account_type: finalAccountType,
+          agency_id: agencyId,
           agency_name: agencyName,
           responsible_name: responsibleName,
           whatsapp,

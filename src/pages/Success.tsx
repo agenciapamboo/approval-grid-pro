@@ -23,8 +23,8 @@ export default function Success() {
       return;
     }
 
-    // Fetch user profile to get plan info
-    const fetchPlanInfo = async () => {
+    // Poll for webhook completion
+    const fetchPlanInfo = async (attempt = 1, maxAttempts = 10) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -35,18 +35,25 @@ export default function Success() {
 
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('plan, billing_cycle')
+          .select('plan, billing_cycle, stripe_subscription_id')
           .eq('id', user.id)
           .single();
 
         if (error) throw error;
+
+        // Check if webhook has processed (stripe_subscription_id should be set)
+        if (!profile.stripe_subscription_id && attempt < maxAttempts) {
+          // Webhook not processed yet, retry after delay
+          setTimeout(() => fetchPlanInfo(attempt + 1, maxAttempts), 2000);
+          return;
+        }
 
         setPlanInfo({
           plan: profile.plan || '',
           billingCycle: profile.billing_cycle || ''
         });
 
-        // Rastrear evento de Purchase
+        // Track Purchase event
         if (profile.plan && profile.plan !== 'creator') {
           const planPrices: Record<string, { monthly: number; annual: number }> = {
             eugencia: { monthly: 29.70, annual: 270 },
@@ -65,16 +72,17 @@ export default function Success() {
             });
           }
         }
+
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching plan info:', error);
-      } finally {
         setLoading(false);
       }
     };
 
-    // Small delay to allow webhook to process
-    setTimeout(fetchPlanInfo, 2000);
-  }, [searchParams, navigate]);
+    // Start polling after 2 seconds
+    setTimeout(() => fetchPlanInfo(), 2000);
+  }, [searchParams, navigate, trackEvent]);
 
   const getPlanName = (plan: string) => {
     const names: Record<string, string> = {
