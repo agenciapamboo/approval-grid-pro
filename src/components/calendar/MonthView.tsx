@@ -15,6 +15,7 @@ import {
   useSensors,
   useDroppable,
 } from "@dnd-kit/core";
+import { Lightbulb } from 'lucide-react';
 
 
 interface Content {
@@ -34,6 +35,7 @@ interface MonthViewProps {
   onContentClick: (contentId: string) => void;
   onDayClick: (date: Date) => void;
   onContentReschedule: (contentId: string, newDate: Date) => Promise<void>;
+  onViewDayIdeas: (date: Date) => void;
 }
 
 const MAX_VISIBLE_CONTENTS = 3;
@@ -42,9 +44,10 @@ export function MonthView({
   currentMonth, 
   contents, 
   clientColors, 
-  onContentClick,
+  onContentClick, 
   onDayClick,
-  onContentReschedule
+  onContentReschedule,
+  onViewDayIdeas
 }: MonthViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<Content | null>(null);
@@ -138,17 +141,18 @@ export function MonthView({
             const isDayToday = isToday(day);
             
             return (
-              <DayCell
-                key={day.toISOString()}
-                day={day}
-                dayContents={dayContents}
-                isCurrentMonth={isCurrentMonth}
-                isDayToday={isDayToday}
-                clientColors={clientColors}
-                onContentClick={onContentClick}
-                onDayClick={onDayClick}
-                activeId={activeId}
-              />
+            <DayCell
+              key={day.toISOString()}
+              day={day}
+              dayContents={dayContents}
+              isCurrentMonth={isCurrentMonth}
+              isDayToday={isDayToday}
+              clientColors={clientColors}
+              onContentClick={onContentClick}
+              onDayClick={onDayClick}
+              onViewDayIdeas={onViewDayIdeas}
+              activeId={activeId}
+            />
             );
           })}
         </div>
@@ -184,6 +188,7 @@ function DayCell({
   clientColors, 
   onContentClick, 
   onDayClick,
+  onViewDayIdeas,
   activeId 
 }: {
   day: Date;
@@ -193,6 +198,7 @@ function DayCell({
   clientColors: Record<string, string>;
   onContentClick: (id: string) => void;
   onDayClick: (date: Date) => void;
+  onViewDayIdeas: (date: Date) => void;
   activeId: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -206,14 +212,14 @@ function DayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-background p-1.5 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors overflow-hidden",
+        "bg-background p-1.5 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors overflow-hidden relative group",
         !isCurrentMonth && "bg-muted/30",
         isOver && "ring-2 ring-primary ring-inset bg-primary/5"
       )}
       onClick={() => onDayClick(day)}
     >
-      {/* Número do dia */}
-      <div className="flex items-center justify-center mb-1">
+      {/* Número do dia e botão de ideias */}
+      <div className="flex items-center justify-between mb-1">
         <span className={cn(
           "text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full",
           isDayToday && "bg-primary text-primary-foreground",
@@ -221,6 +227,18 @@ function DayCell({
         )}>
           {format(day, 'd')}
         </span>
+        
+        {/* Botão "Aconteceu Neste Dia" - aparece ao hover */}
+        <button
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewDayIdeas(day);
+          }}
+          title="Ver ideias do dia"
+        >
+          <Lightbulb className="h-3.5 w-3.5 text-primary" />
+        </button>
       </div>
       
       {/* Lista de conteúdos com scroll */}

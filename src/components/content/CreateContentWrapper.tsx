@@ -7,9 +7,10 @@ interface CreateContentWrapperProps {
   clientId: string;
   onContentCreated: () => void;
   initialDate?: Date;
+  initialTitle?: string;
 }
 
-export function CreateContentWrapper({ clientId, onContentCreated, initialDate }: CreateContentWrapperProps) {
+export function CreateContentWrapper({ clientId, onContentCreated, initialDate, initialTitle }: CreateContentWrapperProps) {
   const [selectedCategory, setSelectedCategory] = useState<'social' | 'avulso' | null>(null);
 
   const handleCategorySelect = (category: 'social' | 'avulso') => {
@@ -43,6 +44,7 @@ export function CreateContentWrapper({ clientId, onContentCreated, initialDate }
         onContentCreated={handleContentCreated}
         category="social"
         initialDate={initialDate}
+        initialTitle={initialTitle}
       />
     );
   }
@@ -53,6 +55,7 @@ export function CreateContentWrapper({ clientId, onContentCreated, initialDate }
         clientId={clientId}
         onContentCreated={handleContentCreated}
         initialDate={initialDate}
+        initialTitle={initialTitle}
       />
     );
   }

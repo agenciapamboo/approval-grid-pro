@@ -10,6 +10,8 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
+import { HistoricalEventsDialog } from "@/components/calendar/HistoricalEventsDialog";
+import type { HistoricalEvent } from "@/hooks/useHistoricalEvents";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
 import { DayView } from "./DayView";
@@ -50,6 +52,9 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [selectedDateForCreation, setSelectedDateForCreation] = useState<Date | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showHistoricalEvents, setShowHistoricalEvents] = useState(false);
+  const [selectedDateForIdeas, setSelectedDateForIdeas] = useState<Date | null>(null);
+  const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
 
   useEffect(() => {
     loadClients();
@@ -187,6 +192,18 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
     }
   };
 
+  const handleViewDayIdeas = (date: Date) => {
+    setSelectedDateForIdeas(date);
+    setShowHistoricalEvents(true);
+  };
+
+  const handleSelectHistoricalEvent = (event: HistoricalEvent) => {
+    setSelectedEventTitle(event.title);
+    setSelectedDateForCreation(selectedDateForIdeas);
+    setShowHistoricalEvents(false);
+    setShowCreateContent(true);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] p-6 gap-4">
       {/* Header com controles */}
@@ -311,6 +328,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             onContentClick={handleContentClick}
             onDayClick={handleDayClick}
             onContentReschedule={handleContentReschedule}
+            onViewDayIdeas={handleViewDayIdeas}
           />
         )}
         {viewMode === 'week' && (
@@ -321,6 +339,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             onContentClick={handleContentClick}
             onDayClick={handleDayClick}
             onContentReschedule={handleContentReschedule}
+            onViewDayIdeas={handleViewDayIdeas}
           />
         )}
         {viewMode === 'day' && (
@@ -329,6 +348,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             contents={contents}
             clientColors={clientColors}
             onContentClick={handleContentClick}
+            onViewDayIdeas={handleViewDayIdeas}
           />
         )}
       </Card>
@@ -339,9 +359,11 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           clientId={selectedClient || clients[0]?.id || ""}
           onContentCreated={() => {
             setShowCreateContent(false);
+            setSelectedEventTitle("");
             loadContents();
           }}
           initialDate={selectedDateForCreation}
+          initialTitle={selectedEventTitle}
         />
       )}
 

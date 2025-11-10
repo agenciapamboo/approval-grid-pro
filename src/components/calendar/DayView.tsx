@@ -2,6 +2,9 @@ import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Lightbulb } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Content {
   id: string;
@@ -18,13 +21,15 @@ interface DayViewProps {
   contents: Content[];
   clientColors: Record<string, string>;
   onContentClick: (contentId: string) => void;
+  onViewDayIdeas: (date: Date) => void;
 }
 
 export function DayView({ 
   currentDay, 
   contents, 
   clientColors, 
-  onContentClick 
+  onContentClick,
+  onViewDayIdeas
 }: DayViewProps) {
   
   const getContentsForDay = () => {
@@ -49,14 +54,26 @@ export function DayView({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header do dia */}
-      <div className="p-4 border-b border-border">
-        <h3 className="text-2xl font-bold">
-          {format(currentDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {dayContents.length} {dayContents.length === 1 ? 'conteúdo agendado' : 'conteúdos agendados'}
-        </p>
+      {/* Header */}
+      <div className="p-4 border-b border-border bg-muted/30">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-bold">
+              {format(currentDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {dayContents.length} {dayContents.length === 1 ? 'conteúdo agendado' : 'conteúdos agendados'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewDayIdeas(currentDay)}
+          >
+            <Lightbulb className="h-4 w-4 mr-2" />
+            💡 Ideias do Dia
+          </Button>
+        </div>
       </div>
 
       {/* Timeline */}

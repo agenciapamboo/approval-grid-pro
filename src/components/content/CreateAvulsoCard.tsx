@@ -19,13 +19,14 @@ interface CreateAvulsoCardProps {
   clientId: string;
   onContentCreated: () => void;
   initialDate?: Date;
+  initialTitle?: string;
 }
 
-export function CreateAvulsoCard({ clientId, onContentCreated, initialDate }: CreateAvulsoCardProps) {
+export function CreateAvulsoCard({ clientId, onContentCreated, initialDate, initialTitle }: CreateAvulsoCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle || "");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState<Date | undefined>(initialDate);
   const [uploading, setUploading] = useState(false);

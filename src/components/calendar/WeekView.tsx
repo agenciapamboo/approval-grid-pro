@@ -15,6 +15,7 @@ import {
   useSensors,
   useDroppable,
 } from "@dnd-kit/core";
+import { Lightbulb } from 'lucide-react';
 
 
 interface Content {
@@ -34,6 +35,7 @@ interface WeekViewProps {
   onContentClick: (contentId: string) => void;
   onDayClick: (date: Date) => void;
   onContentReschedule: (contentId: string, newDate: Date) => Promise<void>;
+  onViewDayIdeas: (date: Date) => void;
 }
 
 const MAX_VISIBLE_CONTENTS = 8;
@@ -42,9 +44,10 @@ export function WeekView({
   currentWeek, 
   contents, 
   clientColors, 
-  onContentClick,
+  onContentClick, 
   onDayClick,
-  onContentReschedule
+  onContentReschedule,
+  onViewDayIdeas
 }: WeekViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<Content | null>(null);
@@ -131,6 +134,7 @@ export function WeekView({
               clientColors={clientColors}
               onContentClick={onContentClick}
               onDayClick={onDayClick}
+              onViewDayIdeas={onViewDayIdeas}
               activeId={activeId}
             />
           );
@@ -166,6 +170,7 @@ function WeekDayCell({
   clientColors, 
   onContentClick, 
   onDayClick,
+  onViewDayIdeas,
   activeId 
 }: {
   day: Date;
@@ -174,6 +179,7 @@ function WeekDayCell({
   clientColors: Record<string, string>;
   onContentClick: (id: string) => void;
   onDayClick: (date: Date) => void;
+  onViewDayIdeas: (date: Date) => void;
   activeId: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -187,19 +193,33 @@ function WeekDayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-background p-2 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors min-h-[400px]",
+        "bg-background p-2 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors min-h-[400px] relative group",
         isDayToday && "bg-accent/10",
         isOver && "ring-2 ring-primary ring-inset bg-primary/5"
       )}
       onClick={() => onDayClick(day)}
     >
-      {/* Cabeçalho do dia */}
+      {/* Cabeçalho do dia e botão de ideias */}
       <div className="flex flex-col items-center mb-3 pb-2 border-b border-border">
-        <span className="text-xs font-medium text-muted-foreground uppercase">
-          {format(day, 'EEE', { locale: ptBR })}
-        </span>
+        <div className="w-full flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground uppercase">
+            {format(day, 'EEE', { locale: ptBR })}
+          </span>
+          
+          {/* Botão "Aconteceu Neste Dia" */}
+          <button
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDayIdeas(day);
+            }}
+            title="Ver ideias do dia"
+          >
+            <Lightbulb className="h-3.5 w-3.5 text-primary" />
+          </button>
+        </div>
         <span className={cn(
-          "text-2xl font-bold mt-1",
+          "text-2xl font-bold",
           isDayToday && "text-primary"
         )}>
           {format(day, 'd')}

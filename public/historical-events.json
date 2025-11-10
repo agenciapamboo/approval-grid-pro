@@ -1,0 +1,199 @@
+{
+  "01-01": [
+    {
+      "title": "Confraternização Universal",
+      "description": "Ano Novo - celebração mundial do início de um novo ano. Ótimo para posts de reflexão, metas e novos começos.",
+      "type": "holiday"
+    },
+    {
+      "title": "Dia Mundial da Paz",
+      "description": "Instituído pelo Papa Paulo VI em 1968. Tema para conteúdos sobre harmonia, respeito e união.",
+      "type": "historical",
+      "year": 1968
+    }
+  ],
+  "01-25": [
+    {
+      "title": "Aniversário de São Paulo",
+      "description": "Fundação da cidade de São Paulo em 1554. Conteúdo para celebrar a maior metrópole brasileira.",
+      "type": "historical",
+      "year": 1554
+    }
+  ],
+  "02-14": [
+    {
+      "title": "Dia de São Valentim",
+      "description": "Celebrado internacionalmente como Dia dos Namorados. Ótimo para campanhas românticas e promocionais.",
+      "type": "holiday"
+    }
+  ],
+  "03-08": [
+    {
+      "title": "Dia Internacional da Mulher",
+      "description": "Celebração das conquistas sociais, políticas e econômicas das mulheres. Excelente para conteúdos de empoderamento.",
+      "type": "holiday"
+    }
+  ],
+  "04-19": [
+    {
+      "title": "Dia do Índio",
+      "description": "Homenagem aos povos indígenas brasileiros e sua cultura. Tema para conscientização e valorização cultural.",
+      "type": "holiday"
+    }
+  ],
+  "04-21": [
+    {
+      "title": "Tiradentes",
+      "description": "Homenagem ao mártir da Inconfidência Mineira. Conteúdo sobre liberdade, coragem e história brasileira.",
+      "type": "holiday"
+    }
+  ],
+  "04-22": [
+    {
+      "title": "Dia da Terra",
+      "description": "Conscientização ambiental e sustentabilidade. Ótimo para marcas eco-friendly e conteúdo verde.",
+      "type": "holiday"
+    }
+  ],
+  "05-01": [
+    {
+      "title": "Dia do Trabalho",
+      "description": "Celebração dos trabalhadores e suas conquistas. Tema para homenagens e reflexões sobre carreira.",
+      "type": "holiday"
+    }
+  ],
+  "05-13": [
+    {
+      "title": "Abolição da Escravatura",
+      "description": "Assinatura da Lei Áurea em 1888. Conteúdo histórico e de consciência social.",
+      "type": "historical",
+      "year": 1888
+    }
+  ],
+  "06-05": [
+    {
+      "title": "Dia Mundial do Meio Ambiente",
+      "description": "Conscientização sobre preservação ambiental. Ideal para campanhas sustentáveis.",
+      "type": "holiday"
+    }
+  ],
+  "06-12": [
+    {
+      "title": "Dia dos Namorados",
+      "description": "Celebrado no Brasil em homenagem a Santo Antônio. Principal data comercial romântica do país.",
+      "type": "holiday"
+    }
+  ],
+  "06-24": [
+    {
+      "title": "Dia de São João",
+      "description": "Festas juninas em todo o Brasil. Ótimo para conteúdo cultural, receitas e decoração temática.",
+      "type": "holiday"
+    }
+  ],
+  "07-20": [
+    {
+      "title": "Dia do Amigo",
+      "description": "Celebração da amizade. Tema para conteúdo emocional e campanhas de relacionamento.",
+      "type": "holiday"
+    }
+  ],
+  "08-11": [
+    {
+      "title": "Dia do Estudante",
+      "description": "Homenagem aos estudantes brasileiros. Conteúdo educacional e motivacional.",
+      "type": "holiday"
+    }
+  ],
+  "09-07": [
+    {
+      "title": "Independência do Brasil",
+      "description": "D. Pedro I proclamou a independência às margens do rio Ipiranga. Tema cívico e histórico.",
+      "type": "holiday",
+      "year": 1822
+    }
+  ],
+  "10-04": [
+    {
+      "title": "Dia Mundial dos Animais",
+      "description": "Conscientização sobre proteção animal. Ótimo para pet shops e ONGs.",
+      "type": "holiday"
+    }
+  ],
+  "10-12": [
+    {
+      "title": "Dia de Nossa Senhora Aparecida",
+      "description": "Padroeira do Brasil. Conteúdo religioso e cultural brasileiro.",
+      "type": "holiday"
+    },
+    {
+      "title": "Dia das Crianças",
+      "description": "Celebração dedicada às crianças. Uma das principais datas comerciais do ano.",
+      "type": "holiday"
+    }
+  ],
+  "10-15": [
+    {
+      "title": "Dia do Professor",
+      "description": "Homenagem aos educadores. Conteúdo de reconhecimento e valorização profissional.",
+      "type": "holiday"
+    }
+  ],
+  "10-31": [
+    {
+      "title": "Halloween",
+      "description": "Celebração internacional cada vez mais popular no Brasil. Ótimo para campanhas criativas e temáticas.",
+      "type": "holiday"
+    }
+  ],
+  "11-02": [
+    {
+      "title": "Dia de Finados",
+      "description": "Homenagem aos que já partiram. Conteúdo respeitoso e reflexivo.",
+      "type": "holiday"
+    }
+  ],
+  "11-15": [
+    {
+      "title": "Proclamação da República",
+      "description": "Fim do Império e início da República no Brasil. Tema histórico e cívico.",
+      "type": "holiday",
+      "year": 1889
+    }
+  ],
+  "11-20": [
+    {
+      "title": "Dia da Consciência Negra",
+      "description": "Homenagem a Zumbi dos Palmares e reflexão sobre igualdade racial. Conteúdo de conscientização social.",
+      "type": "holiday"
+    }
+  ],
+  "11-29": [
+    {
+      "title": "Black Friday",
+      "description": "Maior data comercial do varejo. Essencial para campanhas promocionais agressivas.",
+      "type": "curiosity"
+    }
+  ],
+  "12-08": [
+    {
+      "title": "Dia da Família",
+      "description": "Celebração dos laços familiares. Conteúdo emocional e valores.",
+      "type": "holiday"
+    }
+  ],
+  "12-25": [
+    {
+      "title": "Natal",
+      "description": "Celebração do nascimento de Jesus Cristo. Principal data comercial e emocional do ano.",
+      "type": "holiday"
+    }
+  ],
+  "12-31": [
+    {
+      "title": "Réveillon",
+      "description": "Celebração de Ano Novo. Conteúdo de retrospectiva, gratidão e expectativas.",
+      "type": "holiday"
+    }
+  ]
+}
