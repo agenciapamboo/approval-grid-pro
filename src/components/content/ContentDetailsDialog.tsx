@@ -134,8 +134,8 @@ export function ContentDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] overflow-hidden">
-        <div className="flex flex-col h-full p-6">
+      <DialogContent className="max-w-4xl h-[90vh] overflow-hidden p-0">
+        <div className="flex flex-col h-full min-h-0 p-6">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
@@ -163,7 +163,7 @@ export function ContentDetailsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 mt-4 pr-4">
+        <ScrollArea className="flex-1 min-h-0 mt-4 pr-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <p className="text-muted-foreground">Carregando...</p>
