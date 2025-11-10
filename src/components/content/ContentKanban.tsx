@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -22,7 +24,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
@@ -134,6 +137,16 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
+  
+  // Estados para filtro de data
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: (() => {
+      const date = new Date();
+      date.setDate(date.getDate() - 30);
+      return date;
+    })(),
+    to: new Date()
+  });
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -246,7 +259,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(commentsChannel);
     };
-  }, [agencyId]);
+  }, [agencyId, dateRange]);
 
   const loadColumns = async () => {
     try {
@@ -288,10 +301,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       const clientIds = clients.map((c) => c.id);
 
-      // Buscar conteúdos dos últimos 30 dias
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const now = new Date();
+      // Usar o intervalo de datas selecionado
+      const startDate = dateRange.from || (() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 30);
+        return date;
+      })();
+      const endDate = dateRange.to || new Date();
 
       const { data, error } = await supabase
         .from("contents")
@@ -306,7 +322,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           clients (name)
         `)
         .in("client_id", clientIds)
-        .gte("date", thirtyDaysAgo.toISOString())
+        .gte("date", startDate.toISOString())
+        .lte("date", endDate.toISOString())
         .order("date", { ascending: true });
 
       if (error) throw error;
@@ -349,6 +366,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         });
 
         // Filtrar conteúdos aprovados com data passada
+        const now = new Date();
         const enrichedContents = data
           .filter(content => {
             if (content.status === 'approved' && new Date(content.date) < now) {
@@ -834,25 +852,106 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <CardTitle>Kanban de Conteúdos</CardTitle>
             <CardDescription>
-              Gerencie o workflow dos últimos 30 dias arrastando os cards
+              Gerencie o workflow dos conteúdos
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              loadColumns();
-              loadContents();
-            }}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Atualizar
-          </Button>
+          
+          <div className="flex items-center gap-2">
+            {/* Filtro de data */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "gap-2 text-xs h-9",
+                    !dateRange.from && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  {dateRange.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "dd/MM/yy", { locale: ptBR })} -{" "}
+                        {format(dateRange.to, "dd/MM/yy", { locale: ptBR })}
+                      </>
+                    ) : (
+                      format(dateRange.from, "dd/MM/yy", { locale: ptBR })
+                    )
+                  ) : (
+                    <span>Selecionar período</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="p-3 space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Data Inicial</Label>
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateRange.from}
+                      onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Data Final</Label>
+                    <CalendarComponent
+                      mode="single"
+                      selected={dateRange.to}
+                      onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+                      disabled={(date) => dateRange.from ? date < dateRange.from : false}
+                      className="pointer-events-auto"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs"
+                      onClick={() => {
+                        const from = new Date();
+                        from.setDate(from.getDate() - 30);
+                        setDateRange({ from, to: new Date() });
+                      }}
+                    >
+                      Últimos 30 dias
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs"
+                      onClick={() => {
+                        const from = new Date();
+                        from.setDate(from.getDate() - 90);
+                        setDateRange({ from, to: new Date() });
+                      }}
+                    >
+                      Últimos 90 dias
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                loadColumns();
+                loadContents();
+              }}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Atualizar
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto kanban-scroll">
