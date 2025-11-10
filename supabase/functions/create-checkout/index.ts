@@ -173,14 +173,13 @@ serve(async (req) => {
       },
     };
 
-    // Add customer or enable customer creation
+    // Add customer or customer email
     if (customerId) {
       sessionParams.customer = customerId;
       logStep("Using existing customer");
     } else {
-      sessionParams.customer_creation = "always";
       sessionParams.customer_email = user.email;
-      logStep("Will create new customer");
+      logStep("Will create new customer via email");
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams, {
