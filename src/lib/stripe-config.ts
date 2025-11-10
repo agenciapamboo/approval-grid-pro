@@ -9,18 +9,16 @@ export const STRIPE_PRODUCTS = {
     free: true,
   },
   eugencia: {
-    id: "prod_TLUHBx7ZnfIvX7",
+    id: "prod_TOmNQqnBSOTgC6",
     name: "Eugência",
     description: "Plano Eugência",
     prices: {
       monthly: {
-        price_id: "price_1SOnIVH3HtGAQtCFzBULcf82", // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: "plano_eugencia_mensal",
         amount: 2970, // R$ 29,70
         interval: "month",
       },
       annual: {
-        price_id: "price_1SOnIVH3HtGAQtCFzWjKEOHT", // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: "plano_eugencia_anual",
         amount: 27000, // R$ 270,00
         interval: "year",
@@ -28,18 +26,16 @@ export const STRIPE_PRODUCTS = {
     },
   },
   socialmidia: {
-    id: "prod_TLUSSunwc1e3z3",
+    id: "prod_TOmOccSkOPId3E",
     name: "Agência Social Mídia",
     description: "Plano para agências de Social Mídia",
     prices: {
       monthly: {
-        price_id: "price_1SOnTYH3HtGAQtCFEOcgf8es", // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: "plano_mensal_socialmidia",
         amount: 4950, // R$ 49,50
         interval: "month",
       },
       annual: {
-        price_id: "price_1SOnTYH3HtGAQtCFpT8ozygI", // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: "plano_anual_socialmidia",
         amount: 49500, // R$ 495,00
         interval: "year",
@@ -47,18 +43,16 @@ export const STRIPE_PRODUCTS = {
     },
   },
   fullservice: {
-    id: "prod_TLXZljt4VYKjyA",
+    id: "prod_TOmS1DcVAM4lUE",
     name: "Agência Full Service",
     description: "Plano completo para agências",
     prices: {
       monthly: {
-        price_id: "price_1SOqUQH3HtGAQtCFgUwrjiiR", // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: "plano_agencia_mensal",
         amount: 9720, // R$ 97,20
         interval: "month",
       },
       annual: {
-        price_id: "price_1SOqUQH3HtGAQtCFjkpz8CbF", // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: "plano_agencia_anual",
         amount: 97200, // R$ 972,00
         interval: "year",
