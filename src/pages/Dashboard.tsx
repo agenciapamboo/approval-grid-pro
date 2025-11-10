@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell, Loader2 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -322,61 +322,94 @@ const Dashboard = () => {
           
           setClientNotifications(notifications);
         }
-      } else if (userRole === 'client_user' && enrichedProfile.client_id) {
+      } else if (userRole === 'client_user') {
+        if (!enrichedProfile.client_id) {
+          console.error('❌ Client user sem client_id associado:', enrichedProfile.id);
+          toast({
+            variant: "destructive",
+            title: "Configuração incompleta",
+            description: "Seu perfil está incompleto. Entre em contato com o suporte para completar seu cadastro.",
+          });
+          setClientDataLoaded(false);
+          return;
+        }
+
         console.log('🔄 Loading client data for client_id:', enrichedProfile.client_id);
         
-        // Client user vê seu cliente
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("id", enrichedProfile.client_id)
-          .maybeSingle();
-        
-        if (clientError) {
-          console.error("❌ Error fetching client:", clientError);
-          setClientDataLoaded(false);
-        }
-        
-        if (clientData) {
-          console.log('✅ Client data loaded:', {
-            clientId: clientData.id,
-            clientSlug: clientData.slug,
-            agencyId: clientData.agency_id
+        try {
+          // Buscar cliente com INNER JOIN para garantir que a agência exista
+          const { data: clientWithAgency, error: clientError } = await supabase
+            .from("clients")
+            .select(`
+              *,
+              agency:agencies(
+                id,
+                name,
+                slug,
+                brand_primary,
+                brand_secondary,
+                logo_url,
+                email,
+                whatsapp
+              )
+            `)
+            .eq("id", enrichedProfile.client_id)
+            .maybeSingle();
+          
+          if (clientError) {
+            console.error("❌ Error fetching client with agency:", clientError);
+            toast({
+              variant: "destructive",
+              title: "Erro ao carregar dados",
+              description: "Não foi possível carregar seus dados. Por favor, recarregue a página.",
+            });
+            setClientDataLoaded(false);
+            return;
+          }
+          
+          if (!clientWithAgency) {
+            console.warn('⚠️ Cliente não encontrado para client_id:', enrichedProfile.client_id);
+            toast({
+              variant: "destructive",
+              title: "Cliente não encontrado",
+              description: "Seu cadastro não foi encontrado. Entre em contato com o suporte.",
+            });
+            setClientDataLoaded(false);
+            return;
+          }
+          
+          if (!clientWithAgency.agency) {
+            console.warn('⚠️ Agência não encontrada para client:', clientWithAgency.id);
+            toast({
+              variant: "destructive",
+              title: "Agência não encontrada",
+              description: "A agência associada ao seu cadastro não foi encontrada. Entre em contato com o suporte.",
+            });
+            setClientDataLoaded(false);
+            return;
+          }
+          
+          console.log('✅ Client and Agency data loaded:', {
+            clientId: clientWithAgency.id,
+            clientSlug: clientWithAgency.slug,
+            agencyId: clientWithAgency.agency.id,
+            agencySlug: clientWithAgency.agency.slug,
           });
           
-          setClients([clientData]);
+          // Separar dados do cliente e da agência
+          const { agency, ...clientDataOnly } = clientWithAgency;
           
-          // Buscar agência separadamente para garantir que o slug seja carregado
-          if (clientData.agency_id) {
-            const { data: agencyData, error: agencyError } = await supabase
-              .from("agencies")
-              .select("id, name, slug, brand_primary, brand_secondary, logo_url, email, whatsapp")
-              .eq("id", clientData.agency_id)
-              .maybeSingle();
-            
-            if (agencyError) {
-              console.error("❌ Error fetching agency:", agencyError);
-              setClientDataLoaded(false);
-            }
-            
-            if (agencyData) {
-              console.log('✅ Agency data loaded:', {
-                agencyId: agencyData.id,
-                agencySlug: agencyData.slug
-              });
-              
-              setAgencies([agencyData]);
-              setClientDataLoaded(true);
-            } else {
-              console.warn('⚠️ Agency data not found for agency_id:', clientData.agency_id);
-              setClientDataLoaded(false);
-            }
-          } else {
-            console.warn('⚠️ Client has no agency_id');
-            setClientDataLoaded(false);
-          }
-        } else {
-          console.warn('⚠️ Client data not found for client_id:', enrichedProfile.client_id);
+          setClients([clientDataOnly]);
+          setAgencies([agency]);
+          setClientDataLoaded(true);
+          
+        } catch (error) {
+          console.error('❌ Unexpected error loading client data:', error);
+          toast({
+            variant: "destructive",
+            title: "Erro inesperado",
+            description: "Ocorreu um erro ao carregar seus dados. Por favor, recarregue a página.",
+          });
           setClientDataLoaded(false);
         }
 
@@ -748,7 +781,7 @@ const Dashboard = () => {
             <div className="mb-6 flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => {
-                  if (!clients[0] || !agencies[0]) {
+                  if (!clientDataLoaded || !clients[0] || !agencies[0]) {
                     toast({
                       variant: "destructive",
                       title: "Aguarde",
@@ -759,9 +792,19 @@ const Dashboard = () => {
                   setRequestCreativeOpen(true);
                 }}
                 className="w-full sm:w-auto"
+                disabled={!clientDataLoaded}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Solicitar Criativo
+                {!clientDataLoaded ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Carregando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Solicitar Criativo
+                  </>
+                )}
               </Button>
               
               <Button
@@ -770,7 +813,7 @@ const Dashboard = () => {
                   const clientSlug = clients[0]?.slug;
                   const agencySlug = agencies[0]?.slug;
                   
-                  if (!agencySlug || !clientSlug) {
+                  if (!clientDataLoaded || !agencySlug || !clientSlug) {
                     toast({
                       variant: "destructive",
                       title: "Aguarde",
@@ -782,9 +825,19 @@ const Dashboard = () => {
                   navigate(`/${agencySlug}/${clientSlug}`);
                 }}
                 className="w-full sm:w-auto"
+                disabled={!clientDataLoaded}
               >
-                <FileImage className="h-4 w-4 mr-2" />
-                Ver Todos os Meus Conteúdos
+                {!clientDataLoaded ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Carregando...
+                  </>
+                ) : (
+                  <>
+                    <FileImage className="h-4 w-4 mr-2" />
+                    Ver Todos os Meus Conteúdos
+                  </>
+                )}
               </Button>
             </div>
 
