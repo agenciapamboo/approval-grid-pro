@@ -111,53 +111,20 @@ serve(async (req) => {
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Try to get price using lookup key first, then fallback to price_id
-    let priceId: string | null = null;
-
-    try {
-      const prices = await stripe.prices.list({ lookup_keys: [lookupKey], limit: 1 });
-      if (prices.data && prices.data.length > 0) {
-        priceId = prices.data[0].id;
-        logStep("Price found via lookup_key", { priceId, amount: prices.data[0].unit_amount });
-      }
-    } catch (error: any) {
-      logStep("Failed to find price via lookup_key", { lookupKey, error: error?.message || String(error) });
+    // Get price using lookup key - Stripe is the single source of truth
+    const prices = await stripe.prices.list({ lookup_keys: [lookupKey], limit: 1 });
+    
+    if (!prices.data || prices.data.length === 0) {
+      logStep("ERROR: Price not found in Stripe", { lookupKey, plan, billingCycle });
+      throw new Error(
+        `Preço não encontrado no Stripe. ` +
+        `Certifique-se de que existe um preço com lookup_key "${lookupKey}". ` +
+        `Configure em: https://dashboard.stripe.com/prices`
+      );
     }
 
-    // Fallback to price_id from config if lookup_key failed
-    if (!priceId) {
-      // Import STRIPE_PRODUCTS configuration
-      const STRIPE_PRODUCTS_CONFIG: any = {
-        eugencia: {
-          prices: {
-            monthly: { price_id: "price_1SOnIVH3HtGAQtCFzBULcf82" },
-            annual: { price_id: "price_1SOnIVH3HtGAQtCFzWjKEOHT" },
-          },
-        },
-        socialmidia: {
-          prices: {
-            monthly: { price_id: "price_1SOnTYH3HtGAQtCFEOcgf8es" },
-            annual: { price_id: "price_1SOnTYH3HtGAQtCFpT8ozygI" },
-          },
-        },
-        fullservice: {
-          prices: {
-            monthly: { price_id: "price_1SOqUQH3HtGAQtCFgUwrjiiR" },
-            annual: { price_id: "price_1SOqUQH3HtGAQtCFjkpz8CbF" },
-          },
-        },
-      };
-
-      priceId = STRIPE_PRODUCTS_CONFIG[plan]?.prices?.[billingCycle]?.price_id;
-      if (priceId) {
-        logStep("Using fallback price_id from config", { priceId });
-      } else {
-        logStep("ERROR: No price found via lookup_key or price_id", { plan, billingCycle, lookupKey });
-        throw new Error(
-          `Erro ao processar plano. Configure os preços no Stripe com lookup_key "${lookupKey}" ou adicione price_id na configuração.`,
-        );
-      }
-    }
+    const priceId = prices.data[0].id;
+    logStep("Price found via lookup_key", { priceId, amount: prices.data[0].unit_amount });
 
     // Get user profile to check for existing Stripe customer ID
     const { data: profile } = await supabaseClient
