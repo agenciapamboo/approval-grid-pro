@@ -20,7 +20,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
@@ -104,7 +104,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   } | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingCard, setIsDraggingCard] = useState(false);
   const [sendingForReview, setSendingForReview] = useState<string | null>(null);
   const [requestTypeFilter, setRequestTypeFilter] = useState<'all' | 'creative' | 'adjustment'>('all');
   const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
@@ -120,6 +120,9 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     observations: '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; url: string; size: number }>>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const dropAnimation: DropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
@@ -498,14 +501,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
-    setIsDragging(true);
+    setIsDraggingCard(true);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     setActiveId(null);
-    setIsDragging(false);
+    setIsDraggingCard(false);
 
     if (!over) return;
 
@@ -602,6 +605,111 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     }
   };
 
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploadingFiles(true);
+      const uploadedUrls: Array<{ name: string; url: string; size: number }> = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validar tamanho (max 20MB)
+        if (file.size > 20 * 1024 * 1024) {
+          toast({
+            variant: "destructive",
+            title: "Arquivo muito grande",
+            description: `${file.name} excede o limite de 20MB`,
+          });
+          continue;
+        }
+
+        // Validar tipo
+        const allowedTypes = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats'];
+        const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
+        
+        if (!isAllowed) {
+          toast({
+            variant: "destructive",
+            title: "Tipo não permitido",
+            description: `${file.name} não é um tipo de arquivo permitido`,
+          });
+          continue;
+        }
+
+        // Upload para Supabase Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `creative-requests/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('content-media')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Erro ao fazer upload:', error);
+          toast({
+            variant: "destructive",
+            title: "Erro no upload",
+            description: `Falha ao enviar ${file.name}`,
+          });
+          continue;
+        }
+
+        // Obter URL pública
+        const { data: { publicUrl } } = supabase.storage
+          .from('content-media')
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push({
+          name: file.name,
+          url: publicUrl,
+          size: file.size
+        });
+      }
+
+      setUploadedFiles(prev => [...prev, ...uploadedUrls]);
+      
+      toast({
+        title: "Arquivos enviados",
+        description: `${uploadedUrls.length} arquivo(s) adicionado(s)`,
+      });
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao processar arquivos",
+      });
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFileUpload(e.dataTransfer.files);
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreateRequest = async () => {
     try {
       // Validar dados
@@ -629,6 +737,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
             type: validated.request_type,
             observations: validated.observations || "",
             job_status: "pending",
+            reference_files: uploadedFiles.map(f => f.url),
           },
         });
 
@@ -646,6 +755,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         request_type: '',
         observations: '',
       });
+      setUploadedFiles([]);
       setShowInlineForm(false);
       loadRequests();
     } catch (error: any) {
@@ -825,14 +935,87 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                               )}
                             </div>
 
+                            {/* Área de upload de arquivos */}
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Arquivos de Referência</Label>
+                              <div
+                                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                                  isDragging 
+                                    ? 'border-primary bg-primary/5' 
+                                    : 'border-muted-foreground/25 hover:border-primary/50'
+                                }`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                              >
+                                <input
+                                  type="file"
+                                  id="file-upload"
+                                  className="hidden"
+                                  multiple
+                                  accept="image/*,video/*,.pdf,.doc,.docx"
+                                  onChange={(e) => handleFileUpload(e.target.files)}
+                                  disabled={uploadingFiles}
+                                />
+                                <label
+                                  htmlFor="file-upload"
+                                  className="cursor-pointer flex flex-col items-center gap-2"
+                                >
+                                  <Upload className="h-6 w-6 text-muted-foreground" />
+                                  <p className="text-xs text-muted-foreground">
+                                    {uploadingFiles ? (
+                                      'Enviando...'
+                                    ) : (
+                                      <>
+                                        Arraste arquivos ou <span className="text-primary">clique para selecionar</span>
+                                      </>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground/70">
+                                    Imagens, vídeos, PDF (máx 20MB)
+                                  </p>
+                                </label>
+                              </div>
+                              
+                              {/* Lista de arquivos enviados */}
+                              {uploadedFiles.length > 0 && (
+                                <div className="space-y-2 mt-2">
+                                  {uploadedFiles.map((file, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex items-center justify-between bg-muted/50 rounded px-2 py-1.5"
+                                    >
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                        <span className="text-xs truncate">{file.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          ({(file.size / 1024).toFixed(1)} KB)
+                                        </span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={() => removeFile(index)}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
                             <Button
                               onClick={handleCreateRequest}
-                              disabled={creatingRequest}
+                              disabled={creatingRequest || uploadingFiles}
                               className="w-full h-8 text-xs gap-2"
                               size="sm"
                             >
                               {creatingRequest ? (
                                 <>Criando...</>
+                              ) : uploadingFiles ? (
+                                <>Enviando arquivos...</>
                               ) : (
                                 <>
                                   <Plus className="h-3 w-3" />
@@ -959,7 +1142,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                           parent={column.column_id}
                           index={index}
                           className={`transition-all duration-200 ${
-                            isDragging && activeId === content.id 
+                            isDraggingCard && activeId === content.id 
                               ? 'opacity-40 scale-95' 
                               : 'hover:shadow-lg hover:-translate-y-0.5'
                           }`}
