@@ -31,14 +31,16 @@ interface AgencyCalendarProps {
 
 // Paleta de cores para diferentes clientes
 const CLIENT_COLOR_PALETTE = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  '#FF6B6B',
-  '#4ECDC4',
-  '#95E1D3',
+  '#3B82F6', // Azul vibrante
+  '#10B981', // Verde esmeralda
+  '#F59E0B', // Âmbar/laranja
+  '#8B5CF6', // Roxo
+  '#EC4899', // Rosa pink
+  '#EF4444', // Vermelho
+  '#06B6D4', // Ciano
+  '#84CC16', // Lima
+  '#F97316', // Laranja queimado
+  '#6366F1', // Índigo
 ];
 
 export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProps) {
@@ -171,9 +173,9 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   };
 
   return (
-    <div className="space-y-6">
-      {/* Calendário - Largura Total */}
-      <Card className="w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+      {/* Card do Calendário - Coluna esquerda */}
+      <Card className="w-full lg:max-h-[calc(100vh-12rem)] lg:overflow-hidden flex flex-col">
         <CardHeader>
           <CardTitle>
             {selectedClient ? 'Agenda do Cliente' : 'Agenda Geral'}
@@ -202,22 +204,25 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           {/* Legenda de Cores por Cliente */}
           {!selectedClient && clients.length > 0 && (
             <div className="pt-4 border-t mt-4">
-              <p className="text-sm font-medium mb-3">Legenda:</p>
+              <p className="text-sm font-medium mb-3">Legenda de Clientes:</p>
               <div className="flex flex-wrap gap-3">
                 {clients.map((client) => (
-                  <div key={client.id} className="flex items-center gap-2">
+                  <div 
+                    key={client.id} 
+                    className="flex items-center gap-2 px-2 py-1 rounded-md border border-border bg-muted/30"
+                  >
                     <div 
-                      className="w-4 h-4 rounded-full border border-border" 
+                      className="w-4 h-4 rounded-full shadow-sm" 
                       style={{ backgroundColor: clientColors[client.id] }}
                     />
-                    <span className="text-xs">{client.name}</span>
+                    <span className="text-xs font-medium">{client.name}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
         </CardHeader>
-        <CardContent className="w-full flex justify-center">
+        <CardContent className="w-full flex justify-center overflow-y-auto flex-1">
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -225,13 +230,13 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             locale={ptBR}
             modifiers={modifiers}
             modifiersStyles={modifiersStyles}
-            className="rounded-md border w-full max-w-full"
+            className="rounded-md border w-full [&>*]:w-full"
           />
         </CardContent>
       </Card>
 
-      {/* Detalhes do Dia Selecionado */}
-      <Card>
+      {/* Card de Detalhes do Dia - Coluna direita */}
+      <Card className="w-full lg:max-h-[calc(100vh-12rem)] lg:overflow-hidden flex flex-col">
         <CardHeader>
           <CardTitle>
             {selectedDate ? format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione uma data'}
@@ -264,7 +269,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-y-auto flex-1">
           <div className="space-y-3">
             {selectedDateContents.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
@@ -308,9 +313,9 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       </Card>
 
       {/* Dialog de Criar Conteúdo */}
-      {showCreateContent && selectedClient && selectedDateForCreation && (
+      {showCreateContent && (selectedClient || clients[0]) && selectedDateForCreation && (
         <CreateContentWrapper
-          clientId={selectedClient}
+          clientId={selectedClient || clients[0]?.id || ""}
           onContentCreated={() => {
             setShowCreateContent(false);
             loadContents();
