@@ -698,6 +698,17 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold">{allProfiles.length}</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    className="mt-2 p-0 h-auto text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate("/admin/auditoria-usuarios");
+                    }}
+                  >
+                    Ver auditoria →
+                  </Button>
                 </CardContent>
               </Card>
             </div>
