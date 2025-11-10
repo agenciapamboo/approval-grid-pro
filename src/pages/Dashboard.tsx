@@ -323,7 +323,19 @@ const Dashboard = () => {
         // Client user vê seu cliente
         const { data: clientData, error: clientError } = await supabase
           .from("clients")
-          .select("*, agencies(*)")
+          .select(`
+            *,
+            agencies (
+              id,
+              name,
+              slug,
+              brand_primary,
+              brand_secondary,
+              logo_url,
+              email,
+              whatsapp
+            )
+          `)
           .eq("id", enrichedProfile.client_id)
           .maybeSingle();
         
@@ -710,6 +722,17 @@ const Dashboard = () => {
         {/* Client User - Lista de Aprovações */}
         {profile?.role === 'client_user' && (
           <div className="space-y-6">
+            {/* Botão Solicitar Criativos */}
+            <div className="mb-6">
+              <Button
+                onClick={() => setRequestCreativeOpen(true)}
+                className="w-full md:w-auto"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Solicitar Criativo
+              </Button>
+            </div>
+
             {/* Solicitações Criativas */}
             {creativeRequests.length > 0 && (
               <div className="space-y-4">
@@ -760,7 +783,17 @@ const Dashboard = () => {
               // Helper para obter slugs de forma robusta
               const getNavigationSlugs = () => {
                 const clientSlug = client?.slug;
-                const agencySlug = agency?.slug || (client as any)?.agencies?.slug;
+                const agencySlug = agency?.slug || 
+                                   (client as any)?.agencies?.slug || 
+                                   ((client as any)?.agencies as Agency)?.slug;
+                
+                console.log('🔍 Navigation slugs:', { 
+                  clientSlug, 
+                  agencySlug,
+                  hasAgency: !!(client as any)?.agencies,
+                  agencyData: (client as any)?.agencies
+                });
+                
                 return { clientSlug, agencySlug };
               };
               

@@ -35,7 +35,7 @@ export function hasEventsForDate(
   cities: string[] = [],
   states: string[] = []
 ): boolean {
-  if (!eventsCache) return false;
+  if (!eventsCache || !eventsCache.national) return false;
   
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');

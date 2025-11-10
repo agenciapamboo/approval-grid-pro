@@ -66,38 +66,46 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
 
   const loadMedia = async () => {
     setLoading(true);
+    console.log('🔍 ContentMedia: Loading media', { contentId, approvalToken });
+    
     try {
       if (approvalToken) {
-        // Usar edge function para obter URLs assinadas via token
+        console.log('🔐 Using approval token flow');
         const { data, error } = await supabase.functions.invoke('approval-media-urls', {
           body: { token: approvalToken, contentId }
         });
 
+        console.log('📦 Edge function response:', { data, error });
+        
         if (error) {
-          console.error('Erro ao carregar mídias via token:', error);
+          console.error('❌ Erro ao carregar mídias via token:', error);
           setMedia([]);
         } else {
-          // Mapear para formato esperado (srcUrl -> src_url)
-          setMedia((data?.media || []).map((m: any) => ({
+          const mappedMedia = (data?.media || []).map((m: any) => ({
             id: m.id,
             kind: m.kind,
             order_index: m.order_index,
             src_url: m.srcUrl,
             thumb_url: m.thumbUrl
-          })));
+          }));
+          console.log('✅ Media loaded via token:', mappedMedia);
+          setMedia(mappedMedia);
         }
       } else {
-        // Fluxo normal autenticado
+        console.log('🔓 Using authenticated flow');
         const { data, error } = await supabase
           .from("content_media")
           .select("*")
           .eq("content_id", contentId)
           .order("order_index");
 
+        console.log('📦 Supabase response:', { data, error });
+
         if (error) {
-          console.error("Erro ao carregar mídias:", error);
+          console.error("❌ Erro ao carregar mídias:", error);
           setMedia([]);
         } else {
+          console.log('✅ Media loaded:', data);
           setMedia(data || []);
         }
       }
