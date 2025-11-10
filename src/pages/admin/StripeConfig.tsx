@@ -2,19 +2,22 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, AlertTriangle, CreditCard, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle, AlertTriangle, CreditCard, Loader2, RefreshCw } from "lucide-react";
 import { StripeProductsList } from "@/components/admin/StripeProductsList";
 import { StripeProductCreator } from "@/components/admin/StripeProductCreator";
 import { StripeConfigGuide } from "@/components/admin/StripeConfigGuide";
 import { STRIPE_PRODUCTS } from "@/lib/stripe-config";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function StripeConfig() {
   const [activeTab, setActiveTab] = useState("overview");
+  const queryClient = useQueryClient();
 
   // Fetch products from Stripe using edge function
-  const { data: productsData, isLoading: loadingProducts } = useQuery({
+  const { data: productsData, isLoading: loadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ["stripe-products"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('list-stripe-products', {
@@ -24,10 +27,12 @@ export default function StripeConfig() {
       if (error) throw error;
       return data?.products || [];
     },
+    staleTime: 1000 * 60, // 1 minute
+    refetchOnWindowFocus: true,
   });
 
   // Fetch prices from Stripe using edge function
-  const { data: pricesData, isLoading: loadingPrices } = useQuery({
+  const { data: pricesData, isLoading: loadingPrices, refetch: refetchPrices } = useQuery({
     queryKey: ["stripe-prices"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('list-stripe-prices', {
@@ -37,7 +42,15 @@ export default function StripeConfig() {
       if (error) throw error;
       return data?.prices || [];
     },
+    staleTime: 1000 * 60, // 1 minute
+    refetchOnWindowFocus: true,
   });
+
+  const handleRefresh = async () => {
+    toast.info("Atualizando dados do Stripe...");
+    await Promise.all([refetchProducts(), refetchPrices()]);
+    toast.success("Dados atualizados com sucesso!");
+  };
 
   const stripeProducts = productsData || [];
   const stripePrices = pricesData || [];
@@ -70,14 +83,25 @@ export default function StripeConfig() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <CreditCard className="h-8 w-8" />
-          Configuração do Stripe
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Gerencie produtos, preços e validações da integração com Stripe
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <CreditCard className="h-8 w-8" />
+            Configuração do Stripe
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie produtos, preços e validações da integração com Stripe
+          </p>
+        </div>
+        <Button 
+          onClick={handleRefresh} 
+          disabled={loading}
+          variant="outline"
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </div>
 
       {loading && (
