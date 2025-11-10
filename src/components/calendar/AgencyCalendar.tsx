@@ -222,7 +222,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-40px)] p-4 gap-4">
+    <div className="flex flex-col h-[calc(100vh-16px)] p-4 gap-4">
       {/* Header com controles */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">

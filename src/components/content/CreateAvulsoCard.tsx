@@ -260,7 +260,7 @@ export function CreateAvulsoCard({ clientId, onContentCreated, initialDate, init
   };
 
   return (
-    <Card className="overflow-hidden">
+    <div className="space-y-4">
       <div className="bg-muted/30 relative">
         {files.length === 0 ? (
           <div
@@ -422,6 +422,6 @@ export function CreateAvulsoCard({ clientId, onContentCreated, initialDate, init
           }}
         />
       )}
-    </Card>
+    </div>
   );
 }

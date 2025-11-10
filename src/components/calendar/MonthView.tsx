@@ -136,7 +136,7 @@ export function MonthView({
         </div>
         
         {/* Grid dos dias */}
-        <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border overflow-auto" style={{ minHeight: '600px' }}>
+        <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border" style={{ minHeight: '650px' }}>
           {days.map((day) => {
             const dayContents = getContentsForDay(day);
             const isCurrentMonth = isSameMonth(day, currentMonth);

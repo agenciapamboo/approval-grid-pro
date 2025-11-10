@@ -552,7 +552,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   };
 
   return (
-    <Card className="overflow-hidden">
+    <div className="space-y-4">
       <div className="w-full bg-muted/30 relative">
         <div className="p-3 space-y-2">
           {files.length > 0 ? (
@@ -883,6 +883,6 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           }}
         />
       )}
-    </Card>
+    </div>
   );
 }
