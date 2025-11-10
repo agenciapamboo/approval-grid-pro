@@ -3,99 +3,93 @@
 
 export const STRIPE_PRODUCTS = {
   creator: {
-    id: 'prod_TLU5r2YFEPikQ7',
-    name: 'Creator',
-    description: 'Plano gratuito',
+    id: "prod_TLU5r2YFEPikQ7",
+    name: "Creator",
+    description: "Plano gratuito",
     free: true,
   },
   eugencia: {
-    id: 'prod_TLUHBx7ZnfIvX7',
-    name: 'Eugência',
-    description: 'Plano Eugência',
+    id: "prod_TLUHBx7ZnfIvX7",
+    name: "Eugência",
+    description: "Plano Eugência",
     prices: {
       monthly: {
-        price_id: 'price_1Rrj1RH1QsWUILSq8YF8OBNm', // IMPORTANTE: Substituir pelo price_id real do Stripe
-        lookup_key: 'plano_eugencia_mensal',
+        price_id: "price_1SOnIVH3HtGAQtCFzBULcf82", // IMPORTANTE: Substituir pelo price_id real do Stripe
+        lookup_key: "plano_eugencia_mensal",
         amount: 2970, // R$ 29,70
-        interval: 'month',
+        interval: "month",
       },
       annual: {
-        price_id: 'price_1Rrj1RH1QsWUILSqKo6aaS8J', // IMPORTANTE: Substituir pelo price_id real do Stripe
-        lookup_key: 'plano_eugencia_anual',
+        price_id: "price_1SOnIVH3HtGAQtCFzWjKEOHT", // IMPORTANTE: Substituir pelo price_id real do Stripe
+        lookup_key: "plano_eugencia_anual",
         amount: 27000, // R$ 270,00
-        interval: 'year',
+        interval: "year",
       },
     },
   },
   socialmidia: {
-    id: 'prod_TLUSSunwc1e3z3',
-    name: 'Agência Social Mídia',
-    description: 'Plano para agências de Social Mídia',
+    id: "prod_TLUSSunwc1e3z3",
+    name: "Agência Social Mídia",
+    description: "Plano para agências de Social Mídia",
     prices: {
       monthly: {
-        price_id: 'price_1Rrj2AH1QsWUILSqVh8nIz3Y', // IMPORTANTE: Substituir pelo price_id real do Stripe
-        lookup_key: 'plano_mensal_socialmidia',
+        price_id: "price_1SOnTYH3HtGAQtCFEOcgf8es", // IMPORTANTE: Substituir pelo price_id real do Stripe
+        lookup_key: "plano_mensal_socialmidia",
         amount: 4950, // R$ 49,50
-        interval: 'month',
+        interval: "month",
       },
       annual: {
-        price_id: 'price_1Rrj2AH1QsWUILSqc7bZfGxK', // IMPORTANTE: Substituir pelo price_id real do Stripe
-        lookup_key: 'plano_anual_socialmidia',
+        price_id: "price_1SOnTYH3HtGAQtCFpT8ozygI", // IMPORTANTE: Substituir pelo price_id real do Stripe
+        lookup_key: "plano_anual_socialmidia",
         amount: 49500, // R$ 495,00
-        interval: 'year',
+        interval: "year",
       },
     },
   },
   fullservice: {
-    id: 'prod_TLXZljt4VYKjyA',
-    name: 'Agência Full Service',
-    description: 'Plano completo para agências',
+    id: "prod_TLXZljt4VYKjyA",
+    name: "Agência Full Service",
+    description: "Plano completo para agências",
     prices: {
       monthly: {
-        price_id: 'price_1Rrj2sH1QsWUILSqZN9xGk4L', // IMPORTANTE: Substituir pelo price_id real do Stripe
-        lookup_key: 'plano_agencia_mensal',
+        price_id: "price_1SOqUQH3HtGAQtCFgUwrjiiR", // IMPORTANTE: Substituir pelo price_id real do Stripe
+        lookup_key: "plano_agencia_mensal",
         amount: 9720, // R$ 97,20
-        interval: 'month',
+        interval: "month",
       },
       annual: {
-        price_id: 'price_1Rrj2sH1QsWUILSqM8pQr3vW', // IMPORTANTE: Substituir pelo price_id real do Stripe
-        lookup_key: 'plano_agencia_anual',
+        price_id: "price_1SOqUQH3HtGAQtCFjkpz8CbF", // IMPORTANTE: Substituir pelo price_id real do Stripe
+        lookup_key: "plano_agencia_anual",
         amount: 97200, // R$ 972,00
-        interval: 'year',
+        interval: "year",
       },
     },
   },
   unlimited: {
-    id: 'prod_internal_unlimited',
-    name: 'Sem Plano (Interno)',
-    description: 'Plano ilimitado para equipe interna',
+    id: "prod_internal_unlimited",
+    name: "Sem Plano (Interno)",
+    description: "Plano ilimitado para equipe interna",
     free: true,
   },
 } as const;
 
 export type StripePlan = keyof typeof STRIPE_PRODUCTS;
-export type StripePriceInterval = 'monthly' | 'annual';
+export type StripePriceInterval = "monthly" | "annual";
 
 /**
  * Ordem padronizada dos planos para exibição em toda a aplicação
  */
-export const PLAN_ORDER: StripePlan[] = [
-  'creator',
-  'eugencia', 
-  'socialmidia',
-  'fullservice',
-  'unlimited'
-] as const;
+export const PLAN_ORDER: StripePlan[] = ["creator", "eugencia", "socialmidia", "fullservice", "unlimited"] as const;
 
 /**
  * Nomes de exibição dos planos
  */
 export const PLAN_DISPLAY_NAMES: Record<StripePlan, string> = {
-  creator: 'Creator',
-  eugencia: 'Eugência',
-  socialmidia: 'Social Mídia',
-  fullservice: 'Full Service',
-  unlimited: 'Sem Plano (Interno)'
+  creator: "Creator",
+  eugencia: "Eugência",
+  socialmidia: "Social Mídia",
+  fullservice: "Full Service",
+  unlimited: "Sem Plano (Interno)",
 } as const;
 
 /**
@@ -103,8 +97,8 @@ export const PLAN_DISPLAY_NAMES: Record<StripePlan, string> = {
  */
 export const getPriceLookupKey = (plan: StripePlan, interval: StripePriceInterval): string | null => {
   const product = STRIPE_PRODUCTS[plan];
-  if ('free' in product && product.free) return null;
-  if (!('prices' in product)) return null;
+  if ("free" in product && product.free) return null;
+  if (!("prices" in product)) return null;
   return product.prices?.[interval]?.lookup_key || null;
 };
 
@@ -120,5 +114,5 @@ export const getProductId = (plan: StripePlan): string => {
  */
 export const isFreePlan = (plan: StripePlan): boolean => {
   const product = STRIPE_PRODUCTS[plan];
-  return 'free' in product && product.free === true;
+  return "free" in product && product.free === true;
 };
