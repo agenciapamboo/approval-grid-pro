@@ -221,7 +221,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       const clientIds = clients.map((c) => c.id);
 
-      // Buscar conteúdos dos últimos 30 dias, excluindo publicados e arquivados
+      // Buscar conteúdos dos últimos 30 dias
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const now = new Date();
@@ -240,7 +240,6 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         `)
         .in("client_id", clientIds)
         .gte("date", thirtyDaysAgo.toISOString())
-        .not("status", "in", '("published","archived")')
         .order("date", { ascending: true });
 
       if (error) throw error;
