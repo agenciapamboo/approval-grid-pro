@@ -139,13 +139,14 @@ export default function ContentGrid() {
       // 2. Se não tem token, verificar sessão autenticada
       const { data: { session } } = await supabase.auth.getSession();
       
-      // 3. Se tem sessão, carregar dados via autenticação
-      if (session) {
-        console.log('[ContentGrid] Authenticated access - loading via session');
-        setUser(session.user);
-        await loadPublicData();
-        return;
-      }
+    // 3. Se tem sessão, carregar dados via autenticação
+    if (session) {
+      console.log('[ContentGrid] Authenticated access - loading via session');
+      setUser(session.user);
+      setTokenValid(true); // Marcar como válido para usuários autenticados
+      await loadPublicData();
+      return;
+    }
       
       // 4. Sem token e sem sessão = acesso restrito
       console.log('[ContentGrid] No authentication and no token - restricted access');
