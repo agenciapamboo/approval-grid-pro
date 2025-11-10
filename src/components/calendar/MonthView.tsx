@@ -36,6 +36,7 @@ interface MonthViewProps {
   onDayClick: (date: Date) => void;
   onContentReschedule: (contentId: string, newDate: Date) => Promise<void>;
   onViewDayIdeas: (date: Date) => void;
+  hasEventsForDate: (date: Date) => boolean;
 }
 
 const MAX_VISIBLE_CONTENTS = 3;
@@ -47,7 +48,8 @@ export function MonthView({
   onContentClick, 
   onDayClick,
   onContentReschedule,
-  onViewDayIdeas
+  onViewDayIdeas,
+  hasEventsForDate
 }: MonthViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<Content | null>(null);
@@ -151,6 +153,7 @@ export function MonthView({
               onContentClick={onContentClick}
               onDayClick={onDayClick}
               onViewDayIdeas={onViewDayIdeas}
+              hasEventsForDate={hasEventsForDate}
               activeId={activeId}
             />
             );
@@ -189,6 +192,7 @@ function DayCell({
   onContentClick, 
   onDayClick,
   onViewDayIdeas,
+  hasEventsForDate,
   activeId 
 }: {
   day: Date;
@@ -199,12 +203,14 @@ function DayCell({
   onContentClick: (id: string) => void;
   onDayClick: (date: Date) => void;
   onViewDayIdeas: (date: Date) => void;
+  hasEventsForDate: (date: Date) => boolean;
   activeId: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: day.toISOString(),
   });
 
+  const dayHasEvents = hasEventsForDate(day);
   const visibleContents = dayContents.slice(0, MAX_VISIBLE_CONTENTS);
   const hiddenCount = dayContents.length - MAX_VISIBLE_CONTENTS;
 
@@ -228,17 +234,19 @@ function DayCell({
           {format(day, 'd')}
         </span>
         
-        {/* Botão "Aconteceu Neste Dia" - aparece ao hover */}
-        <button
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewDayIdeas(day);
-          }}
-          title="Dicas de conteúdo"
-        >
-          <Lightbulb className="h-3.5 w-3.5 text-primary" />
-        </button>
+        {/* Botão "Dicas de Conteúdo" - só aparece se houver eventos */}
+        {dayHasEvents && (
+          <button
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDayIdeas(day);
+            }}
+            title="Dicas de conteúdo"
+          >
+            <Lightbulb className="h-3.5 w-3.5 text-primary" />
+          </button>
+        )}
       </div>
       
       {/* Lista de conteúdos com scroll */}

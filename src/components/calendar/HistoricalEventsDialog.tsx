@@ -12,6 +12,8 @@ interface HistoricalEventsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   date: Date;
+  cities?: string[];
+  states?: string[];
   onSelectEvent: (event: HistoricalEvent) => void;
 }
 
@@ -19,9 +21,11 @@ export function HistoricalEventsDialog({
   open,
   onOpenChange,
   date,
+  cities = [],
+  states = [],
   onSelectEvent
 }: HistoricalEventsDialogProps) {
-  const { events, loading } = useHistoricalEvents(date);
+  const { events, loading } = useHistoricalEvents(date, cities, states);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,13 +55,23 @@ export function HistoricalEventsDialog({
               <Card key={index} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <Badge variant={
-                      event.type === 'holiday' ? 'default' :
-                      event.type === 'historical' ? 'outline' : 'outline'
-                    } className="mb-2">
-                      {event.type === 'holiday' ? '🎉 Feriado' :
-                       event.type === 'historical' ? '📜 História' : '💡 Curiosidade'}
-                    </Badge>
+                    <div className="flex gap-2 mb-2">
+                      <Badge variant={
+                        event.type === 'holiday' ? 'default' :
+                        event.type === 'historical' ? 'outline' : 'outline'
+                      }>
+                        {event.type === 'holiday' ? '🎉 Feriado' :
+                         event.type === 'historical' ? '📜 História' : '💡 Curiosidade'}
+                      </Badge>
+                      {/* Badge de localização */}
+                      {(event.city || event.state) && (
+                        <Badge variant="outline" className="text-xs">
+                          {event.city && event.state ? `${event.city} - ${event.state}` :
+                           event.state ? event.state :
+                           '🇧🇷 Nacional'}
+                        </Badge>
+                      )}
+                    </div>
                     <h4 className="font-semibold">{event.title}</h4>
                     <p className="text-sm text-muted-foreground mt-1">
                       {event.description}

@@ -22,6 +22,7 @@ interface DayViewProps {
   clientColors: Record<string, string>;
   onContentClick: (contentId: string) => void;
   onViewDayIdeas: (date: Date) => void;
+  hasEventsForDate: (date: Date) => boolean;
 }
 
 export function DayView({ 
@@ -29,8 +30,11 @@ export function DayView({
   contents, 
   clientColors, 
   onContentClick,
-  onViewDayIdeas
+  onViewDayIdeas,
+  hasEventsForDate
 }: DayViewProps) {
+  
+  const dayHasEvents = hasEventsForDate(currentDay);
   
   const getContentsForDay = () => {
     return contents.filter(content => 
@@ -65,14 +69,18 @@ export function DayView({
               {dayContents.length} {dayContents.length === 1 ? 'conteúdo agendado' : 'conteúdos agendados'}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewDayIdeas(currentDay)}
-          >
-            <Lightbulb className="h-4 w-4 mr-2" />
-            💡 Dicas de Conteúdo
-          </Button>
+          
+          {/* Botão "Dicas de Conteúdo" - só aparece se houver eventos */}
+          {dayHasEvents && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onViewDayIdeas(currentDay)}
+            >
+              <Lightbulb className="h-4 w-4 mr-2" />
+              💡 Dicas de Conteúdo
+            </Button>
+          )}
         </div>
       </div>
 

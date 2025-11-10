@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,6 +12,8 @@ import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog"
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
 import { HistoricalEventsDialog } from "@/components/calendar/HistoricalEventsDialog";
 import type { HistoricalEvent } from "@/hooks/useHistoricalEvents";
+import { loadEventsCache, hasEventsForDate } from "@/hooks/useHistoricalEvents";
+import { useClientLocations } from "@/hooks/useClientLocations";
 import { MonthView } from "./MonthView";
 import { WeekView } from "./WeekView";
 import { DayView } from "./DayView";
@@ -55,6 +57,10 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [showHistoricalEvents, setShowHistoricalEvents] = useState(false);
   const [selectedDateForIdeas, setSelectedDateForIdeas] = useState<Date | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
+  const [eventsCacheLoaded, setEventsCacheLoaded] = useState(false);
+
+  // Hook de localizações dos clientes
+  const { cities, states, loading: locationsLoading } = useClientLocations(agencyId);
 
   useEffect(() => {
     loadClients();
@@ -63,6 +69,17 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   useEffect(() => {
     loadContents();
   }, [agencyId, selectedClient]);
+
+  // Carregar cache de eventos no mount
+  useEffect(() => {
+    loadEventsCache().then(() => setEventsCacheLoaded(true));
+  }, []);
+
+  // Função para verificar se dia tem eventos (com localizações)
+  const dayHasEvents = useCallback((date: Date) => {
+    if (!eventsCacheLoaded) return false;
+    return hasEventsForDate(date, cities, states);
+  }, [eventsCacheLoaded, cities, states]);
 
   const loadClients = async () => {
     try {
@@ -205,7 +222,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] p-6 gap-4">
+    <div className="flex flex-col h-[calc(100vh-64px)] p-6 gap-4">
       {/* Header com controles */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
@@ -329,6 +346,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             onDayClick={handleDayClick}
             onContentReschedule={handleContentReschedule}
             onViewDayIdeas={handleViewDayIdeas}
+            hasEventsForDate={dayHasEvents}
           />
         )}
         {viewMode === 'week' && (
@@ -340,6 +358,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             onDayClick={handleDayClick}
             onContentReschedule={handleContentReschedule}
             onViewDayIdeas={handleViewDayIdeas}
+            hasEventsForDate={dayHasEvents}
           />
         )}
         {viewMode === 'day' && (
@@ -349,6 +368,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             clientColors={clientColors}
             onContentClick={handleContentClick}
             onViewDayIdeas={handleViewDayIdeas}
+            hasEventsForDate={dayHasEvents}
           />
         )}
       </Card>
@@ -398,6 +418,8 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
         open={showHistoricalEvents}
         onOpenChange={setShowHistoricalEvents}
         date={selectedDateForIdeas || new Date()}
+        cities={cities}
+        states={states}
         onSelectEvent={handleSelectHistoricalEvent}
       />
     </div>
