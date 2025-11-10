@@ -323,39 +323,41 @@ const Dashboard = () => {
         // Client user vê seu cliente
         const { data: clientData, error: clientError } = await supabase
           .from("clients")
-          .select(`
-            *,
-            agencies (
-              id,
-              name,
-              slug,
-              brand_primary,
-              brand_secondary,
-              logo_url,
-              email,
-              whatsapp
-            )
-          `)
+          .select("*")
           .eq("id", enrichedProfile.client_id)
           .maybeSingle();
         
         if (clientError) {
           console.error("Error fetching client:", clientError);
         }
+        
         if (clientData) {
           setClients([clientData]);
-          if (clientData.agencies) {
-            setAgencies([clientData.agencies as any]);
-          }
           
-          // Debug logging
-          console.log('Client data loaded:', {
-            clientId: clientData.id,
-            clientSlug: clientData.slug,
-            agencyId: clientData.agency_id,
-            agencySlug: clientData.agencies?.slug,
-            hasAgency: !!clientData.agencies
-          });
+          // Buscar agência separadamente para garantir que o slug seja carregado
+          if (clientData.agency_id) {
+            const { data: agencyData, error: agencyError } = await supabase
+              .from("agencies")
+              .select("id, name, slug, brand_primary, brand_secondary, logo_url, email, whatsapp")
+              .eq("id", clientData.agency_id)
+              .maybeSingle();
+            
+            if (agencyError) {
+              console.error("Error fetching agency:", agencyError);
+            }
+            
+            if (agencyData) {
+              setAgencies([agencyData]);
+              
+              // Debug logging
+              console.log('Client and agency data loaded:', {
+                clientId: clientData.id,
+                clientSlug: clientData.slug,
+                agencyId: agencyData.id,
+                agencySlug: agencyData.slug
+              });
+            }
+          }
         }
 
         // Buscar conteúdos do cliente
@@ -722,14 +724,43 @@ const Dashboard = () => {
         {/* Client User - Lista de Aprovações */}
         {profile?.role === 'client_user' && (
           <div className="space-y-6">
-            {/* Botão Solicitar Criativos */}
-            <div className="mb-6">
+            {/* Botões de ação */}
+            <div className="mb-6 flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => setRequestCreativeOpen(true)}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Solicitar Criativo
+              </Button>
+              
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const clientSlug = clients[0]?.slug;
+                  const agencySlug = agencies[0]?.slug;
+                  
+                  if (!agencySlug || !clientSlug) {
+                    toast({
+                      variant: "destructive",
+                      title: "Erro de navegação",
+                      description: "Não foi possível carregar os dados da sua conta. Por favor, recarregue a página.",
+                    });
+                    console.error('Navigation failed - Missing slugs:', { 
+                      agencySlug, 
+                      clientSlug,
+                      agency: agencies[0],
+                      client: clients[0]
+                    });
+                    return;
+                  }
+                  
+                  navigate(`/${agencySlug}/${clientSlug}`);
+                }}
+                className="w-full sm:w-auto"
+              >
+                <FileImage className="h-4 w-4 mr-2" />
+                Ver Todos os Meus Conteúdos
               </Button>
             </div>
 
@@ -783,15 +814,15 @@ const Dashboard = () => {
               // Helper para obter slugs de forma robusta
               const getNavigationSlugs = () => {
                 const clientSlug = client?.slug;
-                const agencySlug = agency?.slug || 
-                                   (client as any)?.agencies?.slug || 
-                                   ((client as any)?.agencies as Agency)?.slug;
+                const agencySlug = agencies[0]?.slug;
                 
                 console.log('🔍 Navigation slugs:', { 
                   clientSlug, 
                   agencySlug,
-                  hasAgency: !!(client as any)?.agencies,
-                  agencyData: (client as any)?.agencies
+                  hasClient: !!client,
+                  hasAgency: !!agencies[0],
+                  clientId: client?.id,
+                  agencyId: agencies[0]?.id
                 });
                 
                 return { clientSlug, agencySlug };
@@ -865,9 +896,14 @@ const Dashboard = () => {
                                   toast({
                                     variant: "destructive",
                                     title: "Erro de navegação",
-                                    description: "Não foi possível encontrar os dados necessários para acessar os conteúdos.",
+                                    description: `Não foi possível carregar os dados da ${!agencySlug ? 'agência' : 'conta'}. Por favor, recarregue a página.`,
                                   });
-                                  console.error('Navigation failed:', { agency, client, agencySlug, clientSlug });
+                                  console.error('Navigation failed - Missing slugs:', { 
+                                    agencySlug, 
+                                    clientSlug,
+                                    agency: agencies[0],
+                                    client: clients[0]
+                                  });
                                   return;
                                 }
                                 
@@ -901,9 +937,14 @@ const Dashboard = () => {
                                     toast({
                                       variant: "destructive",
                                       title: "Erro de navegação",
-                                      description: "Não foi possível encontrar os dados necessários para acessar os conteúdos.",
+                                      description: `Não foi possível carregar os dados da ${!agencySlug ? 'agência' : 'conta'}. Por favor, recarregue a página.`,
                                     });
-                                    console.error('Navigation failed:', { agency, client, agencySlug, clientSlug });
+                                    console.error('Navigation failed - Missing slugs:', { 
+                                      agencySlug, 
+                                      clientSlug,
+                                      agency: agencies[0],
+                                      client: clients[0]
+                                    });
                                     return;
                                   }
                                   
