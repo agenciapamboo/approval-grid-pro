@@ -134,7 +134,7 @@ export function ContentDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
@@ -162,13 +162,13 @@ export function ContentDetailsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 h-full pr-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <p className="text-muted-foreground">Carregando...</p>
             </div>
           ) : (
-            <div className="space-y-6 pb-6">
+            <div className="space-y-6 pb-6 pr-2">
               {/* Seção de Mídia */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">Mídia</h3>
