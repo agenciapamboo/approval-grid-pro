@@ -42,6 +42,7 @@ const AgencyTicketsManager = lazy(() => import("./pages/admin/AgencyTicketsManag
 const SupportTicketsAdmin = lazy(() => import("./pages/admin/SupportTicketsAdmin"));
 const UsersManager = lazy(() => import("./pages/admin/UsersManager"));
 const UserAuditLog = lazy(() => import("./pages/admin/UserAuditLog"));
+const StripeConfig = lazy(() => import("./pages/admin/StripeConfig"));
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ const App = () => (
                 <Route path="/admin/tickets" element={<ProtectedRoute><SupportTicketsAdmin /></ProtectedRoute>} />
                 <Route path="/admin/usuarios" element={<ProtectedRoute><UsersManager /></ProtectedRoute>} />
                 <Route path="/admin/auditoria-usuarios" element={<ProtectedRoute><UserAuditLog /></ProtectedRoute>} />
+                <Route path="/admin/stripe" element={<ProtectedRoute><StripeConfig /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}
                 <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
