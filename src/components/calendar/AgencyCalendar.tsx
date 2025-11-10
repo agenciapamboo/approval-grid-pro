@@ -1,16 +1,18 @@
-import { useEffect, useState, useMemo } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isSameDay } from "date-fns";
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
+import { MonthView } from "./MonthView";
+import { WeekView } from "./WeekView";
+import { DayView } from "./DayView";
 import { useToast } from "@/hooks/use-toast";
 
 interface Content {
@@ -27,27 +29,19 @@ interface Content {
 
 interface AgencyCalendarProps {
   agencyId: string;
-  clientId?: string | null; // null = agenda geral, string = agenda de um cliente específico
+  clientId?: string | null;
 }
 
-// Paleta de cores para diferentes clientes
 const CLIENT_COLOR_PALETTE = [
-  '#3B82F6', // Azul vibrante
-  '#10B981', // Verde esmeralda
-  '#F59E0B', // Âmbar/laranja
-  '#8B5CF6', // Roxo
-  '#EC4899', // Rosa pink
-  '#EF4444', // Vermelho
-  '#06B6D4', // Ciano
-  '#84CC16', // Lima
-  '#F97316', // Laranja queimado
-  '#6366F1', // Índigo
+  '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899',
+  '#EF4444', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
 ];
 
 export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProps) {
   const { toast } = useToast();
   const [contents, setContents] = useState<Content[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<string | null>(clientId);
   const [clientColors, setClientColors] = useState<Record<string, string>>({});
@@ -76,7 +70,6 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       if (error) throw error;
       setClients(data || []);
       
-      // Atribuir cores aos clientes
       if (data) {
         const colorMap: Record<string, string> = {};
         data.forEach((client, index) => {
@@ -107,7 +100,6 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       if (selectedClient) {
         query = query.eq('client_id', selectedClient);
       } else {
-        // Buscar todos os conteúdos dos clientes da agência
         const { data: clientIds } = await supabase
           .from('clients')
           .select('id')
@@ -127,75 +119,108 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
     }
   };
 
-  const getContentsForDate = (date: Date) => {
-    return contents.filter(content => 
-      isSameDay(new Date(content.date), date)
-    );
+  const handleDayClick = (date: Date) => {
+    setSelectedDateForCreation(date);
+    if (viewMode !== 'day') {
+      setCurrentDate(date);
+      setViewMode('day');
+    }
   };
 
-  const selectedDateContents = selectedDate ? getContentsForDate(selectedDate) : [];
-
-  // Agrupar conteúdos por cliente
-  const contentsByClient = useMemo(() => {
-    const grouped: Record<string, Date[]> = {};
-    contents.forEach(content => {
-      if (!grouped[content.client_id]) {
-        grouped[content.client_id] = [];
-      }
-      grouped[content.client_id].push(new Date(content.date));
-    });
-    return grouped;
-  }, [contents]);
-
-  // Criar modifiers para cada cliente
-  const modifiers = useMemo(() => {
-    const mods: Record<string, Date[]> = {};
-    Object.keys(contentsByClient).forEach(clientId => {
-      mods[`client_${clientId}`] = contentsByClient[clientId];
-    });
-    return mods;
-  }, [contentsByClient]);
-
-  // Criar estilos por cliente
-  const modifiersStyles = useMemo(() => {
-    const styles: Record<string, React.CSSProperties> = {};
-    Object.keys(contentsByClient).forEach(clientId => {
-      styles[`client_${clientId}`] = {
-        backgroundColor: clientColors[clientId] || 'hsl(var(--primary))',
-        color: 'white',
-        fontWeight: 'bold',
-        borderRadius: '50%',
-      };
-    });
-    return styles;
-  }, [contentsByClient, clientColors]);
-
-  const handleDayClick = (date: Date | undefined) => {
-    setSelectedDate(date);
-    setSelectedDateForCreation(date || null);
-  };
-
-  const handleCardClick = (contentId: string) => {
+  const handleContentClick = (contentId: string) => {
     setSelectedContentId(contentId);
     setShowDetailsDialog(true);
   };
 
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (viewMode === 'month') {
+      setCurrentDate(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
+    } else if (viewMode === 'week') {
+      setCurrentDate(prev => direction === 'next' ? addWeeks(prev, 1) : subWeeks(prev, 1));
+    } else {
+      setCurrentDate(prev => direction === 'next' ? addDays(prev, 1) : subDays(prev, 1));
+    }
+  };
+
+  const getNavigationTitle = () => {
+    if (viewMode === 'month') {
+      return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
+    } else if (viewMode === 'week') {
+      return format(currentDate, "'Semana de' d 'de' MMMM", { locale: ptBR });
+    } else {
+      return format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-      {/* Card do Calendário - Coluna esquerda */}
-      <Card className="w-full lg:max-h-[calc(100vh-12rem)] lg:overflow-hidden flex flex-col">
-        <CardHeader>
-          <CardTitle>
-            {selectedClient ? 'Agenda do Cliente' : 'Agenda Geral'}
-          </CardTitle>
-          <CardDescription>
-            Visualize as publicações agendadas
-          </CardDescription>
-          {!clientId && (
-            <div className="pt-4">
+    <div className="flex flex-col h-[calc(100vh-120px)] p-6 gap-4">
+      {/* Header com controles */}
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Agenda de Conteúdos</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedDateForCreation(new Date());
+                setShowCreateContent(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Criar Conteúdo
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedDateForCreation(new Date());
+                setShowCreateRequest(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Solicitar Criativo
+            </Button>
+          </div>
+        </div>
+
+        {/* Barra de navegação e filtros */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* Navegação de período */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleNavigate('prev')}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentDate(new Date())}
+              >
+                Hoje
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleNavigate('next')}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Título do período */}
+            <h3 className="text-lg font-semibold capitalize">
+              {getNavigationTitle()}
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Filtro de cliente */}
+            {!clientId && (
               <Select value={selectedClient || "all"} onValueChange={(value) => setSelectedClient(value === "all" ? null : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os clientes" />
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Filtrar por cliente" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os clientes</SelectItem>
@@ -206,135 +231,48 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
-          
-          {/* Legenda de Cores por Cliente */}
-          {!selectedClient && clients.length > 0 && (
-            <div className="pt-4 border-t mt-4">
-              <p className="text-sm font-medium mb-3">Legenda de Clientes:</p>
-              <div className="flex flex-wrap gap-3">
-                {clients.map((client) => (
-                  <div 
-                    key={client.id} 
-                    className="flex items-center gap-2 px-2 py-1 rounded-md border border-border bg-muted/30"
-                  >
-                    <div 
-                      className="w-4 h-4 rounded-full shadow-sm" 
-                      style={{ backgroundColor: clientColors[client.id] }}
-                    />
-                    <span className="text-xs font-medium">{client.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="w-full flex justify-center overflow-y-auto flex-1">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDayClick}
-            locale={ptBR}
-            modifiers={modifiers}
-            modifiersStyles={modifiersStyles}
-            className="rounded-md border w-full [&>*]:w-full"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Card de Detalhes do Dia - Coluna direita */}
-      <Card className="w-full lg:max-h-[calc(100vh-12rem)] lg:overflow-hidden flex flex-col">
-        <CardHeader>
-          <CardTitle>
-            {selectedDate ? format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione uma data'}
-          </CardTitle>
-          <CardDescription>
-            {selectedDateContents.length} {selectedDateContents.length === 1 ? 'publicação' : 'publicações'}
-          </CardDescription>
-          
-          {/* Botões de ação */}
-          {selectedDate && !selectedClient && (
-            <div className="flex gap-2 pt-3">
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => setShowCreateContent(true)}
-                className="flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                Novo Conteúdo
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCreateRequest(true)}
-                className="flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                Nova Solicitação
-              </Button>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="overflow-y-auto flex-1">
-          <div className="space-y-3">
-            {selectedDateContents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhuma publicação agendada para esta data
-              </p>
-            ) : (
-              selectedDateContents.map((content) => (
-                <Card 
-                  key={content.id} 
-                  className="p-3 cursor-pointer hover:shadow-lg hover:border-primary/50 transition-all"
-                  onClick={() => handleCardClick(content.id)}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-medium text-sm">{content.title}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {content.type === 'feed' ? 'Feed' : 
-                         content.type === 'story' ? 'Story' : 
-                         content.type === 'reel' ? 'Reel' : 
-                         content.type}
-                      </Badge>
-                    </div>
-                    
-                    {content.clients && (
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full shadow-sm" 
-                          style={{ backgroundColor: clientColors[content.client_id] }}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {content.clients.name}
-                        </p>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2">
-                      <Badge variant={
-                        content.status === 'approved' ? 'success' : 
-                        content.status === 'in_review' ? 'warning' :
-                        content.status === 'changes_requested' ? 'destructive' :
-                        'outline'
-                      }>
-                        {content.status === 'approved' ? 'Aprovado' : 
-                         content.status === 'in_review' ? 'Em Revisão' :
-                         content.status === 'changes_requested' ? 'Ajustes Solicitados' :
-                         'Rascunho'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(content.date), "HH:mm")}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              ))
             )}
+
+            {/* Seletor de visualização */}
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'month' | 'week' | 'day')}>
+              <TabsList>
+                <TabsTrigger value="day">Dia</TabsTrigger>
+                <TabsTrigger value="week">Semana</TabsTrigger>
+                <TabsTrigger value="month">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
-        </CardContent>
+        </div>
+      </div>
+
+      {/* Área do calendário */}
+      <Card className="flex-1 overflow-hidden">
+        {viewMode === 'month' && (
+          <MonthView
+            currentMonth={currentDate}
+            contents={contents}
+            clientColors={clientColors}
+            onContentClick={handleContentClick}
+            onDayClick={handleDayClick}
+          />
+        )}
+        {viewMode === 'week' && (
+          <WeekView
+            currentWeek={currentDate}
+            contents={contents}
+            clientColors={clientColors}
+            onContentClick={handleContentClick}
+            onDayClick={handleDayClick}
+          />
+        )}
+        {viewMode === 'day' && (
+          <DayView
+            currentDay={currentDate}
+            contents={contents}
+            clientColors={clientColors}
+            onContentClick={handleContentClick}
+          />
+        )}
       </Card>
 
       {/* Dialog de Criar Conteúdo */}
