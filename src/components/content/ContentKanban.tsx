@@ -155,17 +155,39 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       )
       .subscribe();
 
-    // Realtime updates para conteúdos
+    // Realtime updates para conteúdos com notificação de aprovação/rejeição
     const contentsChannel = supabase
       .channel('contents-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'contents'
         },
-        () => {
+        (payload) => {
+          const oldRecord = payload.old as Content;
+          const newRecord = payload.new as Content;
+          
+          // Verificar se houve mudança de status para aprovado
+          if (oldRecord.status !== 'approved' && newRecord.status === 'approved') {
+            toast({
+              title: "✅ Conteúdo Aprovado!",
+              description: `"${newRecord.title}" foi aprovado pelo cliente`,
+              duration: 5000,
+            });
+          }
+          
+          // Verificar se houve mudança de status para rejeitado
+          if (oldRecord.status !== 'changes_requested' && newRecord.status === 'changes_requested') {
+            toast({
+              title: "⚠️ Alterações Solicitadas",
+              description: `"${newRecord.title}" precisa de ajustes`,
+              variant: "destructive",
+              duration: 5000,
+            });
+          }
+          
           loadContents();
         }
       )
