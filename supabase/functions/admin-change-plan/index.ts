@@ -256,18 +256,53 @@ serve(async (req) => {
 
     logStep("Price config found", { lookup_key: priceConfig.lookup_key, amount: priceConfig.amount });
 
-    // Buscar price no Stripe via lookup_key
-    const prices = await stripe.prices.list({
-      lookup_keys: [priceConfig.lookup_key],
-      limit: 1,
-    });
-
-    if (prices.data.length === 0) {
-      throw new Error(`Stripe price not found for lookup_key: ${priceConfig.lookup_key}`);
+    // Try to get price using lookup_key first, then fallback to price_id
+    let priceId: string | null = null;
+    
+    try {
+      const prices = await stripe.prices.list({
+        lookup_keys: [priceConfig.lookup_key],
+        limit: 1,
+      });
+      
+      if (prices.data.length > 0) {
+        priceId = prices.data[0].id;
+        logStep("Stripe price found via lookup_key", { priceId });
+      }
+    } catch (error: any) {
+      logStep("Failed to find price via lookup_key", { lookupKey: priceConfig.lookup_key, error: error?.message || String(error) });
     }
-
-    const priceId = prices.data[0].id;
-    logStep("Stripe price found", { priceId });
+    
+    // Fallback to price_id from config if lookup_key failed
+    if (!priceId) {
+      const STRIPE_PRODUCTS_FALLBACK: any = {
+        eugencia: {
+          prices: {
+            monthly: { price_id: 'price_1Rrj1RH1QsWUILSq8YF8OBNm' },
+            annual: { price_id: 'price_1Rrj1RH1QsWUILSqKo6aaS8J' },
+          },
+        },
+        socialmidia: {
+          prices: {
+            monthly: { price_id: 'price_1Rrj2AH1QsWUILSqVh8nIz3Y' },
+            annual: { price_id: 'price_1Rrj2AH1QsWUILSqc7bZfGxK' },
+          },
+        },
+        fullservice: {
+          prices: {
+            monthly: { price_id: 'price_1Rrj2sH1QsWUILSqZN9xGk4L' },
+            annual: { price_id: 'price_1Rrj2sH1QsWUILSqM8pQr3vW' },
+          },
+        },
+      };
+      
+      priceId = STRIPE_PRODUCTS_FALLBACK[new_plan]?.prices?.[billing_cycle]?.price_id;
+      if (priceId) {
+        logStep("Using fallback price_id from config", { priceId });
+      } else {
+        throw new Error(`Erro ao processar plano. Configure os preços no Stripe com lookup_key "${priceConfig.lookup_key}" ou adicione price_id na configuração.`);
+      }
+    }
 
     // Cancelar subscription antiga se existir
     if (adminProfile.stripe_subscription_id) {

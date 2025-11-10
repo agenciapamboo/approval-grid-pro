@@ -174,16 +174,19 @@ export default function Pricing() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        const errorMsg = data?.error || error.message || "Erro ao processar plano";
+        throw new Error(errorMsg);
+      }
 
       if (data?.url) {
         window.location.href = data.url;
       } else {
         throw new Error("URL de checkout não recebida");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error selecting plan:', error);
-      toast.error("Erro ao processar plano. Tente novamente.");
+      toast.error(error?.message || "Erro ao processar plano. Tente novamente.");
     } finally {
       setLoadingPlan(null);
     }

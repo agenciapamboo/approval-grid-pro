@@ -240,7 +240,10 @@ const Auth = () => {
             },
           });
 
-          if (checkoutError) throw checkoutError;
+          if (checkoutError) {
+            const errorMsg = checkoutData?.error || checkoutError.message || "Erro ao processar plano";
+            throw new Error(errorMsg);
+          }
 
           if (checkoutData?.url && paymentWindow) {
             paymentWindow.location.href = checkoutData.url;
@@ -325,7 +328,8 @@ const Auth = () => {
 
         if (checkoutError) {
           if (paymentWindow) paymentWindow.close();
-          throw checkoutError;
+          const errorMsg = checkoutData?.error || checkoutError.message || "Erro ao processar plano";
+          throw new Error(errorMsg);
         }
 
         if (checkoutData?.url && paymentWindow) {

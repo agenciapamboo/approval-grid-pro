@@ -14,11 +14,13 @@ export const STRIPE_PRODUCTS = {
     description: 'Plano Eugência',
     prices: {
       monthly: {
+        price_id: 'price_1Rrj1RH1QsWUILSq8YF8OBNm', // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: 'plano_eugencia_mensal',
         amount: 2970, // R$ 29,70
         interval: 'month',
       },
       annual: {
+        price_id: 'price_1Rrj1RH1QsWUILSqKo6aaS8J', // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: 'plano_eugencia_anual',
         amount: 27000, // R$ 270,00
         interval: 'year',
@@ -31,11 +33,13 @@ export const STRIPE_PRODUCTS = {
     description: 'Plano para agências de Social Mídia',
     prices: {
       monthly: {
+        price_id: 'price_1Rrj2AH1QsWUILSqVh8nIz3Y', // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: 'plano_mensal_socialmidia',
         amount: 4950, // R$ 49,50
         interval: 'month',
       },
       annual: {
+        price_id: 'price_1Rrj2AH1QsWUILSqc7bZfGxK', // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: 'plano_anual_socialmidia',
         amount: 49500, // R$ 495,00
         interval: 'year',
@@ -48,11 +52,13 @@ export const STRIPE_PRODUCTS = {
     description: 'Plano completo para agências',
     prices: {
       monthly: {
+        price_id: 'price_1Rrj2sH1QsWUILSqZN9xGk4L', // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: 'plano_agencia_mensal',
         amount: 9720, // R$ 97,20
         interval: 'month',
       },
       annual: {
+        price_id: 'price_1Rrj2sH1QsWUILSqM8pQr3vW', // IMPORTANTE: Substituir pelo price_id real do Stripe
         lookup_key: 'plano_agencia_anual',
         amount: 97200, // R$ 972,00
         interval: 'year',
