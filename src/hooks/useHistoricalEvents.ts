@@ -7,12 +7,14 @@ export interface HistoricalEvent {
   year?: number;
   city?: string;
   state?: string;
+  region?: string;
 }
 
 interface EventsDatabase {
   national: Record<string, HistoricalEvent[]>;
+  regions: Record<string, Record<string, Record<string, HistoricalEvent[]>>>;
   states: Record<string, Record<string, HistoricalEvent[]>>;
-  cities: Record<string, Record<string, Record<string, HistoricalEvent[]>>>;
+  cities: Record<string, Record<string, Record<string, Record<string, HistoricalEvent[]>>>>;
 }
 
 let eventsCache: EventsDatabase | null = null;
@@ -26,14 +28,15 @@ export async function loadEventsCache(): Promise<EventsDatabase> {
     return eventsCache;
   } catch (error) {
     console.error('Erro ao carregar cache de eventos:', error);
-    return { national: {}, states: {}, cities: {} };
+    return { national: {}, regions: {}, states: {}, cities: {} };
   }
 }
 
 export function hasEventsForDate(
   date: Date,
   cities: string[] = [],
-  states: string[] = []
+  states: string[] = [],
+  regions: string[] = []
 ): boolean {
   if (!eventsCache || !eventsCache.national) return false;
   
@@ -44,15 +47,24 @@ export function hasEventsForDate(
   // Verificar eventos nacionais
   if (eventsCache.national[dateKey]?.length > 0) return true;
   
+  // Verificar eventos regionais
+  for (const region of regions) {
+    for (const state of states) {
+      if (eventsCache.regions?.[region]?.[state]?.[dateKey]?.length > 0) return true;
+    }
+  }
+  
   // Verificar eventos estaduais
   for (const state of states) {
-    if (eventsCache.states[state]?.[dateKey]?.length > 0) return true;
+    if (eventsCache.states?.[state]?.[dateKey]?.length > 0) return true;
   }
   
   // Verificar eventos municipais
-  for (const state of states) {
-    for (const city of cities) {
-      if (eventsCache.cities[state]?.[city]?.[dateKey]?.length > 0) return true;
+  for (const region of regions) {
+    for (const state of states) {
+      for (const city of cities) {
+        if (eventsCache.cities?.[region]?.[state]?.[city]?.[dateKey]?.length > 0) return true;
+      }
     }
   }
   
@@ -62,19 +74,21 @@ export function hasEventsForDate(
 export function useHistoricalEvents(
   date: Date,
   cities: string[] = [],
-  states: string[] = []
+  states: string[] = [],
+  regions: string[] = []
 ) {
   const [events, setEvents] = useState<HistoricalEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchEventsForDate(date, cities, states);
-  }, [date, cities.join(','), states.join(',')]);
+    fetchEventsForDate(date, cities, states, regions);
+  }, [date, cities.join(','), states.join(','), regions.join(',')]);
 
   const fetchEventsForDate = async (
     date: Date,
     cities: string[],
-    states: string[]
+    states: string[],
+    regions: string[]
   ) => {
     setLoading(true);
     try {
@@ -88,19 +102,30 @@ export function useHistoricalEvents(
       // Adicionar eventos nacionais
       allEvents = allEvents.concat(cache.national[dateKey] || []);
       
+      // Adicionar eventos regionais
+      regions.forEach(region => {
+        states.forEach(state => {
+          if (cache.regions?.[region]?.[state]?.[dateKey]) {
+            allEvents = allEvents.concat(cache.regions[region][state][dateKey]);
+          }
+        });
+      });
+      
       // Adicionar eventos estaduais
       states.forEach(state => {
-        if (cache.states[state]?.[dateKey]) {
+        if (cache.states?.[state]?.[dateKey]) {
           allEvents = allEvents.concat(cache.states[state][dateKey]);
         }
       });
       
       // Adicionar eventos municipais
-      states.forEach(state => {
-        cities.forEach(city => {
-          if (cache.cities[state]?.[city]?.[dateKey]) {
-            allEvents = allEvents.concat(cache.cities[state][city][dateKey]);
-          }
+      regions.forEach(region => {
+        states.forEach(state => {
+          cities.forEach(city => {
+            if (cache.cities?.[region]?.[state]?.[city]?.[dateKey]) {
+              allEvents = allEvents.concat(cache.cities[region][state][city][dateKey]);
+            }
+          });
         });
       });
       

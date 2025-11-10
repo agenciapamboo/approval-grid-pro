@@ -136,7 +136,7 @@ export function MonthView({
         </div>
         
         {/* Grid dos dias */}
-        <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border overflow-hidden">
+        <div className="flex-1 grid grid-cols-7 auto-rows-fr gap-px bg-border overflow-auto" style={{ minHeight: '600px' }}>
           {days.map((day) => {
             const dayContents = getContentsForDay(day);
             const isCurrentMonth = isSameMonth(day, currentMonth);
@@ -218,7 +218,7 @@ function DayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "bg-background p-1.5 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors overflow-hidden relative group",
+        "bg-background p-3 flex flex-col cursor-pointer hover:bg-accent/5 transition-colors overflow-hidden relative group min-h-[120px]",
         !isCurrentMonth && "bg-muted/30",
         isOver && "ring-2 ring-primary ring-inset bg-primary/5"
       )}
@@ -234,23 +234,23 @@ function DayCell({
           {format(day, 'd')}
         </span>
         
-        {/* Botão "Dicas de Conteúdo" - só aparece se houver eventos */}
+        {/* Botão "Dicas de Conteúdo" - sempre visível quando houver eventos */}
         {dayHasEvents && (
           <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
+            className="p-1 hover:bg-accent rounded transition-all hover:scale-110"
             onClick={(e) => {
               e.stopPropagation();
               onViewDayIdeas(day);
             }}
             title="Dicas de conteúdo"
           >
-            <Lightbulb className="h-3.5 w-3.5 text-primary" />
+            <Lightbulb className="h-3.5 w-3.5 text-primary animate-pulse" />
           </button>
         )}
       </div>
       
       {/* Lista de conteúdos com scroll */}
-      <div className="flex-1 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
         {visibleContents.map(content => (
           <ContentPill
             key={content.id}

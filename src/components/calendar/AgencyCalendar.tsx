@@ -60,7 +60,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [eventsCacheLoaded, setEventsCacheLoaded] = useState(false);
 
   // Hook de localizações dos clientes
-  const { cities, states, loading: locationsLoading } = useClientLocations(agencyId);
+  const { cities, states, regions, loading: locationsLoading } = useClientLocations(agencyId);
 
   useEffect(() => {
     loadClients();
@@ -78,8 +78,8 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   // Função para verificar se dia tem eventos (com localizações)
   const dayHasEvents = useCallback((date: Date) => {
     if (!eventsCacheLoaded) return false;
-    return hasEventsForDate(date, cities, states);
-  }, [eventsCacheLoaded, cities, states]);
+    return hasEventsForDate(date, cities, states, regions);
+  }, [eventsCacheLoaded, cities, states, regions]);
 
   const loadClients = async () => {
     try {
@@ -222,7 +222,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] p-6 gap-4">
+    <div className="flex flex-col h-[calc(100vh-40px)] p-4 gap-4">
       {/* Header com controles */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
@@ -420,6 +420,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
         date={selectedDateForIdeas || new Date()}
         cities={cities}
         states={states}
+        regions={regions}
         onSelectEvent={handleSelectHistoricalEvent}
       />
     </div>

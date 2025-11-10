@@ -14,6 +14,7 @@ interface HistoricalEventsDialogProps {
   date: Date;
   cities?: string[];
   states?: string[];
+  regions?: string[];
   onSelectEvent: (event: HistoricalEvent) => void;
 }
 
@@ -23,9 +24,10 @@ export function HistoricalEventsDialog({
   date,
   cities = [],
   states = [],
+  regions = [],
   onSelectEvent
 }: HistoricalEventsDialogProps) {
-  const { events, loading } = useHistoricalEvents(date, cities, states);
+  const { events, loading } = useHistoricalEvents(date, cities, states, regions);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,10 +66,11 @@ export function HistoricalEventsDialog({
                          event.type === 'historical' ? '📜 História' : '💡 Curiosidade'}
                       </Badge>
                       {/* Badge de localização */}
-                      {(event.city || event.state) && (
+                      {(event.city || event.state || event.region) && (
                         <Badge variant="outline" className="text-xs">
                           {event.city && event.state ? `${event.city} - ${event.state}` :
-                           event.state ? event.state :
+                           event.state ? `${event.state}${event.region ? ` (${event.region})` : ''}` :
+                           event.region ? `Região ${event.region}` :
                            '🇧🇷 Nacional'}
                         </Badge>
                       )}

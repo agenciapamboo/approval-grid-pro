@@ -153,13 +153,30 @@ const CITIES_BY_STATE: Record<string, string[]> = {
   ],
 };
 
+// Mapeamento de regiões brasileiras
+export const REGIONS_MAP: Record<string, string[]> = {
+  'Norte': ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'],
+  'Nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+  'Centro-Oeste': ['DF', 'GO', 'MT', 'MS'],
+  'Sudeste': ['ES', 'MG', 'RJ', 'SP'],
+  'Sul': ['PR', 'RS', 'SC']
+};
+
+export function getRegionFromState(state: string): string | null {
+  for (const [region, states] of Object.entries(REGIONS_MAP)) {
+    if (states.includes(state)) return region;
+  }
+  return null;
+}
+
 export interface LocationInfo {
   cities: string[];
   states: string[];
+  regions: string[];
 }
 
 export function extractLocationFromAddress(address: string | null): LocationInfo {
-  if (!address) return { cities: [], states: [] };
+  if (!address) return { cities: [], states: [], regions: [] };
   
   const addressLower = address.toLowerCase()
     .normalize('NFD')
@@ -192,7 +209,16 @@ export function extractLocationFromAddress(address: string | null): LocationInfo
     });
   });
   
-  return { cities, states };
+  // Extrair regiões dos estados detectados
+  const regions: string[] = [];
+  states.forEach(state => {
+    const region = getRegionFromState(state);
+    if (region && !regions.includes(region)) {
+      regions.push(region);
+    }
+  });
+  
+  return { cities, states, regions };
 }
 
 export function normalizeCity(city: string): string {
@@ -223,4 +249,15 @@ export function getStatesFromClients(clients: any[]): string[] {
   });
   
   return Array.from(statesSet);
+}
+
+export function getRegionsFromClients(clients: any[]): string[] {
+  const regionsSet = new Set<string>();
+  
+  clients.forEach(client => {
+    const location = extractLocationFromAddress(client.address);
+    location.regions.forEach(region => regionsSet.add(region));
+  });
+  
+  return Array.from(regionsSet);
 }

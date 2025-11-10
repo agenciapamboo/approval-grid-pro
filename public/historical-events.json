@@ -1,557 +1,193 @@
 {
   "national": {
-    "01-01": [
-      {
-        "title": "Confraternização Universal",
-        "description": "Ano Novo - celebração mundial do início de um novo ano. Momento de renovação e planejamento de metas.",
-        "type": "holiday"
-      }
-    ],
-    "02-14": [
-      {
-        "title": "Dia dos Namorados (Internacional)",
-        "description": "Valentine's Day - celebrado em diversos países como dia do amor e da amizade.",
-        "type": "holiday"
-      }
-    ],
-    "03-08": [
-      {
-        "title": "Dia Internacional da Mulher",
-        "description": "Celebração das conquistas sociais, econômicas, culturais e políticas das mulheres.",
-        "type": "holiday"
-      }
-    ],
-    "04-21": [
-      {
-        "title": "Dia de Tiradentes",
-        "description": "Homenagem a Joaquim José da Silva Xavier, mártir da Inconfidência Mineira.",
-        "type": "holiday",
-        "year": 1792
-      }
-    ],
-    "05-01": [
-      {
-        "title": "Dia do Trabalho",
-        "description": "Celebração das conquistas dos trabalhadores e dos movimentos sindicais.",
-        "type": "holiday"
-      }
-    ],
-    "06-12": [
-      {
-        "title": "Dia dos Namorados (Brasil)",
-        "description": "Celebração brasileira do amor e da amizade, véspera do Dia de Santo Antônio.",
-        "type": "holiday"
-      }
-    ],
-    "09-07": [
-      {
-        "title": "Independência do Brasil",
-        "description": "D. Pedro I proclamou a independência às margens do rio Ipiranga em São Paulo.",
-        "type": "holiday",
-        "year": 1822
-      }
-    ],
-    "10-12": [
-      {
-        "title": "Nossa Senhora Aparecida",
-        "description": "Padroeira do Brasil e Dia das Crianças.",
-        "type": "holiday"
-      }
-    ],
-    "11-02": [
-      {
-        "title": "Dia de Finados",
-        "description": "Dia de homenagem aos entes queridos que já partiram.",
-        "type": "holiday"
-      }
-    ],
-    "11-15": [
-      {
-        "title": "Proclamação da República",
-        "description": "Fim do Império e início da República no Brasil.",
-        "type": "holiday",
-        "year": 1889
-      }
-    ],
-    "11-20": [
-      {
-        "title": "Dia da Consciência Negra",
-        "description": "Homenagem a Zumbi dos Palmares e reflexão sobre a luta contra o racismo.",
-        "type": "holiday"
-      }
-    ],
-    "12-25": [
-      {
-        "title": "Natal",
-        "description": "Celebração do nascimento de Jesus Cristo.",
-        "type": "holiday"
-      }
-    ]
+    "01-01": [{"title": "Confraternização Universal", "description": "Início do Ano Novo - momento de renovação e novos começos", "type": "holiday"}],
+    "01-02": [{"title": "Dia do Sanitarista", "description": "Homenagem aos profissionais da saúde pública", "type": "holiday"}],
+    "01-04": [{"title": "Dia Mundial do Braille", "description": "Sistema de leitura tátil para pessoas cegas", "type": "holiday"}, {"title": "Dia do Hemofílico", "description": "Conscientização sobre a hemofilia", "type": "holiday"}],
+    "01-05": [{"title": "Criação da Imprensa Régia", "description": "D. João VI fundou a primeira imprensa oficial do Brasil", "type": "historical", "year": 1808}],
+    "01-06": [{"title": "Dia da Gratidão", "description": "Data para expressar agradecimento", "type": "holiday"}],
+    "01-07": [{"title": "Dia do Leitor", "description": "Celebração da leitura e dos leitores", "type": "holiday"}],
+    "01-08": [{"title": "Dia do Fotógrafo", "description": "Homenagem aos profissionais da fotografia", "type": "holiday"}],
+    "01-09": [{"title": "Dia do Fico", "description": "D. Pedro I decidiu ficar no Brasil", "type": "historical", "year": 1822}],
+    "01-11": [{"title": "Dia do Controle da Poluição", "description": "Conscientização sobre poluição ambiental", "type": "holiday"}],
+    "01-12": [{"title": "Dia do Empresário Contábil", "description": "Homenagem aos profissionais de contabilidade", "type": "holiday"}],
+    "01-15": [{"title": "Dia Mundial do Compositor", "description": "Celebração dos criadores musicais", "type": "holiday"}],
+    "01-20": [{"title": "Dia do Farmacêutico", "description": "Homenagem aos profissionais da farmácia", "type": "holiday"}],
+    "01-21": [{"title": "Dia Mundial da Religião", "description": "Promoção da harmonia entre religiões", "type": "holiday"}],
+    "01-24": [{"title": "Dia da Previdência Social", "description": "Conscientização sobre seguridade social", "type": "holiday"}],
+    "01-25": [{"title": "Dia do Carteiro", "description": "Homenagem aos profissionais dos correios", "type": "holiday"}],
+    "01-28": [{"title": "Dia do Auditor Fiscal", "description": "Reconhecimento aos fiscais tributários", "type": "holiday"}],
+    "01-30": [{"title": "Dia da Saudade", "description": "Celebração das lembranças queridas", "type": "holiday"}],
+    "02-01": [{"title": "Dia do Publicitário", "description": "Homenagem aos profissionais da propaganda", "type": "holiday"}],
+    "02-02": [{"title": "Dia de Iemanjá", "description": "Celebração da Rainha do Mar", "type": "holiday"}],
+    "02-06": [{"title": "Dia do Agente de Viagens", "description": "Reconhecimento aos profissionais do turismo", "type": "holiday"}],
+    "02-08": [{"title": "Dia do Gráfico", "description": "Homenagem aos profissionais das artes gráficas", "type": "holiday"}],
+    "02-11": [{"title": "Dia do Zelador", "description": "Valorização dos profissionais de limpeza", "type": "holiday"}],
+    "02-14": [{"title": "Dia da Amizade", "description": "Celebração da amizade verdadeira", "type": "holiday"}],
+    "02-16": [{"title": "Dia do Repórter", "description": "Homenagem aos jornalistas de campo", "type": "holiday"}],
+    "02-19": [{"title": "Dia do Esportista", "description": "Celebração dos atletas brasileiros", "type": "holiday"}],
+    "02-21": [{"title": "Dia Internacional da Língua Materna", "description": "Valorização da diversidade linguística", "type": "holiday"}],
+    "02-27": [{"title": "Dia do Livro Didático", "description": "Importância dos materiais educacionais", "type": "holiday"}],
+    "03-01": [{"title": "Dia do Turismo", "description": "Promoção do setor turístico brasileiro", "type": "holiday"}],
+    "03-04": [{"title": "Carnaval 2025", "description": "Maior festa popular do Brasil", "type": "holiday"}],
+    "03-08": [{"title": "Dia Internacional da Mulher", "description": "Celebração das conquistas femininas", "type": "holiday"}],
+    "03-10": [{"title": "Dia do Telefone", "description": "Aniversário da primeira ligação telefônica", "type": "historical", "year": 1876}],
+    "03-12": [{"title": "Dia do Bibliotecário", "description": "Homenagem aos guardiões do conhecimento", "type": "holiday"}],
+    "03-14": [{"title": "Dia Nacional da Poesia", "description": "Celebração da arte poética", "type": "holiday"}],
+    "03-15": [{"title": "Dia do Consumidor", "description": "Direitos e conscientização do consumidor", "type": "holiday"}],
+    "03-19": [{"title": "Dia de São José", "description": "Padroeiro dos trabalhadores", "type": "holiday"}],
+    "03-20": [{"title": "Dia Internacional da Felicidade", "description": "Promoção do bem-estar global", "type": "holiday"}],
+    "03-21": [{"title": "Dia Internacional da Síndrome de Down", "description": "Conscientização e inclusão", "type": "holiday"}],
+    "03-22": [{"title": "Dia Mundial da Água", "description": "Preservação dos recursos hídricos", "type": "holiday"}],
+    "03-27": [{"title": "Dia do Circo", "description": "Homenagem às artes circenses", "type": "holiday"}],
+    "03-31": [{"title": "Dia da Saúde e Nutrição", "description": "Alimentação saudável e qualidade de vida", "type": "holiday"}],
+    "04-01": [{"title": "Dia da Mentira", "description": "Tradição de brincadeiras e pegadinhas", "type": "curiosity"}],
+    "04-02": [{"title": "Dia do Propagandista", "description": "Profissionais da indústria farmacêutica", "type": "holiday"}],
+    "04-07": [{"title": "Dia Mundial da Saúde", "description": "Conscientização sobre saúde pública", "type": "holiday"}],
+    "04-08": [{"title": "Dia do Corretor de Imóveis", "description": "Reconhecimento aos profissionais imobiliários", "type": "holiday"}],
+    "04-13": [{"title": "Dia do Hino Nacional", "description": "Símbolo da identidade brasileira", "type": "historical", "year": 1909}],
+    "04-15": [{"title": "Dia do Desenhista", "description": "Homenagem aos artistas visuais", "type": "holiday"}],
+    "04-18": [{"title": "Sexta-feira Santa", "description": "Paixão e morte de Jesus Cristo", "type": "holiday"}],
+    "04-19": [{"title": "Dia do Índio", "description": "Celebração dos povos indígenas brasileiros", "type": "holiday"}],
+    "04-20": [{"title": "Páscoa", "description": "Ressurreição de Jesus Cristo", "type": "holiday"}],
+    "04-21": [{"title": "Tiradentes", "description": "Homenagem ao mártir da Inconfidência Mineira", "type": "holiday", "year": 1792}],
+    "04-22": [{"title": "Dia Mundial da Terra", "description": "Preservação do meio ambiente", "type": "holiday"}],
+    "04-23": [{"title": "Dia Mundial do Livro", "description": "Incentivo à leitura mundial", "type": "holiday"}],
+    "04-28": [{"title": "Dia da Educação", "description": "Valorização do ensino no Brasil", "type": "holiday"}],
+    "05-01": [{"title": "Dia do Trabalho", "description": "Celebração dos direitos trabalhistas", "type": "holiday"}],
+    "05-03": [{"title": "Dia do Taquígrafo", "description": "Profissionais da escrita rápida", "type": "holiday"}],
+    "05-05": [{"title": "Dia Nacional das Comunicações", "description": "Marcos regulatórios das telecomunicações", "type": "holiday"}],
+    "05-08": [{"title": "Dia do Artista Plástico", "description": "Celebração das artes visuais", "type": "holiday"}],
+    "05-10": [{"title": "Dia das Mães", "description": "Homenagem às mães brasileiras", "type": "holiday"}],
+    "05-12": [{"title": "Dia do Enfermeiro", "description": "Reconhecimento aos profissionais de enfermagem", "type": "holiday"}],
+    "05-13": [{"title": "Abolição da Escravatura", "description": "Assinatura da Lei Áurea pela Princesa Isabel", "type": "historical", "year": 1888}],
+    "05-15": [{"title": "Dia do Assistente Social", "description": "Valorização dos assistentes sociais", "type": "holiday"}],
+    "05-18": [{"title": "Dia dos Museus", "description": "Celebração do patrimônio cultural", "type": "holiday"}],
+    "05-25": [{"title": "Dia da Indústria", "description": "Desenvolvimento industrial brasileiro", "type": "holiday"}],
+    "05-31": [{"title": "Dia Mundial sem Tabaco", "description": "Conscientização sobre o tabagismo", "type": "holiday"}],
+    "06-01": [{"title": "Dia Mundial da Criança", "description": "Direitos e proteção infantil", "type": "holiday"}],
+    "06-05": [{"title": "Dia Mundial do Meio Ambiente", "description": "Preservação ambiental global", "type": "holiday"}],
+    "06-08": [{"title": "Dia Mundial dos Oceanos", "description": "Conservação dos mares e oceanos", "type": "holiday"}],
+    "06-12": [{"title": "Dia dos Namorados", "description": "Celebração do amor romântico", "type": "holiday"}],
+    "06-13": [{"title": "Dia de Santo Antônio", "description": "Santo casamenteiro popular", "type": "holiday"}],
+    "06-19": [{"title": "Corpus Christi", "description": "Celebração do Corpo de Cristo", "type": "holiday"}],
+    "06-24": [{"title": "Dia de São João", "description": "Festas juninas tradicionais", "type": "holiday"}],
+    "06-29": [{"title": "Dia do Pescador", "description": "Homenagem aos trabalhadores da pesca", "type": "holiday"}],
+    "07-02": [{"title": "Dia do Hospital", "description": "Instituições de saúde essenciais", "type": "holiday"}],
+    "07-08": [{"title": "Dia do Padeiro", "description": "Mestres da panificação", "type": "holiday"}],
+    "07-10": [{"title": "Dia da Pizza", "description": "Celebração da culinária italiana no Brasil", "type": "holiday"}],
+    "07-13": [{"title": "Dia do Cantor", "description": "Homenagem aos artistas vocais", "type": "holiday"}],
+    "07-16": [{"title": "Dia do Comerciante", "description": "Valorização do comércio brasileiro", "type": "holiday"}],
+    "07-20": [{"title": "Dia do Amigo", "description": "Celebração da amizade", "type": "holiday"}],
+    "07-25": [{"title": "Dia do Motorista", "description": "Profissionais do transporte", "type": "holiday"}],
+    "07-26": [{"title": "Dia dos Avós", "description": "Homenagem aos avós brasileiros", "type": "holiday"}],
+    "08-05": [{"title": "Dia Nacional da Saúde", "description": "Importância da saúde pública", "type": "holiday"}],
+    "08-08": [{"title": "Dia dos Pais", "description": "Homenagem aos pais brasileiros", "type": "holiday"}],
+    "08-11": [{"title": "Dia do Advogado", "description": "Criação dos primeiros cursos jurídicos no Brasil", "type": "historical", "year": 1827}],
+    "08-15": [{"title": "Dia da Informática", "description": "Tecnologia da informação", "type": "holiday"}],
+    "08-22": [{"title": "Dia do Folclore", "description": "Cultura popular brasileira", "type": "holiday"}],
+    "08-27": [{"title": "Dia do Psicólogo", "description": "Saúde mental e bem-estar", "type": "holiday"}],
+    "08-31": [{"title": "Dia do Nutricionista", "description": "Alimentação saudável e equilibrada", "type": "holiday"}],
+    "09-05": [{"title": "Dia da Amazônia", "description": "Preservação da maior floresta tropical", "type": "holiday"}],
+    "09-07": [{"title": "Independência do Brasil", "description": "D. Pedro I proclamou a independência", "type": "holiday", "year": 1822}],
+    "09-09": [{"title": "Dia do Veterinário", "description": "Saúde e bem-estar animal", "type": "holiday"}],
+    "09-15": [{"title": "Dia do Cliente", "description": "Valorização do consumidor", "type": "holiday"}],
+    "09-21": [{"title": "Dia da Árvore", "description": "Preservação das florestas", "type": "holiday"}],
+    "09-22": [{"title": "Dia do Contador", "description": "Profissionais da contabilidade", "type": "holiday"}],
+    "10-01": [{"title": "Dia do Idoso", "description": "Respeito e cuidado com a terceira idade", "type": "holiday"}],
+    "10-04": [{"title": "Dia dos Animais", "description": "Proteção e bem-estar animal", "type": "holiday"}],
+    "10-05": [{"title": "Dia do Professor", "description": "Homenagem aos educadores", "type": "holiday"}],
+    "10-12": [{"title": "Dia das Crianças", "description": "Celebração da infância brasileira", "type": "holiday"}],
+    "10-15": [{"title": "Dia do Professor", "description": "Data nacional dos educadores", "type": "holiday"}],
+    "10-18": [{"title": "Dia do Médico", "description": "São Lucas, padroeiro da medicina", "type": "holiday"}],
+    "10-28": [{"title": "Dia do Funcionário Público", "description": "Servidores públicos brasileiros", "type": "holiday"}],
+    "10-31": [{"title": "Halloween", "description": "Dia das Bruxas no Brasil", "type": "curiosity"}],
+    "11-02": [{"title": "Finados", "description": "Homenagem aos que partiram", "type": "holiday"}],
+    "11-15": [{"title": "Proclamação da República", "description": "Fim do Império e início da República", "type": "holiday", "year": 1889}],
+    "11-19": [{"title": "Dia da Bandeira", "description": "Símbolo nacional brasileiro", "type": "holiday"}],
+    "11-20": [{"title": "Dia da Consciência Negra", "description": "Celebração da cultura afro-brasileira", "type": "holiday"}],
+    "11-22": [{"title": "Dia do Músico", "description": "Santa Cecília, padroeira da música", "type": "holiday"}],
+    "11-28": [{"title": "Black Friday", "description": "Maior data comercial de descontos", "type": "holiday"}],
+    "12-01": [{"title": "Dia Mundial de Luta Contra a AIDS", "description": "Prevenção e conscientização", "type": "holiday"}],
+    "12-04": [{"title": "Dia da Propaganda", "description": "Indústria publicitária brasileira", "type": "holiday"}],
+    "12-08": [{"title": "Dia da Justiça", "description": "Poder Judiciário brasileiro", "type": "holiday"}],
+    "12-10": [{"title": "Dia Internacional dos Direitos Humanos", "description": "Declaração Universal da ONU", "type": "holiday"}],
+    "12-11": [{"title": "Dia do Engenheiro", "description": "Profissionais da engenharia", "type": "holiday"}],
+    "12-21": [{"title": "Início do Verão", "description": "Solstício de verão no hemisfério sul", "type": "curiosity"}],
+    "12-25": [{"title": "Natal", "description": "Nascimento de Jesus Cristo", "type": "holiday"}],
+    "12-31": [{"title": "Réveillon", "description": "Passagem de ano e novas esperanças", "type": "holiday"}]
   },
-  "states": {
-    "SP": {
-      "07-09": [
-        {
-          "title": "Revolução Constitucionalista de 1932",
-          "description": "Feriado estadual de São Paulo em homenagem aos heróis de 1932.",
-          "type": "holiday",
-          "state": "SP",
-          "year": 1932
-        }
-      ]
+  "regions": {
+    "Norte": {
+      "AM": {"09-05": [{"title": "Elevação do Amazonas à Província", "description": "Feriado estadual", "type": "historical", "state": "AM", "region": "Norte", "year": 1850}]},
+      "PA": {"08-15": [{"title": "Adesão do Pará à Independência", "description": "Feriado estadual", "type": "historical", "state": "PA", "region": "Norte", "year": 1823}]}
     },
-    "RJ": {
-      "11-20": [
-        {
-          "title": "Dia da Consciência Negra",
-          "description": "Feriado estadual do Rio de Janeiro.",
-          "type": "holiday",
-          "state": "RJ"
-        }
-      ]
+    "Nordeste": {
+      "BA": {"07-02": [{"title": "Independência da Bahia", "description": "Feriado estadual", "type": "historical", "state": "BA", "region": "Nordeste", "year": 1823}]},
+      "CE": {"03-25": [{"title": "Abolição da Escravidão no Ceará", "description": "Primeiro estado a abolir", "type": "historical", "state": "CE", "region": "Nordeste", "year": 1884}]}
     },
-    "MG": {
-      "04-21": [
-        {
-          "title": "Tiradentes - Especial em Minas Gerais",
-          "description": "Celebração especial do mártir mineiro em sua terra natal.",
-          "type": "holiday",
-          "state": "MG"
-        }
-      ]
+    "Centro-Oeste": {
+      "DF": {"04-21": [{"title": "Fundação de Brasília", "description": "Inauguração da capital", "type": "historical", "state": "DF", "region": "Centro-Oeste", "year": 1960}]}
     },
-    "BA": {
-      "07-02": [
-        {
-          "title": "Independência da Bahia",
-          "description": "Celebração da vitória das tropas brasileiras contra os portugueses em 1823.",
-          "type": "holiday",
-          "state": "BA",
-          "year": 1823
-        }
-      ]
+    "Sudeste": {
+      "RJ": {"11-20": [{"title": "Dia da Consciência Negra", "description": "Zumbi dos Palmares", "type": "holiday", "state": "RJ", "region": "Sudeste"}]},
+      "SP": {"07-09": [{"title": "Revolução Constitucionalista", "description": "Movimento de 1932", "type": "historical", "state": "SP", "region": "Sudeste", "year": 1932}]}
     },
-    "RS": {
-      "09-20": [
-        {
-          "title": "Revolução Farroupilha",
-          "description": "Dia do Gaúcho - celebração da cultura e história do Rio Grande do Sul.",
-          "type": "holiday",
-          "state": "RS",
-          "year": 1835
-        }
-      ]
-    },
-    "SC": {
-      "08-11": [
-        {
-          "title": "Criação da Capitania de Santa Catarina",
-          "description": "Aniversário da criação da Capitania, separando-se de São Paulo.",
-          "type": "historical",
-          "state": "SC",
-          "year": 1738
-        }
-      ]
-    },
-    "PR": {
-      "12-19": [
-        {
-          "title": "Emancipação Política do Paraná",
-          "description": "Separação do Paraná da província de São Paulo.",
-          "type": "historical",
-          "state": "PR",
-          "year": 1853
-        }
-      ]
+    "Sul": {
+      "RS": {"09-20": [{"title": "Revolução Farroupilha", "description": "Dia do Gaúcho", "type": "historical", "state": "RS", "region": "Sul", "year": 1835}]}
     }
   },
   "cities": {
-    "SP": {
-      "São Paulo": {
-        "01-25": [
-          {
-            "title": "Aniversário de São Paulo",
-            "description": "Fundação da cidade em 1554 por padres jesuítas José de Anchieta e Manoel da Nóbrega.",
-            "type": "historical",
-            "city": "São Paulo",
-            "state": "SP",
-            "year": 1554
-          }
-        ]
+    "Norte": {
+      "AM": {
+        "Manaus": {"10-24": [{"title": "Aniversário de Manaus", "description": "Elevação à cidade", "type": "historical", "city": "Manaus", "state": "AM", "region": "Norte", "year": 1848}]}
       },
-      "Campinas": {
-        "07-14": [
-          {
-            "title": "Aniversário de Campinas",
-            "description": "Fundação do povoado de Campinas em 1774, hoje uma das principais cidades do interior paulista.",
-            "type": "historical",
-            "city": "Campinas",
-            "state": "SP",
-            "year": 1774
-          }
-        ]
-      },
-      "Santos": {
-        "01-26": [
-          {
-            "title": "Aniversário de Santos",
-            "description": "Fundação da cidade portuária de Santos em 1546 por Brás Cubas.",
-            "type": "historical",
-            "city": "Santos",
-            "state": "SP",
-            "year": 1546
-          }
-        ]
-      },
-      "Guarulhos": {
-        "12-08": [
-          {
-            "title": "Aniversário de Guarulhos",
-            "description": "Emancipação da cidade de Guarulhos, hoje segunda maior cidade de São Paulo.",
-            "type": "historical",
-            "city": "Guarulhos",
-            "state": "SP",
-            "year": 1560
-          }
-        ]
-      },
-      "Campos do Jordão": {
-        "04-26": [
-          {
-            "title": "Aniversário de Campos do Jordão",
-            "description": "Emancipação política de Campos do Jordão, a Suíça Brasileira.",
-            "type": "historical",
-            "city": "Campos do Jordão",
-            "state": "SP",
-            "year": 1874
-          }
-        ]
-      },
-      "Ribeirão Preto": {
-        "06-19": [
-          {
-            "title": "Aniversário de Ribeirão Preto",
-            "description": "Fundação de Ribeirão Preto, importante polo agroindustrial e tecnológico.",
-            "type": "historical",
-            "city": "Ribeirão Preto",
-            "state": "SP",
-            "year": 1856
-          }
-        ]
-      },
-      "Sorocaba": {
-        "08-15": [
-          {
-            "title": "Aniversário de Sorocaba",
-            "description": "Fundação de Sorocaba em 1654, cidade historicamente importante no ciclo tropeirista.",
-            "type": "historical",
-            "city": "Sorocaba",
-            "state": "SP",
-            "year": 1654
-          }
-        ]
-      },
-      "Bauru": {
-        "08-01": [
-          {
-            "title": "Aniversário de Bauru",
-            "description": "Fundação de Bauru em 1896, importante entroncamento ferroviário.",
-            "type": "historical",
-            "city": "Bauru",
-            "state": "SP",
-            "year": 1896
-          }
-        ]
+      "PA": {
+        "Belém": {"01-12": [{"title": "Aniversário de Belém", "description": "Fundação da capital", "type": "historical", "city": "Belém", "state": "PA", "region": "Norte", "year": 1616}]}
       }
     },
-    "RJ": {
-      "Rio de Janeiro": {
-        "03-01": [
-          {
-            "title": "Aniversário do Rio de Janeiro",
-            "description": "Fundação da cidade maravilhosa em 1565 por Estácio de Sá.",
-            "type": "historical",
-            "city": "Rio de Janeiro",
-            "state": "RJ",
-            "year": 1565
-          }
-        ]
+    "Nordeste": {
+      "BA": {
+        "Salvador": {"03-29": [{"title": "Aniversário de Salvador", "description": "Primeira capital do Brasil", "type": "historical", "city": "Salvador", "state": "BA", "region": "Nordeste", "year": 1549}]}
       },
-      "Niterói": {
-        "11-22": [
-          {
-            "title": "Aniversário de Niterói",
-            "description": "Fundação de Niterói, cidade vizinha ao Rio de Janeiro.",
-            "type": "historical",
-            "city": "Niterói",
-            "state": "RJ",
-            "year": 1573
-          }
-        ]
+      "CE": {
+        "Fortaleza": {"04-13": [{"title": "Aniversário de Fortaleza", "description": "Fundação da capital", "type": "historical", "city": "Fortaleza", "state": "CE", "region": "Nordeste", "year": 1726}]}
       },
-      "Petrópolis": {
-        "03-16": [
-          {
-            "title": "Aniversário de Petrópolis",
-            "description": "Fundação da cidade imperial de Petrópolis em 1843.",
-            "type": "historical",
-            "city": "Petrópolis",
-            "state": "RJ",
-            "year": 1843
-          }
-        ]
+      "PE": {
+        "Recife": {"03-12": [{"title": "Aniversário do Recife", "description": "Elevação à vila", "type": "historical", "city": "Recife", "state": "PE", "region": "Nordeste", "year": 1710}]}
       }
     },
-    "MG": {
-      "Belo Horizonte": {
-        "12-12": [
-          {
-            "title": "Aniversário de Belo Horizonte",
-            "description": "Inauguração da capital planejada de Minas Gerais em 1897.",
-            "type": "historical",
-            "city": "Belo Horizonte",
-            "state": "MG",
-            "year": 1897
-          }
-        ]
+    "Centro-Oeste": {
+      "DF": {
+        "Brasília": {"04-21": [{"title": "Aniversário de Brasília", "description": "Inauguração por JK", "type": "historical", "city": "Brasília", "state": "DF", "region": "Centro-Oeste", "year": 1960}]}
       },
-      "Ouro Preto": {
-        "07-06": [
-          {
-            "title": "Aniversário de Ouro Preto",
-            "description": "Fundação de Ouro Preto, patrimônio mundial da UNESCO e ex-capital de Minas Gerais.",
-            "type": "historical",
-            "city": "Ouro Preto",
-            "state": "MG",
-            "year": 1711
-          }
-        ]
+      "GO": {
+        "Goiânia": {"10-24": [{"title": "Aniversário de Goiânia", "description": "Fundação da capital", "type": "historical", "city": "Goiânia", "state": "GO", "region": "Centro-Oeste", "year": 1933}]}
+      }
+    },
+    "Sudeste": {
+      "MG": {
+        "Belo Horizonte": {"12-12": [{"title": "Aniversário de Belo Horizonte", "description": "Inauguração da capital", "type": "historical", "city": "Belo Horizonte", "state": "MG", "region": "Sudeste", "year": 1897}]}
       },
-      "Uberlândia": {
-        "08-31": [
-          {
-            "title": "Aniversário de Uberlândia",
-            "description": "Emancipação de Uberlândia, importante polo econômico do Triângulo Mineiro.",
-            "type": "historical",
-            "city": "Uberlândia",
-            "state": "MG",
-            "year": 1888
-          }
-        ]
-      }
-    },
-    "BA": {
-      "Salvador": {
-        "03-29": [
-          {
-            "title": "Aniversário de Salvador",
-            "description": "Fundação da primeira capital do Brasil em 1549 por Tomé de Sousa.",
-            "type": "historical",
-            "city": "Salvador",
-            "state": "BA",
-            "year": 1549
-          }
-        ]
+      "RJ": {
+        "Rio de Janeiro": {"03-01": [{"title": "Aniversário do Rio de Janeiro", "description": "Fundação da cidade", "type": "historical", "city": "Rio de Janeiro", "state": "RJ", "region": "Sudeste", "year": 1565}]}
       },
-      "Porto Seguro": {
-        "04-22": [
-          {
-            "title": "Descobrimento do Brasil",
-            "description": "Chegada das caravelas portuguesas em Porto Seguro em 1500.",
-            "type": "historical",
-            "city": "Porto Seguro",
-            "state": "BA",
-            "year": 1500
-          }
-        ]
+      "SP": {
+        "São Paulo": {"01-25": [{"title": "Aniversário de São Paulo", "description": "Fundação pelos jesuítas", "type": "historical", "city": "São Paulo", "state": "SP", "region": "Sudeste", "year": 1554}]},
+        "Campinas": {"07-14": [{"title": "Aniversário de Campinas", "description": "Fundação da cidade", "type": "historical", "city": "Campinas", "state": "SP", "region": "Sudeste", "year": 1774}]},
+        "Santos": {"01-26": [{"title": "Aniversário de Santos", "description": "Cidade portuária", "type": "historical", "city": "Santos", "state": "SP", "region": "Sudeste", "year": 1546}]}
       }
     },
-    "RS": {
-      "Porto Alegre": {
-        "03-26": [
-          {
-            "title": "Aniversário de Porto Alegre",
-            "description": "Fundação da capital gaúcha em 1772.",
-            "type": "historical",
-            "city": "Porto Alegre",
-            "state": "RS",
-            "year": 1772
-          }
-        ]
+    "Sul": {
+      "PR": {
+        "Curitiba": {"03-29": [{"title": "Aniversário de Curitiba", "description": "Emancipação política", "type": "historical", "city": "Curitiba", "state": "PR", "region": "Sul", "year": 1693}]}
       },
-      "Gramado": {
-        "12-10": [
-          {
-            "title": "Aniversário de Gramado",
-            "description": "Emancipação de Gramado, famosa cidade turística da Serra Gaúcha.",
-            "type": "historical",
-            "city": "Gramado",
-            "state": "RS",
-            "year": 1954
-          }
-        ]
-      }
-    },
-    "PR": {
-      "Curitiba": {
-        "03-29": [
-          {
-            "title": "Aniversário de Curitiba",
-            "description": "Fundação da capital do Paraná em 1693.",
-            "type": "historical",
-            "city": "Curitiba",
-            "state": "PR",
-            "year": 1693
-          }
-        ]
+      "RS": {
+        "Porto Alegre": {"03-26": [{"title": "Aniversário de Porto Alegre", "description": "Fundação da capital", "type": "historical", "city": "Porto Alegre", "state": "RS", "region": "Sul", "year": 1772}]},
+        "Gramado": {"12-10": [{"title": "Aniversário de Gramado", "description": "Cidade do Natal Luz", "type": "historical", "city": "Gramado", "state": "RS", "region": "Sul", "year": 1954}]}
       },
-      "Foz do Iguaçu": {
-        "06-10": [
-          {
-            "title": "Aniversário de Foz do Iguaçu",
-            "description": "Fundação da cidade das Cataratas do Iguaçu.",
-            "type": "historical",
-            "city": "Foz do Iguaçu",
-            "state": "PR",
-            "year": 1914
-          }
-        ]
-      }
-    },
-    "SC": {
-      "Florianópolis": {
-        "03-23": [
-          {
-            "title": "Aniversário de Florianópolis",
-            "description": "Fundação da Ilha de Santa Catarina, hoje capital do estado.",
-            "type": "historical",
-            "city": "Florianópolis",
-            "state": "SC",
-            "year": 1726
-          }
-        ]
-      },
-      "Blumenau": {
-        "09-02": [
-          {
-            "title": "Aniversário de Blumenau",
-            "description": "Fundação de Blumenau pelo Dr. Hermann Blumenau, cidade da Oktoberfest.",
-            "type": "historical",
-            "city": "Blumenau",
-            "state": "SC",
-            "year": 1850
-          }
-        ]
-      }
-    },
-    "PE": {
-      "Recife": {
-        "03-12": [
-          {
-            "title": "Aniversário do Recife",
-            "description": "Fundação da capital pernambucana em 1537.",
-            "type": "historical",
-            "city": "Recife",
-            "state": "PE",
-            "year": 1537
-          }
-        ]
-      },
-      "Olinda": {
-        "03-12": [
-          {
-            "title": "Aniversário de Olinda",
-            "description": "Fundação de Olinda, patrimônio histórico e cultural brasileiro.",
-            "type": "historical",
-            "city": "Olinda",
-            "state": "PE",
-            "year": 1535
-          }
-        ]
-      }
-    },
-    "CE": {
-      "Fortaleza": {
-        "04-13": [
-          {
-            "title": "Aniversário de Fortaleza",
-            "description": "Fundação da capital cearense em 1726.",
-            "type": "historical",
-            "city": "Fortaleza",
-            "state": "CE",
-            "year": 1726
-          }
-        ]
-      }
-    },
-    "DF": {
-      "Brasília": {
-        "04-21": [
-          {
-            "title": "Inauguração de Brasília",
-            "description": "Inauguração da capital federal do Brasil, projeto de Oscar Niemeyer e Lúcio Costa.",
-            "type": "historical",
-            "city": "Brasília",
-            "state": "DF",
-            "year": 1960
-          }
-        ]
-      }
-    },
-    "AM": {
-      "Manaus": {
-        "10-24": [
-          {
-            "title": "Aniversário de Manaus",
-            "description": "Elevação de Manaus à categoria de cidade em 1848.",
-            "type": "historical",
-            "city": "Manaus",
-            "state": "AM",
-            "year": 1848
-          }
-        ]
-      }
-    },
-    "PA": {
-      "Belém": {
-        "01-12": [
-          {
-            "title": "Aniversário de Belém",
-            "description": "Fundação da capital paraense em 1616.",
-            "type": "historical",
-            "city": "Belém",
-            "state": "PA",
-            "year": 1616
-          }
-        ]
-      }
-    },
-    "GO": {
-      "Goiânia": {
-        "10-24": [
-          {
-            "title": "Aniversário de Goiânia",
-            "description": "Fundação da capital planejada de Goiás em 1933.",
-            "type": "historical",
-            "city": "Goiânia",
-            "state": "GO",
-            "year": 1933
-          }
-        ]
-      }
-    },
-    "ES": {
-      "Vitória": {
-        "09-08": [
-          {
-            "title": "Aniversário de Vitória",
-            "description": "Fundação da capital capixaba em 1551.",
-            "type": "historical",
-            "city": "Vitória",
-            "state": "ES",
-            "year": 1551
-          }
-        ]
+      "SC": {
+        "Florianópolis": {"03-23": [{"title": "Aniversário de Florianópolis", "description": "Fundação da Ilha", "type": "historical", "city": "Florianópolis", "state": "SC", "region": "Sul", "year": 1726}]},
+        "Blumenau": {"09-02": [{"title": "Aniversário de Blumenau", "description": "Cidade da Oktoberfest", "type": "historical", "city": "Blumenau", "state": "SC", "region": "Sul", "year": 1852}]}
       }
     }
   }
