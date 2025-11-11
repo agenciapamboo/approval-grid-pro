@@ -184,12 +184,12 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
             </video>
           ) : (
             <img
-              src={thumbUrl || srcUrl || ''}
+              src={srcUrl || thumbUrl || ''}
               alt={`Mídia ${currentIndex + 1}`}
               className="w-full h-full object-cover cursor-pointer"
               onClick={() => setShowModal(true)}
               onError={(e) => {
-                if (srcUrl) e.currentTarget.src = srcUrl;
+                if (thumbUrl) e.currentTarget.src = thumbUrl;
               }}
             />
           )}
