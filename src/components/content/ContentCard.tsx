@@ -827,7 +827,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                       <Button 
                         size="sm"
                         variant="warning"
-                        onClick={() => setShowRejectDialog(true)}
+                        onClick={() => setShowAdjustment(true)}
                         className="w-full"
                       >
                         <AlertCircle className="h-4 w-4 mr-2" />
@@ -1038,6 +1038,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
         onOpenChange={setShowAdjustment}
         contentId={content.id}
         onSuccess={onUpdate}
+        approvalToken={approvalToken}
       />
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>

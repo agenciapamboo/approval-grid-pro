@@ -11,13 +11,13 @@ import { triggerWebhook } from "@/lib/webhooks";
 interface Comment {
   id: string;
   body: string;
-  author_user_id: string;
+  author_user_id: string | null;
   created_at: string;
   is_adjustment_request: boolean;
   adjustment_reason?: string;
   profiles?: {
     name: string;
-  };
+  } | null;
 }
 
 interface ContentCommentsProps {
@@ -52,7 +52,9 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
       .from("comments")
       .select(`
         *,
-        profiles:author_user_id (name)
+        profiles:author_user_id (
+          name
+        )
       `)
       .eq("content_id", contentId)
       .order("created_at", { ascending: true });
@@ -181,7 +183,7 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm">
-                      {comment.profiles?.name || "Usuário"}
+                      {comment.profiles?.name || (comment.author_user_id ? "Usuário" : "Cliente (via aprovação)")}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(comment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
@@ -199,7 +201,7 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
                   )}
                   <p className="text-sm whitespace-pre-wrap break-words">{comment.body}</p>
                 </div>
-                {comment.author_user_id === currentUserId && (
+                {currentUserId && comment.author_user_id === currentUserId && (
                   <Button
                     variant="ghost"
                     size="icon"
