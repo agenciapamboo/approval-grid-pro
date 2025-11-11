@@ -2143,6 +2143,17 @@ export type Database = {
         Returns: string
       }
       encrypt_social_token: { Args: { token: string }; Returns: string }
+      fix_orphaned_user: {
+        Args: {
+          p_agency_email: string
+          p_agency_name: string
+          p_agency_whatsapp: string
+          p_plan: string
+          p_plan_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       generate_approval_token: {
         Args: { p_client_id: string; p_month: string }
         Returns: string

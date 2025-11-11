@@ -31,12 +31,12 @@ export const STRIPE_PRODUCTS = {
     description: "Plano para agências de Social Mídia",
     prices: {
       monthly: {
-        lookup_key: "plano_mensal_socialmidia",
+        lookup_key: "plano_socialmidia_mensal",
         amount: 4950, // R$ 49,50
         interval: "month",
       },
       annual: {
-        lookup_key: "plano_anual_socialmidia",
+        lookup_key: "plano_socialmidia_anual",
         amount: 49500, // R$ 495,00
         interval: "year",
       },

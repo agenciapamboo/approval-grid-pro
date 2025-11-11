@@ -19,8 +19,8 @@ const LOOKUP_KEYS: Record<string, Record<string, string>> = {
     annual: "plano_eugencia_anual",
   },
   socialmidia: {
-    monthly: "plano_mensal_socialmidia",
-    annual: "plano_anual_socialmidia",
+    monthly: "plano_socialmidia_mensal",
+    annual: "plano_socialmidia_anual",
   },
   fullservice: {
     monthly: "plano_agencia_mensal",

@@ -292,11 +292,16 @@ const Auth = () => {
         if (agencyError) throw agencyError;
         agencyId = newAgency.id;
 
-        // Update user role to agency_admin
+        // Insert user role as agency_admin
         const { error: roleError } = await supabase
           .from('user_roles')
-          .update({ role: 'agency_admin' })
-          .eq('user_id', authData.user.id);
+          .upsert({ 
+            user_id: authData.user.id,
+            role: 'agency_admin',
+            created_by: authData.user.id
+          }, {
+            onConflict: 'user_id,role'
+          });
 
         if (roleError) throw roleError;
       }
