@@ -198,14 +198,6 @@ export default function Pricing() {
         const errorMsg = getCheckoutErrorMessage(error);
         console.error('[CHECKOUT] Erro da função:', error);
         toast.error(errorMsg);
-        
-        // Rastrear erro
-        await trackEvent('CheckoutError', {
-          error_message: errorMsg,
-          plan: planId,
-          billing_cycle: billingCycle,
-        });
-        
         throw new Error(errorMsg);
       }
 
