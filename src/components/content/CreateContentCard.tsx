@@ -381,14 +381,20 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         thumbUrl = thumbFileName;
       }
 
-      // Validação de tamanho de arquivo (50MB por arquivo)
-      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB em bytes
+      // Validação de tamanho de arquivo
+      const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+      const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB
       for (const file of files) {
-        if (file.size > MAX_FILE_SIZE) {
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+        const maxSizeLabel = isVideo ? '100MB' : '50MB';
+        
+        if (file.size > maxSize) {
           const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          const fileType = isVideo ? 'Vídeos' : 'Imagens';
           toast({ 
             title: 'Arquivo muito grande', 
-            description: `O arquivo "${file.name}" tem ${sizeMB}MB. O tamanho máximo permitido é 50MB.`, 
+            description: `O arquivo "${file.name}" tem ${sizeMB}MB. ${fileType} podem ter até ${maxSizeLabel}.`, 
             variant: 'destructive' 
           });
           throw new Error(`Arquivo ${file.name} excede o tamanho máximo permitido`);
@@ -398,16 +404,15 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       // Preparação e upload dos arquivos de mídia
       let filesToUpload = files;
       if (contentType === 'reels') {
-        const videoFiles = files.filter(f => f.type.startsWith('video/'));
-        if (videoFiles.length === 0) {
-          toast({ title: 'Arquivo inválido', description: 'Para Reels, selecione um arquivo de vídeo', variant: 'destructive' });
-          throw new Error('Reels requer um arquivo de vídeo');
+        // Reels aceita apenas 1 arquivo (vídeo ou imagem)
+        if (files.length > 1) {
+          toast({ 
+            title: 'Reels permite apenas um arquivo', 
+            description: 'Apenas o primeiro arquivo será usado', 
+            variant: 'default' 
+          });
         }
-        // Reels aceita apenas 1 vídeo
-        filesToUpload = [videoFiles[0]];
-        if (files.length !== filesToUpload.length) {
-          console.warn('Imagens ignoradas ao criar Reels. Apenas o vídeo foi utilizado.');
-        }
+        filesToUpload = [files[0]];
       }
 
       const videoIndex = filesToUpload.findIndex(f => f.type.startsWith('video/'));
@@ -667,15 +672,15 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
               ) : files[0].type.startsWith('video/') ? (
                 <>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="story" id="type-story-video" />
-                    <Label htmlFor="type-story-video" className="text-sm font-normal cursor-pointer">
-                      Story (vídeo vertical 9:16)
+                    <RadioGroupItem value="reels" id="type-reels" />
+                    <Label htmlFor="type-reels" className="text-sm font-normal cursor-pointer">
+                      Reels (vertical 9:16)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="reels" id="type-reels" />
-                    <Label htmlFor="type-reels" className="text-sm font-normal cursor-pointer">
-                      Reels (vídeo curto)
+                    <RadioGroupItem value="story" id="type-story-video" />
+                    <Label htmlFor="type-story-video" className="text-sm font-normal cursor-pointer">
+                      Story (vertical 9:16)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -687,6 +692,12 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                 </>
               ) : (
                 <>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="reels" id="type-reels-image" />
+                    <Label htmlFor="type-reels-image" className="text-sm font-normal cursor-pointer">
+                      Reels (imagem vertical 9:16)
+                    </Label>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="feed" id="type-feed" />
                     <Label htmlFor="type-feed" className="text-sm font-normal cursor-pointer">
