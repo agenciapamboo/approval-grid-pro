@@ -14,6 +14,8 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RateLimitBlockedAlert } from "@/components/admin/RateLimitBlockedAlert";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 interface Profile {
   id: string;
@@ -73,6 +75,7 @@ export default function ContentGrid() {
   const [approvalToken, setApprovalToken] = useState<string | null>(null);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [showAllContents, setShowAllContents] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("pending");
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const tokenMonth = searchParams.get('month');
     if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
@@ -429,12 +432,18 @@ export default function ContentGrid() {
       console.log('No session - filtering only approved contents');
       query = query.eq("status", "approved");
     } 
-    // Com sessão de cliente: mostrar apenas in_review por padrão, a menos que showAllContents seja true
-    else if (session && !showAllContents) {
-      console.log('Client session - showing only in_review contents by default');
-      query = query.eq("status", "in_review");
+    // Com sessão de cliente: aplicar filtro baseado na tab selecionada
+    else if (session && statusFilter !== 'all') {
+      console.log('Client session - applying status filter:', statusFilter);
+      if (statusFilter === 'pending') {
+        query = query.in("status", ["draft", "in_review"]);
+      } else if (statusFilter === 'approved') {
+        query = query.eq("status", "approved");
+      } else if (statusFilter === 'changes_requested') {
+        query = query.eq("status", "changes_requested");
+      }
     }
-    // Se showAllContents for true, mostrar todos
+    // Se statusFilter for 'all', mostrar todos
     else {
       console.log('Session exists - loading all contents');
     }
@@ -496,6 +505,19 @@ export default function ContentGrid() {
   
   // Filtrar pelo mês selecionado
   const filteredContents = selectedMonth ? (groupedContents[selectedMonth] || []) : contents;
+
+  // Calcular contadores de status
+  const statusCounts = contents.reduce((acc, content) => {
+    if (content.status === 'draft' || content.status === 'in_review') {
+      acc.pending = (acc.pending || 0) + 1;
+    } else if (content.status === 'approved') {
+      acc.approved = (acc.approved || 0) + 1;
+    } else if (content.status === 'changes_requested') {
+      acc.changes = (acc.changes || 0) + 1;
+    }
+    acc.total = (acc.total || 0) + 1;
+    return acc;
+  }, { pending: 0, approved: 0, changes: 0, total: 0 });
 
   // Debug: Log state changes
   useEffect(() => {
@@ -639,27 +661,40 @@ export default function ContentGrid() {
           </Alert>
         )}
 
-        {/* Botão para ver todos os conteúdos - apenas quando logado e não em modo de aprovação */}
+        {/* Tabs de filtro por status - apenas quando logado e não em modo de aprovação */}
         {!isPublicView && user && (
-          <div className="mb-6 flex gap-3">
-            <Button
-              variant={!showAllContents ? "default" : "outline"}
-              onClick={() => {
-                setShowAllContents(false);
-                loadContents(client!.id, selectedMonth, false);
-              }}
-            >
-              Pendentes de Aprovação
-            </Button>
-            <Button
-              variant={showAllContents ? "default" : "outline"}
-              onClick={() => {
-                setShowAllContents(true);
-                loadContents(client!.id, selectedMonth, false);
-              }}
-            >
-              Todos os Conteúdos
-            </Button>
+          <div className="mb-6">
+            <Tabs value={statusFilter} onValueChange={(value: any) => {
+              setStatusFilter(value);
+              loadContents(client!.id, selectedMonth, false);
+            }}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="pending" className="flex items-center gap-2">
+                  Pendentes
+                  <Badge variant="pending" className="ml-1">
+                    {statusCounts.pending}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="flex items-center gap-2">
+                  Aprovados
+                  <Badge variant="success" className="ml-1">
+                    {statusCounts.approved}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="changes_requested" className="flex items-center gap-2">
+                  Ajustes
+                  <Badge variant="warning" className="ml-1">
+                    {statusCounts.changes}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="all" className="flex items-center gap-2">
+                  Todos
+                  <Badge variant="outline" className="ml-1">
+                    {statusCounts.total}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         )}
 
