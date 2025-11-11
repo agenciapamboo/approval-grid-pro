@@ -130,11 +130,11 @@ const Configuracoes = () => {
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="pt-0 space-y-2">
-                    <Button onClick={() => navigate("/admin/users-manager")} variant="outline" className="w-full justify-start">
+                    <Button onClick={() => navigate("/admin/usuarios")} variant="outline" className="w-full justify-start">
                       <UserCog className="h-4 w-4 mr-2" />
                       Gerenciar Usuários
                     </Button>
-                    <Button onClick={() => navigate("/admin/user-audit-log")} variant="outline" className="w-full justify-start">
+                    <Button onClick={() => navigate("/admin/auditoria-usuarios")} variant="outline" className="w-full justify-start">
                       <FileText className="h-4 w-4 mr-2" />
                       Log de Auditoria
                     </Button>
@@ -167,7 +167,7 @@ const Configuracoes = () => {
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="pt-0 space-y-2">
-                    <Button onClick={() => navigate("/admin/stripe-config")} variant="outline" className="w-full justify-start">
+                    <Button onClick={() => navigate("/admin/stripe")} variant="outline" className="w-full justify-start">
                       <Settings className="h-4 w-4 mr-2" />
                       Configuração Stripe
                     </Button>
@@ -202,13 +202,9 @@ const Configuracoes = () => {
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="pt-0 space-y-2">
-                    <Button onClick={() => navigate("/admin/support-tickets")} variant="outline" className="w-full justify-start">
+                    <Button onClick={() => navigate("/admin/tickets")} variant="outline" className="w-full justify-start">
                       <TicketCheck className="h-4 w-4 mr-2" />
                       Tickets Admin
-                    </Button>
-                    <Button onClick={() => navigate("/admin/agency-tickets")} variant="outline" className="w-full justify-start">
-                      <Building2 className="h-4 w-4 mr-2" />
-                      Tickets por Agência
                     </Button>
                   </CardContent>
                 </AccordionContent>

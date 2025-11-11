@@ -44,6 +44,7 @@ const UsersManager = lazy(() => import("./pages/admin/UsersManager"));
 const UserAuditLog = lazy(() => import("./pages/admin/UserAuditLog"));
 const StripeConfig = lazy(() => import("./pages/admin/StripeConfig"));
 const StripeSync = lazy(() => import("./pages/admin/StripeSync"));
+const StripeDiagnostic = lazy(() => import("./pages/admin/StripeDiagnostic"));
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,7 @@ const App = () => (
                 <Route path="/admin/auditoria-usuarios" element={<ProtectedRoute><UserAuditLog /></ProtectedRoute>} />
                 <Route path="/admin/stripe" element={<ProtectedRoute><StripeConfig /></ProtectedRoute>} />
                 <Route path="/admin/stripe-sync" element={<ProtectedRoute><StripeSync /></ProtectedRoute>} />
+                <Route path="/admin/stripe-diagnostic" element={<ProtectedRoute><StripeDiagnostic /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}
                 <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
