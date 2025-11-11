@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Eye, EyeOff } from "lucide-react";
+import { getErrorMessage } from "@/lib/error-messages";
 
 interface AddAgencyDialogProps {
   onAgencyAdded: () => void;
@@ -101,9 +102,12 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
       setOpen(false);
       onAgencyAdded();
     } catch (error: any) {
+      console.error('[ADD_AGENCY] Erro:', error);
+      const errorMsg = getErrorMessage(error);
+      
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao cadastrar agência",
+        title: "Erro ao cadastrar agência",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {

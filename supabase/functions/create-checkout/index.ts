@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, idempotency-key",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 const logStep = (step: string, details?: any) => {
@@ -71,8 +73,9 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
     logStep("Stripe key verified");
 
-    // Initialize Supabase client
+    // Initialize Supabase clients
     const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
@@ -127,11 +130,17 @@ serve(async (req) => {
     logStep("Price found via lookup_key", { priceId, amount: prices.data[0].unit_amount });
 
     // Get user profile to check for existing Stripe customer ID
-    const { data: profile } = await supabaseClient
+    // Use admin client to bypass RLS
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("stripe_customer_id")
       .eq("id", user.id)
       .single();
+
+    if (profileError) {
+      logStep("ERROR fetching profile", { error: profileError });
+      // Não bloquear - continuar sem customer_id
+    }
 
     let customerId = profile?.stripe_customer_id;
     logStep("Profile checked", { hasExistingCustomer: !!customerId });
@@ -142,7 +151,7 @@ serve(async (req) => {
         await stripe.customers.retrieve(customerId);
         logStep("Existing Stripe customer verified", { customerId });
       } catch (error) {
-        logStep("Existing customer ID invalid, will create new one", { customerId });
+        logStep("Existing customer ID invalid, will create new one", { customerId, error: error.message });
         customerId = null;
       }
     }
@@ -196,7 +205,7 @@ serve(async (req) => {
     if (!customerId && session.customer) {
       const newCustomerId = typeof session.customer === "string" ? session.customer : session.customer.id;
 
-      await supabaseClient.from("profiles").update({ stripe_customer_id: newCustomerId }).eq("id", user.id);
+      await supabaseAdmin.from("profiles").update({ stripe_customer_id: newCustomerId }).eq("id", user.id);
 
       logStep("Customer ID saved to profile", { customerId: newCustomerId });
     }
@@ -213,8 +222,14 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-checkout", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    logStep("ERROR in create-checkout", { message: errorMessage, stack: error.stack });
+    
+    // Retornar erro estruturado
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      code: 'CHECKOUT_ERROR',
+      timestamp: new Date().toISOString()
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

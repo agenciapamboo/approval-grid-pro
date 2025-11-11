@@ -13,6 +13,7 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { STRIPE_PRODUCTS, StripePlan, StripePriceInterval, PLAN_ORDER } from "@/lib/stripe-config";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getErrorMessage, getCheckoutErrorMessage } from "@/lib/error-messages";
 
 // Step 1: Personal data
 const step1Schema = z.object({
@@ -205,7 +206,7 @@ const Auth = () => {
       if (authError?.message.includes("already registered") || authError?.message.includes("User already registered")) {
         toast({
           title: "Email já cadastrado",
-          description: "Tentando fazer login...",
+          description: "Este email já possui uma conta. Redirecionando para login...",
         });
 
         // Try to login with credentials
@@ -215,7 +216,8 @@ const Auth = () => {
         });
 
         if (loginError) {
-          throw new Error("Email já cadastrado. Entre ou use 'Esqueci minha senha'.");
+          const errorMsg = getErrorMessage(loginError);
+          throw new Error(errorMsg);
         }
 
         // Login successful, use this session for checkout
@@ -241,7 +243,7 @@ const Auth = () => {
           });
 
           if (checkoutError) {
-            const errorMsg = checkoutData?.error || checkoutError.message || "Erro ao processar plano";
+            const errorMsg = getCheckoutErrorMessage(checkoutError);
             throw new Error(errorMsg);
           }
 
@@ -266,7 +268,10 @@ const Auth = () => {
         return;
       }
 
-      if (authError) throw authError;
+      if (authError) {
+        const errorMsg = getErrorMessage(authError);
+        throw new Error(errorMsg);
+      }
 
       if (!authData.user) {
         throw new Error("Erro ao criar conta");
@@ -363,7 +368,7 @@ const Auth = () => {
 
         if (checkoutError) {
           if (paymentWindow) paymentWindow.close();
-          const errorMsg = checkoutData?.error || checkoutError.message || "Erro ao processar plano";
+          const errorMsg = getCheckoutErrorMessage(checkoutError);
           throw new Error(errorMsg);
         }
 
@@ -379,10 +384,13 @@ const Auth = () => {
         }
       }
     } catch (error: any) {
+      console.error('[AUTH] Erro no signup:', error);
+      const errorMsg = getErrorMessage(error);
+      
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: error.message || "Ocorreu um erro. Tente novamente.",
+        title: "Erro ao criar conta",
+        description: errorMsg,
       });
     } finally {
       setLoading(false);
@@ -405,10 +413,8 @@ const Auth = () => {
       });
 
       if (error) {
-        if (error.message.includes("Invalid") || error.message.includes("credentials")) {
-          throw new Error("Email ou senha incorretos.");
-        }
-        throw new Error("Erro ao fazer login. Tente novamente.");
+        const errorMsg = getErrorMessage(error);
+        throw new Error(errorMsg);
       }
 
       // Get user profile to check role
@@ -430,10 +436,13 @@ const Auth = () => {
         navigate("/dashboard");
       }
     } catch (error: any) {
+      console.error('[AUTH] Erro no login:', error);
+      const errorMsg = getErrorMessage(error);
+      
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: error.message || "Ocorreu um erro. Tente novamente.",
+        title: "Erro ao fazer login",
+        description: errorMsg,
       });
     } finally {
       setLoading(false);

@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Eye, EyeOff } from "lucide-react";
+import { getErrorMessage } from "@/lib/error-messages";
 
 interface AddClientDialogProps {
   agencyId: string;
@@ -128,9 +129,12 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
       setOpen(false);
       onClientAdded();
     } catch (error: any) {
+      console.error('[ADD_CLIENT] Erro:', error);
+      const errorMsg = getErrorMessage(error);
+
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao cadastrar cliente",
+        title: "Erro ao cadastrar cliente",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {

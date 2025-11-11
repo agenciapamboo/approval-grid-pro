@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getErrorMessage } from "@/lib/error-messages";
 
 interface AddTeamMemberDialogProps {
   open: boolean;
@@ -99,11 +100,13 @@ export function AddTeamMemberDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao adicionar membro:", error);
+      console.error('[ADD_TEAM_MEMBER] Erro:', error);
+      const errorMsg = getErrorMessage(error);
+      
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: error.message || "Não foi possível adicionar o membro à equipe.",
+        title: "Erro ao adicionar membro",
+        description: errorMsg,
       });
     } finally {
       setLoading(false);

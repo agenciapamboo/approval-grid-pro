@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { STRIPE_PRODUCTS } from "@/lib/stripe-config";
 import { useConversionTracking } from "@/hooks/useConversionTracking";
+import { getCheckoutErrorMessage } from "@/lib/error-messages";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -104,6 +105,7 @@ const allFeatures = [
 export default function Pricing() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { trackEvent } = useConversionTracking();
 
@@ -122,9 +124,18 @@ export default function Pricing() {
   };
 
   const handleSelectPlan = async (planId: string) => {
+    // Prevenir múltiplos cliques
+    if (isProcessing) {
+      toast.info("Processamento já em andamento. Aguarde...");
+      return;
+    }
+
+    setIsProcessing(true);
     setLoadingPlan(planId);
 
     try {
+      console.log('[CHECKOUT] Iniciando checkout', { planId, billingCycle });
+
       // Check if user is authenticated
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -145,7 +156,12 @@ export default function Pricing() {
           })
           .eq('id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          const errorMsg = getCheckoutErrorMessage(error);
+          console.error('[CHECKOUT] Erro ao ativar plano free:', error);
+          toast.error(errorMsg);
+          throw error;
+        }
 
         toast.success("Plano Creator ativado!");
         navigate("/dashboard");
@@ -163,6 +179,8 @@ export default function Pricing() {
         });
       }
 
+      console.log('[CHECKOUT] Chamando edge function create-checkout');
+
       // Create checkout session for paid plans
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
@@ -174,20 +192,57 @@ export default function Pricing() {
         }
       });
 
+      console.log('[CHECKOUT] Resposta recebida', { data, error });
+
       if (error) {
-        const errorMsg = data?.error || error.message || "Erro ao processar plano";
+        const errorMsg = getCheckoutErrorMessage(error);
+        console.error('[CHECKOUT] Erro da função:', error);
+        toast.error(errorMsg);
+        
+        // Rastrear erro
+        await trackEvent('CheckoutError', {
+          error_message: errorMsg,
+          plan: planId,
+          billing_cycle: billingCycle,
+        });
+        
         throw new Error(errorMsg);
       }
 
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("URL de checkout não recebida");
+      if (!data || !data.url) {
+        const errorMsg = "Resposta inválida do servidor. Tente novamente.";
+        console.error('[CHECKOUT] Resposta inválida:', data);
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
       }
+
+      console.log('[CHECKOUT] Redirecionando para:', data.url);
+
+      // Tentar redirecionar
+      try {
+        window.location.href = data.url;
+      } catch (redirectError) {
+        console.error('[CHECKOUT] Erro ao redirecionar:', redirectError);
+        toast.error("Não foi possível abrir a página de pagamento. Abrindo em nova aba...");
+        window.open(data.url, '_blank');
+      }
+
     } catch (error: any) {
-      console.error('Error selecting plan:', error);
-      toast.error(error?.message || "Erro ao processar plano. Tente novamente.");
+      console.error('[CHECKOUT] Erro completo:', {
+        error,
+        planId,
+        billingCycle,
+        timestamp: new Date().toISOString()
+      });
+
+      // Mensagem já foi tratada acima se for erro conhecido
+      // Apenas exibir toast se for erro não previsto
+      if (!error?.message?.includes('Erro') && !error?.message?.includes('não')) {
+        const errorMsg = getCheckoutErrorMessage(error);
+        toast.error(errorMsg);
+      }
     } finally {
+      setIsProcessing(false);
       setLoadingPlan(null);
     }
   };
