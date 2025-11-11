@@ -211,40 +211,105 @@ const Auth = () => {
 
         // Login successful, use this session for checkout
         if (loginData.user && selectedPlan !== 'creator') {
-          // Update profile if needed
-          await supabase
-            .from('profiles')
-            .update({
-              selected_plan: selectedPlan,
-              plan: selectedPlan,
-              billing_cycle: billingCycle,
-            })
-            .eq('id', loginData.user.id);
+          // Aguardar 500ms para garantir propagação da sessão
+          await new Promise(resolve => setTimeout(resolve, 500));
 
-          // Proceed to checkout
-          const paymentWindow = window.open('about:blank', '_blank');
+          let paymentWindowRef: Window | null = null;
           
-          const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
-            body: {
-              plan: selectedPlan,
-              billingCycle: billingCycle,
-            },
-          });
+          try {
+            // Abrir janela em branco sem noopener/noreferrer para manter controle
+            paymentWindowRef = window.open('about:blank', '_blank');
+            
+            if (paymentWindowRef) {
+              // Escrever HTML de loading direto na janela
+              paymentWindowRef.document.write(`
+                <html><head><title>Preparando pagamento...</title>
+                  <meta name="viewport" content="width=device-width, initial-scale=1" />
+                  <style>
+                    body{display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui}
+                    .spinner{
+                      width:48px;height:48px;border-radius:50%;
+                      border:4px solid #E5E7EB;border-top-color:#10B981;animation:spin 1s linear infinite}
+                    @keyframes spin{to{transform:rotate(360deg)}}
+                    .txt{margin-top:16px;color:#374151;text-align:center}
+                  </style>
+                </head><body>
+                  <div style="display:flex;flex-direction:column;align-items:center">
+                    <div class="spinner"></div>
+                    <div class="txt">
+                      <h2 style="margin:12px 0 6px;font-size:20px">Preparando pagamento...</h2>
+                      <p style="margin:0;color:#6B7280">Aguarde enquanto redirecionamos você ao checkout</p>
+                    </div>
+                  </div>
+                </body></html>
+              `);
+              paymentWindowRef.document.close();
+            }
 
-          if (checkoutError) {
-            const errorMsg = getCheckoutErrorMessage(checkoutError);
-            throw new Error(errorMsg);
-          }
+            // Gerar idempotency-key para evitar duplicação
+            const idempotencyKey = `${crypto?.randomUUID?.() || `ck-${Date.now()}`}-${Math.random().toString(36).slice(2,8)}`;
+            console.log('[AUTH] Checkout idempotency-key:', idempotencyKey);
 
-          if (checkoutData?.url && paymentWindow) {
-            paymentWindow.location.href = checkoutData.url;
+            // Timeout helper: 15 segundos
+            const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+              return Promise.race([
+                promise,
+                new Promise<T>((_, reject) => 
+                  setTimeout(() => reject(new Error('timeout')), ms)
+                )
+              ]);
+            };
+
+            // Invocar create-checkout com timeout
+            const { data: checkoutData, error: checkoutError } = await withTimeout(
+              supabase.functions.invoke('create-checkout', {
+                body: {
+                  plan: selectedPlan,
+                  billingCycle: billingCycle,
+                },
+                headers: {
+                  'idempotency-key': idempotencyKey,
+                }
+              }),
+              15000
+            );
+
+            if (checkoutError) {
+              throw checkoutError;
+            }
+
+            if (!checkoutData?.url) {
+              throw new Error("URL de checkout não recebida");
+            }
+
+            console.log('[AUTH] Checkout URL recebida, redirecionando...');
+
+            // Redirecionar a janela de pagamento ou fallback para mesma aba
+            if (paymentWindowRef && !paymentWindowRef.closed) {
+              paymentWindowRef.location.href = checkoutData.url;
+            } else {
+              // Fallback se popup foi bloqueado
+              window.location.href = checkoutData.url;
+            }
+
             toast({
               title: "Redirecionando para pagamento",
               description: "Complete o pagamento na janela aberta.",
             });
-          } else {
-            throw new Error("URL de checkout não recebida");
+
+          } catch (checkoutErr: any) {
+            // Fechar janela de pagamento em caso de erro
+            if (paymentWindowRef && !paymentWindowRef.closed) {
+              paymentWindowRef.close();
+            }
+
+            const errorMsg = checkoutErr?.message === 'timeout'
+              ? "A requisição demorou muito. Tente novamente."
+              : getCheckoutErrorMessage(checkoutErr);
+            
+            throw new Error(errorMsg);
           }
+          
           return;
         }
 
@@ -323,32 +388,100 @@ const Auth = () => {
         // Aguardar 500ms para garantir propagação da sessão
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Pre-abrir janela de loading para evitar bloqueio de popup
-        const paymentWindow = window.open('/checkout-loading', '_blank', 'noopener,noreferrer');
+        let paymentWindowRef: Window | null = null;
         
-        // Criar checkout session
-        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
-          body: {
-            plan: selectedPlan,
-            billingCycle: billingCycle,
-          },
-        });
+        try {
+          // Abrir janela em branco sem noopener/noreferrer para manter controle
+          paymentWindowRef = window.open('about:blank', '_blank');
+          
+          if (paymentWindowRef) {
+            // Escrever HTML de loading direto na janela
+            paymentWindowRef.document.write(`
+              <html><head><title>Preparando pagamento...</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <style>
+                  body{display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui}
+                  .spinner{
+                    width:48px;height:48px;border-radius:50%;
+                    border:4px solid #E5E7EB;border-top-color:#10B981;animation:spin 1s linear infinite}
+                  @keyframes spin{to{transform:rotate(360deg)}}
+                  .txt{margin-top:16px;color:#374151;text-align:center}
+                </style>
+              </head><body>
+                <div style="display:flex;flex-direction:column;align-items:center">
+                  <div class="spinner"></div>
+                  <div class="txt">
+                    <h2 style="margin:12px 0 6px;font-size:20px">Preparando pagamento...</h2>
+                    <p style="margin:0;color:#6B7280">Aguarde enquanto redirecionamos você ao checkout</p>
+                  </div>
+                </div>
+              </body></html>
+            `);
+            paymentWindowRef.document.close();
+          }
 
-        if (checkoutError) {
-          if (paymentWindow) paymentWindow.close();
-          const errorMsg = getCheckoutErrorMessage(checkoutError);
-          throw new Error(errorMsg);
-        }
+          // Gerar idempotency-key para evitar duplicação
+          const idempotencyKey = `${crypto?.randomUUID?.() || `ck-${Date.now()}`}-${Math.random().toString(36).slice(2,8)}`;
+          console.log('[AUTH] Checkout idempotency-key:', idempotencyKey);
 
-        if (checkoutData?.url && paymentWindow) {
-          paymentWindow.location.href = checkoutData.url;
+          // Timeout helper: 15 segundos
+          const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+            return Promise.race([
+              promise,
+              new Promise<T>((_, reject) => 
+                setTimeout(() => reject(new Error('timeout')), ms)
+              )
+            ]);
+          };
+
+          // Invocar create-checkout com timeout
+          const { data: checkoutData, error: checkoutError } = await withTimeout(
+            supabase.functions.invoke('create-checkout', {
+              body: {
+                plan: selectedPlan,
+                billingCycle: billingCycle,
+              },
+              headers: {
+                'idempotency-key': idempotencyKey,
+              }
+            }),
+            15000
+          );
+
+          if (checkoutError) {
+            throw checkoutError;
+          }
+
+          if (!checkoutData?.url) {
+            throw new Error("URL de checkout não recebida");
+          }
+
+          console.log('[AUTH] Checkout URL recebida, redirecionando...');
+
+          // Redirecionar a janela de pagamento ou fallback para mesma aba
+          if (paymentWindowRef && !paymentWindowRef.closed) {
+            paymentWindowRef.location.href = checkoutData.url;
+          } else {
+            // Fallback se popup foi bloqueado
+            window.location.href = checkoutData.url;
+          }
+
           toast({
             title: "Redirecionando para pagamento",
             description: "Complete o pagamento na janela aberta.",
           });
-        } else {
-          if (paymentWindow) paymentWindow.close();
-          throw new Error("URL de checkout não recebida");
+
+        } catch (checkoutErr: any) {
+          // Fechar janela de pagamento em caso de erro
+          if (paymentWindowRef && !paymentWindowRef.closed) {
+            paymentWindowRef.close();
+          }
+
+          const errorMsg = checkoutErr?.message === 'timeout'
+            ? "A requisição demorou muito. Tente novamente."
+            : getCheckoutErrorMessage(checkoutErr);
+          
+          throw new Error(errorMsg);
         }
       }
     } catch (error: any) {
