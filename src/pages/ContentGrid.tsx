@@ -459,7 +459,7 @@ export default function ContentGrid() {
         .lte('date', endDate.toISOString());
     }
     
-    const { data, error } = await query.order("date", { ascending: true });
+    const { data, error } = await query.order("date", { ascending: false });
 
     if (error) {
       console.error('[ContentGrid] Error loading contents:', error);
