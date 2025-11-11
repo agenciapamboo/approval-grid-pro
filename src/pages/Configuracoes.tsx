@@ -15,8 +15,11 @@ import { GenerateThumbnailsButton } from "@/components/admin/GenerateThumbnailsB
 import { OrphanedAccountsManager } from "@/components/admin/OrphanedAccountsManager";
 import { PixelIntegrationManager } from "@/components/admin/PixelIntegrationManager";
 import { NotificationSender } from "@/components/admin/NotificationSender";
-import { ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, Webhook, Building2, DollarSign, Bell, TrendingUp } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { 
+  ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, 
+  Webhook, Building2, DollarSign, Bell, TrendingUp, CreditCard, 
+  TicketCheck, FileText, UserCog, Loader2, RefreshCw 
+} from "lucide-react";
 
 const Configuracoes = () => {
   const navigate = useNavigate();
@@ -108,190 +111,193 @@ const Configuracoes = () => {
             </p>
           </div>
 
-          {/* Demais blocos em Accordion (começam colapsados) */}
           <Accordion type="multiple" className="space-y-4">
-            {/* 2. Segurança */}
-            <AccordionItem value="security" className="border rounded-lg">
+            {/* 1. Gerenciamento de Usuários */}
+            <AccordionItem value="users-management" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
                   <CardHeader className="p-0">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
+                      <Users className="h-5 w-5 text-blue-500" />
                       <div className="text-left">
-                        <CardTitle>Segurança</CardTitle>
+                        <CardTitle>Gerenciamento de Usuários</CardTitle>
                         <CardDescription className="mt-1">
-                          Gerencie IPs bloqueados e configurações de segurança
+                          Gerencie usuários, roles e auditoria
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent className="pt-0">
-                    <Button onClick={() => navigate("/admin/blocked-ips")} variant="outline" className="w-full">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Gerenciar IPs Bloqueados
+                  <CardContent className="pt-0 space-y-2">
+                    <Button onClick={() => navigate("/admin/users-manager")} variant="outline" className="w-full justify-start">
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Gerenciar Usuários
                     </Button>
-                  </CardContent>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-
-            {/* 3. Webhooks */}
-            <AccordionItem value="webhooks" className="border rounded-lg">
-              <Card className="border-0">
-                <AccordionTrigger className="px-6 hover:no-underline">
-                  <CardHeader className="p-0">
-                    <div className="flex items-center gap-2">
-                      <Webhook className="h-5 w-5" />
-                      <div className="text-left">
-                        <CardTitle>Webhooks</CardTitle>
-                        <CardDescription className="mt-1">
-                          Configure URLs de webhooks para notificações externas
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <CardContent className="pt-0">
-                    <SystemSettingsManager />
-                  </CardContent>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-
-            {/* 4. Editor de Planos */}
-            <AccordionItem value="subscription-plans" className="border rounded-lg">
-              <Card className="border-0">
-                <AccordionTrigger className="px-6 hover:no-underline">
-                  <CardHeader className="p-0">
-                    <div className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      <div className="text-left">
-                        <CardTitle>Planos de Assinatura</CardTitle>
-                        <CardDescription className="mt-1">
-                          Configure limites e recursos de cada plano
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <CardContent className="pt-0">
-                    <PlanEntitlementsEditor />
-                  </CardContent>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-
-            {/* 6. Roles */}
-            <AccordionItem value="roles" className="border rounded-lg">
-              <Card className="border-0">
-                <AccordionTrigger className="px-6 hover:no-underline">
-                  <CardHeader className="p-0">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      <div className="text-left">
-                        <CardTitle>Gerenciamento de Roles</CardTitle>
-                        <CardDescription className="mt-1">
-                          Configure permissões por role e altere roles de usuários
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <CardContent className="pt-0">
+                    <Button onClick={() => navigate("/admin/user-audit-log")} variant="outline" className="w-full justify-start">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Log de Auditoria
+                    </Button>
+                    <Separator className="my-2" />
+                    <div className="text-sm font-medium mb-2">Contas Órfãs</div>
+                    <OrphanedAccountsManager />
+                    <Separator className="my-2" />
+                    <div className="text-sm font-medium mb-2">Gerenciamento de Roles</div>
                     <RolesManager />
                   </CardContent>
                 </AccordionContent>
               </Card>
             </AccordionItem>
 
-            {/* 7. Testes */}
-            <AccordionItem value="tests" className="border rounded-lg">
+            {/* 2. Stripe & Pagamentos */}
+            <AccordionItem value="stripe-payments" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
                   <CardHeader className="p-0">
                     <div className="flex items-center gap-2">
-                      <TestTube className="h-5 w-5" />
+                      <CreditCard className="h-5 w-5 text-green-500" />
                       <div className="text-left">
-                        <CardTitle>Testes do Sistema</CardTitle>
+                        <CardTitle>Stripe & Pagamentos</CardTitle>
                         <CardDescription className="mt-1">
-                          Execute testes automatizados
+                          Configure produtos, diagnóstico e sincronização
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent className="pt-0">
-                    <TestRunner />
+                  <CardContent className="pt-0 space-y-2">
+                    <Button onClick={() => navigate("/admin/stripe-config")} variant="outline" className="w-full justify-start">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configuração Stripe
+                    </Button>
+                    <Button onClick={() => navigate("/admin/stripe-diagnostic")} variant="outline" className="w-full justify-start">
+                      <Database className="h-4 w-4 mr-2" />
+                      Diagnóstico Stripe
+                    </Button>
+                    <Button onClick={() => navigate("/admin/stripe-sync")} variant="outline" className="w-full justify-start">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Sincronização Stripe
+                    </Button>
                   </CardContent>
                 </AccordionContent>
               </Card>
             </AccordionItem>
 
-            {/* 8. Ferramentas de Mídia */}
-            <AccordionItem value="media" className="border rounded-lg">
+            {/* 3. Suporte & Tickets */}
+            <AccordionItem value="support-tickets" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
                   <CardHeader className="p-0">
                     <div className="flex items-center gap-2">
-                      <Image className="h-5 w-5" />
+                      <TicketCheck className="h-5 w-5 text-yellow-500" />
                       <div className="text-left">
-                        <CardTitle>Ferramentas de Mídia</CardTitle>
+                        <CardTitle>Suporte & Tickets</CardTitle>
                         <CardDescription className="mt-1">
-                          Gere thumbnails e processe arquivos de mídia
+                          Gerencie tickets de suporte do sistema
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent className="pt-0">
-                    <GenerateThumbnailsButton />
+                  <CardContent className="pt-0 space-y-2">
+                    <Button onClick={() => navigate("/admin/support-tickets")} variant="outline" className="w-full justify-start">
+                      <TicketCheck className="h-4 w-4 mr-2" />
+                      Tickets Admin
+                    </Button>
+                    <Button onClick={() => navigate("/admin/agency-tickets")} variant="outline" className="w-full justify-start">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Tickets por Agência
+                    </Button>
                   </CardContent>
                 </AccordionContent>
               </Card>
             </AccordionItem>
 
-            {/* 9. Contas Órfãs */}
-            <AccordionItem value="orphaned" className="border rounded-lg">
+            {/* 4. Segurança & Webhooks */}
+            <AccordionItem value="security-webhooks" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
                   <CardHeader className="p-0">
                     <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
+                      <Shield className="h-5 w-5 text-red-500" />
                       <div className="text-left">
-                        <CardTitle>Contas Órfãs</CardTitle>
+                        <CardTitle>Segurança & Webhooks</CardTitle>
                         <CardDescription className="mt-1">
-                          Gerencie contas sem agência ou cliente vinculado
+                          Gerencie IPs bloqueados e webhooks de notificações
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent className="pt-0">
-                    <OrphanedAccountsManager />
+                  <CardContent className="pt-0 space-y-2">
+                    <Button onClick={() => navigate("/admin/blocked-ips")} variant="outline" className="w-full justify-start">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Gerenciar IPs Bloqueados
+                    </Button>
+                    <Separator className="my-2" />
+                    <div className="text-sm font-medium mb-2">Configuração de Webhooks</div>
+                    <SystemSettingsManager />
                   </CardContent>
                 </AccordionContent>
               </Card>
             </AccordionItem>
 
-            {/* 10. Pixels Globais */}
-            <AccordionItem value="pixels" className="border rounded-lg">
+            {/* 5. Sistema & Recursos */}
+            <AccordionItem value="system-resources" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
                   <CardHeader className="p-0">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
+                      <Settings className="h-5 w-5 text-purple-500" />
                       <div className="text-left">
-                        <CardTitle>Pixels de Rastreamento Global</CardTitle>
+                        <CardTitle>Sistema & Recursos</CardTitle>
                         <CardDescription className="mt-1">
-                          Configure os pixels da plataforma Aprova Criativos para rastreamento de conversões
+                          Configure planos, pixels, mídia e testes
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0 space-y-4">
+                    <div>
+                      <div className="text-sm font-medium mb-2">Planos de Assinatura</div>
+                      <PlanEntitlementsEditor />
+                    </div>
+                    <Separator />
+                    <div>
+                      <div className="text-sm font-medium mb-2">Pixels de Rastreamento Global</div>
+                      <PixelIntegrationManager />
+                    </div>
+                    <Separator />
+                    <div>
+                      <div className="text-sm font-medium mb-2">Ferramentas de Mídia</div>
+                      <GenerateThumbnailsButton />
+                    </div>
+                    <Separator />
+                    <div>
+                      <div className="text-sm font-medium mb-2">Testes do Sistema</div>
+                      <TestRunner />
+                    </div>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+
+            {/* 6. Notificações */}
+            <AccordionItem value="notifications" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-pink-500" />
+                      <div className="text-left">
+                        <CardTitle>Notificações</CardTitle>
+                        <CardDescription className="mt-1">
+                          Enviar notificações para usuários da plataforma
                         </CardDescription>
                       </div>
                     </div>
@@ -299,7 +305,7 @@ const Configuracoes = () => {
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="pt-0">
-                    <PixelIntegrationManager />
+                    <NotificationSender />
                   </CardContent>
                 </AccordionContent>
               </Card>
