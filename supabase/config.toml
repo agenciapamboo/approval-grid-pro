@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.collect-financial-snapshot]
 verify_jwt = false
+
+[storage]
+file_size_limit = "100MiB"

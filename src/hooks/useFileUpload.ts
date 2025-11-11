@@ -56,6 +56,7 @@ export function useFileUpload({ bucket, allowedTypes, onSuccess, onError }: UseF
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
+          contentType: file.type,
         });
 
       clearInterval(progressInterval);
@@ -84,7 +85,13 @@ export function useFileUpload({ bucket, allowedTypes, onSuccess, onError }: UseF
       
       setProgress(prev => prev ? { ...prev, status: 'error' } : null);
       
-      const errorMessage = error.message || 'Erro ao fazer upload do arquivo';
+      let errorMessage = error.message || 'Erro ao fazer upload do arquivo';
+      
+      // Traduzir erro de tamanho do storage
+      if (errorMessage.includes('exceeded the maximum allowed size')) {
+        errorMessage = `O arquivo ultrapassa o limite de 100MB do armazenamento. Tamanho do arquivo: ${formatFileSize(file.size)}`;
+      }
+      
       toast.error(errorMessage);
       onError?.(error);
 
