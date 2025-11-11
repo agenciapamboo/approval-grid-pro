@@ -45,6 +45,7 @@ const UserAuditLog = lazy(() => import("./pages/admin/UserAuditLog"));
 const StripeConfig = lazy(() => import("./pages/admin/StripeConfig"));
 const StripeSync = lazy(() => import("./pages/admin/StripeSync"));
 const StripeDiagnostic = lazy(() => import("./pages/admin/StripeDiagnostic"));
+const CheckoutLoading = lazy(() => import("./pages/CheckoutLoading"));
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
                 <Route path="/data-deletion" element={<DataDeletion />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/central-de-ajuda" element={<HelpCenter />} />
+                <Route path="/checkout-loading" element={<CheckoutLoading />} />
                 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

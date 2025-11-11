@@ -171,17 +171,6 @@ const Auth = () => {
     try {
       // Normalize document
       const normalizedDocument = document.replace(/\D/g, '');
-      
-      // Check for duplicate CPF/CNPJ
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('document', normalizedDocument)
-        .maybeSingle();
-
-      if (existingProfile) {
-        throw new Error("Este CPF/CNPJ já está cadastrado.");
-      }
 
       // Determine correct accountType (force 'agency' if paid plan)
       const finalAccountType = selectedPlan !== 'creator' ? 'agency' : accountType;
@@ -277,69 +266,33 @@ const Auth = () => {
         throw new Error("Erro ao criar conta");
       }
 
-      // For paid plans, create agency and update role
-      let agencyId: string | null = null;
-      if (selectedPlan !== 'creator') {
-        // Create agency
-        const { data: newAgency, error: agencyError } = await supabase
-          .from('agencies')
-          .insert({
-            name: agencyName,
-            slug: agencyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-            email: email,
-            whatsapp: whatsapp,
-            plan: selectedPlan,
-            plan_type: billingCycle,
-          })
-          .select()
-          .single();
-
-        if (agencyError) throw agencyError;
-        agencyId = newAgency.id;
-
-        // Insert user role as agency_admin
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .upsert({ 
-            user_id: authData.user.id,
-            role: 'agency_admin',
-            created_by: authData.user.id
-          }, {
-            onConflict: 'user_id,role'
-          });
-
-        if (roleError) throw roleError;
-      }
-
-      // Save profile data
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          account_type: finalAccountType,
-          agency_id: agencyId,
-          agency_name: agencyName,
-          responsible_name: responsibleName,
-          whatsapp,
-          document: normalizedDocument,
-          instagram_handle: instagramHandle ? instagramHandle.replace('@', '') : null,
-          address_zip: addressZip,
-          address_street: addressStreet,
-          address_number: addressNumber,
-          address_complement: addressComplement,
-          address_neighborhood: addressNeighborhood,
-          address_city: addressCity,
-          address_state: addressState,
-          selected_plan: selectedPlan,
-          plan: selectedPlan,
-          billing_cycle: billingCycle,
-          is_active: true,
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) throw profileError;
-
       // If free plan, finish registration
       if (selectedPlan === 'creator') {
+        // Save minimal profile data for free plan
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            account_type: finalAccountType,
+            agency_name: agencyName,
+            responsible_name: responsibleName,
+            whatsapp,
+            document: normalizedDocument,
+            instagram_handle: instagramHandle ? instagramHandle.replace('@', '') : null,
+            address_zip: addressZip,
+            address_street: addressStreet,
+            address_number: addressNumber,
+            address_complement: addressComplement,
+            address_neighborhood: addressNeighborhood,
+            address_city: addressCity,
+            address_state: addressState,
+            selected_plan: selectedPlan,
+            plan: selectedPlan,
+            billing_cycle: billingCycle,
+            is_active: true,
+          })
+          .eq('id', authData.user.id);
+
+        if (profileError) throw profileError;
         toast({
           title: "Conta criada!",
           description: "Você já pode fazer login.",
@@ -370,8 +323,8 @@ const Auth = () => {
         // Aguardar 500ms para garantir propagação da sessão
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Pre-abrir janela para evitar bloqueio de popup
-        const paymentWindow = window.open('about:blank', '_blank');
+        // Pre-abrir janela de loading para evitar bloqueio de popup
+        const paymentWindow = window.open('/checkout-loading', '_blank', 'noopener,noreferrer');
         
         // Criar checkout session
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
