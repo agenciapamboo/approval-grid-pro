@@ -896,7 +896,7 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">Criativos deste Mês</CardTitle>
+                        <CardTitle className="text-lg">Criativos contratados por mês: {monthlyQuota}</CardTitle>
                       </div>
                       <Badge variant={exceededCreatives > 0 ? "destructive" : remainingCreatives <= 2 ? "warning" : "default"}>
                         {currentMonthCreatives} / {monthlyQuota}
@@ -913,7 +913,7 @@ const Dashboard = () => {
                       {exceededCreatives > 0 ? (
                         <Alert variant="destructive">
                           <AlertCircle className="h-4 w-4" />
-                          <AlertTitle>Quota excedida</AlertTitle>
+                          <AlertTitle>Cota de criativos contratados excedida</AlertTitle>
                           <AlertDescription>
                             Você excedeu a quota contratada em {exceededCreatives} criativo{exceededCreatives > 1 ? 's' : ''}. 
                             Entre em contato com a agência para ajustar seu plano.
@@ -950,11 +950,50 @@ const Dashboard = () => {
                   {creativeRequests.map((request) => (
                     <Card key={request.id} className="transition-all">
                       <CardHeader>
-                        <CardTitle className="text-base">{request.payload?.title || 'Sem título'}</CardTitle>
-                        <CardDescription className="space-y-1">
-                          <p>Solicitado em: {format(new Date(request.created_at!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-                          <p>Tipo: {request.payload?.type || 'Não especificado'}</p>
-                        </CardDescription>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base">{request.payload?.title || 'Sem título'}</CardTitle>
+                            <CardDescription className="space-y-1">
+                              <p>Solicitado em: {format(new Date(request.created_at!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                              <p>Tipo: {request.payload?.type || 'Não especificado'}</p>
+                            </CardDescription>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={async () => {
+                              if (!confirm("Tem certeza que deseja excluir esta solicitação?")) return;
+                              
+                              try {
+                                const { error } = await supabase
+                                  .from('notifications')
+                                  .delete()
+                                  .eq('id', request.id)
+                                  .eq('event', 'novojob');
+
+                                if (error) throw error;
+
+                                toast({
+                                  title: "Solicitação excluída",
+                                  description: "A solicitação criativa foi removida com sucesso.",
+                                });
+
+                                setCreativeRequests(prev => prev.filter(r => r.id !== request.id));
+                              } catch (error: any) {
+                                console.error("Erro ao excluir solicitação:", error);
+                                toast({
+                                  variant: "destructive",
+                                  title: "Erro",
+                                  description: error?.message || "Não foi possível excluir a solicitação.",
+                                });
+                              }
+                            }}
+                            className="text-destructive hover:text-destructive/90"
+                            title="Excluir solicitação"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <Button

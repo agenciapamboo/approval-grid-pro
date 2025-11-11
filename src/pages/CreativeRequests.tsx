@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, Loader2, MessageSquare, ChevronDown } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, Loader2, MessageSquare, ChevronDown, Trash2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { triggerWebhook } from "@/lib/webhooks";
@@ -30,6 +30,7 @@ interface CreativeRequest {
     caption: string;
     observations: string;
     reference_files: string[];
+    deadline?: string;
     job_status?: string;
   };
   clients: {
@@ -208,6 +209,143 @@ export default function CreativeRequests() {
     setSelectedRequest(null);
   };
 
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta solicitação?")) return;
+
+    setActionLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', requestId)
+        .eq('event', 'novojob');
+
+      if (error) throw error;
+
+      toast({
+        title: "Solicitação excluída",
+        description: "A solicitação criativa foi removida.",
+      });
+
+      await loadRequests();
+    } catch (error: any) {
+      console.error("Erro ao excluir solicitação:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error?.message || "Não foi possível excluir a solicitação.",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const mapTypeToContentType = (type: string): 'feed' | 'story' | 'reels' | 'carousel' | 'image' => {
+    const typeMap: Record<string, 'feed' | 'story' | 'reels' | 'carousel' | 'image'> = {
+      'imagem': 'image',
+      'carrossel': 'carousel',
+      'reels': 'reels',
+      'stories': 'story',
+      'outro': 'feed',
+    };
+    return typeMap[type.toLowerCase()] || 'feed';
+  };
+
+  const handleConvertToDraft = async (request: CreativeRequest) => {
+    setActionLoading(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const payload = request.payload;
+      const deadline = payload.deadline ? new Date(payload.deadline) : null;
+      
+      // Criar conteúdo em rascunho
+      const { data: newContent, error: contentError } = await supabase
+        .from('contents')
+        .insert([{
+          client_id: request.client_id,
+          owner_user_id: user.id,
+          title: payload.title || 'Sem título',
+          type: mapTypeToContentType(payload.type),
+          date: deadline?.toISOString() || new Date().toISOString(),
+          deadline: deadline?.toISOString(),
+          status: 'draft' as const,
+          version: 1,
+          channels: [],
+          category: 'social',
+        }])
+        .select()
+        .single();
+
+      if (contentError) throw contentError;
+
+      // Criar versão da legenda com informações da solicitação
+      const captionText = [
+        payload.caption,
+        payload.text ? `\n\nTexto na arte: ${payload.text}` : '',
+        payload.observations ? `\n\nObservações: ${payload.observations}` : '',
+      ].filter(Boolean).join('');
+
+      if (captionText) {
+        await supabase
+          .from('content_texts')
+          .insert({
+            content_id: newContent.id,
+            version: 1,
+            caption: captionText,
+          });
+      }
+
+      // Fazer upload das imagens de referência como mídia do conteúdo
+      if (payload.reference_files && payload.reference_files.length > 0) {
+        const mediaInserts = payload.reference_files.map((url, index) => ({
+          content_id: newContent.id,
+          src_url: url,
+          kind: 'image' as const,
+          order_index: index,
+          converted: false,
+        }));
+
+        await supabase
+          .from('content_media')
+          .insert(mediaInserts);
+      }
+
+      // Marcar solicitação como concluída
+      await supabase
+        .from('notifications')
+        .update({
+          status: 'sent',
+          payload: {
+            ...request.payload,
+            job_status: 'completed',
+            converted_to_content_id: newContent.id,
+          }
+        })
+        .eq('id', request.id);
+
+      toast({
+        title: "✅ Convertido com sucesso!",
+        description: "A solicitação foi convertida em um rascunho de conteúdo.",
+      });
+
+      await loadRequests();
+
+    } catch (error: any) {
+      console.error("Erro ao converter solicitação:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error?.message || "Não foi possível converter a solicitação.",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const getStatusLabel = (status?: string) => {
     const variants: Record<string, { variant: "default" | "pending" | "destructive" | "success" | "warning", label: string }> = {
       pending: { variant: "warning", label: "Pendente" },
@@ -344,6 +482,25 @@ export default function CreativeRequests() {
                             }}
                           >
                             Finalizado
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConvertToDraft(request);
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Converter em Rascunho
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRequest(request.id);
+                            }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir Solicitação
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
