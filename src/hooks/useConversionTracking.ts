@@ -64,12 +64,15 @@ export function useConversionTracking() {
   };
 
   const trackEvent = async (
-    eventName: 'PageView' | 'InitiateCheckout' | 'Purchase',
+    eventName: 'PageView' | 'InitiateCheckout' | 'Purchase' | 'CheckoutError',
     eventData?: {
       value?: number;
       currency?: string;
       subscription_plan?: string;
       subscription_type?: 'monthly' | 'annual';
+      error_message?: string;
+      plan?: string;
+      billing_cycle?: string;
     }
   ) => {
     try {

@@ -347,18 +347,33 @@ const Auth = () => {
         setIsSignUp(false);
         setCurrentStep(1);
       } else {
-        // Ensure we have a session before checkout
-        const { data: sessionData } = await supabase.auth.getSession();
-        
-        if (!sessionData.session) {
-          // Try to login again to get session
-          await supabase.auth.signInWithPassword({ email, password });
+        // Para planos pagos: garantir sessão válida antes de checkout
+        toast({
+          title: "Preparando pagamento...",
+          description: "Aguarde enquanto preparamos tudo para você.",
+        });
+
+        // Fazer login explícito para garantir sessão válida
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (loginError) {
+          throw new Error("Não foi possível autenticar. Tente fazer login manualmente.");
         }
 
-        // Pre-open window to avoid popup blocker
+        if (!loginData.session?.access_token) {
+          throw new Error("Sessão não foi criada. Tente fazer login novamente.");
+        }
+
+        // Aguardar 500ms para garantir propagação da sessão
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Pre-abrir janela para evitar bloqueio de popup
         const paymentWindow = window.open('about:blank', '_blank');
         
-        // Create checkout session for paid plan
+        // Criar checkout session
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
           body: {
             plan: selectedPlan,

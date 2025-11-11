@@ -85,14 +85,27 @@ serve(async (req) => {
 
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      logStep("ERROR: No authorization header");
+      throw new Error("Não autenticado. Faça login e tente novamente.");
+    }
     logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
+    
+    // Validar usuário
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    
+    if (userError) {
+      logStep("ERROR: Authentication failed", { error: userError.message });
+      throw new Error("Sessão inválida. Faça login novamente.");
+    }
+
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("ERROR: No user or email");
+      throw new Error("Usuário não autenticado ou email não disponível");
+    }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Parse and validate request body
@@ -157,7 +170,8 @@ serve(async (req) => {
         await stripe.customers.retrieve(customerId);
         logStep("Existing Stripe customer verified", { customerId });
       } catch (error) {
-        logStep("Existing customer ID invalid, will create new one", { customerId, error: error.message });
+        const errMsg = error instanceof Error ? error.message : 'Unknown error';
+        logStep("Existing customer ID invalid, will create new one", { customerId, error: errMsg });
         customerId = null;
       }
     }
@@ -228,7 +242,8 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-checkout", { message: errorMessage, stack: error.stack });
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logStep("ERROR in create-checkout", { message: errorMessage, stack: errorStack });
     
     // Retornar erro estruturado
     return new Response(JSON.stringify({ 
