@@ -47,22 +47,51 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
   };
 
   const loadComments = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("comments")
-      .select(`
-        *,
-        profiles:author_user_id (
-          name
-        )
-      `)
-      .eq("content_id", contentId)
-      .order("created_at", { ascending: true });
+    try {
+      if (approvalToken) {
+        // Modo token: usar RPC
+        const { data, error } = await supabase.rpc('get_comments_for_approval', {
+          p_token: approvalToken,
+          p_content_id: contentId
+        });
 
-    if (!error && data) {
-      setComments(data as any);
+        if (error) throw error;
+
+        setComments((data || []).map(d => ({
+          id: d.id,
+          body: d.body,
+          author_user_id: d.author_user_id,
+          created_at: d.created_at,
+          is_adjustment_request: d.is_adjustment_request,
+          adjustment_reason: d.adjustment_reason || undefined,
+          profiles: d.author_name ? { name: d.author_name } : null
+        })));
+      } else {
+        // Modo autenticado: SELECT normal
+        const { data, error } = await supabase
+          .from("comments")
+          .select(`
+            *,
+            profiles:author_user_id (
+              name
+            )
+          `)
+          .eq("content_id", contentId)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        setComments(data as any);
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar comentários:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error?.message || "Erro ao carregar histórico"
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddComment = async () => {
@@ -131,11 +160,11 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
           description: "Seu comentário foi adicionado com sucesso",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao adicionar comentário:", error);
       toast({
         title: "Erro",
-        description: "Erro ao adicionar comentário",
+        description: error?.message || "Erro ao adicionar comentário",
         variant: "destructive",
       });
     }
@@ -155,11 +184,11 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
         title: "Comentário removido",
         description: "O comentário foi removido com sucesso",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao remover comentário:", error);
       toast({
         title: "Erro",
-        description: "Erro ao remover comentário",
+        description: error?.message || "Erro ao remover comentário",
         variant: "destructive",
       });
     }

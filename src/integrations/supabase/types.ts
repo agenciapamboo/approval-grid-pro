@@ -393,7 +393,7 @@ export type Database = {
       comments: {
         Row: {
           adjustment_reason: string | null
-          author_user_id: string
+          author_user_id: string | null
           body: string
           content_id: string
           created_at: string
@@ -403,7 +403,7 @@ export type Database = {
         }
         Insert: {
           adjustment_reason?: string | null
-          author_user_id: string
+          author_user_id?: string | null
           body: string
           content_id: string
           created_at?: string
@@ -413,7 +413,7 @@ export type Database = {
         }
         Update: {
           adjustment_reason?: string | null
-          author_user_id?: string
+          author_user_id?: string | null
           body?: string
           content_id?: string
           created_at?: string
@@ -2137,6 +2137,10 @@ export type Database = {
         Args: { p_content_id: string; p_token: string }
         Returns: Json
       }
+      check_client_permission: {
+        Args: { _permission_key: string; _user_id: string }
+        Returns: boolean
+      }
       cleanup_old_validation_attempts: { Args: never; Returns: undefined }
       decrypt_social_token: {
         Args: { encrypted_token: string }
@@ -2170,6 +2174,18 @@ export type Database = {
           ip_address: string
           last_attempt: string
           user_agents: string[]
+        }[]
+      }
+      get_comments_for_approval: {
+        Args: { p_content_id: string; p_token: string }
+        Returns: {
+          adjustment_reason: string
+          author_name: string
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          is_adjustment_request: boolean
         }[]
       }
       get_content_caption_for_approval: {

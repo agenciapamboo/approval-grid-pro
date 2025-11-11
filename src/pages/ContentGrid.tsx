@@ -527,8 +527,11 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Token necessário - sem acesso público direto
-  if (!approvalToken || tokenValid === false) {
+  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver token válido
+  const hasUser = !!user;
+  const hasValidToken = approvalToken && tokenValid === true;
+  
+  if (!hasUser && !hasValidToken) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full space-y-4">
@@ -540,7 +543,7 @@ export default function ContentGrid() {
                 </div>
                 <div>
                   <CardTitle className="text-xl">Acesso Restrito</CardTitle>
-                  <CardDescription>Token de aprovação necessário</CardDescription>
+                  <CardDescription>Autenticação necessária</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -556,7 +559,7 @@ export default function ContentGrid() {
                 <p className="text-muted-foreground">
                   {approvalToken 
                     ? 'O link de aprovação que você está usando é inválido ou expirou.'
-                    : 'Esta página requer um link de aprovação válido para acesso.'}
+                    : 'Esta página requer autenticação ou um link de aprovação válido para acesso.'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Links de aprovação têm validade de 7 dias e são enviados por email pela agência.

@@ -21,6 +21,7 @@ import { EditContentDialog } from "./EditContentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ContentCardProps {
   content: {
@@ -45,6 +46,7 @@ interface ContentCardProps {
 
 export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -854,44 +856,53 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                     </>
                   )
                 ) : (
+                  // Visualização autenticada: verificar permissões
                   content.status !== "approved" && (
-                    // Visualização autenticada: todas as opções
                     <>
-                      <Button 
-                        size="sm"
-                        variant="success"
-                        onClick={handleApprove}
-                        className="w-full"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Aprovar
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="warning"
-                        onClick={() => setShowAdjustment(true)}
-                        className="w-full"
-                      >
-                        <AlertCircle className="h-4 w-4 mr-2" />
-                        Solicitar ajuste
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowRejectDialog(true)}
-                        className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        Reprovar
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setShowComments(!showComments)}
-                        className="w-full"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
-                      </Button>
+                      {hasPermission('approve_content') && (
+                        <Button 
+                          size="sm"
+                          variant="success"
+                          onClick={handleApprove}
+                          className="w-full"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Aprovar
+                        </Button>
+                      )}
+                      {hasPermission('request_changes') && (
+                        <Button 
+                          size="sm"
+                          variant="warning"
+                          onClick={() => setShowAdjustment(true)}
+                          className="w-full"
+                        >
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          Solicitar ajuste
+                        </Button>
+                      )}
+                      {hasPermission('reject_content') && (
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowRejectDialog(true)}
+                          className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Reprovar
+                        </Button>
+                      )}
+                      {hasPermission('add_comments') && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setShowComments(!showComments)}
+                          className="w-full"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                        </Button>
+                      )}
                     </>
                   )
                 )}
@@ -1019,10 +1030,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             );
           })()}
 
-          {/* Comentários expandidos */}
-          <div className="border-t">
-            <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
-          </div>
+          {/* Comentários expandidos - verificar permissão se autenticado */}
+          {(isPublicApproval || hasPermission('view_history')) && (
+            <div className="border-t">
+              <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
