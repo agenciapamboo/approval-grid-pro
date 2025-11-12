@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           action: string
           actor_user_id: string | null
+          approver_id: string | null
+          approver_name: string | null
           created_at: string
           entity: string
           entity_id: string | null
@@ -27,6 +29,8 @@ export type Database = {
         Insert: {
           action: string
           actor_user_id?: string | null
+          approver_id?: string | null
+          approver_name?: string | null
           created_at?: string
           entity: string
           entity_id?: string | null
@@ -36,6 +40,8 @@ export type Database = {
         Update: {
           action?: string
           actor_user_id?: string | null
+          approver_id?: string | null
+          approver_name?: string | null
           created_at?: string
           entity?: string
           entity_id?: string | null
@@ -48,6 +54,13 @@ export type Database = {
             columns: ["actor_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "client_approvers"
             referencedColumns: ["id"]
           },
         ]
@@ -169,6 +182,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      approval_tokens_backup: {
+        Row: {
+          backup_date: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string | null
+          month: string | null
+          token: string | null
+          used_at: string | null
+        }
+        Insert: {
+          backup_date?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string | null
+          month?: string | null
+          token?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          backup_date?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string | null
+          month?: string | null
+          token?: string | null
+          used_at?: string | null
+        }
+        Relationships: []
       }
       client_approvers: {
         Row: {
@@ -543,6 +592,8 @@ export type Database = {
       comments: {
         Row: {
           adjustment_reason: string | null
+          approver_id: string | null
+          approver_name: string | null
           author_user_id: string | null
           body: string
           content_id: string
@@ -553,6 +604,8 @@ export type Database = {
         }
         Insert: {
           adjustment_reason?: string | null
+          approver_id?: string | null
+          approver_name?: string | null
           author_user_id?: string | null
           body: string
           content_id: string
@@ -563,6 +616,8 @@ export type Database = {
         }
         Update: {
           adjustment_reason?: string | null
+          approver_id?: string | null
+          approver_name?: string | null
           author_user_id?: string | null
           body?: string
           content_id?: string
@@ -572,6 +627,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "client_approvers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_author_user_id_fkey"
             columns: ["author_user_id"]
@@ -745,6 +807,10 @@ export type Database = {
           caption: string | null
           content_id: string
           created_at: string
+          edited_at: string | null
+          edited_by_approver_id: string | null
+          edited_by_approver_name: string | null
+          edited_by_user_id: string | null
           id: string
           version: number
         }
@@ -752,6 +818,10 @@ export type Database = {
           caption?: string | null
           content_id: string
           created_at?: string
+          edited_at?: string | null
+          edited_by_approver_id?: string | null
+          edited_by_approver_name?: string | null
+          edited_by_user_id?: string | null
           id?: string
           version: number
         }
@@ -759,6 +829,10 @@ export type Database = {
           caption?: string | null
           content_id?: string
           created_at?: string
+          edited_at?: string | null
+          edited_by_approver_id?: string | null
+          edited_by_approver_name?: string | null
+          edited_by_user_id?: string | null
           id?: string
           version?: number
         }
@@ -768,6 +842,13 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_texts_edited_by_approver_id_fkey"
+            columns: ["edited_by_approver_id"]
+            isOneToOne: false
+            referencedRelation: "client_approvers"
             referencedColumns: ["id"]
           },
         ]
