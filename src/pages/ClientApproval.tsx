@@ -43,11 +43,19 @@ export default function ClientApproval() {
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    // Detectar se é email ou WhatsApp
+    // Permitir digitação livre - detectar tipo apenas visualmente
     if (value.includes('@')) {
+      // É email - não formatar
       setIdentifier(value);
-    } else {
+      setIdentifierType('email');
+    } else if (value.match(/^\d/)) {
+      // Começou com número - é WhatsApp - formatar
       setIdentifier(formatWhatsApp(value));
+      setIdentifierType('whatsapp');
+    } else {
+      // Ainda não sabemos - permitir digitação livre
+      setIdentifier(value);
+      setIdentifierType(null);
     }
   };
 
