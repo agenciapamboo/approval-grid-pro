@@ -578,11 +578,22 @@ export default function ContentGrid() {
       .select("*")
       .eq("client_id", clientId);
     
-    // CASO 1: Aprovador com token 2FA (visualização limitada a pendentes)
+    // CASO 1: Aprovador com token 2FA (visualização COMPLETA com filtros de tabs)
     // Identifica aprovador: tem sessionToken MAS NÃO tem sessão Supabase Auth
     if (hasSessionToken && !session) {
-      console.log('[ContentGrid] 2FA Approver - showing ONLY pending contents (draft + in_review)');
-      query = query.in("status", ["draft", "in_review"]);
+      console.log('[ContentGrid] 2FA Approver - showing contents based on tab filter:', statusFilter);
+      
+      // Aplicar filtro de status apenas se não for 'all'
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'pending') {
+          query = query.in("status", ["draft", "in_review"]);
+        } else if (statusFilter === 'approved') {
+          query = query.eq("status", "approved");
+        } else if (statusFilter === 'changes_requested') {
+          query = query.eq("status", "changes_requested");
+        }
+      }
+      // Se statusFilter === 'all', não aplica filtro de status (mostra todos)
     }
     // CASO 2: Cliente autenticado via Supabase Auth (visualização COMPLETA)
     else if (session) {
@@ -606,8 +617,8 @@ export default function ContentGrid() {
       query = query.eq("status", "approved");
     }
 
-    // Filtrar por mês se especificado
-    if (filterMonth) {
+    // Filtrar por mês se especificado (exceto para aprovadores 2FA que veem todos os meses)
+    if (filterMonth && !hasSessionToken) {
       const [year, month] = filterMonth.split('-');
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
