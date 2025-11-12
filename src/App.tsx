@@ -46,6 +46,7 @@ const UserAuditLog = lazy(() => import("./pages/admin/UserAuditLog"));
 const StripeConfig = lazy(() => import("./pages/admin/StripeConfig"));
 const StripeSync = lazy(() => import("./pages/admin/StripeSync"));
 const StripeDiagnostic = lazy(() => import("./pages/admin/StripeDiagnostic"));
+const ActiveSessions = lazy(() => import("./pages/admin/ActiveSessions"));
 const CheckoutLoading = lazy(() => import("./pages/CheckoutLoading"));
 
 const queryClient = new QueryClient();
@@ -120,6 +121,7 @@ const App = () => (
                 <Route path="/admin/stripe" element={<ProtectedRoute><StripeConfig /></ProtectedRoute>} />
                 <Route path="/admin/stripe-sync" element={<ProtectedRoute><StripeSync /></ProtectedRoute>} />
                 <Route path="/admin/stripe-diagnostic" element={<ProtectedRoute><StripeDiagnostic /></ProtectedRoute>} />
+                <Route path="/admin/sessoes-2fa" element={<ProtectedRoute><ActiveSessions /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}
                 <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
