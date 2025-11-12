@@ -18,7 +18,7 @@ import { SocialAccountsDialog } from "@/components/admin/SocialAccountsDialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Building2, Edit, Calendar, FileText, Users, Shield,
-  Loader2, Globe, MapPin, Share2, Eye
+  Loader2, Globe, MapPin, Share2, Eye, CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -292,9 +292,13 @@ const ClienteDetalhes = () => {
                   <Share2 className="h-4 w-4 mr-2" />
                   Redes Sociais
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/conteudos?client=${clientId}`)}>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/agency/client/${clientId}`)}>
                   <FileText className="h-4 w-4 mr-2" />
                   Conteúdos
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/agency/client/${clientId}`)}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Aprovar Criativos
                 </Button>
               </div>
             </div>
@@ -530,10 +534,16 @@ const ClienteDetalhes = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Histórico de Solicitações</CardTitle>
-                <CardDescription>Solicitações de criação de conteúdo (em desenvolvimento)</CardDescription>
+                <CardDescription>Todas as solicitações de criação de conteúdo deste cliente</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-center py-8">Funcionalidade em desenvolvimento</p>
+                <div className="flex flex-col items-center justify-center py-8 gap-4">
+                  <p className="text-muted-foreground">Acesse a página de solicitações para ver todos os pedidos</p>
+                  <Button onClick={() => navigate(`/agency/creative-requests/${clientId}`)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Ver Solicitações Criativas
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -543,10 +553,16 @@ const ClienteDetalhes = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Histórico de Aprovação</CardTitle>
-                <CardDescription>Aprovações e comentários em conteúdos (em desenvolvimento)</CardDescription>
+                <CardDescription>Histórico completo de aprovações, comentários e ajustes solicitados</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-center py-8">Funcionalidade em desenvolvimento</p>
+                <div className="flex flex-col items-center justify-center py-8 gap-4">
+                  <p className="text-muted-foreground">Acesse o histórico completo de aprovações deste cliente</p>
+                  <Button onClick={() => navigate(`/client/${clientId}/history`)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Histórico de Aprovação
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
