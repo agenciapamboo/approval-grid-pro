@@ -13,6 +13,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ClientApproval = lazy(() => import("./pages/ClientApproval"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ContentGrid = lazy(() => import("./pages/ContentGrid"));
 const AgencyContentManager = lazy(() => import("./pages/AgencyContentManager"));
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/linkderecuperacao" element={<ResetPassword />} />
+                <Route path="/aprovar" element={<ClientApproval />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/data-deletion" element={<DataDeletion />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
