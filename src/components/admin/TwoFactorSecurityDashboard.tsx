@@ -47,7 +47,11 @@ const COLORS = {
   primary: 'hsl(var(--primary))',
 };
 
-export function TwoFactorSecurityDashboard() {
+interface TwoFactorSecurityDashboardProps {
+  agencyId?: string;
+}
+
+export function TwoFactorSecurityDashboard({ agencyId }: TwoFactorSecurityDashboardProps = {}) {
   const { toast } = useToast();
   const [stats, setStats] = useState<DashboardStats>({
     totalAttempts: 0,
@@ -85,24 +89,51 @@ export function TwoFactorSecurityDashboard() {
           break;
       }
 
-      // Estatísticas gerais
-      const { data: attempts } = await supabase
+      // Estatísticas gerais - filtrar por agência se fornecido
+      let attemptsQuery = supabase
         .from('token_validation_attempts')
-        .select('success, attempted_at')
+        .select(`
+          success, 
+          attempted_at,
+          two_factor_codes!inner(
+            client_id,
+            clients!inner(agency_id)
+          )
+        `)
         .gte('attempted_at', startDate.toISOString());
+
+      if (agencyId) {
+        attemptsQuery = attemptsQuery.eq('two_factor_codes.clients.agency_id', agencyId);
+      }
+
+      const { data: attempts } = await attemptsQuery;
 
       const totalAttempts = attempts?.length || 0;
       const failedAttempts = attempts?.filter(a => !a.success).length || 0;
       const successAttempts = totalAttempts - failedAttempts;
       const successRate = totalAttempts > 0 ? (successAttempts / totalAttempts) * 100 : 0;
 
-      // IPs bloqueados atualmente
-      const { data: blocked } = await supabase
+      // IPs bloqueados atualmente - filtrar por agência se fornecido
+      let blockedQuery = supabase
         .from('token_validation_attempts')
-        .select('ip_address, blocked_until, attempted_at')
+        .select(`
+          ip_address, 
+          blocked_until, 
+          attempted_at,
+          two_factor_codes!inner(
+            client_id,
+            clients!inner(agency_id)
+          )
+        `)
         .not('blocked_until', 'is', null)
         .gte('blocked_until', now.toISOString())
         .order('blocked_until', { ascending: false });
+
+      if (agencyId) {
+        blockedQuery = blockedQuery.eq('two_factor_codes.clients.agency_id', agencyId);
+      }
+
+      const { data: blocked } = await blockedQuery;
 
       // Agrupar por IP
       const blockedMap = new Map<string, BlockedIP>();
@@ -120,7 +151,8 @@ export function TwoFactorSecurityDashboard() {
 
       setBlockedIPs(Array.from(blockedMap.values()));
 
-      // Alertas recentes
+      // Alertas recentes - sem filtro por agência pois a tabela não tem relação direta
+      // Em produção, seria melhor adicionar agency_id ou filtrar via IP
       const { data: alerts } = await supabase
         .from('security_alerts_sent')
         .select('*')

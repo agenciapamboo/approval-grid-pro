@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell, Loader2 } from "lucide-react";
+import { LogOut, Users, Building2, FileImage, ArrowRight, MessageSquare, Eye, Pencil, Plus, AlertCircle, CheckCircle, Trash2, Sparkles, Clock, XCircle, Shield, Calendar as CalendarIcon, UserPlus, History as HistoryIcon, TrendingUp, DollarSign, Server, Bell, Loader2, BarChart3 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { AddAgencyDialog } from "@/components/admin/AddAgencyDialog";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
@@ -1302,6 +1302,79 @@ const Dashboard = () => {
                     </Button>
                   </CardContent>
                 </Card>
+
+                {/* Seção Segurança e Gestão - Agency Admin */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Shield className="h-6 w-6" />
+                    Segurança e Gestão
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card 
+                      className="hover:shadow-lg transition-shadow cursor-pointer" 
+                      onClick={() => navigate("/admin/dashboard-seguranca")}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5" />
+                          Dashboard de Segurança 2FA
+                        </CardTitle>
+                        <CardDescription>
+                          Monitore tentativas de acesso e segurança dos seus clientes
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Acessar
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card 
+                      className="hover:shadow-lg transition-shadow cursor-pointer" 
+                      onClick={() => navigate("/admin/historico-2fa")}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <HistoryIcon className="h-5 w-5" />
+                          Histórico de Acessos 2FA
+                        </CardTitle>
+                        <CardDescription>
+                          Veja todas as tentativas de autenticação
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Acessar
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card 
+                      className="hover:shadow-lg transition-shadow cursor-pointer" 
+                      onClick={() => navigate("/admin/sessoes-ativas")}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Sessões Ativas
+                        </CardTitle>
+                        <CardDescription>
+                          Gerencie sessões ativas de aprovadores
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Acessar
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-6 h-6 text-primary" />
@@ -1340,7 +1413,14 @@ const Dashboard = () => {
                   return (
                     <Card 
                       key={client.id} 
-                      className="relative overflow-hidden"
+                      className="relative overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={(e) => {
+                        // Prevenir navegação se clicar em botões internos
+                        if ((e.target as HTMLElement).closest('button')) {
+                          return;
+                        }
+                        navigate(`/clientes/${client.id}`);
+                      }}
                     >
                       {/* Notificações no topo com links */}
                       {hasNotifications && (

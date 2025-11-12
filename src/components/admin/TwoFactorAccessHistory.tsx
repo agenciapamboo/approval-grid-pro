@@ -49,7 +49,11 @@ interface AccessAttempt {
 
 type FilterStatus = "all" | "success" | "failed" | "expired";
 
-export function TwoFactorAccessHistory() {
+interface TwoFactorAccessHistoryProps {
+  agencyId?: string;
+}
+
+export function TwoFactorAccessHistory({ agencyId }: TwoFactorAccessHistoryProps = {}) {
   const [attempts, setAttempts] = useState<AccessAttempt[]>([]);
   const [filteredAttempts, setFilteredAttempts] = useState<AccessAttempt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,8 +83,8 @@ export function TwoFactorAccessHistory() {
           break;
       }
 
-      // Buscar tentativas de acesso com joins
-      const { data, error } = await supabase
+      // Buscar tentativas de acesso com joins - filtrar por agência se fornecido
+      let query = supabase
         .from("two_factor_codes")
         .select(`
           id,
@@ -96,13 +100,20 @@ export function TwoFactorAccessHistory() {
             name,
             email
           ),
-          clients (
+          clients!inner (
             name,
-            slug
+            slug,
+            agency_id
           )
         `)
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false });
+
+      if (agencyId) {
+        query = query.eq('clients.agency_id', agencyId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

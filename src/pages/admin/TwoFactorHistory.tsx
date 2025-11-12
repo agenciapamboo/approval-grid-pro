@@ -35,8 +35,8 @@ const TwoFactorHistory = () => {
       if (profileData) {
         const userProfile = { ...profileData, role: roleData || 'client_user' };
         
-        // Verificar se é super admin
-        if (roleData !== 'super_admin') {
+        // Verificar se é super admin ou agency admin
+        if (roleData !== 'super_admin' && roleData !== 'agency_admin') {
           navigate("/dashboard");
           return;
         }
@@ -71,11 +71,13 @@ const TwoFactorHistory = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Histórico de Acessos 2FA</h1>
           <p className="text-muted-foreground mt-2">
-            Auditoria completa de todas as tentativas de autenticação do sistema
+            {profile?.role === 'agency_admin' 
+              ? 'Auditoria de tentativas de autenticação dos seus clientes'
+              : 'Auditoria completa de todas as tentativas de autenticação do sistema'}
           </p>
         </div>
 
-        <TwoFactorAccessHistory />
+        <TwoFactorAccessHistory agencyId={profile?.role === 'agency_admin' ? profile?.agency_id : undefined} />
       </main>
 
       <AppFooter />

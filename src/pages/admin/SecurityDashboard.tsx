@@ -35,8 +35,8 @@ const SecurityDashboard = () => {
       if (profileData) {
         const userProfile = { ...profileData, role: roleData || 'client_user' };
         
-        // Verificar se é super admin
-        if (roleData !== 'super_admin') {
+        // Verificar se é super admin ou agency admin
+        if (roleData !== 'super_admin' && roleData !== 'agency_admin') {
           navigate("/dashboard");
           return;
         }
@@ -68,7 +68,16 @@ const SecurityDashboard = () => {
       />
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        <TwoFactorSecurityDashboard />
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Dashboard de Segurança 2FA</h1>
+          <p className="text-muted-foreground mt-2">
+            {profile?.role === 'agency_admin' 
+              ? 'Monitore tentativas de acesso e atividades suspeitas dos seus clientes'
+              : 'Visão geral de segurança e tentativas de autenticação do sistema'}
+          </p>
+        </div>
+
+        <TwoFactorSecurityDashboard agencyId={profile?.role === 'agency_admin' ? profile?.agency_id : undefined} />
       </main>
 
       <AppFooter />
