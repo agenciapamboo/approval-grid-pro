@@ -1639,6 +1639,33 @@ export type Database = {
         }
         Relationships: []
       }
+      security_alerts_sent: {
+        Row: {
+          alert_date: string
+          alert_type: string
+          details: Json | null
+          id: string
+          ip_address: string
+          notified_at: string
+        }
+        Insert: {
+          alert_date?: string
+          alert_type: string
+          details?: Json | null
+          id?: string
+          ip_address: string
+          notified_at?: string
+        }
+        Update: {
+          alert_date?: string
+          alert_type?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string
+          notified_at?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null

@@ -34,6 +34,10 @@ Deno.serve(async (req) => {
 
     console.log(`[verify-2fa-code] Verifying code for identifier: ${identifier.substring(0, 3)}***`);
 
+    // Obter IP e User-Agent primeiro para validações
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
     // Buscar código válido
     const { data: codeData, error: codeError } = await supabase
       .from('two_factor_codes')
@@ -48,6 +52,34 @@ Deno.serve(async (req) => {
 
     if (codeError || !codeData) {
       console.warn('[verify-2fa-code] Invalid or expired code');
+      
+      // Registrar tentativa falha
+      await supabase
+        .from('token_validation_attempts')
+        .insert({
+          ip_address: clientIP,
+          token_attempted: code,
+          success: false,
+          user_agent: userAgent,
+        });
+
+      // Disparar alerta de segurança em background (não espera resposta)
+      fetch(`${supabaseUrl}/functions/v1/alert-failed-2fa-attempts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        },
+        body: JSON.stringify({
+          ip_address: clientIP,
+          user_agent: userAgent,
+          token_attempted: code.substring(0, 3) + '***',
+          approver_identifier: identifier,
+        }),
+      }).catch(err => {
+        console.error('⚠️ Erro ao disparar alerta de segurança:', err);
+      });
+      
       return new Response(
         JSON.stringify({ 
           error: 'Código inválido ou expirado. Solicite um novo código.' 
@@ -75,10 +107,6 @@ Deno.serve(async (req) => {
     // Gerar token de sessão
     const sessionToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
     const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
-
-    // Obter IP e User-Agent
-    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-    const userAgent = req.headers.get('user-agent') || 'unknown';
 
     // Criar sessão
     const { error: sessionError } = await supabase
