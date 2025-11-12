@@ -248,7 +248,7 @@ export default function ContentGrid() {
       }
 
       // Fetch contents for this client
-      await loadContents(data.client.id, undefined, true);
+      await loadContents(data.client.id, undefined);
     } catch (error) {
       console.error("Error validating session:", error);
       setTokenValid(false);
@@ -547,7 +547,7 @@ export default function ContentGrid() {
 
       console.log('Client loaded:', clientData);
       setClient(clientData);
-      await loadContents(clientData.id, undefined, false);
+      await loadContents(clientData.id, undefined);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -560,7 +560,7 @@ export default function ContentGrid() {
     }
   };
 
-  const loadContents = async (clientId: string, filterMonth?: string, tokenAccess: boolean = false) => {
+  const loadContents = async (clientId: string, filterMonth?: string) => {
     console.log('=== loadContents started for client:', clientId);
     
     const { data: { session } } = await supabase.auth.getSession();
@@ -569,8 +569,8 @@ export default function ContentGrid() {
     console.log('[ContentGrid] Load details:', {
       hasSession: !!session,
       hasSessionToken,
-      tokenAccess,
-      statusFilter
+      statusFilter,
+      clientId
     });
     
     let query = supabase
@@ -628,7 +628,8 @@ export default function ContentGrid() {
       count: data?.length || 0,
       clientId,
       filterMonth,
-      tokenAccess,
+      hasSessionToken,
+      hasSession: !!session,
       statuses: data?.map(c => c.status)
     });
     setContents(data || []);
@@ -844,7 +845,7 @@ export default function ContentGrid() {
           <div className="mb-6">
             <Tabs value={statusFilter} onValueChange={(value: any) => {
               setStatusFilter(value);
-              loadContents(client!.id, selectedMonth, false);
+      loadContents(client!.id, selectedMonth);
             }}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pending" className="flex items-center gap-2">
@@ -883,7 +884,7 @@ export default function ContentGrid() {
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
-                loadContents(client!.id, e.target.value, isPublicView);
+                loadContents(client!.id, e.target.value);
               }}
               className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
@@ -925,7 +926,7 @@ export default function ContentGrid() {
                   if (isPublicView && approvalToken) {
                     fetchContentsViaToken(approvalToken);
                   } else {
-                    loadContents(client!.id, selectedMonth, false);
+                    loadContents(client!.id, selectedMonth);
                   }
                 }}
               />
