@@ -43,20 +43,24 @@ export default function ClientApproval() {
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    // Permitir digitação livre - detectar tipo apenas visualmente
+    // Detectar se é email (tem @)
     if (value.includes('@')) {
-      // É email - não formatar
       setIdentifier(value);
       setIdentifierType('email');
-    } else if (value.match(/^\d/)) {
-      // Começou com número - é WhatsApp - formatar
-      setIdentifier(formatWhatsApp(value));
-      setIdentifierType('whatsapp');
-    } else {
-      // Ainda não sabemos - permitir digitação livre
-      setIdentifier(value);
-      setIdentifierType(null);
+      return;
     }
+    
+    // Se começar com número ou parêntese, é WhatsApp - aplicar máscara
+    if (value.match(/^[\d(]/)) {
+      const formatted = formatWhatsApp(value);
+      setIdentifier(formatted);
+      setIdentifierType('whatsapp');
+      return;
+    }
+    
+    // Ainda não sabemos - permitir digitação livre
+    setIdentifier(value);
+    setIdentifierType(null);
   };
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -125,13 +129,19 @@ export default function ClientApproval() {
 
     setLoading(true);
 
+    console.log('[ClientApproval] Verificando código:', {
+      identifier,
+      codeLength: code.length,
+      identifierType
+    });
+
     try {
       const { data, error } = await supabase.functions.invoke('verify-2fa-code', {
         body: { identifier, code },
       });
 
       if (error) {
-        console.error('Error verifying code:', error);
+        console.error('❌ Error verifying code:', error);
         toast.error('Erro ao validar código. Verifique sua conexão.');
         return;
       }
@@ -159,37 +169,43 @@ export default function ClientApproval() {
 
       toast.success(`Bem-vindo, ${data.approver?.name || 'Aprovador'}!`);
 
-      // Buscar dados do cliente e agência de forma robusta
+      console.log('[ClientApproval] Buscando dados do cliente:', data.client.id);
+
+      // Buscar cliente e agência separadamente para evitar falhas
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .select(`
-          id,
-          name,
-          slug,
-          logo_url,
-          agency_id,
-          agencies!inner (
-            id,
-            slug,
-            name
-          )
-        `)
+        .select('id, name, slug, logo_url, agency_id')
         .eq('id', data.client.id)
         .single();
 
       if (clientError || !clientData) {
-        console.error('Erro ao buscar dados do cliente:', clientError);
-        toast.error('Cliente não encontrado no sistema');
+        console.error('❌ Erro ao buscar cliente:', clientError);
+        toast.error('Erro ao carregar dados do cliente');
         setLoading(false);
         return;
       }
 
-      const agency = clientData.agencies;
-      const agencySlug = Array.isArray(agency) ? agency[0]?.slug : agency?.slug;
-      const clientSlug = data.client?.slug;
+      console.log('[ClientApproval] Cliente encontrado, buscando agência:', clientData.agency_id);
+
+      // Buscar agência separadamente
+      const { data: agencyData, error: agencyError } = await supabase
+        .from('agencies')
+        .select('id, slug, name')
+        .eq('id', clientData.agency_id)
+        .single();
+
+      if (agencyError || !agencyData) {
+        console.error('❌ Erro ao buscar agência:', agencyError);
+        toast.error('Erro ao carregar dados da agência');
+        setLoading(false);
+        return;
+      }
+
+      const agencySlug = agencyData.slug;
+      const clientSlug = clientData.slug;
 
       if (!agencySlug || !clientSlug) {
-        console.error('Dados incompletos:', { agencySlug, clientSlug });
+        console.error('❌ Dados incompletos:', { agencySlug, clientSlug });
         toast.error('Erro: dados do cliente ou agência estão incompletos');
         setLoading(false);
         return;
@@ -198,7 +214,7 @@ export default function ClientApproval() {
       console.log('✅ Redirecionando para:', `/${agencySlug}/${clientSlug}`);
       navigate(`/${agencySlug}/${clientSlug}?session_token=${data.session_token}`);
     } catch (error: any) {
-      console.error('Error verifying code:', error);
+      console.error('❌ Error verifying code:', error);
       toast.error('Erro inesperado ao validar código. Tente novamente.');
     } finally {
       setLoading(false);
@@ -255,12 +271,13 @@ export default function ClientApproval() {
                   <Input
                     id="identifier"
                     type="text"
-                    placeholder="exemplo@email.com ou (XX) XXXXX-XXXX"
+                    placeholder="exemplo@email.com ou (35) 99896-9680"
                     value={identifier}
                     onChange={handleIdentifierChange}
                     disabled={loading}
                     className="h-12"
                     autoFocus
+                    maxLength={identifierType === 'whatsapp' ? 15 : 255}
                   />
                   <p className="text-xs text-muted-foreground">
                     Use o email ou WhatsApp cadastrado como aprovador
