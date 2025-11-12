@@ -73,7 +73,17 @@ export default function ContentGrid() {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [approvalToken, setApprovalToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [sessionData, setSessionData] = useState<{
+    client_id: string;
+    client_name: string;
+    client_slug: string;
+    client_logo_url?: string;
+    approver_name: string;
+    approver_email: string;
+    is_primary: boolean;
+  } | null>(null);
   const [showAllContents, setShowAllContents] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("pending");
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
@@ -130,19 +140,28 @@ export default function ContentGrid() {
     const initializePage = async () => {
       console.log('[ContentGrid] Initializing page...');
       
-      // 1. PRIORIDADE: Verificar token de aprovação PRIMEIRO
+      // 1. PRIORIDADE: Verificar session_token 2FA PRIMEIRO
+      const sessionTkn = searchParams.get('session_token');
+      if (sessionTkn) {
+        console.log('[ContentGrid] 2FA session-based access (priority) - validating session:', sessionTkn.substring(0, 10) + '...');
+        setSessionToken(sessionTkn);
+        await validateSessionAndLoadData(sessionTkn);
+        return; // Session token tem prioridade máxima, encerra aqui
+      }
+      
+      // 2. PRIORIDADE 2: Verificar token de aprovação
       const token = searchParams.get('token');
       if (token) {
-        console.log('[ContentGrid] Token-based access (priority) - validating token:', token.substring(0, 10) + '...');
+        console.log('[ContentGrid] Token-based access - validating token:', token.substring(0, 10) + '...');
         setApprovalToken(token);
         await validateTokenAndLoadData(token);
         return; // Token tem prioridade, encerra aqui
       }
       
-      // 2. Se não tem token, verificar sessão autenticada
+      // 3. Se não tem token, verificar sessão autenticada
       const { data: { session } } = await supabase.auth.getSession();
       
-    // 3. Se tem sessão, carregar dados via autenticação
+    // 4. Se tem sessão, carregar dados via autenticação
     if (session) {
       console.log('[ContentGrid] Authenticated access - loading via session');
       setUser(session.user);
@@ -151,7 +170,7 @@ export default function ContentGrid() {
       return;
     }
       
-      // 4. Sem token e sem sessão = acesso restrito
+      // 5. Sem token e sem sessão = acesso restrito
       console.log('[ContentGrid] No authentication and no token - restricted access');
       setTokenValid(false);
       setLoading(false);
@@ -159,6 +178,89 @@ export default function ContentGrid() {
     
     initializePage();
   }, [agencySlug, clientSlug, searchParams]);
+
+  const validateSessionAndLoadData = async (sessionTkn: string) => {
+    try {
+      console.log('=== Validating 2FA client session ===');
+      setRateLimitError({ type: null, message: '' });
+      
+      // Call the edge function to validate session
+      const { data, error } = await supabase.functions.invoke('validate-client-session', {
+        body: { session_token: sessionTkn }
+      });
+
+      if (error) {
+        console.error('Session validation error:', error);
+        setTokenValid(false);
+        setLoading(false);
+        
+        toast({
+          title: "Sessão inválida",
+          description: "Sua sessão expirou ou é inválida. Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || !data.valid) {
+        console.error('Session validation failed:', data);
+        setTokenValid(false);
+        setLoading(false);
+        toast({
+          title: "Sessão expirada",
+          description: data?.error || "Sua sessão expirou. Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Session validated successfully:', data);
+      setTokenValid(true);
+      
+      // Store session data
+      setSessionData({
+        client_id: data.client.id,
+        client_name: data.client.name,
+        client_slug: data.client.slug,
+        client_logo_url: data.client.logo_url,
+        approver_name: data.approver.name,
+        approver_email: data.approver.email,
+        is_primary: data.approver.is_primary
+      });
+
+      // Set client data
+      setClient({
+        id: data.client.id,
+        name: data.client.name,
+        slug: data.client.slug,
+        logo_url: data.client.logo_url || undefined,
+        agency_id: ''
+      } as any);
+
+      // Load agency from public table via slug
+      if (agencySlug) {
+        const { data: agencyData } = await supabase
+          .from('agencies_public')
+          .select('*')
+          .eq('slug', agencySlug)
+          .maybeSingle();
+        if (agencyData) setAgency(agencyData);
+      }
+
+      // Fetch contents for this client
+      await loadContents(data.client.id, undefined, true);
+    } catch (error) {
+      console.error("Error validating session:", error);
+      setTokenValid(false);
+      toast({
+        title: "Erro",
+        description: "Erro ao validar a sessão",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchContentsViaToken = async (token: string) => {
     console.log('[ContentGrid] Fetching contents via RPC with token');
@@ -549,11 +651,12 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver token válido
+  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver token válido E NÃO houver sessão 2FA
   const hasUser = !!user;
   const hasValidToken = approvalToken && tokenValid === true;
+  const hasValidSession = sessionToken && tokenValid === true;
   
-  if (!hasUser && !hasValidToken) {
+  if (!hasUser && !hasValidToken && !hasValidSession) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full space-y-4">
@@ -579,12 +682,16 @@ export default function ContentGrid() {
               
               <div className="space-y-2">
                 <p className="text-muted-foreground">
-                  {approvalToken 
-                    ? 'O link de aprovação que você está usando é inválido ou expirou.'
-                    : 'Esta página requer autenticação ou um link de aprovação válido para acesso.'}
+                  {sessionToken 
+                    ? 'Sua sessão expirou ou é inválida.'
+                    : approvalToken 
+                      ? 'O link de aprovação que você está usando é inválido ou expirou.'
+                      : 'Esta página requer autenticação ou um link de aprovação válido para acesso.'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Links de aprovação têm validade de 7 dias e são enviados por email pela agência.
+                  {sessionToken 
+                    ? 'Faça login novamente para continuar.'
+                    : 'Links de aprovação têm validade de 7 dias e são enviados por email pela agência.'}
                 </p>
               </div>
 
@@ -601,7 +708,7 @@ export default function ContentGrid() {
     );
   }
 
-  const isPublicView = !!approvalToken && tokenValid;
+  const isPublicView = (!!approvalToken && tokenValid) || (!!sessionToken && tokenValid);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -630,7 +737,9 @@ export default function ContentGrid() {
                 )}
                 <div>
                   <h1 className="text-lg font-semibold">{client?.name}</h1>
-                  <p className="text-sm text-muted-foreground">Aprovação de Conteúdo</p>
+                  <p className="text-sm text-muted-foreground">
+                    {sessionData ? `Aprovador: ${sessionData.approver_name}` : 'Aprovação de Conteúdo'}
+                  </p>
                 </div>
               </div>
               <Lock className="h-5 w-5 text-muted-foreground" />
@@ -655,8 +764,9 @@ export default function ContentGrid() {
         {isPublicView && (
           <Alert className="mb-6">
             <AlertDescription>
-              Você está visualizando os conteúdos aguardando aprovação via link temporário. 
-              Este link expira em 7 dias a partir do envio.
+              {sessionToken 
+                ? `Você está logado como ${sessionData?.approver_name}. Sua sessão expira em algumas horas.`
+                : 'Você está visualizando os conteúdos aguardando aprovação via link temporário. Este link expira em 7 dias a partir do envio.'}
             </AlertDescription>
           </Alert>
         )}
