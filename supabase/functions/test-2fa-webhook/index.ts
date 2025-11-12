@@ -43,11 +43,11 @@ serve(async (req) => {
       ip_address: "192.168.1.1",
       user_agent: "Mozilla/5.0 (Test Webhook)",
       timestamp: new Date().toISOString(),
-      test: true
+      test: "true"
     }
 
     // Fazer requisição para o webhook externo
-    const urlParams = new URLSearchParams(testPayload as any)
+    const urlParams = new URLSearchParams(testPayload)
     const webhookUrl = `${settings.value}?${urlParams.toString()}`
 
     console.log('🚀 Enviando requisição para webhook...')
@@ -91,25 +91,25 @@ serve(async (req) => {
         }
       )
 
-    } catch (fetchError) {
+    } catch (fetchError: any) {
       clearTimeout(timeoutId)
       
-      if (fetchError.name === 'AbortError') {
+      if (fetchError?.name === 'AbortError') {
         console.error('⏱️ Timeout ao chamar webhook')
         throw new Error('Timeout: O webhook demorou mais de 15 segundos para responder')
       }
       
       console.error('❌ Erro ao chamar webhook:', fetchError)
-      throw new Error(`Erro ao chamar webhook: ${fetchError.message}`)
+      throw new Error(`Erro ao chamar webhook: ${fetchError?.message || 'Erro desconhecido'}`)
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro geral:', error)
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Erro desconhecido ao testar webhook'
+        error: error?.message || 'Erro desconhecido ao testar webhook'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
