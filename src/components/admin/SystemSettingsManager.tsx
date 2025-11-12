@@ -17,6 +17,8 @@ export const SystemSettingsManager = () => {
   const [originalWebhookUrl, setOriginalWebhookUrl] = useState("");
   const [platformWebhookUrl, setPlatformWebhookUrl] = useState("");
   const [originalPlatformWebhookUrl, setOriginalPlatformWebhookUrl] = useState("");
+  const [twoFactorWebhookUrl, setTwoFactorWebhookUrl] = useState("");
+  const [originalTwoFactorWebhookUrl, setOriginalTwoFactorWebhookUrl] = useState("");
 
   const loadSettings = async () => {
     setLoading(true);
@@ -44,6 +46,17 @@ export const SystemSettingsManager = () => {
       const platformUrl = platformData?.value || "";
       setPlatformWebhookUrl(platformUrl);
       setOriginalPlatformWebhookUrl(platformUrl);
+
+      // Webhook de 2FA
+      const { data: twoFactorData } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "two_factor_webhook_url")
+        .single();
+
+      const twoFactorUrl = twoFactorData?.value || "";
+      setTwoFactorWebhookUrl(twoFactorUrl);
+      setOriginalTwoFactorWebhookUrl(twoFactorUrl);
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
       toast({
@@ -142,6 +155,45 @@ export const SystemSettingsManager = () => {
     }
   };
 
+  const handleSave2FAWebhook = async () => {
+    if (!twoFactorWebhookUrl.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A URL do webhook não pode estar vazia.",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ 
+          value: twoFactorWebhookUrl.trim(),
+          updated_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq("key", "two_factor_webhook_url");
+
+      if (error) throw error;
+
+      setOriginalTwoFactorWebhookUrl(twoFactorWebhookUrl.trim());
+      toast({
+        title: "Configurações salvas",
+        description: "O webhook de 2FA foi atualizado com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao salvar webhook de 2FA:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar o webhook de 2FA.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleUpdateDocs = async () => {
     setUpdatingDocs(true);
     try {
@@ -172,6 +224,7 @@ export const SystemSettingsManager = () => {
 
   const hasChanges = webhookUrl !== originalWebhookUrl;
   const hasPlatformChanges = platformWebhookUrl !== originalPlatformWebhookUrl;
+  const has2FAChanges = twoFactorWebhookUrl !== originalTwoFactorWebhookUrl;
 
   return (
     <Card>
@@ -285,6 +338,58 @@ export const SystemSettingsManager = () => {
                   <Button
                     variant="outline"
                     onClick={() => setPlatformWebhookUrl(originalPlatformWebhookUrl)}
+                    disabled={saving}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Webhook de Códigos 2FA */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-1">Webhook de Códigos 2FA</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  URL do webhook N8N para envio de códigos de autenticação de 2 fatores via email/WhatsApp
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="2fa-webhook-url">URL do Webhook (N8N)</Label>
+                <Input
+                  id="2fa-webhook-url"
+                  type="url"
+                  placeholder="https://webhook.pamboocriativos.com.br/webhook/..."
+                  value={twoFactorWebhookUrl}
+                  onChange={(e) => setTwoFactorWebhookUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSave2FAWebhook}
+                  disabled={!has2FAChanges || saving}
+                  className="flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Salvar Webhook 2FA
+                    </>
+                  )}
+                </Button>
+                {has2FAChanges && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setTwoFactorWebhookUrl(originalTwoFactorWebhookUrl)}
                     disabled={saving}
                   >
                     Cancelar

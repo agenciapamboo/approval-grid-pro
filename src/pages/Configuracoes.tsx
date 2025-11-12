@@ -18,7 +18,8 @@ import { NotificationSender } from "@/components/admin/NotificationSender";
 import { 
   ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, 
   Webhook, Building2, DollarSign, Bell, TrendingUp, CreditCard, 
-  TicketCheck, FileText, UserCog, Loader2, RefreshCw 
+  TicketCheck, FileText, UserCog, Loader2, RefreshCw, KeyRound,
+  XCircle, CheckCircle2, History, BarChart3
 } from "lucide-react";
 
 const Configuracoes = () => {
@@ -149,7 +150,46 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* 2. Stripe & Pagamentos */}
+            {/* 2. Autenticação de 2 Fatores */}
+            <AccordionItem value="2fa-auth" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="h-5 w-5 text-indigo-500" />
+                      <div className="text-left">
+                        <CardTitle>Autenticação de 2 Fatores</CardTitle>
+                        <CardDescription className="mt-1">
+                          Gerencie segurança, acessos e aprovadores
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0 space-y-2">
+                    <Button onClick={() => navigate("/admin/dashboard-seguranca")} variant="outline" className="w-full justify-start">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Dashboard de Segurança 2FA
+                    </Button>
+                    <Button onClick={() => navigate("/admin/historico-2fa")} variant="outline" className="w-full justify-start">
+                      <History className="h-4 w-4 mr-2" />
+                      Histórico de Acessos 2FA
+                    </Button>
+                    <Button onClick={() => navigate("/admin/ips-confiaveis")} variant="outline" className="w-full justify-start">
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      IPs Confiáveis
+                    </Button>
+                    <Button onClick={() => navigate("/admin/sessoes-ativas")} variant="outline" className="w-full justify-start">
+                      <Users className="h-4 w-4 mr-2" />
+                      Sessões Ativas
+                    </Button>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+
+            {/* 3. Stripe & Pagamentos */}
             <AccordionItem value="stripe-payments" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
@@ -184,7 +224,7 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* 3. Suporte & Tickets */}
+            {/* 4. Suporte & Tickets */}
             <AccordionItem value="support-tickets" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
@@ -211,37 +251,69 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* 4. Segurança & Webhooks */}
-            <AccordionItem value="security-webhooks" className="border rounded-lg">
+            {/* 5. Webhooks */}
+            <AccordionItem value="webhooks" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
                   <CardHeader className="p-0">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-red-500" />
+                      <Webhook className="h-5 w-5 text-purple-500" />
                       <div className="text-left">
-                        <CardTitle>Segurança & Webhooks</CardTitle>
+                        <CardTitle>Webhooks</CardTitle>
                         <CardDescription className="mt-1">
-                          Gerencie IPs bloqueados e webhooks de notificações
+                          Configure webhooks de notificações e integrações
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent className="pt-0 space-y-2">
-                    <Button onClick={() => navigate("/admin/blocked-ips")} variant="outline" className="w-full justify-start">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Gerenciar IPs Bloqueados
-                    </Button>
-                    <Separator className="my-2" />
-                    <div className="text-sm font-medium mb-2">Configuração de Webhooks</div>
+                  <CardContent className="pt-0">
                     <SystemSettingsManager />
                   </CardContent>
                 </AccordionContent>
               </Card>
             </AccordionItem>
 
-            {/* 5. Sistema & Recursos */}
+            {/* 6. Segurança de IPs */}
+            <AccordionItem value="ip-security" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-red-500" />
+                      <div className="text-left">
+                        <CardTitle>Segurança de IPs</CardTitle>
+                        <CardDescription className="mt-1">
+                          Gerencie IPs bloqueados e confiáveis
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0 space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">IPs Bloqueados</h4>
+                      <Button onClick={() => navigate('/admin/blocked-ips')} variant="outline" className="w-full justify-start">
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Gerenciar IPs Bloqueados
+                      </Button>
+                    </div>
+                    <Separator className="my-2" />
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">IPs Confiáveis (Whitelist)</h4>
+                      <Button onClick={() => navigate('/admin/ips-confiaveis')} variant="outline" className="w-full justify-start">
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Gerenciar IPs Confiáveis
+                      </Button>
+                    </div>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+
+            {/* 7. Sistema & Recursos */}
             <AccordionItem value="system-resources" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
@@ -283,7 +355,7 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* 6. Notificações */}
+            {/* 8. Notificações */}
             <AccordionItem value="notifications" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">

@@ -269,7 +269,11 @@ const Clientes = () => {
           {/* Grid de Clientes */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredClients.map((client) => (
-              <Card key={client.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={client.id} 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigate(`/clientes/${client.id}`)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     {client.logo_url ? (

@@ -2,23 +2,33 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { sendTestNotification } from "@/lib/testNotification";
+import { sendTest2FACode } from "@/lib/test2FAWebhook";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { useState } from "react";
 
 export const TestNotificationButton = () => {
-  const [webhookType, setWebhookType] = useState<"internal" | "platform" | "agency">("internal");
+  const [webhookType, setWebhookType] = useState<"internal" | "platform" | "agency" | "2fa">("internal");
   
   const handleTest = async () => {
     toast.info(`Enviando notificação de teste para webhook ${webhookType}...`);
     
-    const result = await sendTestNotification();
+    let result;
+    
+    if (webhookType === "2fa") {
+      result = await sendTest2FACode();
+    } else {
+      result = await sendTestNotification();
+    }
     
     if (result.success) {
       toast.success(`Notificação de teste enviada com sucesso!`);
       console.log("Resposta:", result.data);
+      if (webhookType === "2fa" && result.payload) {
+        console.log("Payload 2FA:", result.payload);
+      }
     } else {
-      toast.error("Erro ao enviar notificação de teste");
+      toast.error(typeof result.error === 'string' ? result.error : "Erro ao enviar notificação de teste");
       console.error("Erro:", result.error);
     }
   };
@@ -35,6 +45,7 @@ export const TestNotificationButton = () => {
             <SelectItem value="internal">Webhook Interno (Erros/Alertas)</SelectItem>
             <SelectItem value="platform">Webhook de Plataforma (Notificações)</SelectItem>
             <SelectItem value="agency">Webhook Agência-Cliente</SelectItem>
+            <SelectItem value="2fa">Webhook 2FA (Códigos de Autenticação)</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
@@ -7,12 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Mail, MessageCircle, Edit, Building2, Calendar, Globe, MapPin } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { ApproversManager } from "@/components/admin/ApproversManager";
+import { Client2FAHistory } from "@/components/admin/Client2FAHistory";
+import { usePermissions } from "@/hooks/usePermissions";
+import { 
+  ArrowLeft, Building2, Mail, MessageCircle, ExternalLink, Edit,
+  Calendar, FileText, Users, Shield, Facebook, Instagram, Bell,
+  Loader2, Globe, MapPin
+} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ApproversManager } from "@/components/admin/ApproversManager";
-import { usePermissions } from "@/hooks/usePermissions";
 
 const ClienteDetalhes = () => {
   const navigate = useNavigate();
@@ -21,6 +26,7 @@ const ClienteDetalhes = () => {
   const [profile, setProfile] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [contents, setContents] = useState<any[]>([]);
+  const [socialAccounts, setSocialAccounts] = useState<any[]>([]);
   const { hasPermission } = usePermissions();
 
   useEffect(() => {
@@ -178,7 +184,26 @@ const ClienteDetalhes = () => {
             <TabsTrigger value="cadastral">Dados Cadastrais</TabsTrigger>
             <TabsTrigger value="aprovadores">Aprovadores</TabsTrigger>
             <TabsTrigger value="uso">Histórico de Uso</TabsTrigger>
-            <TabsTrigger value="recursos">Recursos</TabsTrigger>
+                  {(hasPermission('manage_client_approvers') || hasPermission('view_client_approvers')) && (
+                    <TabsTrigger value="aprovadores">
+                      <Users className="h-4 w-4 mr-2" />
+                      Aprovadores
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="contas-sociais">
+                    <Facebook className="h-4 w-4 mr-2" />
+                    Contas Sociais
+                  </TabsTrigger>
+                  {(profile?.role === 'super_admin' || profile?.role === 'agency_admin') && (
+                    <TabsTrigger value="seguranca-2fa">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Segurança 2FA
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="notificacoes">
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notificações
+                  </TabsTrigger>
           </TabsList>
 
           {/* Tab: Visão Geral */}
@@ -318,9 +343,127 @@ const ClienteDetalhes = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+                </TabsContent>
 
-          {/* Tab: Recursos */}
+                {/* Tab: Aprovadores */}
+                {(hasPermission('manage_client_approvers') || hasPermission('view_client_approvers')) && (
+                  <TabsContent value="aprovadores" className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Gerenciar Aprovadores</CardTitle>
+                        <CardDescription>
+                          Pessoas autorizadas a aprovar conteúdos deste cliente
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ApproversManager clientId={clientId} clientName={client?.name || ''} />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
+
+                {/* Tab: Contas Sociais */}
+                <TabsContent value="contas-sociais" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Contas Conectadas</CardTitle>
+                      <CardDescription>
+                        Redes sociais conectadas para publicação automática
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {socialAccounts.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Instagram className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>Nenhuma conta social conectada</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {socialAccounts.map((account) => (
+                            <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                {account.platform === 'facebook' ? (
+                                  <Facebook className="h-5 w-5 text-blue-600" />
+                                ) : (
+                                  <Instagram className="h-5 w-5 text-pink-600" />
+                                )}
+                                <div>
+                                  <p className="font-medium">{account.account_name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {account.platform.charAt(0).toUpperCase() + account.platform.slice(1)}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge variant={account.is_active ? "success" : "outline"}>
+                                {account.is_active ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab: Segurança 2FA */}
+                {(profile?.role === 'super_admin' || profile?.role === 'agency_admin') && (
+                  <TabsContent value="seguranca-2fa" className="space-y-4">
+                    <Client2FAHistory clientId={clientId} clientName={client?.name || ''} />
+                  </TabsContent>
+                )}
+
+                {/* Tab: Notificações */}
+                <TabsContent value="notificacoes" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Preferências de Notificação</CardTitle>
+                      <CardDescription>
+                        Configure como este cliente recebe notificações
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Email</p>
+                            <p className="text-sm text-muted-foreground">
+                              Notificações por email
+                            </p>
+                          </div>
+                          <Badge variant={client?.notify_email ? "success" : "outline"}>
+                            {client?.notify_email ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
+                        <Separator />
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">WhatsApp</p>
+                            <p className="text-sm text-muted-foreground">
+                              Notificações por WhatsApp
+                            </p>
+                          </div>
+                          <Badge variant={client?.notify_whatsapp ? "success" : "outline"}>
+                            {client?.notify_whatsapp ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
+                        <Separator />
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Webhook</p>
+                            <p className="text-sm text-muted-foreground">
+                              Notificações via webhook customizado
+                            </p>
+                          </div>
+                          <Badge variant={client?.notify_webhook ? "success" : "outline"}>
+                            {client?.notify_webhook ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab: Recursos */}
           <TabsContent value="recursos">
             <Card>
               <CardHeader>
