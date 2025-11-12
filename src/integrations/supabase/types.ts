@@ -1896,6 +1896,39 @@ export type Database = {
         }
         Relationships: []
       }
+      trusted_ips: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          ip_address: string
+          is_active: boolean
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address: string
+          is_active?: boolean
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address?: string
+          is_active?: boolean
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       two_factor_codes: {
         Row: {
           approver_id: string
