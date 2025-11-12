@@ -42,11 +42,12 @@ interface ContentCardProps {
   isResponsible: boolean;
   isAgencyView?: boolean;
   isPublicApproval?: boolean;
-  approvalToken?: string;
+  approvalToken?: string; // Deprecated - será removido
+  sessionToken?: string;
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, sessionToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const [showComments, setShowComments] = useState(false);
@@ -1141,7 +1142,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
           {/* Comentários expandidos - sempre visível para clientes */}
           {(isPublicApproval || !isAgencyView) && (
             <div className="border-t">
-              <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
+              <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} sessionToken={sessionToken} />
             </div>
           )}
         </CardContent>
@@ -1159,7 +1160,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
         onOpenChange={setShowAdjustment}
         contentId={content.id}
         onSuccess={onUpdate}
-        approvalToken={approvalToken}
+        sessionToken={sessionToken}
       />
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
