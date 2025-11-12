@@ -564,26 +564,28 @@ export default function ContentGrid() {
     console.log('=== loadContents started for client:', clientId);
     
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('Session in loadContents:', !!session, 'Token access:', tokenAccess, 'Show all:', showAllContents);
+    const hasSessionToken = !!sessionToken; // Verificar se é sessão 2FA
+    
+    console.log('Session:', !!session, 'Token access:', tokenAccess, 'Has 2FA session:', hasSessionToken);
     
     let query = supabase
       .from("contents")
       .select("*")
       .eq("client_id", clientId);
     
-    // Com token: mostrar "draft" OU "in_review" (ambos podem precisar de aprovação)
-    if (tokenAccess) {
-      console.log('[ContentGrid] Token access - filtering draft and in_review contents');
+    // PRIORIDADE: Se tem sessão 2FA (aprovador), SEMPRE filtrar apenas pendentes
+    if (hasSessionToken || tokenAccess) {
+      console.log('[ContentGrid] Approver session - showing only pending contents (draft + in_review)');
       query = query.in("status", ["draft", "in_review"]);
     }
     // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
     else if (!session) {
-      console.log('No session - filtering only approved contents');
+      console.log('[ContentGrid] Public access - showing only approved contents');
       query = query.eq("status", "approved");
     } 
-    // Com sessão de cliente: aplicar filtro baseado na tab selecionada
+    // Com sessão de cliente autenticado: aplicar filtros por tab
     else if (session && statusFilter !== 'all') {
-      console.log('Client session - applying status filter:', statusFilter);
+      console.log('[ContentGrid] Authenticated client - applying status filter:', statusFilter);
       if (statusFilter === 'pending') {
         query = query.in("status", ["draft", "in_review"]);
       } else if (statusFilter === 'approved') {
@@ -594,7 +596,7 @@ export default function ContentGrid() {
     }
     // Se statusFilter for 'all', mostrar todos
     else {
-      console.log('Session exists - loading all contents');
+      console.log('[ContentGrid] Authenticated client - showing all contents');
     }
 
     // Filtrar por mês se especificado
