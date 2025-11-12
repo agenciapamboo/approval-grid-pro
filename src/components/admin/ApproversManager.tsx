@@ -75,7 +75,7 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
     if (!deletingApprover) return;
 
     try {
-      // Verificar se é o único aprovador primário
+      // Verificar se é o único aprovador primário ativo
       if (deletingApprover.is_primary) {
         const activePrimaryCount = approvers.filter(
           (a) => a.is_active && a.is_primary && a.id !== deletingApprover.id
@@ -83,8 +83,8 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
 
         if (activePrimaryCount === 0) {
           toast({
-            title: "Não é possível remover",
-            description: "Deve haver pelo menos um aprovador primário ativo.",
+            title: "Não é possível desativar",
+            description: "Deve haver pelo menos um aprovador primário ativo. Promova outro aprovador a primário antes de desativar este.",
             variant: "destructive",
           });
           setDeletingApprover(null);

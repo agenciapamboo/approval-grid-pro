@@ -105,6 +105,26 @@ export function EditApproverDialog({
     try {
       setLoading(true);
 
+      // Validar se está tentando remover status primário do único aprovador primário ativo
+      if (approver.is_primary && !data.is_primary && approver.is_active) {
+        const { data: activePrimaryApprovers, error: countError } = await supabase
+          .from("client_approvers")
+          .select("id")
+          .eq("client_id", approver.client_id)
+          .eq("is_primary", true)
+          .eq("is_active", true)
+          .neq("id", approver.id);
+
+        if (countError) throw countError;
+
+        if (!activePrimaryApprovers || activePrimaryApprovers.length === 0) {
+          form.setError("is_primary", {
+            message: "Deve haver pelo menos um aprovador primário ativo. Promova outro aprovador primeiro.",
+          });
+          return;
+        }
+      }
+
       // Verificar se email mudou e se já existe para este cliente
       if (data.email !== approver.email) {
         const { data: existing, error: checkError } = await supabase
