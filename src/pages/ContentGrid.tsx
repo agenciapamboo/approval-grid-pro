@@ -578,22 +578,12 @@ export default function ContentGrid() {
       .select("*")
       .eq("client_id", clientId);
     
-    // CASO 1: Aprovador com token 2FA (visualização COMPLETA com filtros de tabs)
+    // CASO 1: Aprovador com token 2FA (visualização COMPLETA sem filtros)
     // Identifica aprovador: tem sessionToken MAS NÃO tem sessão Supabase Auth
+    // Aprovadores veem TODOS os conteúdos independente de status ou tabs
     if (hasSessionToken && !session) {
-      console.log('[ContentGrid] 2FA Approver - showing contents based on tab filter:', statusFilter);
-      
-      // Aplicar filtro de status apenas se não for 'all'
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'pending') {
-          query = query.in("status", ["draft", "in_review"]);
-        } else if (statusFilter === 'approved') {
-          query = query.eq("status", "approved");
-        } else if (statusFilter === 'changes_requested') {
-          query = query.eq("status", "changes_requested");
-        }
-      }
-      // Se statusFilter === 'all', não aplica filtro de status (mostra todos)
+      console.log('[ContentGrid] 2FA Approver - showing ALL contents (no status filter applied)');
+      // Não aplica nenhum filtro de status - aprovadores veem tudo
     }
     // CASO 2: Cliente autenticado via Supabase Auth (visualização COMPLETA)
     else if (session) {
