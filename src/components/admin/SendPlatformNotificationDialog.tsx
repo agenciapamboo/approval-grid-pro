@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { createPlatformNotification, PlatformNotificationType } from "@/lib/platform-notifications";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SendPlatformNotificationDialogProps {
   open: boolean;
@@ -17,8 +18,9 @@ interface SendPlatformNotificationDialogProps {
 
 export function SendPlatformNotificationDialog({ 
   open, 
-  onOpenChange 
-}: SendPlatformNotificationDialogProps) {
+  onOpenChange,
+  agencyId,
+}: SendPlatformNotificationDialogProps & { agencyId?: string }) {
   const [targetType, setTargetType] = useState<'all' | 'agency' | 'creator'>('all');
   const [targetId, setTargetId] = useState('');
   const [notificationType, setNotificationType] = useState<PlatformNotificationType>('general_announcement');
@@ -30,6 +32,27 @@ export function SendPlatformNotificationDialog({
   const [sendInApp, setSendInApp] = useState(true);
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'critical'>('normal');
   const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    if (open && agencyId) {
+      loadClients();
+    }
+  }, [open, agencyId]);
+
+  const loadClients = async () => {
+    if (!agencyId) return;
+
+    const { data } = await supabase
+      .from('clients')
+      .select('id, name')
+      .eq('agency_id', agencyId)
+      .order('name');
+
+    if (data) {
+      setClients(data);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!title || !message) {
@@ -45,8 +68,8 @@ export function SendPlatformNotificationDialog({
     setLoading(true);
 
     const result = await createPlatformNotification({
-      targetType,
-      targetId: targetType === 'all' ? undefined : targetId,
+      targetType: targetType === 'all' && agencyId ? 'client_user' : targetType,
+      targetId: targetType === 'all' && agencyId ? undefined : targetId,
       notificationType,
       title,
       message,
@@ -90,21 +113,51 @@ export function SendPlatformNotificationDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Clientes</SelectItem>
-                <SelectItem value="agency">Agência Específica</SelectItem>
-                <SelectItem value="creator">Creator Específico</SelectItem>
+                {agencyId ? (
+                  <>
+                    <SelectItem value="all">Todos os Clientes da Agência</SelectItem>
+                    <SelectItem value="client_user">Cliente Específico</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="all">Todos os Clientes</SelectItem>
+                    <SelectItem value="agency">Agência Específica</SelectItem>
+                    <SelectItem value="creator">Creator Específico</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
 
           {targetType !== 'all' && (
             <div>
-              <Label>ID do {targetType === 'agency' ? 'Agência' : 'Creator'}</Label>
-              <Input
-                placeholder="ID do destinatário"
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-              />
+              <Label>
+                {agencyId 
+                  ? 'Cliente' 
+                  : targetType === 'agency' 
+                    ? 'ID da Agência' 
+                    : 'ID do Creator'}
+              </Label>
+              {agencyId && targetType !== 'agency' && targetType !== 'creator' ? (
+                <Select value={targetId} onValueChange={setTargetId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  placeholder="ID do destinatário"
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                />
+              )}
             </div>
           )}
 

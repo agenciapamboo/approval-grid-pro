@@ -1505,20 +1505,40 @@ const Dashboard = () => {
                               variant="secondary"
                               size="sm"
                               className="w-full justify-start"
-                              onClick={() => navigate(`/agency/client/${client.id}`)}
+                              onClick={() => navigate(`/agency-content`)}
                             >
                               <FileImage className="w-4 h-4 mr-2" />
                               Conteúdos
                             </Button>
 
                             <Button
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => navigate(`/agency-content`)}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Aprovar Criativos
+                            </Button>
+
+                            <Button
                               variant="outline"
                               size="sm"
                               className="w-full justify-start"
-                              onClick={() => navigate(`/agency/creative-requests/${client.id}`)}
+                              onClick={() => navigate(`/agency/creative-requests`)}
                             >
-                              <MessageSquare className="w-4 h-4 mr-2" />
+                              <HistoryIcon className="w-4 h-4 mr-2" />
                               Solicitações
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                              onClick={() => navigate(`/client/${client.id}/history`)}
+                            >
+                              <HistoryIcon className="w-4 h-4 mr-2" />
+                              Aprovação
                             </Button>
                           </div>
                         </div>

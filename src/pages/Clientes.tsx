@@ -132,6 +132,7 @@ const Clientes = () => {
     percentage: 0,
     archivedCount: 0,
     activeCreatives: 0,
+    remaining: 0,
   });
 
   useEffect(() => {
@@ -144,13 +145,28 @@ const Clientes = () => {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const clientIds = clients.map(c => c.id);
 
-    // Buscar limite total de criativos
-    const { data: clientsData } = await supabase
-      .from('clients')
-      .select('monthly_creatives')
-      .in('id', clientIds);
+    // Buscar dados da agência (assumindo que todos os clientes são da mesma agência para agency_admin)
+    const agencyId = profile?.agency_id;
+    let totalMonthlyLimit = 0;
 
-    const totalLimit = (clientsData || []).reduce((sum, c) => sum + (c.monthly_creatives || 0), 0);
+    if (agencyId) {
+      const { data: agencyData } = await supabase
+        .from('agencies')
+        .select('plan')
+        .eq('id', agencyId)
+        .single();
+
+      // Buscar limite do plano da agência
+      if (agencyData) {
+        const { data: entitlements } = await supabase
+          .from('plan_entitlements')
+          .select('posts_limit')
+          .eq('plan', agencyData.plan)
+          .single();
+        
+        totalMonthlyLimit = entitlements?.posts_limit || 0;
+      }
+    }
 
     // Contar posts criados no mês
     const { count: totalUsed } = await supabase
@@ -159,12 +175,46 @@ const Clientes = () => {
       .in('client_id', clientIds)
       .gte('created_at', startOfMonth.toISOString());
 
-    // Contar criativos arquivados
-    const { count: archivedCount } = await supabase
+    // Contar todos os criativos do período contratado (baseado em history_days do plano)
+    let historyDays = 90; // padrão
+    if (agencyId) {
+      const { data: agencyData } = await supabase
+        .from('agencies')
+        .select('plan')
+        .eq('id', agencyId)
+        .single();
+
+      if (agencyData) {
+        const { data: entitlements } = await supabase
+          .from('plan_entitlements')
+          .select('history_days')
+          .eq('plan', agencyData.plan)
+          .single();
+        
+        historyDays = entitlements?.history_days || 90;
+      }
+    }
+
+    const historyStartDate = new Date();
+    historyStartDate.setDate(historyStartDate.getDate() - historyDays);
+
+    // Arquivados = todos do mês + todos armazenados no período contratado
+    const { count: archivedThisMonth } = await supabase
       .from('contents')
       .select('*', { count: 'exact', head: true })
       .in('client_id', clientIds)
-      .eq('status', 'archived');
+      .eq('status', 'archived')
+      .gte('created_at', startOfMonth.toISOString());
+
+    const { count: archivedInHistory } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .eq('status', 'archived')
+      .gte('created_at', historyStartDate.toISOString())
+      .lt('created_at', startOfMonth.toISOString());
+
+    const totalArchived = (archivedThisMonth || 0) + (archivedInHistory || 0);
 
     // Contar criativos ativos
     const { count: activeCreatives } = await supabase
@@ -173,14 +223,16 @@ const Clientes = () => {
       .in('client_id', clientIds)
       .neq('status', 'archived');
 
-    const percentage = totalLimit > 0 ? (totalUsed || 0) / totalLimit * 100 : 0;
+    const percentage = totalMonthlyLimit > 0 ? (totalUsed || 0) / totalMonthlyLimit * 100 : 0;
+    const remaining = totalMonthlyLimit > 0 ? totalMonthlyLimit - (totalUsed || 0) : 0;
 
     setMonthlyStats({
       totalUsed: totalUsed || 0,
-      totalLimit,
+      totalLimit: totalMonthlyLimit,
       percentage,
-      archivedCount: archivedCount || 0,
+      archivedCount: totalArchived,
       activeCreatives: activeCreatives || 0,
+      remaining,
     });
   };
 
@@ -283,6 +335,26 @@ const Clientes = () => {
                 )}
               </CardContent>
             </Card>
+
+            {monthlyStats.totalLimit > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Faltam para a Cota
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{monthlyStats.remaining}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {monthlyStats.remaining > 0 ? 'posts disponíveis' : 'cota excedida'}
+                  </p>
+                  {monthlyStats.remaining <= 5 && monthlyStats.remaining > 0 && (
+                    <Badge variant="outline" className="mt-2">Cota quase atingida</Badge>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Filtros */}
@@ -384,6 +456,7 @@ const Clientes = () => {
       <SendPlatformNotificationDialog
         open={notificationDialogOpen}
         onOpenChange={setNotificationDialogOpen}
+        agencyId={profile?.agency_id}
       />
 
       <AppFooter />
