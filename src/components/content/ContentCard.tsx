@@ -952,49 +952,28 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                   // Visualização autenticada - exibir botões para TODOS exceto approved e publicados
                   (!content.published_at && content.status !== "approved") ? (
                     <>
-                      {hasPermission("approve_content") && (
-                        <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Aprovar
-                        </Button>
-                      )}
-                      {hasPermission("request_changes") && (
-                        <Button
-                          size="sm"
-                          variant="warning"
-                          onClick={() => setShowAdjustment(true)}
-                          className="w-full"
-                        >
-                          <AlertCircle className="h-4 w-4 mr-2" />
-                          Solicitar ajuste
-                        </Button>
-                      )}
-                      {hasPermission("reject_content") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowRejectDialog(true)}
-                          className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Reprovar
-                        </Button>
-                      )}
-                      {hasPermission("add_comments") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowComments(!showComments)}
-                          className="w-full"
-                        >
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    // Para aprovados/publicados: apenas histórico
-                    hasPermission("add_comments") && (
+                      <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="warning"
+                        onClick={() => setShowAdjustment(true)}
+                        className="w-full"
+                      >
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Solicitar ajuste
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowRejectDialog(true)}
+                        className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Reprovar
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -1004,7 +983,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         <MessageSquare className="h-4 w-4 mr-2" />
                         {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                       </Button>
-                    )
+                    </>
+                  ) : (
+                    // Para aprovados/publicados: apenas histórico
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowComments(!showComments)}
+                      className="w-full"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                    </Button>
                   )
                 )}
               </div>
@@ -1131,8 +1121,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             );
           })()}
 
-          {/* Comentários expandidos - verificar permissão se autenticado */}
-          {(isPublicApproval || hasPermission('view_history')) && (
+          {/* Comentários expandidos - sempre visível para clientes */}
+          {(isPublicApproval || !isAgencyView) && (
             <div className="border-t">
               <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
             </div>
