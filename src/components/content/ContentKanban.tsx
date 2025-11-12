@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +42,8 @@ interface Content {
   type: string;
   client_id: string;
   owner_user_id: string;
+  is_content_plan?: boolean;
+  plan_description?: string | null;
   comments_count?: number;
   media_count?: number;
   clients?: {
@@ -165,13 +168,15 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientSelector, setShowClientSelector] = useState(false);
   
+  // Estados para histórico de dias e filtros
+  const [historyDays, setHistoryDays] = useState<number>(30);
+  const [hideApproved, setHideApproved] = useState(false);
+  const [hideScheduled, setHideScheduled] = useState(false);
+  const [hidePublished, setHidePublished] = useState(false);
+  
   // Estados para filtro de data
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: (() => {
-      const date = new Date();
-      date.setDate(date.getDate() - 30);
-      return date;
-    })(),
+    from: undefined,
     to: new Date()
   });
 
@@ -278,6 +283,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   }, [focusedColumn, focusedCard, columns, contents, keyboardNavigationActive, showShortcuts]);
 
   useEffect(() => {
+    loadAgencyEntitlements();
     loadColumns();
     loadContents();
     loadRequests();
@@ -380,6 +386,31 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     };
   }, [agencyId, dateRange]);
 
+  const loadAgencyEntitlements = async () => {
+    try {
+      const { data: agency, error: agencyError } = await supabase
+        .from("agencies")
+        .select("plan")
+        .eq("id", agencyId)
+        .single();
+
+      if (agencyError) throw agencyError;
+
+      const { data: entitlements, error: entitlementsError } = await supabase
+        .from("plan_entitlements")
+        .select("history_days")
+        .eq("plan", agency.plan)
+        .single();
+
+      if (entitlementsError) throw entitlementsError;
+
+      setHistoryDays(entitlements.history_days || 30);
+    } catch (error) {
+      console.error("Erro ao carregar entitlements:", error);
+      setHistoryDays(30);
+    }
+  };
+
   const loadColumns = async () => {
     try {
       const { data, error } = await supabase
@@ -420,13 +451,10 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       const clientIds = clients.map((c) => c.id);
 
-      // Usar o intervalo de datas selecionado
-      const startDate = dateRange.from || (() => {
-        const date = new Date();
-        date.setDate(date.getDate() - 30);
-        return date;
-      })();
-      const endDate = dateRange.to || new Date();
+      // Calcular data de início baseado em historyDays
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - historyDays);
+      const endDate = new Date();
 
       const { data, error } = await supabase
         .from("contents")
@@ -438,6 +466,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           type,
           client_id,
           owner_user_id,
+          is_content_plan,
+          plan_description,
           clients (name)
         `)
         .in("client_id", clientIds)
@@ -484,21 +514,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           mediaCountMap.set(media.content_id, count + 1);
         });
 
-        // Filtrar conteúdos aprovados com data passada
-        const now = new Date();
-        const enrichedContents = data
-          .filter(content => {
-            if (content.status === 'approved' && new Date(content.date) < now) {
-              return false; // Não mostrar aprovados com data passada
-            }
-            return true;
-          })
-          .map((content) => ({
-            ...content,
-            profiles: profileMap.get(content.owner_user_id),
-            comments_count: commentsCountMap.get(content.id) || 0,
-            media_count: mediaCountMap.get(content.id) || 0,
-          }));
+        // Não filtrar conteúdos aprovados
+        const enrichedContents = data.map((content) => ({
+          ...content,
+          profiles: profileMap.get(content.owner_user_id),
+          comments_count: commentsCountMap.get(content.id) || 0,
+          media_count: mediaCountMap.get(content.id) || 0,
+        }));
 
         setContents(enrichedContents as Content[]);
       } else {
@@ -1098,6 +1120,48 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
               </Tooltip>
             </TooltipProvider>
 
+            {/* Filtros de visualização */}
+            <div className="flex flex-wrap gap-2 px-3 py-2 bg-muted/30 rounded-lg">
+              <span className="text-xs font-semibold text-muted-foreground self-center">Ocultar:</span>
+              
+              <div className="flex items-center space-x-1.5">
+                <Checkbox
+                  id="hide-approved"
+                  checked={hideApproved}
+                  onCheckedChange={(checked) => setHideApproved(checked as boolean)}
+                />
+                <Label htmlFor="hide-approved" className="cursor-pointer text-xs font-normal">
+                  Aprovados
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-1.5">
+                <Checkbox
+                  id="hide-scheduled"
+                  checked={hideScheduled}
+                  onCheckedChange={(checked) => setHideScheduled(checked as boolean)}
+                />
+                <Label htmlFor="hide-scheduled" className="cursor-pointer text-xs font-normal">
+                  Agendados
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-1.5">
+                <Checkbox
+                  id="hide-published"
+                  checked={hidePublished}
+                  onCheckedChange={(checked) => setHidePublished(checked as boolean)}
+                />
+                <Label htmlFor="hide-published" className="cursor-pointer text-xs font-normal">
+                  Publicados
+                </Label>
+              </div>
+
+              <div className="ml-auto text-xs text-muted-foreground self-center">
+                Últimos {historyDays} dias
+              </div>
+            </div>
+
             {/* Filtro de data */}
             <Popover>
               <PopoverTrigger asChild>
@@ -1567,14 +1631,30 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                       </KanbanCards>
                     </KanbanBoard>
                   );
-                }
+                 }
 
-                const columnContents = contents.filter((content) => {
+                // Aplicar filtros
+                let filteredContents = contents.filter((content) => {
+                  // Filtro de status
                   if (column.column_id === 'scheduled') {
-                    // Mostrar apenas aprovados com data futura
-                    return content.status === 'approved' && new Date(content.date) > new Date();
+                    const isScheduled = content.status === 'approved' && new Date(content.date) > new Date();
+                    if (!isScheduled) return false;
+                    if (hideScheduled) return false;
+                  } else {
+                    if (content.status !== statusFilter) return false;
                   }
-                  return content.status === statusFilter;
+
+                  // Filtro de aprovados
+                  if (hideApproved && content.status === 'approved' && new Date(content.date) <= new Date()) {
+                    return false;
+                  }
+
+                  // Filtro de publicados (conteúdos que foram publicados)
+                  if (hidePublished && content.status === 'approved' && new Date(content.date) < new Date()) {
+                    return false;
+                  }
+
+                  return true;
                 });
 
                 return (
@@ -1588,7 +1668,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                       color={column.column_color} 
                     />
                     <KanbanCards>
-                      {columnContents.map((content, index) => {
+                      {filteredContents.map((content, index) => {
                         const deadlineStatus = getDeadlineStatus(content.date);
                         const isKeyboardFocused = keyboardNavigationActive && 
                           columns[focusedColumn]?.column_id === column.column_id && 

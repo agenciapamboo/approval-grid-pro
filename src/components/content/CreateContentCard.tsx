@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, CalendarIcon, Save, Loader2, X, Clock } from "lucide-react";
+import { Upload, CalendarIcon, Save, Loader2, X, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   const [reelsThumbnailPreview, setReelsThumbnailPreview] = useState<string>("");
   const [showRotationDialog, setShowRotationDialog] = useState(false);
   const [limitCheckData, setLimitCheckData] = useState<{ type: 'posts' | 'creatives'; limit: number; current: number } | null>(null);
+  const [isContentPlan, setIsContentPlan] = useState(false);
+  const [planDescription, setPlanDescription] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -299,10 +301,30 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   };
 
   const handleSave = async () => {
-    if (files.length === 0 || !date) {
+    // Validação: se for plano, não precisa de mídia
+    if (!isContentPlan && files.length === 0) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, adicione pelo menos uma mídia e selecione uma data",
+        description: "Por favor, adicione pelo menos uma mídia",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Se for plano, validar descrição
+    if (isContentPlan && !planDescription.trim()) {
+      toast({
+        title: "Descrição obrigatória",
+        description: "Por favor, descreva o plano de conteúdo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!date) {
+      toast({
+        title: "Data obrigatória",
+        description: "Por favor, selecione uma data",
         variant: "destructive",
       });
       return;
@@ -356,11 +378,44 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           owner_user_id: user.id,
           channels: channels,
           category: category,
+          is_content_plan: isContentPlan,
+          plan_description: isContentPlan ? planDescription : null,
         }])
         .select()
         .single();
 
       if (contentError) throw contentError;
+
+      // Se for plano, não fazer upload de mídia
+      if (isContentPlan) {
+        // Salvar legenda se houver
+        if (caption) {
+          await supabase
+            .from("content_texts")
+            .insert({
+              content_id: content.id,
+              caption: caption,
+              version: 1,
+            });
+        }
+
+        toast({
+          title: "Plano de conteúdo criado",
+          description: "O plano foi salvo e está aguardando aprovação do cliente",
+        });
+
+        // Limpar formulário
+        setIsContentPlan(false);
+        setPlanDescription("");
+        setCaption("");
+        setTitle("");
+        setChannels([]);
+        setDate(initialDate);
+        setTime("12:00");
+        setHasChanges(false);
+        onContentCreated();
+        return;
+      }
 
       // Upload de thumbnail se for reels e houver thumbnail
       let thumbUrl: string | null = null;
@@ -558,9 +613,51 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
   return (
     <div className="space-y-4">
-      <div className="w-full bg-muted/30 relative">
-        <div className="p-3 space-y-2">
-          {files.length > 0 ? (
+      {/* Toggle para Plano de Conteúdo */}
+      <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+        <Checkbox
+          id="content-plan"
+          checked={isContentPlan}
+          onCheckedChange={(checked) => {
+            setIsContentPlan(checked as boolean);
+            setHasChanges(true);
+          }}
+        />
+        <Label htmlFor="content-plan" className="cursor-pointer flex-1">
+          <div className="flex flex-col">
+            <span className="font-medium">Plano de Conteúdo</span>
+            <span className="text-sm text-muted-foreground">
+              Criar um roteiro/ideia para aprovação antes de produzir
+            </span>
+          </div>
+        </Label>
+      </div>
+
+      {/* Se for plano, mostrar textarea para descrição */}
+      {isContentPlan ? (
+        <div className="space-y-3 p-4 border rounded-lg">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <FileText className="h-4 w-4" />
+            <span className="text-sm font-medium">Descrição do Plano</span>
+          </div>
+          <Textarea
+            id="plan-description"
+            value={planDescription}
+            onChange={(e) => {
+              setPlanDescription(e.target.value);
+              setHasChanges(true);
+            }}
+            placeholder="Descreva a ideia do conteúdo, roteiro, conceito criativo, etc."
+            className="min-h-[160px]"
+          />
+          <p className="text-xs text-muted-foreground">
+            Esta descrição será enviada para aprovação do cliente antes da produção.
+          </p>
+        </div>
+      ) : (
+        <div className="w-full bg-muted/30 relative">
+          <div className="p-3 space-y-2">
+            {files.length > 0 ? (
             <>
               <div className="grid grid-cols-5 gap-2">
                 {previews.map((preview, index) => (
@@ -625,16 +722,17 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
               </p>
             </div>
           )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-      </div>
+      )}
 
       <div className="p-4 space-y-3">
         {/* Seletor de tipo de conteúdo - sempre visível */}

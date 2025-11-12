@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save, XCircle } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save, XCircle, FileText, ImageIcon, Images, Video, Smartphone, CheckCircle2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -36,6 +36,8 @@ interface ContentCardProps {
     auto_publish?: boolean;
     published_at?: string | null;
     supplier_link?: string | null;
+    is_content_plan?: boolean;
+    plan_description?: string | null;
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
@@ -106,6 +108,56 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       feed: "Feed",
     };
     return labels[type] || type;
+  };
+
+  const ContentPlanIcon = ({ type }: { type: string }) => {
+    const icons: Record<string, any> = {
+      image: ImageIcon,
+      carousel: Images,
+      reels: Video,
+      story: Smartphone,
+      feed: ImageIcon,
+    };
+    
+    const Icon = icons[type] || ImageIcon;
+    
+    return (
+      <div className="flex flex-col items-center justify-center h-64 bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg">
+        <Icon className="h-16 w-16 text-muted-foreground" />
+        <span className="mt-2 text-sm font-medium text-muted-foreground">
+          {getTypeLabel(type)}
+        </span>
+        <Badge variant="outline" className="mt-1">Plano de Conteúdo</Badge>
+      </div>
+    );
+  };
+
+  const handleConvertToProd = async () => {
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({
+          is_content_plan: false,
+          status: 'draft',
+        })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Convertido para produção",
+        description: "O plano aprovado foi convertido. Agora você pode adicionar as mídias.",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao converter:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao converter o plano",
+        variant: "destructive",
+      });
+    }
   };
 
   const getSocialIcon = (channel: string) => {
@@ -706,22 +758,32 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         <Edit className="h-4 w-4 mr-2" />
                         Editar conteúdo
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleReplaceMedia}>
-                        <ImagePlus className="h-4 w-4 mr-2" />
-                        Substituir imagem
-                      </DropdownMenuItem>
-                       <DropdownMenuItem onClick={() => setShowDatePicker(true)}>
+                      {!content.is_content_plan && (
+                        <DropdownMenuItem onClick={handleReplaceMedia}>
+                          <ImagePlus className="h-4 w-4 mr-2" />
+                          Substituir imagem
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => setShowDatePicker(true)}>
                         <Calendar className="h-4 w-4 mr-2" />
                         Alterar data
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleDownloadMedia}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Baixar mídia
-                      </DropdownMenuItem>
+                      {!content.is_content_plan && (
+                        <DropdownMenuItem onClick={handleDownloadMedia}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Baixar mídia
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => setShowSupplierDialog(true)}>
                         <Link2 className="h-4 w-4 mr-2" />
                         Link fornecedor
                       </DropdownMenuItem>
+                      {content.is_content_plan && content.status === 'approved' && (
+                        <DropdownMenuItem onClick={handleConvertToProd}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Converter em Produção
+                        </DropdownMenuItem>
+                      )}
                       {content.status === 'changes_requested' && (
                         <DropdownMenuItem onClick={handleMarkAdjustmentDone}>
                           <CheckCircle className="h-4 w-4 mr-2" />
@@ -803,8 +865,25 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             )}
           </div>
 
-          {/* Linha 2: Criativo */}
-          <ContentMedia contentId={content.id} type={content.type} approvalToken={approvalToken} />
+          {/* Linha 2: Criativo ou Plano */}
+          {content.is_content_plan ? (
+            <>
+              <ContentPlanIcon type={content.type} />
+              {content.plan_description && (
+                <div className="p-4 bg-muted/50">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Descrição do Plano
+                  </h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {content.plan_description}
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <ContentMedia contentId={content.id} type={content.type} approvalToken={approvalToken} />
+          )}
 
           {/* Linha 3: Legenda */}
           <ContentCaption contentId={content.id} version={content.version} approvalToken={approvalToken} />

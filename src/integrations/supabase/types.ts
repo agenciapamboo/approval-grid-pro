@@ -632,7 +632,9 @@ export type Database = {
           date: string
           deadline: string | null
           id: string
+          is_content_plan: boolean | null
           owner_user_id: string
+          plan_description: string | null
           publish_error: string | null
           published_at: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -651,7 +653,9 @@ export type Database = {
           date: string
           deadline?: string | null
           id?: string
+          is_content_plan?: boolean | null
           owner_user_id: string
+          plan_description?: string | null
           publish_error?: string | null
           published_at?: string | null
           status?: Database["public"]["Enums"]["content_status"]
@@ -670,7 +674,9 @@ export type Database = {
           date?: string
           deadline?: string | null
           id?: string
+          is_content_plan?: boolean | null
           owner_user_id?: string
+          plan_description?: string | null
           publish_error?: string | null
           published_at?: string | null
           status?: Database["public"]["Enums"]["content_status"]
