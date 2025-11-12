@@ -786,6 +786,61 @@ const Dashboard = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Novas Cards de Segurança 2FA */}
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/dashboard-seguranca")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Dashboard de Segurança 2FA
+                  </CardTitle>
+                  <CardDescription>
+                    Monitore tentativas, IPs bloqueados e alertas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/historico-2fa")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HistoryIcon className="h-5 w-5" />
+                    Histórico de Acessos 2FA
+                  </CardTitle>
+                  <CardDescription>
+                    Auditoria completa de tentativas de autenticação
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/ips-confiaveis")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    IPs Confiáveis
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie whitelist de IPs que nunca serão bloqueados
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full">
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Acessar
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Bloco de Enviar Notificações */}
@@ -870,6 +925,15 @@ const Dashboard = () => {
                     Ver Todos os Meus Conteúdos
                   </>
                 )}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => navigate('/meus-aprovadores')}
+                className="w-full sm:w-auto"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Gerenciar Aprovadores
               </Button>
             </div>
 

@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ApproversManager } from "@/components/admin/ApproversManager";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const ClienteDetalhes = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const ClienteDetalhes = () => {
   const [profile, setProfile] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [contents, setContents] = useState<any[]>([]);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     checkAuth();
