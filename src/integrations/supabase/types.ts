@@ -170,6 +170,67 @@ export type Database = {
           },
         ]
       }
+      client_approvers: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          name: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          name: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          name?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_approvers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_approvers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_approvers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           client_id: string
@@ -209,6 +270,71 @@ export type Database = {
           },
           {
             foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_sessions: {
+        Row: {
+          approver_id: string
+          client_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          last_activity: string
+          session_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          approver_id: string
+          client_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          last_activity?: string
+          session_token: string
+          user_agent?: string | null
+        }
+        Update: {
+          approver_id?: string
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          last_activity?: string
+          session_token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_sessions_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "client_approvers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_sessions_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients_secure"
@@ -1743,6 +1869,77 @@ export type Database = {
         }
         Relationships: []
       }
+      two_factor_codes: {
+        Row: {
+          approver_id: string
+          client_id: string
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          identifier: string
+          identifier_type: string
+          ip_address: string | null
+          used_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          approver_id: string
+          client_id: string
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          identifier: string
+          identifier_type: string
+          ip_address?: string | null
+          used_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          approver_id?: string
+          client_id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          identifier?: string
+          identifier_type?: string
+          ip_address?: string | null
+          used_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "two_factor_codes_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "client_approvers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "two_factor_codes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "two_factor_codes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "two_factor_codes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           created_at: string | null
@@ -2147,12 +2344,17 @@ export type Database = {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
       }
+      cleanup_expired_2fa_data: { Args: never; Returns: undefined }
       cleanup_old_validation_attempts: { Args: never; Returns: undefined }
       decrypt_social_token: {
         Args: { encrypted_token: string }
         Returns: string
       }
       encrypt_social_token: { Args: { token: string }; Returns: string }
+      find_approver_by_identifier: {
+        Args: { p_identifier: string }
+        Returns: Record<string, unknown>
+      }
       fix_orphaned_user: {
         Args: {
           p_agency_email: string
@@ -2271,6 +2473,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_whatsapp: { Args: { phone: string }; Returns: string }
       reject_content_for_approval: {
         Args: { p_content_id: string; p_reason: string; p_token: string }
         Returns: Json
