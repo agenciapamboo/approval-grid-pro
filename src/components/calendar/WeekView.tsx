@@ -210,7 +210,9 @@ function WeekDayCell({
       <div className="flex flex-col items-center mb-3 pb-2 border-b border-border">
         <div className="w-full flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-muted-foreground uppercase">
-            {format(day, 'EEE', { locale: ptBR })}
+            <span className="hidden lg:inline">{format(day, 'EEEE', { locale: ptBR })}</span>
+            <span className="hidden md:inline lg:hidden">{format(day, 'EEE', { locale: ptBR })}</span>
+            <span className="md:hidden">{format(day, 'EEEEE', { locale: ptBR })}</span>
           </span>
           
           {/* Botão "Dicas de Conteúdo" - só aparece se houver eventos */}

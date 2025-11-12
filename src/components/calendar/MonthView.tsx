@@ -159,11 +159,21 @@ export function MonthView({
       modifiers={[]}
     >
       <div ref={containerRef} className="flex flex-col h-full">
-        {/* Header com dias da semana */}
+        {/* Header com dias da semana - responsivo */}
         <div ref={headerRef} className="grid grid-cols-7 border-b border-border">
-          {weekDays.map(day => (
-            <div key={day} className="p-2 text-center font-medium text-sm text-muted-foreground">
-              {day}
+          {[
+            { full: "Domingo", short: "Dom", initial: "D" },
+            { full: "Segunda", short: "Seg", initial: "S" },
+            { full: "Terça", short: "Ter", initial: "T" },
+            { full: "Quarta", short: "Qua", initial: "Q" },
+            { full: "Quinta", short: "Qui", initial: "Q" },
+            { full: "Sexta", short: "Sex", initial: "S" },
+            { full: "Sábado", short: "Sáb", initial: "S" }
+          ].map(day => (
+            <div key={day.full} className="p-2 text-center font-medium text-sm text-muted-foreground">
+              <span className="hidden lg:inline">{day.full}</span>
+              <span className="hidden md:inline lg:hidden">{day.short}</span>
+              <span className="md:hidden">{day.initial}</span>
             </div>
           ))}
         </div>

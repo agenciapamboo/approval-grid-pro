@@ -608,8 +608,8 @@ export default function ContentGrid() {
       {/* Mostrar header apenas se NÃO for visualização pública com token */}
       {!isPublicView && (
         <AppHeader 
-          userName={profile?.name}
-          userRole="Cliente"
+          userName={client?.name}
+          userRole={agency ? `Cliente ${agency.name}` : "Cliente"}
           onProfileClick={() => setShowProfileDialog(true)}
           onSignOut={handleSignOut}
         />

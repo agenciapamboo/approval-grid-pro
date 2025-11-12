@@ -901,7 +901,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
                 {isPublicApproval ? (
-                  (content.status === "in_review" || content.status === "draft" || content.status === "changes_requested") ? (
+                  // Visualização pública via token - exibir botões para TODOS exceto approved e publicados
+                  (!content.published_at && content.status !== "approved") ? (
                     <>
                       <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
                         <CheckCircle className="h-4 w-4 mr-2" />
@@ -935,7 +936,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                       </Button>
                     </>
-                  ) : content.status === "approved" ? (
+                  ) : (
+                    // Para aprovados/publicados: apenas histórico/comentários
                     <Button
                       variant="outline"
                       size="sm"
@@ -945,9 +947,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                       <MessageSquare className="h-4 w-4 mr-2" />
                       {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                     </Button>
-                  ) : null
+                  )
                 ) : (
-                  (content.status === "draft" || content.status === "in_review" || content.status === "changes_requested") ? (
+                  // Visualização autenticada - exibir botões para TODOS exceto approved e publicados
+                  (!content.published_at && content.status !== "approved") ? (
                     <>
                       {hasPermission("approve_content") && (
                         <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
@@ -989,7 +992,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         </Button>
                       )}
                     </>
-                  ) : content.status === "approved" ? (
+                  ) : (
+                    // Para aprovados/publicados: apenas histórico
                     hasPermission("add_comments") && (
                       <Button
                         variant="outline"
@@ -1001,7 +1005,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                       </Button>
                     )
-                  ) : null
+                  )
                 )}
               </div>
             </div>
