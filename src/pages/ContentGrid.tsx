@@ -262,6 +262,53 @@ export default function ContentGrid() {
     }
   };
 
+  const handleSessionLogout = async () => {
+    if (!sessionToken) return;
+
+    try {
+      console.log('=== Logging out 2FA session ===');
+      
+      // Expirar a sessão no banco de dados
+      const { error } = await supabase
+        .from("client_sessions")
+        .update({ expires_at: new Date().toISOString() })
+        .eq("session_token", sessionToken);
+
+      if (error) {
+        console.error('Error expiring session:', error);
+        toast({
+          title: "Erro ao encerrar sessão",
+          description: "Ocorreu um erro ao encerrar sua sessão.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Session expired successfully');
+      
+      // Limpar estados locais
+      setSessionToken(null);
+      setSessionData(null);
+      setTokenValid(false);
+      setContents([]);
+      
+      toast({
+        title: "Sessão encerrada",
+        description: "Você foi desconectado com sucesso.",
+      });
+
+      // Redirecionar para a página de aprovação
+      navigate("/aprovar");
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao encerrar a sessão",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchContentsViaToken = async (token: string) => {
     console.log('[ContentGrid] Fetching contents via RPC with token');
     const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
@@ -742,7 +789,19 @@ export default function ContentGrid() {
                   </p>
                 </div>
               </div>
-              <Lock className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-center gap-3">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+                {sessionToken && sessionData && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSessionLogout}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </header>
