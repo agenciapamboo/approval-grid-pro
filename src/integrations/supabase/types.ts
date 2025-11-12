@@ -172,6 +172,7 @@ export type Database = {
       }
       client_approvers: {
         Row: {
+          agency_id: string
           client_id: string
           created_at: string
           created_by: string | null
@@ -184,6 +185,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          agency_id: string
           client_id: string
           created_at?: string
           created_by?: string | null
@@ -196,6 +198,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          agency_id?: string
           client_id?: string
           created_at?: string
           created_by?: string | null
@@ -208,6 +211,27 @@ export type Database = {
           whatsapp?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "client_approvers_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_approvers_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_approvers_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies_secure"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "client_approvers_client_id_fkey"
             columns: ["client_id"]

@@ -169,50 +169,25 @@ export default function ClientApproval() {
 
       toast.success(`Bem-vindo, ${data.approver?.name || 'Aprovador'}!`);
 
-      console.log('[ClientApproval] Buscando dados do cliente:', data.client.id);
-
-      // Buscar cliente e agência separadamente para evitar falhas
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select('id, name, slug, logo_url, agency_id')
-        .eq('id', data.client.id)
-        .single();
-
-      if (clientError || !clientData) {
-        console.error('❌ Erro ao buscar cliente:', clientError);
-        toast.error('Erro ao carregar dados do cliente');
-        setLoading(false);
-        return;
-      }
-
-      console.log('[ClientApproval] Cliente encontrado, buscando agência:', clientData.agency_id);
-
-      // Buscar agência separadamente
-      const { data: agencyData, error: agencyError } = await supabase
-        .from('agencies')
-        .select('id, slug, name')
-        .eq('id', clientData.agency_id)
-        .single();
-
-      if (agencyError || !agencyData) {
-        console.error('❌ Erro ao buscar agência:', agencyError);
-        toast.error('Erro ao carregar dados da agência');
-        setLoading(false);
-        return;
-      }
-
-      const agencySlug = agencyData.slug;
-      const clientSlug = clientData.slug;
-
-      if (!agencySlug || !clientSlug) {
-        console.error('❌ Dados incompletos:', { agencySlug, clientSlug });
+      // Validar que temos todos os dados necessários
+      if (!data.agency?.slug || !data.client?.slug) {
+        console.error('❌ Dados incompletos da resposta:', data);
         toast.error('Erro: dados do cliente ou agência estão incompletos');
         setLoading(false);
         return;
       }
 
-      console.log('✅ Redirecionando para:', `/${agencySlug}/${clientSlug}`);
-      navigate(`/${agencySlug}/${clientSlug}?session_token=${data.session_token}`);
+      console.log('✅ Dados completos recebidos:', {
+        agency: data.agency.slug,
+        client: data.client.slug,
+        approver: data.approver.name
+      });
+
+      // Redirecionar usando dados da edge function
+      const redirectUrl = `/${data.agency.slug}/${data.client.slug}?session_token=${data.session_token}`;
+      console.log('✅ Redirecionando para:', redirectUrl);
+      
+      navigate(redirectUrl);
     } catch (error: any) {
       console.error('❌ Error verifying code:', error);
       toast.error('Erro inesperado ao validar código. Tente novamente.');

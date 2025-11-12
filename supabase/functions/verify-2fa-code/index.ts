@@ -130,19 +130,71 @@ Deno.serve(async (req) => {
 
     console.log(`[verify-2fa-code] Session created successfully for client: ${codeData.client_id}`);
 
-    // Buscar dados do cliente para retornar
-    const { data: clientData } = await supabase
-      .from('clients')
-      .select('id, name, slug, logo_url')
-      .eq('id', codeData.client_id)
-      .single();
-
-    // Buscar dados do aprovador
-    const { data: approverData } = await supabase
+    // Buscar dados do aprovador COM agency_id
+    const { data: approverData, error: approverError } = await supabase
       .from('client_approvers')
-      .select('name, email, is_primary')
+      .select('name, email, is_primary, agency_id, client_id')
       .eq('id', codeData.approver_id)
       .single();
+
+    if (approverError || !approverData) {
+      console.error('[verify-2fa-code] Error fetching approver:', approverError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao buscar dados do aprovador' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[verify-2fa-code] Approver data:', {
+      approver_id: codeData.approver_id,
+      client_id: approverData.client_id,
+      agency_id: approverData.agency_id
+    });
+
+    // Buscar cliente E agência em PARALELO (mais rápido)
+    const [clientResult, agencyResult] = await Promise.all([
+      supabase
+        .from('clients')
+        .select('id, name, slug, logo_url')
+        .eq('id', approverData.client_id)
+        .single(),
+      supabase
+        .from('agencies')
+        .select('id, slug, name')
+        .eq('id', approverData.agency_id)
+        .single()
+    ]);
+
+    const { data: clientData, error: clientError } = clientResult;
+    const { data: agencyData, error: agencyError } = agencyResult;
+
+    if (clientError || !clientData) {
+      console.error('[verify-2fa-code] Error fetching client:', clientError);
+      return new Response(
+        JSON.stringify({ error: 'Cliente não encontrado no sistema' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (agencyError || !agencyData) {
+      console.error('[verify-2fa-code] Error fetching agency:', agencyError);
+      return new Response(
+        JSON.stringify({ error: 'Agência não encontrada no sistema' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validar slugs antes de retornar
+    if (!clientData.slug || !agencyData.slug) {
+      console.error('[verify-2fa-code] Missing slugs:', {
+        client_slug: clientData.slug,
+        agency_slug: agencyData.slug
+      });
+      return new Response(
+        JSON.stringify({ error: 'Dados incompletos do cliente ou agência' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Registrar no log de atividades
     await supabase.from('activity_log').insert({
@@ -152,8 +204,9 @@ Deno.serve(async (req) => {
       actor_user_id: null,
       metadata: {
         approver_id: codeData.approver_id,
-        approver_name: approverData?.name,
-        client_slug: clientData?.slug,
+        approver_name: approverData.name,
+        client_slug: clientData.slug,
+        agency_slug: agencyData.slug,
         ip_address: clientIP,
       },
     });
@@ -164,15 +217,20 @@ Deno.serve(async (req) => {
         session_token: sessionToken,
         expires_at: sessionExpiresAt.toISOString(),
         client: {
-          id: clientData?.id || codeData.client_id,
-          name: clientData?.name || 'Cliente',
-          slug: clientData?.slug || '',
-          logo_url: clientData?.logo_url,
+          id: clientData.id,
+          name: clientData.name,
+          slug: clientData.slug,
+          logo_url: clientData.logo_url,
+        },
+        agency: {
+          id: agencyData.id,
+          slug: agencyData.slug,
+          name: agencyData.name,
         },
         approver: {
-          name: approverData?.name || 'Aprovador',
-          email: approverData?.email,
-          is_primary: approverData?.is_primary || false,
+          name: approverData.name,
+          email: approverData.email,
+          is_primary: approverData.is_primary,
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

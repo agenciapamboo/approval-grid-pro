@@ -105,6 +105,22 @@ export function EditApproverDialog({
     try {
       setLoading(true);
 
+      // Buscar agency_id do cliente
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("agency_id")
+        .eq("id", approver.client_id)
+        .single();
+
+      if (clientError || !clientData) {
+        toast({
+          title: "Erro",
+          description: "Erro ao buscar dados do cliente",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Validar se está tentando remover status primário do único aprovador primário ativo
       if (approver.is_primary && !data.is_primary && approver.is_active) {
         const { data: activePrimaryApprovers, error: countError } = await supabase
@@ -168,6 +184,7 @@ export function EditApproverDialog({
       const { error } = await supabase
         .from("client_approvers")
         .update({
+          agency_id: clientData.agency_id,
           name: data.name,
           email: data.email,
           whatsapp: data.whatsapp || null,
