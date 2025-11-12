@@ -8,13 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { ApproversManager } from "@/components/admin/ApproversManager";
-import { Client2FAHistory } from "@/components/admin/Client2FAHistory";
-import { usePermissions } from "@/hooks/usePermissions";
+import { SocialAccountsDialog } from "@/components/admin/SocialAccountsDialog";
+import { useToast } from "@/hooks/use-toast";
 import { 
-  ArrowLeft, Building2, Mail, MessageCircle, ExternalLink, Edit,
-  Calendar, FileText, Users, Shield, Facebook, Instagram, Bell,
-  Loader2, Globe, MapPin
+  ArrowLeft, Building2, Edit, Calendar, FileText, Users, Shield,
+  Loader2, Globe, MapPin, Share2, Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -22,12 +26,31 @@ import { ptBR } from "date-fns/locale";
 const ClienteDetalhes = () => {
   const navigate = useNavigate();
   const { clientId } = useParams();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [contents, setContents] = useState<any[]>([]);
-  const [socialAccounts, setSocialAccounts] = useState<any[]>([]);
-  const { hasPermission } = usePermissions();
+  const [socialDialogOpen, setSocialDialogOpen] = useState(false);
+  const [monthlyCreatives, setMonthlyCreatives] = useState({ used: 0, limit: 0, percentage: 0 });
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    cnpj: "",
+    whatsapp: "",
+    website: "",
+    monthly_creatives: 0,
+    plan_renewal_date: "",
+    address: "",
+    new_password: "",
+    new_note: "",
+    notify_email: true,
+    notify_whatsapp: false,
+    notify_webhook: true,
+  });
 
   useEffect(() => {
     checkAuth();
@@ -72,6 +95,23 @@ const ClienteDetalhes = () => {
 
     if (clientData) {
       setClient(clientData);
+      
+      // Populate form data
+      setFormData({
+        name: clientData.name || "",
+        email: clientData.email || "",
+        cnpj: clientData.cnpj || "",
+        whatsapp: clientData.whatsapp || "",
+        website: clientData.website || "",
+        monthly_creatives: clientData.monthly_creatives || 0,
+        plan_renewal_date: clientData.plan_renewal_date ? clientData.plan_renewal_date.split('T')[0] : "",
+        address: clientData.address || "",
+        new_password: "",
+        new_note: "",
+        notify_email: clientData.notify_email ?? true,
+        notify_whatsapp: clientData.notify_whatsapp ?? false,
+        notify_webhook: clientData.notify_webhook ?? true,
+      });
 
       // Carregar conteúdos do cliente
       const { data: contentsData } = await supabase
@@ -82,6 +122,98 @@ const ClienteDetalhes = () => {
         .limit(10);
 
       if (contentsData) setContents(contentsData);
+
+      // Calcular criativos do mês
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const { count: creativesUsed } = await supabase
+        .from('contents')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', clientId)
+        .gte('created_at', startOfMonth.toISOString());
+
+      const percentage = clientData.monthly_creatives > 0 
+        ? ((creativesUsed || 0) / clientData.monthly_creatives) * 100 
+        : 0;
+
+      setMonthlyCreatives({
+        used: creativesUsed || 0,
+        limit: clientData.monthly_creatives || 0,
+        percentage
+      });
+    }
+  };
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      // Atualizar dados do cliente
+      const { error: clientError } = await supabase
+        .from('clients')
+        .update({
+          name: formData.name,
+          email: formData.email,
+          cnpj: formData.cnpj,
+          whatsapp: formData.whatsapp,
+          website: formData.website,
+          monthly_creatives: formData.monthly_creatives,
+          plan_renewal_date: formData.plan_renewal_date || null,
+          address: formData.address,
+          notify_email: formData.notify_email,
+          notify_whatsapp: formData.notify_whatsapp,
+          notify_webhook: formData.notify_webhook,
+        })
+        .eq('id', clientId);
+
+      if (clientError) throw clientError;
+
+      // Se tiver nova senha, atualizar
+      if (formData.new_password) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('client_id', clientId)
+          .limit(1);
+
+        if (profiles && profiles[0]) {
+          const { error: passwordError } = await supabase.auth.admin.updateUserById(
+            profiles[0].id,
+            { password: formData.new_password }
+          );
+          if (passwordError) throw passwordError;
+        }
+      }
+
+      // Se tiver nova observação, adicionar nota
+      if (formData.new_note) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase
+          .from('client_notes')
+          .insert({
+            client_id: clientId,
+            note: formData.new_note,
+            created_by: user?.id
+          });
+        
+        setFormData(prev => ({ ...prev, new_note: "" }));
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Dados do cliente atualizados com sucesso",
+      });
+
+      await loadClient();
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar dados do cliente",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -156,21 +288,13 @@ const ClienteDetalhes = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                {client.email && (
-                  <Button variant="outline" size="sm">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email
-                  </Button>
-                )}
-                {client.whatsapp && (
-                  <Button variant="outline" size="sm">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    WhatsApp
-                  </Button>
-                )}
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
+                <Button variant="outline" size="sm" onClick={() => setSocialDialogOpen(true)}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Redes Sociais
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/conteudos?client=${clientId}`)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Conteúdos
                 </Button>
               </div>
             </div>
@@ -183,27 +307,8 @@ const ClienteDetalhes = () => {
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="cadastral">Dados Cadastrais</TabsTrigger>
             <TabsTrigger value="aprovadores">Aprovadores</TabsTrigger>
-            <TabsTrigger value="uso">Histórico de Uso</TabsTrigger>
-                  {(hasPermission('manage_client_approvers') || hasPermission('view_client_approvers')) && (
-                    <TabsTrigger value="aprovadores">
-                      <Users className="h-4 w-4 mr-2" />
-                      Aprovadores
-                    </TabsTrigger>
-                  )}
-                  <TabsTrigger value="contas-sociais">
-                    <Facebook className="h-4 w-4 mr-2" />
-                    Contas Sociais
-                  </TabsTrigger>
-                  {(profile?.role === 'super_admin' || profile?.role === 'agency_admin') && (
-                    <TabsTrigger value="seguranca-2fa">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Segurança 2FA
-                    </TabsTrigger>
-                  )}
-                  <TabsTrigger value="notificacoes">
-                    <Bell className="h-4 w-4 mr-2" />
-                    Notificações
-                  </TabsTrigger>
+            <TabsTrigger value="solicitacoes">Histórico de Solicitações</TabsTrigger>
+            <TabsTrigger value="aprovacoes">Histórico de Aprovação</TabsTrigger>
           </TabsList>
 
           {/* Tab: Visão Geral */}
@@ -247,7 +352,18 @@ const ClienteDetalhes = () => {
               <CardHeader>
                 <CardTitle>Informações do Plano</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Criativos do Mês</span>
+                    <span className="text-sm font-medium">{monthlyCreatives.used} / {monthlyCreatives.limit}</span>
+                  </div>
+                  <Progress value={monthlyCreatives.percentage} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {monthlyCreatives.percentage.toFixed(1)}% da cota utilizada
+                  </p>
+                </div>
+                <Separator />
                 {client.plan_renewal_date && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -260,222 +376,188 @@ const ClienteDetalhes = () => {
             </Card>
           </TabsContent>
 
-          {/* Tab: Dados Cadastrais */}
+          {/* Tab: Dados Cadastrais - EDITÁVEL */}
           <TabsContent value="cadastral">
             <Card>
               <CardHeader>
                 <CardTitle>Dados Cadastrais</CardTitle>
+                <CardDescription>Edite os dados do cliente</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {client.cnpj && (
+              <CardContent>
+                <form onSubmit={handleUpdateClient} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">CNPJ</label>
-                      <p className="text-base">{client.cnpj}</p>
+                      <Label>Nome *</Label>
+                      <Input 
+                        value={formData.name} 
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required 
+                      />
                     </div>
-                  )}
-                  {client.website && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Website</label>
-                      <p className="text-base flex items-center gap-2">
-                        <Globe className="h-4 w-4" />
-                        <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          {client.website}
-                        </a>
+                      <Label>Email (Login 2FA) *</Label>
+                      <Input 
+                        type="email" 
+                        value={formData.email} 
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Alterar este email altera o login do cliente
                       </p>
                     </div>
-                  )}
-                  {client.email && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
-                      <p className="text-base">{client.email}</p>
+                      <Label>CNPJ</Label>
+                      <Input 
+                        value={formData.cnpj} 
+                        onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                      />
                     </div>
-                  )}
-                  {client.whatsapp && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">WhatsApp</label>
-                      <p className="text-base">{client.whatsapp}</p>
+                      <Label>WhatsApp (Login 2FA)</Label>
+                      <Input 
+                        value={formData.whatsapp} 
+                        onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                      />
                     </div>
-                  )}
-                  {client.address && (
-                    <div className="col-span-2">
-                      <label className="text-sm font-medium text-muted-foreground">Endereço</label>
-                      <p className="text-base flex items-start gap-2">
-                        <MapPin className="h-4 w-4 mt-1" />
-                        {client.address}
+                    <div>
+                      <Label>Nova Senha</Label>
+                      <Input 
+                        type="password" 
+                        placeholder="Deixe em branco para manter"
+                        value={formData.new_password}
+                        onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Data de Vencimento (Contrato)</Label>
+                      <Input 
+                        type="date" 
+                        value={formData.plan_renewal_date}
+                        onChange={(e) => setFormData({ ...formData, plan_renewal_date: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Apenas para controle interno da agência
                       </p>
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <Label>Site</Label>
+                      <Input 
+                        type="url" 
+                        value={formData.website}
+                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Criativos por Mês</Label>
+                      <Input 
+                        type="number" 
+                        value={formData.monthly_creatives}
+                        onChange={(e) => setFormData({ ...formData, monthly_creatives: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <Label>Endereço Completo</Label>
+                    <Textarea
+                      placeholder="Rua, Número, Complemento - Bairro, Cidade - Estado, CEP"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <Label>Nova Observação</Label>
+                    <Textarea 
+                      placeholder="Adicione uma nota sobre o cliente..."
+                      value={formData.new_note}
+                      onChange={(e) => setFormData({ ...formData, new_note: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Preferências de Notificação</h4>
+                    <div className="flex items-center justify-between">
+                      <Label>Notificações por Email</Label>
+                      <Switch 
+                        checked={formData.notify_email}
+                        onCheckedChange={(checked) => setFormData({ ...formData, notify_email: checked })}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>Notificações por WhatsApp</Label>
+                      <Switch 
+                        checked={formData.notify_whatsapp}
+                        onCheckedChange={(checked) => setFormData({ ...formData, notify_whatsapp: checked })}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>Webhook</Label>
+                      <Badge>Sempre Ativo</Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="outline" onClick={() => loadClient()}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Salvar Alterações
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Tab: Aprovadores */}
           <TabsContent value="aprovadores">
-            <ApproversManager clientId={client.id} clientName={client.name} />
+            <ApproversManager clientId={clientId || ""} clientName={client.name} />
           </TabsContent>
 
-          {/* Tab: Histórico de Uso */}
-          <TabsContent value="uso">
+          {/* Tab: Histórico de Solicitações */}
+          <TabsContent value="solicitacoes">
             <Card>
               <CardHeader>
-                <CardTitle>Conteúdos Recentes</CardTitle>
-                <CardDescription>Últimos 10 conteúdos criados</CardDescription>
+                <CardTitle>Histórico de Solicitações</CardTitle>
+                <CardDescription>Solicitações de criação de conteúdo (em desenvolvimento)</CardDescription>
               </CardHeader>
               <CardContent>
-                {contents.length > 0 ? (
-                  <div className="space-y-2">
-                    {contents.map((content) => (
-                      <div key={content.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div>
-                          <p className="font-medium">{content.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
-                          </p>
-                        </div>
-                        <Badge>{content.status}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">Nenhum conteúdo encontrado</p>
-                )}
+                <p className="text-muted-foreground text-center py-8">Funcionalidade em desenvolvimento</p>
               </CardContent>
             </Card>
-                </TabsContent>
+          </TabsContent>
 
-                {/* Tab: Aprovadores */}
-                {(hasPermission('manage_client_approvers') || hasPermission('view_client_approvers')) && (
-                  <TabsContent value="aprovadores" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Gerenciar Aprovadores</CardTitle>
-                        <CardDescription>
-                          Pessoas autorizadas a aprovar conteúdos deste cliente
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ApproversManager clientId={clientId} clientName={client?.name || ''} />
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                )}
-
-                {/* Tab: Contas Sociais */}
-                <TabsContent value="contas-sociais" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Contas Conectadas</CardTitle>
-                      <CardDescription>
-                        Redes sociais conectadas para publicação automática
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {socialAccounts.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Instagram className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>Nenhuma conta social conectada</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {socialAccounts.map((account) => (
-                            <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                {account.platform === 'facebook' ? (
-                                  <Facebook className="h-5 w-5 text-blue-600" />
-                                ) : (
-                                  <Instagram className="h-5 w-5 text-pink-600" />
-                                )}
-                                <div>
-                                  <p className="font-medium">{account.account_name}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {account.platform.charAt(0).toUpperCase() + account.platform.slice(1)}
-                                  </p>
-                                </div>
-                              </div>
-                              <Badge variant={account.is_active ? "success" : "outline"}>
-                                {account.is_active ? "Ativo" : "Inativo"}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Tab: Segurança 2FA */}
-                {(profile?.role === 'super_admin' || profile?.role === 'agency_admin') && (
-                  <TabsContent value="seguranca-2fa" className="space-y-4">
-                    <Client2FAHistory clientId={clientId} clientName={client?.name || ''} />
-                  </TabsContent>
-                )}
-
-                {/* Tab: Notificações */}
-                <TabsContent value="notificacoes" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Preferências de Notificação</CardTitle>
-                      <CardDescription>
-                        Configure como este cliente recebe notificações
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">Email</p>
-                            <p className="text-sm text-muted-foreground">
-                              Notificações por email
-                            </p>
-                          </div>
-                          <Badge variant={client?.notify_email ? "success" : "outline"}>
-                            {client?.notify_email ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">WhatsApp</p>
-                            <p className="text-sm text-muted-foreground">
-                              Notificações por WhatsApp
-                            </p>
-                          </div>
-                          <Badge variant={client?.notify_whatsapp ? "success" : "outline"}>
-                            {client?.notify_whatsapp ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">Webhook</p>
-                            <p className="text-sm text-muted-foreground">
-                              Notificações via webhook customizado
-                            </p>
-                          </div>
-                          <Badge variant={client?.notify_webhook ? "success" : "outline"}>
-                            {client?.notify_webhook ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Tab: Recursos */}
-          <TabsContent value="recursos">
+          {/* Tab: Histórico de Aprovação */}
+          <TabsContent value="aprovacoes">
             <Card>
               <CardHeader>
-                <CardTitle>Recursos e Limites</CardTitle>
+                <CardTitle>Histórico de Aprovação</CardTitle>
+                <CardDescription>Aprovações e comentários em conteúdos (em desenvolvimento)</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Informações de recursos disponíveis em breve</p>
+                <p className="text-muted-foreground text-center py-8">Funcionalidade em desenvolvimento</p>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      <SocialAccountsDialog 
+        clientId={clientId || ""}
+        open={socialDialogOpen}
+        onOpenChange={setSocialDialogOpen}
+      />
 
       <AppFooter />
     </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { ArrowLeft, Search, Users, DollarSign, TrendingUp, Send, Eye, Building2 } from "lucide-react";
 import { Loader2 } from "lucide-react";
@@ -126,10 +126,66 @@ const Clientes = () => {
     setFilteredClients(filtered);
   };
 
+  const [monthlyStats, setMonthlyStats] = useState({
+    totalUsed: 0,
+    totalLimit: 0,
+    percentage: 0,
+    archivedCount: 0,
+    activeCreatives: 0,
+  });
+
+  useEffect(() => {
+    if (clients.length > 0) {
+      loadMonthlyStats();
+    }
+  }, [clients]);
+
+  const loadMonthlyStats = async () => {
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const clientIds = clients.map(c => c.id);
+
+    // Buscar limite total de criativos
+    const { data: clientsData } = await supabase
+      .from('clients')
+      .select('monthly_creatives')
+      .in('id', clientIds);
+
+    const totalLimit = (clientsData || []).reduce((sum, c) => sum + (c.monthly_creatives || 0), 0);
+
+    // Contar posts criados no mês
+    const { count: totalUsed } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .gte('created_at', startOfMonth.toISOString());
+
+    // Contar criativos arquivados
+    const { count: archivedCount } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .eq('status', 'archived');
+
+    // Contar criativos ativos
+    const { count: activeCreatives } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .neq('status', 'archived');
+
+    const percentage = totalLimit > 0 ? (totalUsed || 0) / totalLimit * 100 : 0;
+
+    setMonthlyStats({
+      totalUsed: totalUsed || 0,
+      totalLimit,
+      percentage,
+      archivedCount: archivedCount || 0,
+      activeCreatives: activeCreatives || 0,
+    });
+  };
+
   const stats = {
     total: clients.length,
-    expectedRevenue: clients.length * 150, // Exemplo
-    avgTicket: clients.length > 0 ? Math.round((clients.length * 150) / clients.length) : 0,
   };
 
   if (loading) {
@@ -170,7 +226,7 @@ const Clientes = () => {
           </div>
 
           {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -185,29 +241,46 @@ const Clientes = () => {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Receita Esperada
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Publicações do Mês</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.expectedRevenue)}
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold">{monthlyStats.totalUsed}</p>
+                    <span className="text-muted-foreground text-sm">/ {monthlyStats.totalLimit}</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{ width: `${Math.min(monthlyStats.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {monthlyStats.percentage.toFixed(1)}% da cota mensal utilizada
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Ticket Médio
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Criativos Arquivados</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.avgTicket)}
-                </p>
+                <p className="text-3xl font-bold">{monthlyStats.archivedCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">Conteúdos arquivados</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Criativos Ativos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{monthlyStats.activeCreatives}</p>
+                {monthlyStats.activeCreatives > monthlyStats.totalLimit && (
+                  <Badge variant="destructive" className="mt-2">Excedendo limite</Badge>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -218,25 +291,14 @@ const Clientes = () => {
               <CardTitle>Filtros</CardTitle>
             </CardHeader>
           <CardContent>
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome ou slug..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Tabs value={selectedPlan} onValueChange={setSelectedPlan}>
-                  <TabsList>
-                    <TabsTrigger value="all">Todos</TabsTrigger>
-                    <TabsTrigger value="creator">Creator</TabsTrigger>
-                    <TabsTrigger value="eugencia">Eugência</TabsTrigger>
-                    <TabsTrigger value="socialmidia">Social Mídia</TabsTrigger>
-                    <TabsTrigger value="fullservice">Full Service</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou slug..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </CardContent>
           </Card>
