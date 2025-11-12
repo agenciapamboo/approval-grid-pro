@@ -11,6 +11,7 @@ import { ArrowLeft, Mail, MessageCircle, Edit, Building2, Calendar, Globe, MapPi
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ApproversManager } from "@/components/admin/ApproversManager";
 
 const ClienteDetalhes = () => {
   const navigate = useNavigate();
@@ -173,6 +174,7 @@ const ClienteDetalhes = () => {
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="cadastral">Dados Cadastrais</TabsTrigger>
+            <TabsTrigger value="aprovadores">Aprovadores</TabsTrigger>
             <TabsTrigger value="uso">Histórico de Uso</TabsTrigger>
             <TabsTrigger value="recursos">Recursos</TabsTrigger>
           </TabsList>
@@ -280,6 +282,11 @@ const ClienteDetalhes = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tab: Aprovadores */}
+          <TabsContent value="aprovadores">
+            <ApproversManager clientId={client.id} clientName={client.name} />
           </TabsContent>
 
           {/* Tab: Histórico de Uso */}
