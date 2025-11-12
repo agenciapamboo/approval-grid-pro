@@ -3,6 +3,15 @@ project_id = "sgarwrreywadxsodnxng"
 [functions.admin-change-plan]
 verify_jwt = true
 
+[functions.send-2fa-code]
+verify_jwt = false
+
+[functions.verify-2fa-code]
+verify_jwt = false
+
+[functions.validate-client-session]
+verify_jwt = false
+
 [functions.approval-media-urls]
 verify_jwt = false
 
