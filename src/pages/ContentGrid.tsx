@@ -85,7 +85,7 @@ export default function ContentGrid() {
     is_primary: boolean;
   } | null>(null);
   const [showAllContents, setShowAllContents] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("pending");
+  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("all");
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const tokenMonth = searchParams.get('month');
     if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
