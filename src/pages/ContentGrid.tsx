@@ -566,37 +566,44 @@ export default function ContentGrid() {
     const { data: { session } } = await supabase.auth.getSession();
     const hasSessionToken = !!sessionToken; // Verificar se é sessão 2FA
     
-    console.log('Session:', !!session, 'Token access:', tokenAccess, 'Has 2FA session:', hasSessionToken);
+    console.log('[ContentGrid] Load details:', {
+      hasSession: !!session,
+      hasSessionToken,
+      tokenAccess,
+      statusFilter
+    });
     
     let query = supabase
       .from("contents")
       .select("*")
       .eq("client_id", clientId);
     
-    // PRIORIDADE: Se tem sessão 2FA (aprovador), SEMPRE filtrar apenas pendentes
-    if (hasSessionToken || tokenAccess) {
-      console.log('[ContentGrid] Approver session - showing only pending contents (draft + in_review)');
+    // CASO 1: Aprovador com token 2FA (visualização limitada a pendentes)
+    // Identifica aprovador: tem sessionToken MAS NÃO tem sessão Supabase Auth
+    if (hasSessionToken && !session) {
+      console.log('[ContentGrid] 2FA Approver - showing ONLY pending contents (draft + in_review)');
       query = query.in("status", ["draft", "in_review"]);
     }
-    // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
-    else if (!session) {
+    // CASO 2: Cliente autenticado via Supabase Auth (visualização COMPLETA)
+    else if (session) {
+      console.log('[ContentGrid] Authenticated client - showing ALL contents, applying tab filter:', statusFilter);
+      
+      // Aplicar filtro de status apenas se não for 'all'
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'pending') {
+          query = query.in("status", ["draft", "in_review"]);
+        } else if (statusFilter === 'approved') {
+          query = query.eq("status", "approved");
+        } else if (statusFilter === 'changes_requested') {
+          query = query.eq("status", "changes_requested");
+        }
+      }
+      // Se statusFilter === 'all', não aplica filtro de status (mostra todos)
+    }
+    // CASO 3: Acesso público sem autenticação (apenas aprovados)
+    else {
       console.log('[ContentGrid] Public access - showing only approved contents');
       query = query.eq("status", "approved");
-    } 
-    // Com sessão de cliente autenticado: aplicar filtros por tab
-    else if (session && statusFilter !== 'all') {
-      console.log('[ContentGrid] Authenticated client - applying status filter:', statusFilter);
-      if (statusFilter === 'pending') {
-        query = query.in("status", ["draft", "in_review"]);
-      } else if (statusFilter === 'approved') {
-        query = query.eq("status", "approved");
-      } else if (statusFilter === 'changes_requested') {
-        query = query.eq("status", "changes_requested");
-      }
-    }
-    // Se statusFilter for 'all', mostrar todos
-    else {
-      console.log('[ContentGrid] Authenticated client - showing all contents');
     }
 
     // Filtrar por mês se especificado
