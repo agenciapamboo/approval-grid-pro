@@ -116,7 +116,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       carousel: Images,
       reels: Video,
       story: Smartphone,
-      feed: ImageIcon,
+      feed: Video,
     };
     
     const Icon = icons[type] || ImageIcon;
@@ -870,7 +870,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             <>
               <ContentPlanIcon type={content.type} />
               {content.plan_description && (
-                <div className="p-4 bg-muted/50">
+                <div className="p-4 bg-muted/50 space-y-3">
                   <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Descrição do Plano
@@ -878,6 +878,14 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                     {content.plan_description}
                   </p>
+                  
+                  {content.status === 'approved' && (
+                    <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                      <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                        ✅ <strong>Plano aprovado!</strong> A agência irá converter este plano em produção, adicionar as mídias finais e enviar novamente para aprovação.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -893,19 +901,13 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
                 {isPublicApproval ? (
-                  // Visualização pública via token: mostrar botões para draft e in_review
-                  (content.status === "in_review" || content.status === "draft") && (
+                  (content.status === "in_review" || content.status === "draft" || content.status === "changes_requested") ? (
                     <>
-                      <Button 
-                        size="sm"
-                        variant="success"
-                        onClick={handleApprove}
-                        className="w-full"
-                      >
+                      <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
                         <CheckCircle className="h-4 w-4 mr-2" />
                         Aprovar
                       </Button>
-                      <Button 
+                      <Button
                         size="sm"
                         variant="warning"
                         onClick={() => setShowAdjustment(true)}
@@ -914,7 +916,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         <AlertCircle className="h-4 w-4 mr-2" />
                         Solicitar ajuste
                       </Button>
-                      <Button 
+                      <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setShowRejectDialog(true)}
@@ -923,9 +925,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         <XCircle className="h-4 w-4 mr-2" />
                         Reprovar
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setShowComments(!showComments)}
                         className="w-full"
                       >
@@ -933,24 +935,28 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                       </Button>
                     </>
-                  )
+                  ) : content.status === "approved" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowComments(!showComments)}
+                      className="w-full"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                    </Button>
+                  ) : null
                 ) : (
-                  // Visualização autenticada: verificar permissões
-                  content.status !== "approved" && (
+                  (content.status === "draft" || content.status === "in_review" || content.status === "changes_requested") ? (
                     <>
-                      {hasPermission('approve_content') && (
-                        <Button 
-                          size="sm"
-                          variant="success"
-                          onClick={handleApprove}
-                          className="w-full"
-                        >
+                      {hasPermission("approve_content") && (
+                        <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Aprovar
                         </Button>
                       )}
-                      {hasPermission('request_changes') && (
-                        <Button 
+                      {hasPermission("request_changes") && (
+                        <Button
                           size="sm"
                           variant="warning"
                           onClick={() => setShowAdjustment(true)}
@@ -960,8 +966,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                           Solicitar ajuste
                         </Button>
                       )}
-                      {hasPermission('reject_content') && (
-                        <Button 
+                      {hasPermission("reject_content") && (
+                        <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setShowRejectDialog(true)}
@@ -971,10 +977,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                           Reprovar
                         </Button>
                       )}
-                      {hasPermission('add_comments') && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                      {hasPermission("add_comments") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setShowComments(!showComments)}
                           className="w-full"
                         >
@@ -983,7 +989,19 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                         </Button>
                       )}
                     </>
-                  )
+                  ) : content.status === "approved" ? (
+                    hasPermission("add_comments") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowComments(!showComments)}
+                        className="w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                      </Button>
+                    )
+                  ) : null
                 )}
               </div>
             </div>

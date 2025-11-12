@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, CalendarIcon, Save, Loader2, X, Clock, FileText } from "lucide-react";
+import { Upload, CalendarIcon, Save, Loader2, X, Clock, FileText, ImageIcon, Images, Video, Smartphone } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -633,26 +633,84 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         </Label>
       </div>
 
-      {/* Se for plano, mostrar textarea para descrição */}
+      {/* Se for plano, mostrar seletor de tipo e textarea para descrição */}
       {isContentPlan ? (
-        <div className="space-y-3 p-4 border rounded-lg">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <FileText className="h-4 w-4" />
-            <span className="text-sm font-medium">Descrição do Plano</span>
+        <div className="space-y-4">
+          {/* Seletor de tipo de mídia para plano */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Tipo de Conteúdo</Label>
+            <RadioGroup 
+              value={contentType} 
+              onValueChange={(value) => {
+                setContentType(value as typeof contentType);
+                setHasChanges(true);
+              }}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="image" id="plan-type-image" />
+                <Label htmlFor="plan-type-image" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Imagem (post estático)
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="reels" id="plan-type-reels" />
+                <Label htmlFor="plan-type-reels" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                  <Video className="h-4 w-4" />
+                  Reels (vídeo vertical 9:16)
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="story" id="plan-type-story" />
+                <Label htmlFor="plan-type-story" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />
+                  Story (imagem ou vídeo vertical 9:16)
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="carousel" id="plan-type-carousel" />
+                <Label htmlFor="plan-type-carousel" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                  <Images className="h-4 w-4" />
+                  Carrossel (múltiplas imagens)
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="feed" id="plan-type-feed" />
+                <Label htmlFor="plan-type-feed" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Feed (vídeo normal)
+                </Label>
+              </div>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              Selecione o formato que será utilizado na produção final
+            </p>
           </div>
-          <Textarea
-            id="plan-description"
-            value={planDescription}
-            onChange={(e) => {
-              setPlanDescription(e.target.value);
-              setHasChanges(true);
-            }}
-            placeholder="Descreva a ideia do conteúdo, roteiro, conceito criativo, etc."
-            className="min-h-[160px]"
-          />
-          <p className="text-xs text-muted-foreground">
-            Esta descrição será enviada para aprovação do cliente antes da produção.
-          </p>
+
+          {/* Textarea de descrição do plano */}
+          <div className="space-y-3 p-4 border rounded-lg">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <FileText className="h-4 w-4" />
+              <span className="text-sm font-medium">Descrição do Plano</span>
+            </div>
+            <Textarea
+              id="plan-description"
+              value={planDescription}
+              onChange={(e) => {
+                setPlanDescription(e.target.value);
+                setHasChanges(true);
+              }}
+              placeholder="Descreva a ideia do conteúdo, roteiro, conceito criativo, etc."
+              className="min-h-[160px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Esta descrição será enviada para aprovação do cliente antes da produção.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="w-full bg-muted/30 relative">
