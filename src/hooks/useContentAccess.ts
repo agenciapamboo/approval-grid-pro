@@ -29,7 +29,7 @@ export interface ContentAccess {
   loading: boolean;
 }
 
-export function useContentAccess(approverDataFromSession?: ApproverData | null): ContentAccess {
+export function useContentAccess(): ContentAccess {
   const { user } = useAuth();
   const [access, setAccess] = useState<ContentAccess>({
     userType: 'public',
@@ -46,24 +46,6 @@ export function useContentAccess(approverDataFromSession?: ApproverData | null):
 
   useEffect(() => {
     const loadAccess = async () => {
-      // Se temos dados de approver da sessão, usar isso
-      if (approverDataFromSession) {
-        setAccess({
-          userType: 'approver',
-          permissions: {
-            canView: true,
-            canCreate: false,
-            canApprove: true,
-            canDelete: false,
-            canEdit: true,
-            canComment: true,
-          },
-          approverData: approverDataFromSession,
-          loading: false,
-        });
-        return;
-      }
-
       // Se não tem usuário autenticado, é público
       if (!user) {
         setAccess({
@@ -157,7 +139,7 @@ export function useContentAccess(approverDataFromSession?: ApproverData | null):
     };
 
     loadAccess();
-  }, [user, approverDataFromSession]);
+  }, [user]);
 
   return access;
 }

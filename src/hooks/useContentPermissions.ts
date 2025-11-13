@@ -3,40 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
 export interface ContentPermissions {
-  // Visualização de componentes
-  canViewMediaBlocks: boolean;
-  canViewActionButtons: boolean;
-  canViewHistoryBox: boolean;
-  canViewCommentBox: boolean;
-  canViewContentDetails: boolean;
-  
-  // Ações de conteúdo
-  canViewContent: boolean;
-  canCreateContent: boolean;
-  canApproveContent: boolean;
-  canDeleteContent: boolean;
-  canEditContent: boolean;
-  canAddComment: boolean;
-  canRequestAdjustment: boolean;
-  canRejectContent: boolean;
-  
-  // Filtros
-  canFilterByStatus: boolean;
-  canFilterByMonth: boolean;
-  canViewAllStatuses: boolean;
-  
-  // Gerenciamento
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canApprove: boolean;
+  canComment: boolean;
+  canManageClients: boolean;
   canManageApprovers: boolean;
   canViewAnalytics: boolean;
-  canManageClients: boolean;
-  canManageTeam: boolean;
-  canViewFinanceiro: boolean;
   canManageSettings: boolean;
-  canManageAgencies: boolean;
-  canManageUsers: boolean;
-  canViewAuditLog: boolean;
-  canManageSubscriptions: boolean;
-  canViewSecurityDashboard: boolean;
 }
 
 export interface UseContentPermissionsReturn {
@@ -47,39 +23,21 @@ export interface UseContentPermissionsReturn {
 }
 
 const DEFAULT_PERMISSIONS: ContentPermissions = {
-  canViewMediaBlocks: false,
-  canViewActionButtons: false,
-  canViewHistoryBox: false,
-  canViewCommentBox: false,
-  canViewContentDetails: false,
-  canViewContent: false,
-  canCreateContent: false,
-  canApproveContent: false,
-  canDeleteContent: false,
-  canEditContent: false,
-  canAddComment: false,
-  canRequestAdjustment: false,
-  canRejectContent: false,
-  canFilterByStatus: false,
-  canFilterByMonth: false,
-  canViewAllStatuses: false,
+  canView: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
+  canApprove: false,
+  canComment: false,
+  canManageClients: false,
   canManageApprovers: false,
   canViewAnalytics: false,
-  canManageClients: false,
-  canManageTeam: false,
-  canViewFinanceiro: false,
   canManageSettings: false,
-  canManageAgencies: false,
-  canManageUsers: false,
-  canViewAuditLog: false,
-  canManageSubscriptions: false,
-  canViewSecurityDashboard: false,
 };
 
 /**
- * Hook para verificar permissões granulares de conteúdo
- * Busca as permissões do usuário baseado em seu role e retorna
- * um objeto com todas as permissões disponíveis
+ * Hook simplificado para verificar permissões de conteúdo
+ * Sistema de 5 roles: super_admin, agency_admin, team_member, client_user, approver
  */
 export function useContentPermissions(): UseContentPermissionsReturn {
   const { user } = useAuth();
@@ -90,23 +48,7 @@ export function useContentPermissions(): UseContentPermissionsReturn {
 
   useEffect(() => {
     const loadPermissions = async () => {
-      // Verificar se é approver via sessionStorage
-      const approverDataStr = sessionStorage.getItem('approver_data');
-      if (approverDataStr) {
-        try {
-          const approverData = JSON.parse(approverDataStr);
-          if (approverData?.id) {
-            setIsApprover(true);
-            setUserRole('approver');
-            await loadRolePermissions('approver');
-            return;
-          }
-        } catch (e) {
-          console.error('Erro ao parsear approver_data:', e);
-        }
-      }
-
-      // Se não tem usuário autenticado, retornar permissões vazias
+      // No authenticated user = no permissions
       if (!user) {
         setPermissions(DEFAULT_PERMISSIONS);
         setUserRole(null);
@@ -129,9 +71,10 @@ export function useContentPermissions(): UseContentPermissionsReturn {
           return;
         }
 
-        // Priorizar role mais alto
+        // Priorizar role mais alto (primeiro do array)
         const role = userRoles[0].role;
         setUserRole(role);
+        setIsApprover(role === 'approver');
         await loadRolePermissions(role);
       } catch (error) {
         console.error('Erro ao carregar permissões:', error);
@@ -145,67 +88,43 @@ export function useContentPermissions(): UseContentPermissionsReturn {
 
   const loadRolePermissions = async (role: string) => {
     try {
-      // Buscar permissões do role
-      const { data: rolePerms } = await supabase
+      console.log('[useContentPermissions] Loading permissions for role:', role);
+
+      const { data: rolePerms, error } = await supabase
         .from('role_permissions')
         .select('permission_key, enabled')
-        .eq('role', role as any);
+        .eq('role', role as any); // Cast para any pois o tipo é dinâmico
 
-      if (!rolePerms) {
-        setPermissions(DEFAULT_PERMISSIONS);
+      if (error) {
+        console.error('[useContentPermissions] Error loading role permissions:', error);
         setLoading(false);
         return;
       }
 
-      // Mapear permissões para objeto
       const permsMap: Record<string, boolean> = {};
-      rolePerms.forEach(p => {
+      (rolePerms || []).forEach(p => {
         permsMap[p.permission_key] = p.enabled;
       });
 
-      // Construir objeto de permissões
-      const newPermissions: ContentPermissions = {
-        // Visualização de componentes
-        canViewMediaBlocks: permsMap['view_media_blocks'] ?? false,
-        canViewActionButtons: permsMap['view_action_buttons'] ?? false,
-        canViewHistoryBox: permsMap['view_history_box'] ?? false,
-        canViewCommentBox: permsMap['view_comment_box'] ?? false,
-        canViewContentDetails: permsMap['view_content_details'] ?? false,
-        
-        // Ações de conteúdo
-        canViewContent: permsMap['view_content'] ?? false,
-        canCreateContent: permsMap['create_content'] ?? false,
-        canApproveContent: permsMap['approve_content'] ?? false,
-        canDeleteContent: permsMap['delete_content'] ?? false,
-        canEditContent: permsMap['edit_content'] ?? false,
-        canAddComment: permsMap['add_comment'] ?? false,
-        canRequestAdjustment: permsMap['request_adjustment'] ?? false,
-        canRejectContent: permsMap['reject_content'] ?? false,
-        
-        // Filtros
-        canFilterByStatus: permsMap['filter_by_status'] ?? false,
-        canFilterByMonth: permsMap['filter_by_month'] ?? false,
-        canViewAllStatuses: permsMap['view_all_statuses'] ?? false,
-        
-        // Gerenciamento
+      console.log('[useContentPermissions] Permissions loaded:', permsMap);
+
+      setPermissions({
+        canView: permsMap['view_content'] ?? false,
+        canCreate: permsMap['create_content'] ?? false,
+        canEdit: permsMap['edit_content'] ?? false,
+        canDelete: permsMap['delete_content'] ?? false,
+        canApprove: permsMap['approve_content'] ?? false,
+        canComment: permsMap['add_comment'] ?? false,
+        canManageClients: permsMap['manage_clients'] ?? false,
         canManageApprovers: permsMap['manage_approvers'] ?? false,
         canViewAnalytics: permsMap['view_analytics'] ?? false,
-        canManageClients: permsMap['manage_clients'] ?? false,
-        canManageTeam: permsMap['manage_team'] ?? false,
-        canViewFinanceiro: permsMap['view_financeiro'] ?? false,
         canManageSettings: permsMap['manage_settings'] ?? false,
-        canManageAgencies: permsMap['manage_agencies'] ?? false,
-        canManageUsers: permsMap['manage_users'] ?? false,
-        canViewAuditLog: permsMap['view_audit_log'] ?? false,
-        canManageSubscriptions: permsMap['manage_subscriptions'] ?? false,
-        canViewSecurityDashboard: permsMap['view_security_dashboard'] ?? false,
-      };
+      });
 
-      setPermissions(newPermissions);
+      setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar permissões do role:', error);
       setPermissions(DEFAULT_PERMISSIONS);
-    } finally {
       setLoading(false);
     }
   };
