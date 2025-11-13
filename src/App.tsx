@@ -130,6 +130,7 @@ const App = () => (
                 <Route path="/admin/dashboard-seguranca" element={<ProtectedRoute><SecurityDashboard /></ProtectedRoute>} />
                 <Route path="/admin/ips-confiaveis" element={<ProtectedRoute><TrustedIPs /></ProtectedRoute>} />
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />
+                <Route path="/content-grid" element={<ProtectedRoute><ContentGrid /></ProtectedRoute>} />
                 
                 {/* Public approval pages */}
                 <Route path="/:agencySlug/:clientSlug" element={<ContentGrid />} />
