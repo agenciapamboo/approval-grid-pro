@@ -72,7 +72,6 @@ export default function ContentGrid() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [approvalToken, setApprovalToken] = useState<string | null>(null);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [sessionData, setSessionData] = useState<{
@@ -149,19 +148,10 @@ export default function ContentGrid() {
         return; // Session token tem prioridade máxima, encerra aqui
       }
       
-      // 2. PRIORIDADE 2: Verificar token de aprovação
-      const token = searchParams.get('token');
-      if (token) {
-        console.log('[ContentGrid] Token-based access - validating token:', token.substring(0, 10) + '...');
-        setApprovalToken(token);
-        await validateTokenAndLoadData(token);
-        return; // Token tem prioridade, encerra aqui
-      }
-      
-      // 3. Se não tem token, verificar sessão autenticada
+      // 2. Se não tem token, verificar sessão autenticada
       const { data: { session } } = await supabase.auth.getSession();
       
-    // 4. Se tem sessão, carregar dados via autenticação
+    // 3. Se tem sessão, carregar dados via autenticação
     if (session) {
       console.log('[ContentGrid] Authenticated access - loading via session');
       setUser(session.user);
@@ -170,8 +160,8 @@ export default function ContentGrid() {
       return;
     }
       
-      // 5. Sem token e sem sessão = acesso restrito
-      console.log('[ContentGrid] No authentication and no token - restricted access');
+      // 4. Sem session token e sem sessão = acesso restrito
+      console.log('[ContentGrid] No authentication and no session token - restricted access');
       setTokenValid(false);
       setLoading(false);
     };
@@ -309,159 +299,12 @@ export default function ContentGrid() {
     }
   };
 
-  const fetchContentsViaToken = async (token: string) => {
-    console.log('[ContentGrid] Fetching contents via RPC with token');
-    const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
-      p_token: token
-    });
-
-    if (rpcError) {
-      console.error('[ContentGrid] RPC error:', rpcError);
-      setContents([]);
-      return;
-    }
-
-    console.log('[ContentGrid] Contents via RPC:', {
-      count: contentData?.length || 0,
-      statuses: contentData?.map((c: any) => c.status)
-    });
-    setContents(contentData || []);
-  };
-
-  const validateTokenAndLoadData = async (token: string) => {
-    try {
-      console.log('=== Validating approval token with rate limiting ===');
-      setRateLimitError({ type: null, message: '' });
-      
-      // Call the edge function with rate limiting
-      const { data, error } = await supabase.functions.invoke('validate-approval-token', {
-        body: { token }
-      });
-
-      if (error) {
-        console.error('Token validation error:', error);
-        setTokenValid(false);
-        setLoading(false);
-        
-        // Try to parse error message as JSON
-        let errorData: any = {};
-        try {
-          errorData = typeof error.message === 'string' ? JSON.parse(error.message) : error;
-        } catch {
-          errorData = { error: error.message };
-        }
-        
-        // Handle rate limiting errors
-        if (errorData.error === 'IP_BLOCKED_PERMANENT' || errorData.error === 'IP_BLOCKED_TEMPORARY') {
-          setRateLimitError({
-            type: errorData.error,
-            message: errorData.message || 'Seu IP foi bloqueado.',
-            blockedUntil: errorData.blocked_until,
-            ipAddress: errorData.ip_address,
-            failedAttempts: errorData.failed_attempts
-          });
-          return;
-        }
-        
-        if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
-          setRateLimitError({
-            type: 'RATE_LIMIT',
-            message: errorData.message || 'Limite de tentativas excedido.',
-            attemptsRemaining: errorData.attempts_remaining
-          });
-          setCountdown(errorData.retry_after || 60);
-          return;
-        }
-        
-        if (errorData.error === 'INVALID_TOKEN') {
-          setRateLimitError({
-            type: 'INVALID_TOKEN',
-            message: 'Token inválido ou expirado.',
-            failedAttempts: errorData.failed_attempts,
-            attemptsRemaining: errorData.attempts_remaining
-          });
-          return;
-        }
-        
-        // Generic error
-        toast({
-          title: "Erro ao validar token",
-          description: errorData.message || "Ocorreu um erro ao validar o link de aprovação.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!data || !data.success) {
-        console.error('Token validation failed:', data);
-        setTokenValid(false);
-        setLoading(false);
-        toast({
-          title: "Link inválido ou expirado",
-          description: "Este link de aprovação não é mais válido. Entre em contato com a agência.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Token validated successfully:', data);
-      setTokenValid(true);
-      setRateLimitError({ type: null, message: '' });
-      setSelectedMonth(data.month);
-
-      // Load client from public table (no RLS)
-      try {
-        const { data: clientPub, error: clientPubErr } = await supabase
-          .from('clients_public')
-          .select('*')
-          .eq('id', data.client_id)
-          .maybeSingle();
-
-        if (clientPub) {
-          setClient({
-            id: clientPub.id,
-            name: clientPub.name,
-            slug: clientPub.slug,
-            logo_url: clientPub.logo_url || undefined,
-            agency_id: ''
-          } as any);
-        } else {
-          // Fallback: use data from token validation
-          setClient({
-            id: data.client_id,
-            name: data.client_name,
-            slug: data.client_slug,
-            logo_url: undefined,
-            agency_id: ''
-          } as any);
-        }
-
-        // Load agency from public table via slug
-        if (agencySlug) {
-          const { data: agencyData } = await supabase
-            .from('agencies_public')
-            .select('*')
-            .eq('slug', agencySlug)
-            .maybeSingle();
-          if (agencyData) setAgency(agencyData);
-        }
-      } catch (e) {
-        console.warn('[ContentGrid] Public client/agency fetch skipped due to error:', e);
-      }
-
-      // Fetch contents via RPC
-      await fetchContentsViaToken(token);
-    } catch (error) {
-      console.error("Error validating token:", error);
-      setTokenValid(false);
-      toast({
-        title: "Erro",
-        description: "Erro ao validar o link de aprovação",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const validateTokenAndLoadData = async (sessionTkn: string) => {
+    // REMOVIDO - Agora todos os aprovadores usam 2FA session tokens, não mais approval tokens
+    // Esta função permanece apenas para evitar quebrar referências, mas não será usada
+    console.log('[ContentGrid] validateTokenAndLoadData called but deprecated - redirecting to 2FA flow');
+    setTokenValid(false);
+    setLoading(false);
   };
 
   const loadPublicData = async () => {
@@ -685,7 +528,7 @@ export default function ContentGrid() {
       loading,
       contentsCount: filteredContents.length,
       tokenValid,
-      hasToken: !!approvalToken,
+      hasSessionToken: !!sessionToken,
       rateLimitError: rateLimitError.type
     });
     
@@ -695,7 +538,7 @@ export default function ContentGrid() {
     } else if (!loading && filteredContents.length === 0) {
       console.warn('[ContentGrid] No contents found after loading');
     }
-  }, [filteredContents, loading, tokenValid, approvalToken, rateLimitError.type]);
+  }, [filteredContents, loading, tokenValid, sessionToken, rateLimitError.type]);
 
   if (loading) {
     return (
@@ -709,12 +552,11 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver token válido E NÃO houver sessão 2FA
+  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver sessão 2FA válida
   const hasUser = !!user;
-  const hasValidToken = approvalToken && tokenValid === true;
   const hasValidSession = sessionToken && tokenValid === true;
   
-  if (!hasUser && !hasValidToken && !hasValidSession) {
+  if (!hasUser && !hasValidSession) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full space-y-4">
@@ -742,21 +584,19 @@ export default function ContentGrid() {
                 <p className="text-muted-foreground">
                   {sessionToken 
                     ? 'Sua sessão expirou ou é inválida.'
-                    : approvalToken 
-                      ? 'O link de aprovação que você está usando é inválido ou expirou.'
-                      : 'Esta página requer autenticação ou um link de aprovação válido para acesso.'}
+                    : 'Esta página requer autenticação ou uma sessão 2FA válida para acesso.'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {sessionToken 
                     ? 'Faça login novamente para continuar.'
-                    : 'Links de aprovação têm validade de 7 dias e são enviados por email pela agência.'}
+                    : 'Acesse via login 2FA pela página de aprovação.'}
                 </p>
               </div>
 
               <div className="pt-4 border-t">
                 <p className="text-sm font-medium mb-2">Precisa de acesso?</p>
                 <p className="text-sm text-muted-foreground">
-                  Entre em contato com sua agência para solicitar um novo link de aprovação.
+                  Entre em contato com sua agência para receber um link de acesso 2FA.
                 </p>
               </div>
             </CardContent>
@@ -766,7 +606,7 @@ export default function ContentGrid() {
     );
   }
 
-  const isPublicView = (!!approvalToken && tokenValid) || (!!sessionToken && tokenValid);
+  const isPublicView = !!sessionToken && tokenValid;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -922,10 +762,10 @@ export default function ContentGrid() {
                 isResponsible={false}
                 isAgencyView={false}
                 isPublicApproval={isPublicView}
-                approvalToken={approvalToken || undefined}
+                sessionToken={sessionToken || undefined}
                 onUpdate={() => {
-                  if (isPublicView && approvalToken) {
-                    fetchContentsViaToken(approvalToken);
+                  if (isPublicView && client) {
+                    loadContents(client.id, selectedMonth);
                   } else {
                     loadContents(client!.id, selectedMonth);
                   }

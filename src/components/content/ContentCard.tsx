@@ -42,12 +42,11 @@ interface ContentCardProps {
   isResponsible: boolean;
   isAgencyView?: boolean;
   isPublicApproval?: boolean;
-  approvalToken?: string; // Deprecated - será removido
   sessionToken?: string;
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, sessionToken, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, sessionToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const [showComments, setShowComments] = useState(false);
@@ -177,21 +176,20 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       contentId: content.id,
       currentStatus: content.status,
       isPublicApproval,
-      hasToken: !!approvalToken
+      hasSessionToken: !!sessionToken
     });
     
     try {
-      if (isPublicApproval && approvalToken) {
-        // Usar RPC para aprovação via token
-        const { data, error } = await supabase.rpc('approve_content_for_approval', {
-          p_token: approvalToken,
-          p_content_id: content.id
+      if (isPublicApproval && sessionToken) {
+        // Usar edge function para aprovação via 2FA session
+        const { error } = await supabase.functions.invoke('approver-approve-content', {
+          body: {
+            session_token: sessionToken,
+            content_id: content.id
+          }
         });
 
         if (error) throw error;
-        
-        const result = data as any;
-        if (!result?.success) throw new Error(result?.error || 'Erro ao aprovar');
 
         toast({
           title: "Conteúdo aprovado",
@@ -255,22 +253,21 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       currentStatus: content.status,
       reason: rejectReason,
       isPublicApproval,
-      hasToken: !!approvalToken
+      hasSessionToken: !!sessionToken
     });
 
     try {
-      if (isPublicApproval && approvalToken) {
-        // Usar RPC para reprovação via token
-        const { data, error } = await supabase.rpc('reject_content_for_approval', {
-          p_token: approvalToken,
-          p_content_id: content.id,
-          p_reason: rejectReason
+      if (isPublicApproval && sessionToken) {
+        // Usar edge function para reprovação via 2FA session
+        const { error } = await supabase.functions.invoke('approver-reject-content', {
+          body: {
+            session_token: sessionToken,
+            content_id: content.id,
+            reason: rejectReason
+          }
         });
 
         if (error) throw error;
-        
-        const result = data as any;
-        if (!result?.success) throw new Error(result?.error || 'Erro ao reprovar');
 
         toast({
           title: "Conteúdo reprovado",
@@ -908,11 +905,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
               )}
             </>
           ) : (
-            <ContentMedia contentId={content.id} type={content.type} approvalToken={approvalToken} />
+            <ContentMedia contentId={content.id} type={content.type} />
           )}
 
           {/* Linha 3: Legenda */}
-          <ContentCaption contentId={content.id} version={content.version} approvalToken={approvalToken} />
+          <ContentCaption contentId={content.id} version={content.version} />
 
           {/* Ações - Simplificado para visualização pública */}
           {!isAgencyView && (

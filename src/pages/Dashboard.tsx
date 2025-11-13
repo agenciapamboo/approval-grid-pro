@@ -1476,14 +1476,6 @@ const Dashboard = () => {
 
                           {/* Coluna Direita - Botões de Conteúdo */}
                           <div className="space-y-2">
-                            {agency?.slug && (
-                              <GenerateApprovalLinkButton
-                                clientId={client.id}
-                                clientName={client.name}
-                                agencySlug={agency.slug}
-                                clientSlug={client.slug}
-                              />
-                            )}
                             
                             <Button
                               variant="success"
