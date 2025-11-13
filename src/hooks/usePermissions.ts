@@ -1,3 +1,18 @@
+/**
+ * @deprecated Este hook está deprecated. Use useUserData() + filtragem explícita no código.
+ * 
+ * IMPORTANTE: Este hook carrega lentamente e causa race conditions.
+ * Prefira sempre usar useUserData() e validar permissões diretamente no código
+ * baseado no role e profile do usuário.
+ * 
+ * Exemplo correto:
+ * ```
+ * const { profile, role } = useUserData();
+ * if (role === 'super_admin' || role === 'agency_admin') {
+ *   // permitir ação
+ * }
+ * ```
+ */
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
