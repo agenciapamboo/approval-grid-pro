@@ -231,6 +231,7 @@ export type Database = {
           is_primary: boolean
           name: string
           updated_at: string
+          user_id: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -244,6 +245,7 @@ export type Database = {
           is_primary?: boolean
           name: string
           updated_at?: string
+          user_id?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -257,6 +259,7 @@ export type Database = {
           is_primary?: boolean
           name?: string
           updated_at?: string
+          user_id?: string | null
           whatsapp?: string | null
         }
         Relationships: [
@@ -2606,7 +2609,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "agency_admin" | "client_user" | "team_member"
+      app_role:
+        | "super_admin"
+        | "agency_admin"
+        | "client_user"
+        | "team_member"
+        | "approver"
       content_status:
         | "draft"
         | "in_review"
@@ -2754,7 +2762,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "agency_admin", "client_user", "team_member"],
+      app_role: [
+        "super_admin",
+        "agency_admin",
+        "client_user",
+        "team_member",
+        "approver",
+      ],
       content_status: [
         "draft",
         "in_review",
