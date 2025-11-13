@@ -63,11 +63,13 @@ export const RolesManager = () => {
   const [permissions, setPermissions] = useState<PermissionsByRole>({});
   const [editedPermissions, setEditedPermissions] = useState<PermissionsByRole>({});
   const [savingPermissions, setSavingPermissions] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   
   // Plan Permissions State
   const [planPermissions, setPlanPermissions] = useState<PermissionsByPlan>({});
   const [editedPlanPermissions, setEditedPlanPermissions] = useState<PermissionsByPlan>({});
   const [savingPlanPermissions, setSavingPlanPermissions] = useState(false);
+  const [isPlanEditMode, setIsPlanEditMode] = useState(false);
   
   // Plan Entitlements State
   const [planEntitlements, setPlanEntitlements] = useState<PlanEntitlement[]>([]);
@@ -219,6 +221,7 @@ export const RolesManager = () => {
         description: "Permissões atualizadas com sucesso!",
       });
       await loadPermissions();
+      setIsEditMode(false);
     } catch (error) {
       console.error("Erro ao salvar permissões:", error);
       toast({
@@ -229,6 +232,11 @@ export const RolesManager = () => {
     } finally {
       setSavingPermissions(false);
     }
+  };
+
+  const handleCancelPermissions = () => {
+    setEditedPermissions(JSON.parse(JSON.stringify(permissions)));
+    setIsEditMode(false);
   };
 
   const hasChanges = () => {
@@ -293,6 +301,7 @@ export const RolesManager = () => {
         description: "Permissões de planos atualizadas com sucesso!",
       });
       await loadPlanPermissions();
+      setIsPlanEditMode(false);
     } catch (error) {
       console.error("Erro ao salvar permissões de planos:", error);
       toast({
@@ -303,6 +312,11 @@ export const RolesManager = () => {
     } finally {
       setSavingPlanPermissions(false);
     }
+  };
+
+  const handleCancelPlanPermissions = () => {
+    setEditedPlanPermissions(JSON.parse(JSON.stringify(planPermissions)));
+    setIsPlanEditMode(false);
   };
 
   const hasPlanChanges = () => {
@@ -527,6 +541,46 @@ export const RolesManager = () => {
 
             {/* Aba 1: Permissões por Função */}
             <TabsContent value="roles" className="space-y-4">
+              {/* Header com modo de edição e badges */}
+              <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Badge variant={isEditMode ? "default" : "outline"}>
+                    {isEditMode ? "Modo Edição" : "Visualização"}
+                  </Badge>
+                  {hasChanges() && (
+                    <Badge variant="destructive" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+                      Alterações Pendentes
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {!isEditMode ? (
+                    <Button onClick={() => setIsEditMode(true)} size="sm">
+                      Editar Permissões
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={handleCancelPermissions} size="sm">
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSavePermissions} disabled={savingPermissions} size="sm">
+                        {savingPermissions ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Salvar
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
               <Tabs defaultValue="super_admin">
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="super_admin">Super Admin</TabsTrigger>
@@ -574,16 +628,31 @@ export const RolesManager = () => {
                             manage_subscriptions: 'Gerenciar Assinaturas',
                             view_security_dashboard: 'Ver Dashboard de Segurança',
                           };
+                          const isModified = permissions.super_admin?.[key] !== enabled;
                           return (
-                            <div key={key} className="flex items-center space-x-2">
+                            <div 
+                              key={key} 
+                              className={`flex items-center space-x-2 p-2 rounded ${
+                                isModified ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''
+                              }`}
+                            >
                               <Checkbox 
                                 checked={enabled}
                                 onCheckedChange={(checked) => handlePermissionChange('super_admin', key, !!checked)}
                                 id={`super_admin_${key}`}
+                                disabled={!isEditMode}
                               />
-                              <Label htmlFor={`super_admin_${key}`} className="cursor-pointer text-sm">
+                              <Label 
+                                htmlFor={`super_admin_${key}`} 
+                                className={`cursor-pointer text-sm ${!isEditMode ? 'opacity-70' : ''}`}
+                              >
                                 {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </Label>
+                              {isModified && (
+                                <Badge variant="outline" className="ml-auto text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+                                  Modificado
+                                </Badge>
+                              )}
                             </div>
                           );
                         })}
@@ -630,16 +699,31 @@ export const RolesManager = () => {
                             manage_subscriptions: 'Gerenciar Assinaturas',
                             view_security_dashboard: 'Ver Dashboard de Segurança',
                           };
+                          const isModified = permissions.agency_admin?.[key] !== enabled;
                           return (
-                            <div key={key} className="flex items-center space-x-2">
+                            <div 
+                              key={key} 
+                              className={`flex items-center space-x-2 p-2 rounded ${
+                                isModified ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''
+                              }`}
+                            >
                               <Checkbox 
                                 checked={enabled}
                                 onCheckedChange={(checked) => handlePermissionChange('agency_admin', key, !!checked)}
                                 id={`agency_admin_${key}`}
+                                disabled={!isEditMode}
                               />
-                              <Label htmlFor={`agency_admin_${key}`} className="cursor-pointer text-sm">
+                              <Label 
+                                htmlFor={`agency_admin_${key}`} 
+                                className={`cursor-pointer text-sm ${!isEditMode ? 'opacity-70' : ''}`}
+                              >
                                 {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </Label>
+                              {isModified && (
+                                <Badge variant="outline" className="ml-auto text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+                                  Modificado
+                                </Badge>
+                              )}
                             </div>
                           );
                         })}

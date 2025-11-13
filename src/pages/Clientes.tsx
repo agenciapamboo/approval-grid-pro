@@ -26,7 +26,7 @@ interface Client {
 
 const Clientes = () => {
   const navigate = useNavigate();
-  const { hasPermission, loading: permissionsLoading } = usePermissions();
+  const { hasPermission, loading: permissionsLoading, permissions } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -39,6 +39,15 @@ const Clientes = () => {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Debug log para permissões
+  useEffect(() => {
+    console.log('📊 [Clientes.tsx] Permissions loaded:', {
+      hasManageClients: hasPermission('manage_clients'),
+      allPermissions: permissions,
+      loading: permissionsLoading
+    });
+  }, [permissions, permissionsLoading]);
 
   useEffect(() => {
     filterClients();
