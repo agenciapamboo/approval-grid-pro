@@ -37,7 +37,6 @@ function useSignedUrl(path: string | null | undefined) {
 
     setLoading(true);
     
-    // Chamar edge function via invoke (não fetch)
     supabase.functions
       .invoke('get-media-url', {
         body: { path },
@@ -72,7 +71,6 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
     loadMedia();
   }, [contentId, approvalToken]);
 
-  // Proteger currentIndex quando media.length mudar
   useEffect(() => {
     if (media.length === 0) {
       setCurrentIndex(0);
@@ -83,19 +81,15 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
 
   const loadMedia = async () => {
     setLoading(true);
-    console.log('🔍 ContentMedia: Loading media', { contentId, approvalToken });
     
     try {
       if (approvalToken) {
-        console.log('🔐 Using approval token flow');
         const { data, error } = await supabase.functions.invoke('approval-media-urls', {
           body: { token: approvalToken, contentId }
         });
 
-        console.log('📦 Edge function response:', { data, error });
-        
         if (error) {
-          console.error('❌ Erro ao carregar mídias via token:', error);
+          console.error('Erro ao carregar mídias via token:', error);
           setMedia([]);
         } else {
           const mappedMedia = (data?.media || []).map((m: any) => ({
@@ -105,24 +99,19 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
             src_url: m.srcUrl,
             thumb_url: m.thumbUrl
           }));
-          console.log('✅ Media loaded via token:', mappedMedia);
           setMedia(mappedMedia);
         }
       } else {
-        console.log('🔓 Using authenticated flow');
         const { data, error } = await supabase
           .from("content_media")
           .select("*")
           .eq("content_id", contentId)
           .order("order_index");
 
-        console.log('📦 Supabase response:', { data, error });
-
         if (error) {
-          console.error("❌ Erro ao carregar mídias:", error);
+          console.error("Erro ao carregar mídias:", error);
           setMedia([]);
         } else {
-          console.log('✅ Media loaded:', data);
           setMedia(data || []);
         }
       }
@@ -145,13 +134,12 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
 
   if (media.length === 0) {
     return (
-      <div className="aspect-[4/5] bg-muted flex items-center justify-center text-muted-foreground">
-        Sem mídia
+      <div className="w-full h-64 flex items-center justify-center bg-muted rounded-md">
+        <p className="text-sm text-muted-foreground">Sem mídia</p>
       </div>
     );
   }
 
-  // Distância mínima de swipe (em px)
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -170,19 +158,28 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    // Apenas carrossel permite navegação (story não)
-    if (isLeftSwipe && type === "carousel" && media.length > 1) {
-      setCurrentIndex((prev) => (prev + 1) % media.length);
+    if (isLeftSwipe && currentIndex < media.length - 1) {
+      setCurrentIndex(currentIndex + 1);
     }
-    if (isRightSwipe && type === "carousel" && media.length > 1) {
-      setCurrentIndex((prev) => (prev - 1 + media.length) % media.length);
+    if (isRightSwipe && currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
     }
   };
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev < media.length - 1 ? prev + 1 : prev));
+  };
+
+  const displayUrl = thumbUrl || srcUrl;
 
   return (
     <>
       <div 
-        className="relative aspect-[4/5] bg-muted overflow-hidden group"
+        className="relative w-full"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -209,112 +206,100 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
             </div>
           )}
 
-        {/* Botão para expandir */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4 bg-black/50 text-white hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => setShowModal(true)}
-        >
-          <Maximize2 className="h-5 w-5" />
-        </Button>
+          {type === "carousel" && media.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                onClick={goToPrevious}
+                disabled={currentIndex === 0}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
 
-        {/* Navegação apenas do carrossel (story não tem navegação) */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                onClick={goToNext}
+                disabled={currentIndex === media.length - 1}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 bg-background/80 rounded-full px-2 py-1">
+                {media.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === currentIndex ? "bg-primary" : "bg-muted-foreground/50"
+                    }`}
+                    aria-label={`Ir para mídia ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {currentMedia.kind === "image" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+              onClick={() => setShowModal(true)}
+            >
+              <Maximize2 className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+
         {type === "carousel" && media.length > 1 && (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + media.length) % media.length)}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % media.length)}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </Button>
-
-            {/* Indicadores */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {media.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    idx === currentIndex ? "bg-white w-4" : "bg-white/50"
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Contador */}
-        {media.length > 1 && (
-          <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+          <p className="text-center text-sm text-muted-foreground mt-2">
             {currentIndex + 1} / {media.length}
-          </div>
+          </p>
         )}
       </div>
 
-      {/* Modal para visualização em tamanho maior */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-none w-auto p-0 bg-transparent border-0 shadow-none">
-          <button
-            onClick={() => setShowModal(false)}
-            className="absolute -top-14 right-0 h-12 w-12 rounded-full border-2 border-white bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 hover:scale-110 transition-all z-50"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <div 
-            className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-          >
-            {currentMedia.kind === "video" ? (
-              <video
-                src={srcUrl || ''}
-                poster={thumbUrl}
-                controls
-                className="max-w-full max-h-[90vh] rounded-lg"
-              >
-                <source src={srcUrl || ''} type="video/mp4" />
-                <source src={srcUrl || ''} type="video/webm" />
-                <source src={srcUrl || ''} type="video/quicktime" />
-                Seu navegador não suporta vídeos.
-              </video>
-            ) : (
+        <DialogContent className="max-w-screen-lg w-full h-[90vh] p-0">
+          <div className="relative w-full h-full flex items-center justify-center bg-black">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-10 bg-background/80 hover:bg-background"
+              onClick={() => setShowModal(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+
+            {srcUrl && (
               <img
-                src={srcUrl || ''}
+                src={srcUrl}
                 alt={`Mídia ${currentIndex + 1}`}
-                className="max-w-full max-h-[90vh] object-contain rounded-lg"
+                className="max-w-full max-h-full object-contain"
               />
             )}
 
-            {/* Navegação no modal apenas para carrossel */}
-            {type === "carousel" && media.length > 1 && (
+            {media.length > 1 && (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                  onClick={() => setCurrentIndex((prev) => (prev - 1 + media.length) % media.length)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                  onClick={goToPrevious}
+                  disabled={currentIndex === 0}
                 >
                   <ChevronLeft className="h-8 w-8" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                  onClick={() => setCurrentIndex((prev) => (prev + 1) % media.length)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                  onClick={goToNext}
+                  disabled={currentIndex === media.length - 1}
                 >
                   <ChevronRight className="h-8 w-8" />
                 </Button>
