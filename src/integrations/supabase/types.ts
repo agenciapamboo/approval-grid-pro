@@ -2543,6 +2543,8 @@ export type Database = {
       get_database_size_mb: { Args: never; Returns: number }
       get_monthly_bandwidth_gb: { Args: never; Returns: number }
       get_storage_size_gb: { Args: never; Returns: number }
+      get_user_agency_id: { Args: { _user_id: string }; Returns: string }
+      get_user_client_id: { Args: { _user_id: string }; Returns: string }
       get_user_entitlements: {
         Args: { user_id: string }
         Returns: {
@@ -2606,6 +2608,14 @@ export type Database = {
       unblock_ip: {
         Args: { p_ip_address: string; p_unblocked_by: string }
         Returns: Json
+      }
+      user_belongs_to_agency: {
+        Args: { _agency_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_belongs_to_client: {
+        Args: { _client_id: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
