@@ -48,7 +48,7 @@ interface ContentCardProps {
 
 export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
-  const { hasPermission } = usePermissions();
+  const { can } = usePermissions();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
-import { ArrowLeft, Search, Users, DollarSign, TrendingUp, Send, Eye, Building2 } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Users, Building2, Eye, Send, Loader2, TrendingUp } from "lucide-react";
+import { toast } from "sonner";
 
 interface Client {
   id: string;
@@ -25,88 +26,65 @@ interface Client {
 
 const Clientes = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const { user } = useAuth();
+  const { role, can, loading: authLoading } = usePermissions();
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState("all");
+  const [loading, setLoading] = useState(true);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
-  const [recentNotifications, setRecentNotifications] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    // Esperar autenticação carregar
+    if (authLoading) return;
+    
+    // Validação simples de role
+    if (!can('manage_clients')) {
+      toast.error('Acesso negado');
+      navigate('/dashboard');
+      return;
+    }
+
+    loadData();
+  }, [role, authLoading, navigate]);
 
   useEffect(() => {
     filterClients();
-  }, [searchQuery, selectedPlan, clients]);
+  }, [searchQuery, clients]);
 
-  const checkAuth = async () => {
+  const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-
+      // Buscar profile
       const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
+        .from('profiles')
+        .select('*')
+        .eq('id', user!.id)
         .single();
+      
+      setProfile(profileData);
 
-      const { data: roleData } = await supabase
-        .rpc('get_user_role', { _user_id: user.id });
+      // RLS filtra automaticamente por agency_id para agency_admin
+      const { data, error } = await supabase
+        .from('clients')
+        .select(`
+          *,
+          agencies (
+            id,
+            name,
+            slug
+          )
+        `)
+        .order('name');
 
-      if (profileData) {
-        const enrichedProfile = { ...profileData, role: roleData || 'client_user' };
-        setProfile(enrichedProfile);
-
-        // Carregar clientes baseado no role
-        if (roleData === 'super_admin') {
-          await loadAllClients();
-        } else if (roleData === 'agency_admin' && profileData.agency_id) {
-          await loadAgencyClients(profileData.agency_id);
-        }
-
-        // Carregar notificações recentes
-        await loadRecentNotifications();
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error: any) {
+      console.error('Error loading clients:', error);
+      toast.error('Erro ao carregar clientes');
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadAllClients = async () => {
-    const { data } = await supabase
-      .from("clients")
-      .select("*, agencies(name)")
-      .order("name");
-    
-    if (data) setClients(data);
-  };
-
-  const loadAgencyClients = async (agencyId: string) => {
-    const { data } = await supabase
-      .from("clients")
-      .select("*, agencies(name)")
-      .eq("agency_id", agencyId)
-      .order("name");
-    
-    if (data) setClients(data);
-  };
-
-  const loadRecentNotifications = async () => {
-    const { data } = await supabase
-      .from("platform_notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(5);
-    
-    if (data) setRecentNotifications(data);
   };
 
   const filterClients = () => {
@@ -119,130 +97,12 @@ const Clientes = () => {
       );
     }
 
-    if (selectedPlan !== "all") {
-      // Filtrar por plano quando implementado
-    }
-
     setFilteredClients(filtered);
   };
 
-  const [monthlyStats, setMonthlyStats] = useState({
-    totalUsed: 0,
-    totalLimit: 0,
-    percentage: 0,
-    archivedCount: 0,
-    activeCreatives: 0,
-    remaining: 0,
-  });
-
-  useEffect(() => {
-    if (clients.length > 0) {
-      loadMonthlyStats();
-    }
-  }, [clients]);
-
-  const loadMonthlyStats = async () => {
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const clientIds = clients.map(c => c.id);
-
-    // Buscar dados da agência (assumindo que todos os clientes são da mesma agência para agency_admin)
-    const agencyId = profile?.agency_id;
-    let totalMonthlyLimit = 0;
-
-    if (agencyId) {
-      const { data: agencyData } = await supabase
-        .from('agencies')
-        .select('plan')
-        .eq('id', agencyId)
-        .single();
-
-      // Buscar limite do plano da agência
-      if (agencyData) {
-        const { data: entitlements } = await supabase
-          .from('plan_entitlements')
-          .select('posts_limit')
-          .eq('plan', agencyData.plan)
-          .single();
-        
-        totalMonthlyLimit = entitlements?.posts_limit || 0;
-      }
-    }
-
-    // Contar posts criados no mês
-    const { count: totalUsed } = await supabase
-      .from('contents')
-      .select('*', { count: 'exact', head: true })
-      .in('client_id', clientIds)
-      .gte('created_at', startOfMonth.toISOString());
-
-    // Contar todos os criativos do período contratado (baseado em history_days do plano)
-    let historyDays = 90; // padrão
-    if (agencyId) {
-      const { data: agencyData } = await supabase
-        .from('agencies')
-        .select('plan')
-        .eq('id', agencyId)
-        .single();
-
-      if (agencyData) {
-        const { data: entitlements } = await supabase
-          .from('plan_entitlements')
-          .select('history_days')
-          .eq('plan', agencyData.plan)
-          .single();
-        
-        historyDays = entitlements?.history_days || 90;
-      }
-    }
-
-    const historyStartDate = new Date();
-    historyStartDate.setDate(historyStartDate.getDate() - historyDays);
-
-    // Arquivados = todos do mês + todos armazenados no período contratado
-    const { count: archivedThisMonth } = await supabase
-      .from('contents')
-      .select('*', { count: 'exact', head: true })
-      .in('client_id', clientIds)
-      .eq('status', 'archived')
-      .gte('created_at', startOfMonth.toISOString());
-
-    const { count: archivedInHistory } = await supabase
-      .from('contents')
-      .select('*', { count: 'exact', head: true })
-      .in('client_id', clientIds)
-      .eq('status', 'archived')
-      .gte('created_at', historyStartDate.toISOString())
-      .lt('created_at', startOfMonth.toISOString());
-
-    const totalArchived = (archivedThisMonth || 0) + (archivedInHistory || 0);
-
-    // Contar criativos ativos
-    const { count: activeCreatives } = await supabase
-      .from('contents')
-      .select('*', { count: 'exact', head: true })
-      .in('client_id', clientIds)
-      .neq('status', 'archived');
-
-    const percentage = totalMonthlyLimit > 0 ? (totalUsed || 0) / totalMonthlyLimit * 100 : 0;
-    const remaining = totalMonthlyLimit > 0 ? totalMonthlyLimit - (totalUsed || 0) : 0;
-
-    setMonthlyStats({
-      totalUsed: totalUsed || 0,
-      totalLimit: totalMonthlyLimit,
-      percentage,
-      archivedCount: totalArchived,
-      activeCreatives: activeCreatives || 0,
-      remaining,
-    });
-  };
-
-  const stats = {
-    total: clients.length,
-  };
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -250,7 +110,7 @@ const Clientes = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
+      <AppHeader userName={profile?.name} userRole={role || undefined} onSignOut={() => navigate("/auth")} />
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="mb-6">
@@ -268,102 +128,37 @@ const Clientes = () => {
                 Clientes
               </h1>
               <p className="text-muted-foreground">
-                Gerencie todos os clientes e envie notificações
+                Gerencie todos os clientes
               </p>
             </div>
-            <Button onClick={() => setNotificationDialogOpen(true)}>
-              <Send className="h-4 w-4 mr-2" />
-              Enviar Notificação
-            </Button>
-          </div>
-
-          {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Total de Clientes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{stats.total}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Publicações do Mês</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold">{monthlyStats.totalUsed}</p>
-                    <span className="text-muted-foreground text-sm">/ {monthlyStats.totalLimit}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min(monthlyStats.percentage, 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {monthlyStats.percentage.toFixed(1)}% da cota mensal utilizada
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Criativos Arquivados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{monthlyStats.archivedCount}</p>
-                <p className="text-xs text-muted-foreground mt-1">Conteúdos arquivados</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Criativos Ativos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{monthlyStats.activeCreatives}</p>
-                {monthlyStats.activeCreatives > monthlyStats.totalLimit && (
-                  <Badge variant="destructive" className="mt-2">Excedendo limite</Badge>
-                )}
-              </CardContent>
-            </Card>
-
-            {monthlyStats.totalLimit > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Faltam para a Cota
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">{monthlyStats.remaining}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {monthlyStats.remaining > 0 ? 'posts disponíveis' : 'cota excedida'}
-                  </p>
-                  {monthlyStats.remaining <= 5 && monthlyStats.remaining > 0 && (
-                    <Badge variant="outline" className="mt-2">Cota quase atingida</Badge>
-                  )}
-                </CardContent>
-              </Card>
+            {role === 'super_admin' && (
+              <Button onClick={() => setNotificationDialogOpen(true)}>
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Notificação
+              </Button>
             )}
           </div>
 
-          {/* Filtros */}
+          {/* Card de Resumo */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Total de Clientes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{clients.length}</p>
+            </CardContent>
+          </Card>
+
+          {/* Filtro de Busca */}
           <Card>
             <CardHeader>
-              <CardTitle>Filtros</CardTitle>
+              <CardTitle>Buscar</CardTitle>
             </CardHeader>
-          <CardContent>
-              <div className="flex-1 relative">
+            <CardContent>
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nome ou slug..."
@@ -374,31 +169,6 @@ const Clientes = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Notificações Recentes */}
-          {recentNotifications.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notificações Recentes</CardTitle>
-                <CardDescription>Últimas 5 notificações enviadas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {recentNotifications.map((notif) => (
-                    <div key={notif.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div>
-                        <p className="font-medium">{notif.title}</p>
-                        <p className="text-sm text-muted-foreground">{notif.message}</p>
-                      </div>
-                      <Badge variant={notif.status === 'sent' ? 'default' : notif.status === 'pending' ? 'outline' : 'destructive'}>
-                        {notif.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Grid de Clientes */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -433,7 +203,6 @@ const Clientes = () => {
                     variant="outline"
                     size="sm"
                     className="w-full"
-                    onClick={() => navigate(`/clientes/${client.id}`)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Detalhes
