@@ -476,6 +476,7 @@ export const RolesManager = () => {
       agency_admin: "Admin de Agência",
       team_member: "Membro da Equipe",
       client_user: "Usuário Cliente",
+      approver: "Aprovador (2FA)",
     };
     return labels[role] || role;
   };
@@ -527,11 +528,12 @@ export const RolesManager = () => {
             {/* Aba 1: Permissões por Função */}
             <TabsContent value="roles" className="space-y-4">
               <Tabs defaultValue="super_admin">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="super_admin">Super Admin</TabsTrigger>
                   <TabsTrigger value="agency_admin">Agency Admin</TabsTrigger>
                   <TabsTrigger value="client_user">Client User</TabsTrigger>
                   <TabsTrigger value="team_member">Team Member</TabsTrigger>
+                  <TabsTrigger value="approver">Approver</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="super_admin" className="space-y-4 pt-4">
@@ -612,6 +614,28 @@ export const RolesManager = () => {
                           <Checkbox 
                             checked={enabled}
                             onCheckedChange={(checked) => handlePermissionChange('team_member', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="approver" className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Aprovadores acessam via 2FA para aprovar conteúdos sem login tradicional.
+                  </p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Permissões</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.approver || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('approver', key, !!checked)}
                           />
                           <Label className="cursor-pointer">
                             {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
