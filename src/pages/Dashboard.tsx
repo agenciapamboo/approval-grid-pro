@@ -266,6 +266,12 @@ const Dashboard = () => {
           setAllProfiles([]);
         }
       } else if (userRole === 'agency_admin' && enrichedProfile.agency_id) {
+        console.log('🔷 Agency Admin detected - Loading data', {
+          userId: user.id,
+          agencyId: enrichedProfile.agency_id,
+          role: userRole
+        });
+        
         // Agency admin vê sua agência e clientes
         const { data: agencyData, error: agencyError } = await supabase
           .from("agencies")
@@ -289,6 +295,10 @@ const Dashboard = () => {
         }
         
         if (clientsData) {
+          console.log('✅ Clients loaded for agency_admin:', {
+            count: clientsData.length,
+            clients: clientsData.map(c => ({ id: c.id, name: c.name }))
+          });
           setClients(clientsData);
           
           // Buscar notificações de conteúdo e criativos para cada cliente
@@ -321,6 +331,15 @@ const Dashboard = () => {
           
           setClientNotifications(notifications);
         }
+      } else if (userRole === 'agency_admin' && !enrichedProfile.agency_id) {
+        console.error('❌ Agency Admin sem agency_id:', enrichedProfile.id);
+        toast({
+          variant: "destructive",
+          title: "Configuração incompleta",
+          description: "Seu perfil está incompleto. Entre em contato com o suporte para completar seu cadastro.",
+        });
+        setLoading(false);
+        return;
       } else if (userRole === 'client_user') {
         if (!enrichedProfile.client_id) {
           console.error('❌ Client user sem client_id associado:', enrichedProfile.id);
@@ -1253,10 +1272,14 @@ const Dashboard = () => {
         )}
 
         {/* Painel de Agência com Tabs */}
-        {(profile?.role === 'agency_admin' || 
-          ['creator', 'eugencia', 'socialmidia', 'fullservice'].includes(profile?.plan || '') ||
-          (profile?.role === 'agency_admin' && !profile?.plan)) && profile?.agency_id && (
-          <Tabs defaultValue="clients" className="space-y-6">
+        {profile?.role === 'agency_admin' && profile?.agency_id && (
+          <>
+            {console.log('🎨 Rendering Agency Tabs', { 
+              role: profile.role, 
+              agencyId: profile.agency_id, 
+              clientsCount: clients.length 
+            })}
+            <Tabs defaultValue="clients" className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="clients">
                 <Building2 className="w-4 h-4 mr-2" />
@@ -1634,6 +1657,7 @@ const Dashboard = () => {
               <TeamMembersManager />
             </TabsContent>
           </Tabs>
+          </>
         )}
 
 
