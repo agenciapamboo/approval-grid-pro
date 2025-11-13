@@ -56,6 +56,8 @@ const Clientes = () => {
   const checkAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 [Clientes] Current user:', user?.id);
+      
       if (!user) {
         navigate("/auth");
         return;
@@ -67,8 +69,12 @@ const Clientes = () => {
         .eq("id", user.id)
         .single();
 
+      console.log('📋 [Clientes] Profile data:', profileData);
+
       const { data: roleData } = await supabase
         .rpc('get_user_role', { _user_id: user.id });
+
+      console.log('🔐 [Clientes] User role:', roleData);
 
       if (profileData) {
         const enrichedProfile = { ...profileData, role: roleData || 'client_user' };
@@ -76,9 +82,16 @@ const Clientes = () => {
 
         // Carregar clientes baseado no role
         if (roleData === 'super_admin') {
+          console.log('🔑 [Clientes] User is super_admin, loading all clients');
           await loadAllClients();
         } else if (roleData === 'agency_admin' && profileData.agency_id) {
+          console.log('🔑 [Clientes] User is agency_admin with agency_id:', profileData.agency_id);
           await loadAgencyClients(profileData.agency_id);
+        } else {
+          console.warn('⚠️ [Clientes] User role does not allow client management:', {
+            role: roleData,
+            hasAgencyId: !!profileData.agency_id
+          });
         }
 
         // Carregar notificações recentes
@@ -92,22 +105,34 @@ const Clientes = () => {
   };
 
   const loadAllClients = async () => {
-    const { data } = await supabase
+    console.log('📂 [Clientes] Loading all clients (super_admin)');
+    const { data, error } = await supabase
       .from("clients")
       .select("*, agencies(name)")
       .order("name");
     
-    if (data) setClients(data);
+    if (error) {
+      console.error('❌ [Clientes] Error loading all clients:', error);
+    } else {
+      console.log('✅ [Clientes] All clients loaded:', data?.length, 'clients');
+      if (data) setClients(data);
+    }
   };
 
   const loadAgencyClients = async (agencyId: string) => {
-    const { data } = await supabase
+    console.log('📂 [Clientes] Loading agency clients for agency_id:', agencyId);
+    const { data, error } = await supabase
       .from("clients")
       .select("*, agencies(name)")
       .eq("agency_id", agencyId)
       .order("name");
     
-    if (data) setClients(data);
+    if (error) {
+      console.error('❌ [Clientes] Error loading agency clients:', error);
+    } else {
+      console.log('✅ [Clientes] Agency clients loaded:', data?.length, 'clients', data);
+      if (data) setClients(data);
+    }
   };
 
   const loadRecentNotifications = async () => {
