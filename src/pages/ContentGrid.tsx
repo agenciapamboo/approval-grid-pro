@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RateLimitBlockedAlert } from "@/components/admin/RateLimitBlockedAlert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useUserData } from "@/hooks/useUserData";
 
 interface Profile {
   id: string;
@@ -63,6 +64,7 @@ export default function ContentGrid() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile: userProfile, role, agency: userAgency, client: userClient, loading: userDataLoading } = useUserData();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -469,77 +471,89 @@ export default function ContentGrid() {
 
   const loadPublicData = async () => {
     try {
-      console.log('=== ContentGrid loadPublicData started ===');
-      console.log('agencySlug:', agencySlug, 'clientSlug:', clientSlug);
+      console.log('[ContentGrid] loadPublicData started');
+      console.log('[ContentGrid] agencySlug:', agencySlug, 'clientSlug:', clientSlug);
+      console.log('[ContentGrid] userProfile:', userProfile, 'role:', role);
       
       // Verificar se há sessão ativa (opcional)
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session exists:', !!session);
+      console.log('[ContentGrid] Session exists:', !!session);
       
       if (session) {
         setUser(session.user);
-        // Carregar perfil se logado
-        console.log('Loading profile for user:', session.user.id);
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error('Error loading profile:', profileError);
-        } else if (profileData) {
-          console.log('Profile loaded:', profileData);
-          setProfile(profileData);
+        
+        // Usar dados do hook useUserData
+        if (userProfile) {
+          console.log('[ContentGrid] Using profile from useUserData:', userProfile);
+          setProfile(userProfile as any);
           
           // Verificar consentimento LGPD apenas para usuários logados
-          if (!profileData.accepted_terms_at) {
-            console.log('User needs to accept terms');
+          if (!(userProfile as any).accepted_terms_at) {
+            console.log('[ContentGrid] User needs to accept terms');
             setShowConsent(true);
             return;
           }
-        } else {
-          console.warn('No profile found for user');
+          
+          // Usar agency e client do hook
+          if (userAgency) {
+            setAgency(userAgency as any);
+          }
+          if (userClient) {
+            setClient(userClient as any);
+          }
         }
       }
 
-      // Carregar dados públicos da agência (se agencySlug for fornecido)
-      if (agencySlug) {
-        console.log('Loading agency by slug:', agencySlug);
-        const { data: agencyData, error: agencyError } = await supabase
+      // Carregar dados da agência e cliente usando filtros DIRETOS
+      let finalAgency = userAgency as any;
+      let finalClient = userClient as any;
+      
+      // Se não tem dados do hook, carregar pelo slug
+      if (!finalAgency && agencySlug) {
+        console.log('[ContentGrid] Loading agency by slug:', agencySlug);
+        const { data: agencyData } = await supabase
           .from("agencies_public")
           .select("*")
           .eq("slug", agencySlug)
           .maybeSingle();
-
-        if (agencyError) {
-          console.error("Erro ao carregar agência:", agencyError);
-        } else if (agencyData) {
-          console.log('Agency loaded:', agencyData);
+        
+        if (agencyData) {
+          finalAgency = agencyData;
           setAgency(agencyData);
         }
       }
 
-      // Carregar cliente pelo slug
-      console.log('Loading client by slug:', clientSlug);
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("slug", clientSlug)
-        .maybeSingle();
+      if (!finalClient && clientSlug) {
+        console.log('[ContentGrid] Loading client by slug:', clientSlug);
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("slug", clientSlug)
+          .maybeSingle();
 
-      if (clientError) {
-        console.error('Error loading client:', clientError);
-        toast({
-          title: "Cliente não encontrado",
-          description: "Não foi possível carregar o cliente.",
-          variant: "destructive",
-        });
-        return;
+        if (clientData) {
+          finalClient = clientData;
+          setClient(clientData);
+        }
       }
       
-      if (!clientData) {
-        console.error('Client not found with slug:', clientSlug);
+      // Usar client_id do profile se role = client_user
+      if (role === 'client_user' && userProfile?.client_id && !finalClient) {
+        console.log('[ContentGrid] Loading client by profile.client_id:', userProfile.client_id);
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("id", userProfile.client_id)
+          .single();
+        
+        if (clientData) {
+          finalClient = clientData;
+          setClient(clientData);
+        }
+      }
+
+      if (!finalClient) {
+        console.error('[ContentGrid] No client found');
         toast({
           title: "Cliente não encontrado",
           description: "Não foi possível carregar o cliente.",
@@ -548,9 +562,8 @@ export default function ContentGrid() {
         return;
       }
 
-      console.log('Client loaded:', clientData);
-      setClient(clientData);
-      await loadContents(clientData.id, undefined, false);
+      console.log('[ContentGrid] Final client:', finalClient);
+      await loadContents(finalClient.id, undefined, false);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -564,11 +577,12 @@ export default function ContentGrid() {
   };
 
   const loadContents = async (clientId: string, filterMonth?: string, tokenAccess: boolean = false) => {
-    console.log('=== loadContents started for client:', clientId);
+    console.log('[ContentGrid] loadContents - clientId:', clientId, 'role:', role);
     
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('Session in loadContents:', !!session, 'Token access:', tokenAccess, 'Show all:', showAllContents);
+    console.log('[ContentGrid] Session:', !!session, 'Token access:', tokenAccess);
     
+    // Filtrar DIRETAMENTE no código usando client_id
     let query = supabase
       .from("contents")
       .select("*")

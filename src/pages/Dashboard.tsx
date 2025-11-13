@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useUserData } from "@/hooks/useUserData";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,10 +36,9 @@ async function fetchApproverClients(userId: string) {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { role, loading: authLoading } = usePermissions();
+  const { profile, role, agency, client, loading: userDataLoading } = useUserData();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -47,31 +46,18 @@ const Dashboard = () => {
       return;
     }
     
-    if (authLoading || !role) return;
+    if (userDataLoading || !role || !profile) return;
     
     loadDashboardData();
-  }, [user, role, authLoading, navigate]);
+  }, [user, role, profile, userDataLoading, navigate]);
 
   const loadDashboardData = async () => {
     try {
-      // Buscar profile COM agency_id e client_id diretamente
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, name, agency_id, client_id')
-        .eq('id', user!.id)
-        .maybeSingle();
-      
-      if (profileError || !profileData) {
-        toast.error('Perfil não encontrado');
-        navigate('/auth');
-        return;
-      }
-      
-      setProfile(profileData);
+      console.log('[Dashboard] Loading data for role:', role, 'profile:', profile);
 
-      // LÓGICA POR ROLE
+      // LÓGICA POR ROLE - Filtrar NO CÓDIGO usando profile.agency_id e client_id
       if (role === 'super_admin') {
-        // RLS permite ver tudo
+        // Super admin vê tudo
         const { data: agencies } = await supabase
           .from('agencies')
           .select('id, name, slug');
@@ -91,25 +77,30 @@ const Dashboard = () => {
         setDashboardData({ agencies: agenciesWithClients });
         
       } else if (role === 'agency_admin' || role === 'team_member') {
-        // Usar agency_id do profile (sem depender de RLS)
-        if (!profileData.agency_id) {
+        // Filtrar POR agency_id do profile
+        if (!profile?.agency_id) {
           toast.error('Você não está vinculado a nenhuma agência');
           setLoading(false);
           return;
         }
         
-        // Buscar agência específica
-        const { data: agency } = await supabase
-          .from('agencies')
-          .select('id, name, slug')
-          .eq('id', profileData.agency_id)
-          .single();
+        console.log('[Dashboard] Fetching clients for agency_id:', profile.agency_id);
         
-        // Buscar clientes desta agência
-        const { data: clients } = await supabase
+        // Buscar clientes desta agência DIRETAMENTE
+        const { data: clients, error: clientsError } = await supabase
           .from('clients')
           .select('id, name, slug')
-          .eq('agency_id', profileData.agency_id);
+          .eq('agency_id', profile.agency_id)
+          .order('name');
+        
+        if (clientsError) {
+          console.error('[Dashboard] Error fetching clients:', clientsError);
+          toast.error('Erro ao carregar clientes');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('[Dashboard] Clients loaded:', clients?.length || 0);
         
         setDashboardData({
           agency: {
@@ -119,49 +110,35 @@ const Dashboard = () => {
         });
         
       } else if (role === 'client_user') {
-        // Usar client_id do profile
-        if (!profileData.client_id) {
+        // Filtrar POR client_id do profile
+        if (!profile?.client_id) {
           toast.error('Você não está vinculado a nenhum cliente');
           setLoading(false);
           return;
         }
         
-        const { data: client } = await supabase
-          .from('clients')
-          .select('id, name, slug, agency_id')
-          .eq('id', profileData.client_id)
-          .single();
-        
-        if (client) {
-          const { data: agency } = await supabase
-            .from('agencies')
-            .select('id, name, slug')
-            .eq('id', client.agency_id)
-            .maybeSingle();
-          
-          setDashboardData({
-            client: {
-              ...client,
-              agencies: agency
-            }
-          });
-        }
+        setDashboardData({
+          client: {
+            ...client,
+            agencies: agency
+          }
+        });
         
       } else if (role === 'approver') {
-        // Usar helper function
+        // Buscar clientes que este aprovador pode aprovar
         const approverClients = await fetchApproverClients(user!.id);
         setDashboardData({ clients: approverClients });
       }
       
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('[Dashboard] Error loading dashboard:', error);
       toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  if (authLoading || loading) {
+  if (userDataLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
