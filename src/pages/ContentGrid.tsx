@@ -310,18 +310,21 @@ export default function ContentGrid() {
   };
 
   const fetchContentsViaToken = async (token: string) => {
-    console.log('[ContentGrid] Fetching contents via RPC with token');
-    const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
-      p_token: token
-    });
+    console.log('[ContentGrid] Fetching contents via direct query (no legacy RPC)');
+    
+    // Fetch contents directly from database (no RPC)
+    const { data: contentData, error } = await supabase
+      .from('contents')
+      .select('*')
+      .order('date', { ascending: true });
 
-    if (rpcError) {
-      console.error('[ContentGrid] RPC error:', rpcError);
+    if (error) {
+      console.error('[ContentGrid] Query error:', error);
       setContents([]);
       return;
     }
 
-    console.log('[ContentGrid] Contents via RPC:', {
+    console.log('[ContentGrid] Contents loaded:', {
       count: contentData?.length || 0,
       statuses: contentData?.map((c: any) => c.status)
     });

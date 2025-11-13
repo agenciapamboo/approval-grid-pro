@@ -45,29 +45,9 @@ export function RequestAdjustmentDialog({
 
     setLoading(true);
     try {
-      if (approvalToken) {
-        // Fluxo de aprovação por token
-        const { error } = await supabase.rpc('reject_content_for_approval', {
-          p_token: approvalToken,
-          p_content_id: contentId,
-          p_reason: `${reason}${details ? '\n\nDetalhes: ' + details : ''}`
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: "Ajuste solicitado",
-          description: "A solicitação de ajuste foi enviada com sucesso",
-        });
-
-        setReason("");
-        setDetails("");
-        onOpenChange(false);
-        onSuccess();
-      } else {
-        // Fluxo autenticado normal
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Usuário não autenticado");
+      // Fluxo autenticado normal
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
         // Pegar a versão atual do conteúdo
         const { data: contentData } = await supabase
@@ -121,11 +101,10 @@ export function RequestAdjustmentDialog({
           description: "A solicitação de ajuste foi enviada com sucesso",
         });
 
-        setReason("");
-        setDetails("");
-        onOpenChange(false);
-        onSuccess();
-      }
+      setReason("");
+      setDetails("");
+      onOpenChange(false);
+      onSuccess();
     } catch (error) {
       console.error("Erro ao solicitar ajuste:", error);
       toast({

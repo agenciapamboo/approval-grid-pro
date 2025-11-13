@@ -54,14 +54,14 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Buscar profile
-      const { data: profileData } = await supabase
+      // Buscar profile COM agency_id e client_id diretamente
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, agency_id, client_id')
         .eq('id', user!.id)
         .maybeSingle();
       
-      if (!profileData) {
+      if (profileError || !profileData) {
         toast.error('Perfil não encontrado');
         navigate('/auth');
         return;
@@ -69,80 +69,90 @@ const Dashboard = () => {
       
       setProfile(profileData);
 
+      // LÓGICA POR ROLE
       if (role === 'super_admin') {
-        // RLS permite ver todas as agências
-        const agenciesResponse = await supabase
+        // RLS permite ver tudo
+        const { data: agencies } = await supabase
           .from('agencies')
           .select('id, name, slug');
         
-        const allAgencies = agenciesResponse.data || [];
-        
         // Buscar clientes para cada agência
         const agenciesWithClients = await Promise.all(
-          allAgencies.map(async (agency) => {
-            const clientsResponse = await supabase
+          (agencies || []).map(async (agency) => {
+            const { data: clients } = await supabase
               .from('clients')
               .select('id, name, slug')
               .eq('agency_id', agency.id);
             
-            return {
-              ...agency,
-              clients: clientsResponse.data || [],
-            };
+            return { ...agency, clients: clients || [] };
           })
         );
         
         setDashboardData({ agencies: agenciesWithClients });
+        
       } else if (role === 'agency_admin' || role === 'team_member') {
-        // RLS filtra por agency_id automaticamente
-        const agencyResponse = await supabase
+        // Usar agency_id do profile (sem depender de RLS)
+        if (!profileData.agency_id) {
+          toast.error('Você não está vinculado a nenhuma agência');
+          setLoading(false);
+          return;
+        }
+        
+        // Buscar agência específica
+        const { data: agency } = await supabase
           .from('agencies')
           .select('id, name, slug')
-          .maybeSingle();
+          .eq('id', profileData.agency_id)
+          .single();
         
-        if (agencyResponse.data) {
-          const clientsResponse = await supabase
-            .from('clients')
-            .select('id, name, slug')
-            .eq('agency_id', agencyResponse.data.id);
-          
-          setDashboardData({
-            agency: {
-              ...agencyResponse.data,
-              clients: clientsResponse.data || [],
-            },
-          });
-        } else {
-          setDashboardData({ agency: null });
-        }
+        // Buscar clientes desta agência
+        const { data: clients } = await supabase
+          .from('clients')
+          .select('id, name, slug')
+          .eq('agency_id', profileData.agency_id);
+        
+        setDashboardData({
+          agency: {
+            ...agency,
+            clients: clients || []
+          }
+        });
+        
       } else if (role === 'client_user') {
-        // RLS filtra por client_id automaticamente
-        const clientResponse = await supabase
+        // Usar client_id do profile
+        if (!profileData.client_id) {
+          toast.error('Você não está vinculado a nenhum cliente');
+          setLoading(false);
+          return;
+        }
+        
+        const { data: client } = await supabase
           .from('clients')
           .select('id, name, slug, agency_id')
-          .maybeSingle();
+          .eq('id', profileData.client_id)
+          .single();
         
-        if (clientResponse.data) {
-          const agencyResponse = await supabase
+        if (client) {
+          const { data: agency } = await supabase
             .from('agencies')
             .select('id, name, slug')
-            .eq('id', clientResponse.data.agency_id)
+            .eq('id', client.agency_id)
             .maybeSingle();
           
           setDashboardData({
             client: {
-              ...clientResponse.data,
-              agencies: agencyResponse.data,
-            },
+              ...client,
+              agencies: agency
+            }
           });
-        } else {
-          setDashboardData({ client: null });
         }
+        
       } else if (role === 'approver') {
-        // Usar helper para evitar recursão de tipos
+        // Usar helper function
         const approverClients = await fetchApproverClients(user!.id);
         setDashboardData({ clients: approverClients });
       }
+      
     } catch (error) {
       console.error('Error loading dashboard:', error);
       toast.error('Erro ao carregar dados do dashboard');

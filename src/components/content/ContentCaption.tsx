@@ -22,77 +22,45 @@ export function ContentCaption({ contentId, version, approvalToken }: ContentCap
   }, [contentId, version]);
 
   const loadCaption = async () => {
-    if (approvalToken) {
-      // Usar RPC para carregar legenda via token
-      const { data, error } = await supabase.rpc('get_content_caption_for_approval', {
-        p_token: approvalToken,
-        p_content_id: contentId,
-        p_version: version
-      });
+    // Fluxo normal autenticado (sem RPC legado)
+    const { data, error } = await supabase
+      .from("content_texts")
+      .select("caption")
+      .eq("content_id", contentId)
+      .eq("version", version)
+      .maybeSingle();
 
-      if (!error && data && data.length > 0) {
-        setCaption(data[0].caption || "");
-      }
-    } else {
-      // Fluxo normal autenticado
-      const { data, error } = await supabase
-        .from("content_texts")
-        .select("caption")
-        .eq("content_id", contentId)
-        .eq("version", version)
-        .single();
-
-      if (!error && data) {
-        setCaption(data.caption || "");
-      }
+    if (!error && data) {
+      setCaption(data.caption || "");
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      if (approvalToken) {
-        // Usar RPC para salvar legenda via token
-        const { data, error } = await supabase.rpc('save_caption_for_approval', {
-          p_token: approvalToken,
-          p_content_id: contentId,
-          p_caption: caption
+      // Fluxo normal autenticado - criar nova versão da legenda
+      const { error: insertError } = await supabase
+        .from("content_texts")
+        .insert({
+          content_id: contentId,
+          version: version + 1,
+          caption: caption,
         });
 
-        if (error) throw error;
-        
-        const result = data as any;
-        if (!result?.success) throw new Error(result?.error || 'Erro ao salvar');
+      if (insertError) throw insertError;
 
-        toast({
-          title: "Legenda salva",
-          description: "A legenda foi atualizada com sucesso",
-        });
-      } else {
-        // Fluxo normal autenticado - criar nova versão da legenda
-        const { error: insertError } = await supabase
-          .from("content_texts")
-          .insert({
-            content_id: contentId,
-            version: version + 1,
-            caption: caption,
-          });
+      // Atualizar versão do conteúdo
+      const { error: updateError } = await supabase
+        .from("contents")
+        .update({ version: version + 1 })
+        .eq("id", contentId);
 
-        if (insertError) throw insertError;
+      if (updateError) throw updateError;
 
-        // Atualizar versão do conteúdo
-        const { error: updateError } = await supabase
-          .from("contents")
-          .update({ version: version + 1 })
-          .eq("id", contentId);
-
-        if (updateError) throw updateError;
-
-        toast({
-          title: "Legenda salva",
-          description: "A legenda foi atualizada com sucesso",
-        });
-      }
+      toast({
+        title: "Legenda salva",
+        description: "A legenda foi atualizada com sucesso",
+      });
 
       setEditing(false);
     } catch (error) {

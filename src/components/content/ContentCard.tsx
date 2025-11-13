@@ -173,25 +173,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
   const handleApprove = async () => {
     try {
-      if (isPublicApproval && approvalToken) {
-        // Usar RPC para aprovação via token
-        const { data, error } = await supabase.rpc('approve_content_for_approval', {
-          p_token: approvalToken,
-          p_content_id: content.id
-        });
-
-        if (error) throw error;
-        
-        const result = data as any;
-        if (!result?.success) throw new Error(result?.error || 'Erro ao aprovar');
-
-        toast({
-          title: "Conteúdo aprovado",
-          description: "O conteúdo foi aprovado com sucesso",
-        });
-      } else {
-        // Fluxo normal autenticado
-        const { data: userData } = await supabase.auth.getUser();
+      // Fluxo normal autenticado
+      const { data: userData } = await supabase.auth.getUser();
 
         const { error: updateErr } = await supabase
           .from("contents")
@@ -214,11 +197,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
           channels: content.channels || [],
         });
 
-        toast({
-          title: "Conteúdo aprovado",
-          description: "O conteúdo foi aprovado com sucesso",
-        });
-      }
+      toast({
+        title: "Conteúdo aprovado",
+        description: "O conteúdo foi aprovado com sucesso",
+      });
 
       onUpdate();
     } catch (error) {
@@ -242,27 +224,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
     }
 
     try {
-      if (isPublicApproval && approvalToken) {
-        // Usar RPC para reprovação via token
-        const { data, error } = await supabase.rpc('reject_content_for_approval', {
-          p_token: approvalToken,
-          p_content_id: content.id,
-          p_reason: rejectReason
-        });
-
-        if (error) throw error;
-        
-        const result = data as any;
-        if (!result?.success) throw new Error(result?.error || 'Erro ao reprovar');
-
-        toast({
-          title: "Conteúdo reprovado",
-          description: "O conteúdo foi reprovado e o motivo foi registrado",
-        });
-      } else {
-        // Fluxo normal autenticado
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Usuário não autenticado");
+      // Fluxo normal autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
         const { error: commentError } = await supabase
           .from("comments")
@@ -290,11 +254,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
           channels: content.channels || [],
         });
 
-        toast({
-          title: "Conteúdo reprovado",
-          description: "O conteúdo foi reprovado e o motivo foi registrado",
-        });
-      }
+      toast({
+        title: "Conteúdo reprovado",
+        description: "O conteúdo foi reprovado e o motivo foi registrado",
+      });
 
       setShowRejectDialog(false);
       setRejectReason("");

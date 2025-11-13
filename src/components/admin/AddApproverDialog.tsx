@@ -86,6 +86,15 @@ export function AddApproverDialog({
     try {
       setLoading(true);
 
+      // Buscar agency_id do cliente
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("agency_id")
+        .eq("id", clientId)
+        .single();
+
+      if (clientError) throw clientError;
+
       // Verificar se email já existe para este cliente
       const { data: existing, error: checkError } = await supabase
         .from("client_approvers")
@@ -122,14 +131,15 @@ export function AddApproverDialog({
         }
       }
 
-      const { error } = await supabase.from("client_approvers").insert({
+      const { error } = await supabase.from("client_approvers").insert([{
         client_id: clientId,
+        agency_id: clientData.agency_id,
         name: data.name,
         email: data.email,
         whatsapp: data.whatsapp || null,
         is_primary: data.is_primary,
         is_active: true,
-      });
+      }]);
 
       if (error) throw error;
 

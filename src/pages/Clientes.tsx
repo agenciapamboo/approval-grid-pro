@@ -55,10 +55,10 @@ const Clientes = () => {
 
   const loadData = async () => {
     try {
-      // Buscar profile
+      // Buscar profile primeiro
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, agency_id, client_id')
         .eq('id', user!.id)
         .maybeSingle();
       
@@ -70,21 +70,60 @@ const Clientes = () => {
       
       setProfile(profileData);
 
-      // RLS filtra automaticamente por agency_id para agency_admin
-      const { data, error } = await supabase
-        .from('clients')
-        .select(`
-          *,
-          agencies (
-            id,
-            name,
-            slug
-          )
-        `)
-        .order('name');
-
-      if (error) throw error;
-      setClients(data || []);
+      // Carregar clientes baseado no role
+      if (role === 'super_admin') {
+        // RLS permite ver todos
+        const { data } = await supabase
+          .from('clients')
+          .select('id, name, slug, logo_url, agency_id')
+          .order('name');
+        
+        // Buscar agencies para cada cliente
+        const clientsWithAgencies = await Promise.all(
+          (data || []).map(async (client) => {
+            const { data: agency } = await supabase
+              .from('agencies')
+              .select('name')
+              .eq('id', client.agency_id)
+              .maybeSingle();
+            
+            return {
+              ...client,
+              agencies: agency
+            };
+          })
+        );
+        
+        setClients(clientsWithAgencies);
+        
+      } else if (role === 'agency_admin') {
+        // Filtrar por agency_id do profile
+        if (!profileData.agency_id) {
+          toast.error('Você não está vinculado a nenhuma agência');
+          setLoading(false);
+          return;
+        }
+        
+        const { data } = await supabase
+          .from('clients')
+          .select('id, name, slug, logo_url, agency_id')
+          .eq('agency_id', profileData.agency_id)
+          .order('name');
+        
+        const { data: agency } = await supabase
+          .from('agencies')
+          .select('name')
+          .eq('id', profileData.agency_id)
+          .maybeSingle();
+        
+        const clientsWithAgency = (data || []).map(client => ({
+          ...client,
+          agencies: agency
+        }));
+        
+        setClients(clientsWithAgency);
+      }
+      
     } catch (error: any) {
       console.error('Error loading clients:', error);
       toast.error('Erro ao carregar clientes');
