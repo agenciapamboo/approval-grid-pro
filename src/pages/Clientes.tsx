@@ -63,17 +63,23 @@ const Clientes = () => {
         return;
       }
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
 
+      if (profileError) {
+        console.error('❌ [Clientes] Error loading profile:', profileError);
+      }
       console.log('📋 [Clientes] Profile data:', profileData);
 
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .rpc('get_user_role', { _user_id: user.id });
 
+      if (roleError) {
+        console.error('❌ [Clientes] Error loading role:', roleError);
+      }
       console.log('🔐 [Clientes] User role:', roleData);
 
       if (profileData) {
@@ -285,7 +291,14 @@ const Clientes = () => {
   }
 
   // Check access with direct role check to avoid race condition with usePermissions
-  if (!profile || (profile.role !== 'super_admin' && profile.role !== 'agency_admin')) {
+  console.log('🔍 [Clientes] Access check:', { 
+    hasProfile: !!profile, 
+    role: profile?.role,
+    loading,
+    permissionsLoading 
+  });
+  
+  if (!loading && !permissionsLoading && (!profile || (profile.role !== 'super_admin' && profile.role !== 'agency_admin'))) {
     return (
       <div className="min-h-screen flex flex-col">
         <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
