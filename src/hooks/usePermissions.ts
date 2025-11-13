@@ -40,7 +40,7 @@ export function usePermissions() {
         const { data: rolePerms, error } = await supabase
           .from('role_permissions')
           .select('permission_key, enabled, role')
-          .in('role', allRoles);
+          .in('role', allRoles as any); // Cast necessário para contornar limitação do tipo enum
 
         console.log('📋 [usePermissions] Role permissions from DB:', rolePerms);
 
