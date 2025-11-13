@@ -11,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { EditUserDialog } from "./EditUserDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MigrateApproversButton } from "./MigrateApproversButton";
 
 interface UserData {
   id: string;
@@ -216,6 +217,7 @@ export const UsersManager = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <MigrateApproversButton />
               <Button
                 variant="outline"
                 size="sm"
