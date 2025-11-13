@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useStorageUrl } from "@/hooks/useStorageUrl";
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -19,28 +18,46 @@ interface ContentMediaProps {
   approvalToken?: string;
 }
 
-// Hook auxiliar para uma mídia individual
-function useMediaUrl(media: Media | undefined) {
-  // Sempre chamar hooks na mesma ordem
-  const srcFilePath = media?.src_url?.includes('/content-media/')
-    ? media.src_url.split('/content-media/')[1]
-    : media?.src_url;
-  const thumbFilePath = media?.thumb_url?.includes('/content-media/')
-    ? media.thumb_url.split('/content-media/')[1]
-    : media?.thumb_url;
+// Hook para buscar signed URL via edge function
+function useSignedUrl(path: string | null | undefined) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const { url: srcUrl } = useStorageUrl({ bucket: 'content-media', filePath: srcFilePath });
-  const { url: thumbUrl } = useStorageUrl({ bucket: 'content-media', filePath: thumbFilePath });
+  useEffect(() => {
+    if (!path) {
+      setUrl(null);
+      return;
+    }
 
-  // Se já é URL assinada (começa com http), usar diretamente
-  if (media?.src_url?.startsWith('http://') || media?.src_url?.startsWith('https://')) {
-    return {
-      srcUrl: media.src_url,
-      thumbUrl: media.thumb_url || media.src_url
-    };
-  }
+    // Se já é URL externa, usar diretamente
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      setUrl(path);
+      return;
+    }
 
-  return { srcUrl, thumbUrl };
+    setLoading(true);
+    
+    // Chamar edge function via invoke (não fetch)
+    supabase.functions
+      .invoke('get-media-url', {
+        body: { path },
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Erro ao buscar signed URL:', error);
+          setUrl(null);
+        } else if (data?.url) {
+          setUrl(data.url);
+        }
+      })
+      .catch((err) => {
+        console.error('Erro na requisição:', err);
+        setUrl(null);
+      })
+      .finally(() => setLoading(false));
+  }, [path]);
+
+  return { url, loading };
 }
 
 export function ContentMedia({ contentId, type, approvalToken }: ContentMediaProps) {
@@ -114,13 +131,15 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
     }
   };
 
-  // Calcular currentMedia de forma segura e chamar hook ANTES dos returns condicionais
-  const currentMedia = media.length > 0 ? media[Math.min(currentIndex, media.length - 1)] : undefined;
-  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia);
+  const currentMedia = media[currentIndex];
+  const { url: srcUrl, loading: srcLoading } = useSignedUrl(currentMedia?.src_url);
+  const { url: thumbUrl, loading: thumbLoading } = useSignedUrl(currentMedia?.thumb_url);
 
-  if (loading) {
+  if (loading || srcLoading || thumbLoading) {
     return (
-      <div className="aspect-[4/5] bg-muted animate-pulse" />
+      <div className="w-full h-64 flex items-center justify-center bg-muted rounded-md">
+        <p className="text-sm text-muted-foreground">Carregando mídia...</p>
+      </div>
     );
   }
 
@@ -168,32 +187,27 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Imagem ou vídeo */}
-        <div className="w-full h-full">
-          {currentMedia.kind === "video" ? (
-            <video
-              src={srcUrl || ''}
-              poster={thumbUrl}
-              controls
-              className="w-full h-full object-cover"
-            >
-              <source src={srcUrl || ''} type="video/mp4" />
-              <source src={srcUrl || ''} type="video/webm" />
-              <source src={srcUrl || ''} type="video/quicktime" />
-              Seu navegador não suporta vídeos.
-            </video>
+        <div className="relative overflow-hidden rounded-lg bg-muted">
+          {displayUrl ? (
+            currentMedia.kind === "video" ? (
+              <video
+                src={displayUrl}
+                controls
+                className="w-full h-auto max-h-96 object-contain"
+              />
+            ) : (
+              <img
+                src={displayUrl}
+                alt={`Mídia ${currentIndex + 1}`}
+                className="w-full h-auto max-h-96 object-contain cursor-pointer"
+                onClick={() => setShowModal(true)}
+              />
+            )
           ) : (
-            <img
-              src={srcUrl || thumbUrl || ''}
-              alt={`Mídia ${currentIndex + 1}`}
-              className="w-full h-full object-cover cursor-pointer"
-              onClick={() => setShowModal(true)}
-              onError={(e) => {
-                if (thumbUrl) e.currentTarget.src = thumbUrl;
-              }}
-            />
+            <div className="w-full h-64 flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">Erro ao carregar mídia</p>
+            </div>
           )}
-        </div>
 
         {/* Botão para expandir */}
         <Button
