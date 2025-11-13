@@ -284,8 +284,8 @@ const Clientes = () => {
     );
   }
 
-  // Verificar permissão de manage_clients
-  if (!hasPermission('manage_clients')) {
+  // Check access with direct role check to avoid race condition with usePermissions
+  if (!profile || (profile.role !== 'super_admin' && profile.role !== 'agency_admin')) {
     return (
       <div className="min-h-screen flex flex-col">
         <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
