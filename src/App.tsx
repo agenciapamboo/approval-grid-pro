@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { lazy, Suspense, useEffect } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ApproverProvider } from "@/contexts/ApproverContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useConversionTracking } from "@/hooks/useConversionTracking";
 
@@ -72,11 +73,12 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <PixelManager />
+        <ApproverProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <PixelManager />
             <Suspense fallback={
               <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="flex flex-col items-center gap-4">
@@ -141,6 +143,7 @@ const App = () => (
             </Suspense>
           </BrowserRouter>
         </TooltipProvider>
+      </ApproverProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

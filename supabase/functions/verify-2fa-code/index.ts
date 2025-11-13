@@ -209,9 +209,6 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        access_token: authData.properties.access_token,
-        refresh_token: authData.properties.refresh_token,
-        expires_at: authData.properties.expires_at,
         client: {
           id: clientData.id,
           name: clientData.name,
@@ -224,6 +221,7 @@ Deno.serve(async (req) => {
           name: agencyData.name,
         },
         approver: {
+          id: codeData.approver_id,
           name: approverData.name,
           email: approverData.email,
           is_primary: approverData.is_primary,
