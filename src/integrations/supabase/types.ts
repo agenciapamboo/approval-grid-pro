@@ -2497,14 +2497,6 @@ export type Database = {
       }
     }
     Functions: {
-      add_comment_for_approval: {
-        Args: { p_body: string; p_content_id: string; p_token: string }
-        Returns: Json
-      }
-      approve_content_for_approval: {
-        Args: { p_content_id: string; p_token: string }
-        Returns: Json
-      }
       check_client_permission: {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
@@ -2531,10 +2523,6 @@ export type Database = {
         }
         Returns: Json
       }
-      generate_approval_token: {
-        Args: { p_client_id: string; p_month: string }
-        Returns: string
-      }
       get_agency_admin_email: {
         Args: { agency_id_param: string }
         Returns: string
@@ -2547,45 +2535,6 @@ export type Database = {
           ip_address: string
           last_attempt: string
           user_agents: string[]
-        }[]
-      }
-      get_comments_for_approval: {
-        Args: { p_content_id: string; p_token: string }
-        Returns: {
-          adjustment_reason: string
-          author_name: string
-          author_user_id: string
-          body: string
-          created_at: string
-          id: string
-          is_adjustment_request: boolean
-        }[]
-      }
-      get_content_caption_for_approval: {
-        Args: { p_content_id: string; p_token: string; p_version: number }
-        Returns: {
-          caption: string
-        }[]
-      }
-      get_contents_for_approval: {
-        Args: { p_token: string }
-        Returns: {
-          auto_publish: boolean
-          category: string
-          channels: string[]
-          client_id: string
-          created_at: string
-          date: string
-          deadline: string
-          id: string
-          owner_user_id: string
-          publish_error: string
-          published_at: string
-          status: Database["public"]["Enums"]["content_status"]
-          title: string
-          type: Database["public"]["Enums"]["content_type"]
-          updated_at: string
-          version: number
         }[]
       }
       get_database_size_mb: { Args: never; Returns: number }
@@ -2639,15 +2588,7 @@ export type Database = {
         Returns: boolean
       }
       normalize_whatsapp: { Args: { phone: string }; Returns: string }
-      reject_content_for_approval: {
-        Args: { p_content_id: string; p_reason: string; p_token: string }
-        Returns: Json
-      }
       sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
-      save_caption_for_approval: {
-        Args: { p_caption: string; p_content_id: string; p_token: string }
-        Returns: Json
-      }
       send_notification: {
         Args: {
           p_agency_id?: string
@@ -2662,15 +2603,6 @@ export type Database = {
       unblock_ip: {
         Args: { p_ip_address: string; p_unblocked_by: string }
         Returns: Json
-      }
-      validate_approval_token: {
-        Args: { p_token: string }
-        Returns: {
-          client_id: string
-          client_name: string
-          client_slug: string
-          month: string
-        }[]
       }
     }
     Enums: {

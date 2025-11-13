@@ -25,7 +25,6 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { TestNotificationButton } from "@/components/admin/TestNotificationButton";
-import { GenerateApprovalLinkButton } from "@/components/admin/GenerateApprovalLinkButton";
 import { ProfilesManager } from "@/components/admin/ProfilesManager";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
 import { TeamMembersManager } from "@/components/admin/TeamMembersManager";
