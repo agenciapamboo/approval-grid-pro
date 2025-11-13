@@ -109,14 +109,22 @@ export function ContentCaption({ contentId, version, approvalToken }: ContentCap
         </div>
       ) : (
         <div>
-          <p className="text-sm whitespace-pre-wrap">{displayCaption}</p>
-          {caption.length > 150 && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-sm text-primary hover:underline mt-1"
-            >
-              {expanded ? "ver menos" : "ver mais"}
-            </button>
+          {caption ? (
+            <>
+              <p className="text-sm text-foreground whitespace-pre-wrap break-words line-clamp-3">
+                {displayCaption}
+              </p>
+              {caption.length > 150 && (
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="text-sm text-primary hover:underline mt-1"
+                >
+                  {expanded ? "ver menos" : "ver mais"}
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Sem legenda</p>
           )}
           <div className="mt-2">
             <Button 
