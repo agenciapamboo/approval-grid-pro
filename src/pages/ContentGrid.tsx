@@ -585,7 +585,6 @@ export default function ContentGrid() {
         title,
         status,
         date,
-        scheduled_at,
         deadline,
         type,
         client_id,
@@ -599,7 +598,8 @@ export default function ContentGrid() {
         media_path,
         caption,
         legend
-      `);
+      `)
+      .order('date', { ascending: false });
 
     if (tokenAccess) {
       query = query.eq('client_id', clientId);

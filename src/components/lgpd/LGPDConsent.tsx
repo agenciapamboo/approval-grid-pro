@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -110,7 +111,7 @@ export function LGPDConsent({ onAccept }: LGPDConsentProps) {
               <ScrollArea className="h-96 w-full rounded-md border p-4">
                 <div 
                   className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: termsContent }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(termsContent) }}
                 />
               </ScrollArea>
             </TabsContent>
@@ -118,7 +119,7 @@ export function LGPDConsent({ onAccept }: LGPDConsentProps) {
               <ScrollArea className="h-96 w-full rounded-md border p-4">
                 <div 
                   className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: privacyContent }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(privacyContent) }}
                 />
               </ScrollArea>
             </TabsContent>
