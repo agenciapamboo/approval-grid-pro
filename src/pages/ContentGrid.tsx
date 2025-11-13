@@ -85,7 +85,7 @@ export default function ContentGrid() {
     is_primary: boolean;
   } | null>(null);
   const [showAllContents, setShowAllContents] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("pending");
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     const tokenMonth = searchParams.get('month');
     if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
@@ -248,7 +248,7 @@ export default function ContentGrid() {
       }
 
       // Fetch contents for this client
-      await loadContents(data.client.id, undefined);
+      await loadContents(data.client.id, undefined, true);
     } catch (error) {
       console.error("Error validating session:", error);
       setTokenValid(false);
@@ -547,7 +547,7 @@ export default function ContentGrid() {
 
       console.log('Client loaded:', clientData);
       setClient(clientData);
-      await loadContents(clientData.id, undefined);
+      await loadContents(clientData.id, undefined, false);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -560,50 +560,41 @@ export default function ContentGrid() {
     }
   };
 
-  const loadContents = async (clientId: string, filterMonth?: string) => {
+  const loadContents = async (clientId: string, filterMonth?: string, tokenAccess: boolean = false) => {
     console.log('=== loadContents started for client:', clientId);
     
     const { data: { session } } = await supabase.auth.getSession();
-    const hasSessionToken = !!sessionToken; // Verificar se é sessão 2FA
-    
-    console.log('[ContentGrid] Load details:', {
-      hasSession: !!session,
-      hasSessionToken,
-      statusFilter,
-      clientId
-    });
+    console.log('Session in loadContents:', !!session, 'Token access:', tokenAccess, 'Show all:', showAllContents);
     
     let query = supabase
       .from("contents")
       .select("*")
       .eq("client_id", clientId);
     
-    // CASO 1: Aprovador com token 2FA (visualização limitada a pendentes)
-    // Identifica aprovador: tem sessionToken MAS NÃO tem sessão Supabase Auth
-    if (hasSessionToken && !session) {
-      console.log('[ContentGrid] 2FA Approver - showing ONLY pending contents (draft + in_review)');
+    // Com token: mostrar "draft" OU "in_review" (ambos podem precisar de aprovação)
+    if (tokenAccess) {
+      console.log('[ContentGrid] Token access - filtering draft and in_review contents');
       query = query.in("status", ["draft", "in_review"]);
     }
-    // CASO 2: Cliente autenticado via Supabase Auth (visualização COMPLETA)
-    else if (session) {
-      console.log('[ContentGrid] Authenticated client - showing ALL contents, applying tab filter:', statusFilter);
-      
-      // Aplicar filtro de status apenas se não for 'all'
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'pending') {
-          query = query.in("status", ["draft", "in_review"]);
-        } else if (statusFilter === 'approved') {
-          query = query.eq("status", "approved");
-        } else if (statusFilter === 'changes_requested') {
-          query = query.eq("status", "changes_requested");
-        }
-      }
-      // Se statusFilter === 'all', não aplica filtro de status (mostra todos)
-    }
-    // CASO 3: Acesso público sem autenticação (apenas aprovados)
-    else {
-      console.log('[ContentGrid] Public access - showing only approved contents');
+    // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
+    else if (!session) {
+      console.log('No session - filtering only approved contents');
       query = query.eq("status", "approved");
+    } 
+    // Com sessão de cliente: aplicar filtro baseado na tab selecionada
+    else if (session && statusFilter !== 'all') {
+      console.log('Client session - applying status filter:', statusFilter);
+      if (statusFilter === 'pending') {
+        query = query.in("status", ["draft", "in_review"]);
+      } else if (statusFilter === 'approved') {
+        query = query.eq("status", "approved");
+      } else if (statusFilter === 'changes_requested') {
+        query = query.eq("status", "changes_requested");
+      }
+    }
+    // Se statusFilter for 'all', mostrar todos
+    else {
+      console.log('Session exists - loading all contents');
     }
 
     // Filtrar por mês se especificado
@@ -628,8 +619,7 @@ export default function ContentGrid() {
       count: data?.length || 0,
       clientId,
       filterMonth,
-      hasSessionToken,
-      hasSession: !!session,
+      tokenAccess,
       statuses: data?.map(c => c.status)
     });
     setContents(data || []);
@@ -845,7 +835,7 @@ export default function ContentGrid() {
           <div className="mb-6">
             <Tabs value={statusFilter} onValueChange={(value: any) => {
               setStatusFilter(value);
-      loadContents(client!.id, selectedMonth);
+              loadContents(client!.id, selectedMonth, false);
             }}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pending" className="flex items-center gap-2">
@@ -884,7 +874,7 @@ export default function ContentGrid() {
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
-                loadContents(client!.id, e.target.value);
+                loadContents(client!.id, e.target.value, isPublicView);
               }}
               className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
@@ -926,7 +916,7 @@ export default function ContentGrid() {
                   if (isPublicView && approvalToken) {
                     fetchContentsViaToken(approvalToken);
                   } else {
-                    loadContents(client!.id, selectedMonth);
+                    loadContents(client!.id, selectedMonth, false);
                   }
                 }}
               />

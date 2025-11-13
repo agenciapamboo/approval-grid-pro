@@ -172,13 +172,6 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
   };
 
   const handleApprove = async () => {
-    console.log('[APPROVE] Iniciando aprovação:', {
-      contentId: content.id,
-      currentStatus: content.status,
-      isPublicApproval,
-      hasToken: !!approvalToken
-    });
-    
     try {
       if (isPublicApproval && approvalToken) {
         // Usar RPC para aprovação via token
@@ -227,10 +220,9 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
         });
       }
 
-      console.log('[APPROVE] ✅ Sucesso, chamando onUpdate');
       onUpdate();
     } catch (error) {
-      console.error('[APPROVE] ❌ Erro:', error);
+      console.error("Erro ao aprovar:", error);
       toast({
         title: "Erro",
         description: "Erro ao aprovar o conteúdo",
@@ -248,14 +240,6 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       });
       return;
     }
-
-    console.log('[REJECT] Iniciando reprovação:', {
-      contentId: content.id,
-      currentStatus: content.status,
-      reason: rejectReason,
-      isPublicApproval,
-      hasToken: !!approvalToken
-    });
 
     try {
       if (isPublicApproval && approvalToken) {
@@ -312,12 +296,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
         });
       }
 
-      console.log('[REJECT] ✅ Sucesso, chamando onUpdate');
       setShowRejectDialog(false);
       setRejectReason("");
       onUpdate();
     } catch (error) {
-      console.error('[REJECT] ❌ Erro:', error);
+      console.error("Erro ao reprovar:", error);
       toast({
         title: "Erro",
         description: "Erro ao reprovar o conteúdo",

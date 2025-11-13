@@ -43,19 +43,11 @@ export default function ClientApproval() {
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    // Permitir digitação livre - detectar tipo apenas visualmente
+    // Detectar se é email ou WhatsApp
     if (value.includes('@')) {
-      // É email - não formatar
       setIdentifier(value);
-      setIdentifierType('email');
-    } else if (value.match(/^\d/)) {
-      // Começou com número - é WhatsApp - formatar
-      setIdentifier(formatWhatsApp(value));
-      setIdentifierType('whatsapp');
     } else {
-      // Ainda não sabemos - permitir digitação livre
-      setIdentifier(value);
-      setIdentifierType(null);
+      setIdentifier(formatWhatsApp(value));
     }
   };
 
@@ -78,34 +70,19 @@ export default function ClientApproval() {
         body: { identifier },
       });
 
-      if (error) {
-        console.error('Error sending code:', error);
-        toast.error('Erro ao enviar código. Verifique sua conexão.');
-        return;
-      }
+      if (error) throw error;
 
       if (data?.error) {
-        // Mensagens específicas baseadas no erro retornado
-        if (data.error.includes('não encontrado')) {
-          if (data.error.includes('email') || identifier.includes('@')) {
-            toast.error('Email não encontrado. Verifique se está cadastrado como aprovador.');
-          } else {
-            toast.error('WhatsApp não encontrado. Verifique se está cadastrado como aprovador.');
-          }
-        } else if (data.error.includes('Formato inválido')) {
-          toast.error('Formato inválido. Use um email válido ou WhatsApp no formato (XX) XXXXX-XXXX');
-        } else {
-          toast.error(data.error);
-        }
+        toast.error(data.error);
         return;
       }
 
       setIdentifierType(data.identifier_type);
-      toast.success(`Código enviado para seu ${data.identifier_type === 'email' ? 'email' : 'WhatsApp'}!`);
+      toast.success(data.message || 'Código enviado com sucesso!');
       setStep('code');
     } catch (error: any) {
       console.error('Error sending code:', error);
-      toast.error('Erro ao enviar código. Tente novamente.');
+      toast.error(error.message || 'Erro ao enviar código. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -130,26 +107,15 @@ export default function ClientApproval() {
         body: { identifier, code },
       });
 
-      if (error) {
-        console.error('Error verifying code:', error);
-        toast.error('Erro ao validar código. Verifique sua conexão.');
-        return;
-      }
+      if (error) throw error;
 
       if (data?.error) {
-        // Mensagens específicas
-        if (data.error.includes('inválido')) {
-          toast.error('Código inválido. Verifique se digitou corretamente.');
-        } else if (data.error.includes('expirado')) {
-          toast.error('Código expirado. Solicite um novo código.');
-        } else {
-          toast.error(data.error);
-        }
+        toast.error(data.error);
         return;
       }
 
       if (!data.success) {
-        toast.error('Erro na validação. Tente novamente.');
+        toast.error('Código inválido ou expirado');
         return;
       }
 
@@ -159,47 +125,27 @@ export default function ClientApproval() {
 
       toast.success(`Bem-vindo, ${data.approver?.name || 'Aprovador'}!`);
 
-      // Buscar dados do cliente e agência de forma robusta
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select(`
-          id,
-          name,
-          slug,
-          logo_url,
-          agency_id,
-          agencies!inner (
-            id,
-            slug,
-            name
-          )
-        `)
-        .eq('id', data.client.id)
-        .single();
-
-      if (clientError || !clientData) {
-        console.error('Erro ao buscar dados do cliente:', clientError);
-        toast.error('Cliente não encontrado no sistema');
-        setLoading(false);
-        return;
-      }
-
-      const agency = clientData.agencies;
-      const agencySlug = Array.isArray(agency) ? agency[0]?.slug : agency?.slug;
+      // Redirecionar para página do cliente
       const clientSlug = data.client?.slug;
+      if (clientSlug) {
+        // Precisamos buscar o slug da agência também
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('agency_id, agencies!inner(slug)')
+          .eq('id', data.client.id)
+          .single();
 
-      if (!agencySlug || !clientSlug) {
-        console.error('Dados incompletos:', { agencySlug, clientSlug });
-        toast.error('Erro: dados do cliente ou agência estão incompletos');
-        setLoading(false);
-        return;
+        const agencySlug = (clientData?.agencies as any)?.slug;
+
+        if (agencySlug && clientSlug) {
+          navigate(`/${agencySlug}/${clientSlug}?session=${data.session_token}`);
+        } else {
+          toast.error('Erro ao carregar dados do cliente');
+        }
       }
-
-      console.log('✅ Redirecionando para:', `/${agencySlug}/${clientSlug}`);
-      navigate(`/${agencySlug}/${clientSlug}?session_token=${data.session_token}`);
     } catch (error: any) {
       console.error('Error verifying code:', error);
-      toast.error('Erro inesperado ao validar código. Tente novamente.');
+      toast.error(error.message || 'Erro ao validar código. Tente novamente.');
     } finally {
       setLoading(false);
     }

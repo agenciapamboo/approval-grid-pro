@@ -1303,6 +1303,78 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
 
+                {/* Seção Segurança e Gestão - Agency Admin */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Shield className="h-6 w-6" />
+                    Segurança e Gestão
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card 
+                      className="hover:shadow-lg transition-shadow cursor-pointer" 
+                      onClick={() => navigate("/admin/dashboard-seguranca")}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5" />
+                          Dashboard de Segurança 2FA
+                        </CardTitle>
+                        <CardDescription>
+                          Monitore tentativas de acesso e segurança dos seus clientes
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Acessar
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card 
+                      className="hover:shadow-lg transition-shadow cursor-pointer" 
+                      onClick={() => navigate("/admin/historico-2fa")}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <HistoryIcon className="h-5 w-5" />
+                          Histórico de Acessos 2FA
+                        </CardTitle>
+                        <CardDescription>
+                          Veja todas as tentativas de autenticação
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Acessar
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card 
+                      className="hover:shadow-lg transition-shadow cursor-pointer" 
+                      onClick={() => navigate("/admin/sessoes-ativas")}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Sessões Ativas
+                        </CardTitle>
+                        <CardDescription>
+                          Gerencie sessões ativas de aprovadores
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Acessar
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-6 h-6 text-primary" />
@@ -1505,40 +1577,20 @@ const Dashboard = () => {
                               variant="secondary"
                               size="sm"
                               className="w-full justify-start"
-                              onClick={() => navigate(`/agency-content`)}
+                              onClick={() => navigate(`/agency/client/${client.id}`)}
                             >
                               <FileImage className="w-4 h-4 mr-2" />
                               Conteúdos
                             </Button>
 
                             <Button
-                              variant="secondary"
-                              size="sm"
-                              className="w-full justify-start"
-                              onClick={() => navigate(`/agency-content`)}
-                            >
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Aprovar Criativos
-                            </Button>
-
-                            <Button
                               variant="outline"
                               size="sm"
                               className="w-full justify-start"
-                              onClick={() => navigate(`/agency/creative-requests`)}
+                              onClick={() => navigate(`/agency/creative-requests/${client.id}`)}
                             >
-                              <HistoryIcon className="w-4 h-4 mr-2" />
+                              <MessageSquare className="w-4 h-4 mr-2" />
                               Solicitações
-                            </Button>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-start"
-                              onClick={() => navigate(`/client/${client.id}/history`)}
-                            >
-                              <HistoryIcon className="w-4 h-4 mr-2" />
-                              Aprovação
                             </Button>
                           </div>
                         </div>
@@ -1548,57 +1600,6 @@ const Dashboard = () => {
                 })}
               </div>
             )}
-
-                {/* Seção Segurança e Gestão - Agency Admin */}
-                <div className="mt-8">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <Shield className="h-6 w-6" />
-                    Segurança e Gestão
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card 
-                      className="hover:shadow-lg transition-shadow cursor-pointer" 
-                      onClick={() => navigate("/admin/historico-2fa")}
-                    >
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <HistoryIcon className="h-5 w-5" />
-                          Histórico de Acessos 2FA
-                        </CardTitle>
-                        <CardDescription>
-                          Veja todas as tentativas de autenticação
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button variant="outline" className="w-full">
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Acessar
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card 
-                      className="hover:shadow-lg transition-shadow cursor-pointer" 
-                      onClick={() => navigate("/admin/sessoes-ativas")}
-                    >
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Users className="h-5 w-5" />
-                          Sessões Ativas
-                        </CardTitle>
-                        <CardDescription>
-                          Gerencie sessões ativas de aprovadores
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button variant="outline" className="w-full">
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Acessar
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
               </div>
             </TabsContent>
 

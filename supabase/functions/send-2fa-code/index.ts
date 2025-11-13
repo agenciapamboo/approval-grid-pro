@@ -40,24 +40,6 @@ Deno.serve(async (req) => {
 
     console.log(`[send-2fa-code] Looking for approver with identifier: ${identifier.substring(0, 3)}***`);
 
-    // Validar formato do identificador
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const whatsappRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
-
-    const trimmedIdentifier = identifier.trim();
-    const isEmail = emailRegex.test(trimmedIdentifier);
-    const isWhatsApp = whatsappRegex.test(trimmedIdentifier);
-
-    if (!isEmail && !isWhatsApp) {
-      console.error('[send-2fa-code] Invalid identifier format');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Formato inválido. Use um email válido ou WhatsApp no formato (XX) XXXXX-XXXX' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Buscar aprovador usando a função do banco
     const { data: approverData, error: approverError } = await supabase.rpc(
       'find_approver_by_identifier',
@@ -165,28 +147,12 @@ Deno.serve(async (req) => {
     console.log(`[send-2fa-code] Sending to N8N webhook: ${webhookUrl}`);
 
     try {
-      // Usar GET com query params ao invés de POST
-      const queryParams = new URLSearchParams({
-        event: webhookPayload.event,
-        approver_id: webhookPayload.approver_id,
-        approver_name: webhookPayload.approver_name,
-        client_id: webhookPayload.client_id,
-        client_name: webhookPayload.client_name,
-        client_slug: webhookPayload.client_slug,
-        code: webhookPayload.code,
-        identifier: webhookPayload.identifier,
-        identifier_type: webhookPayload.identifier_type,
-        expires_at: webhookPayload.expires_at,
-        login_url: webhookPayload.login_url,
-      });
-
-      const webhookUrlWithParams = `${webhookUrl}?${queryParams.toString()}`;
-
-      const webhookResponse = await fetch(webhookUrlWithParams, {
-        method: 'GET',
+      const webhookResponse = await fetch(webhookUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(webhookPayload),
       });
 
       if (!webhookResponse.ok) {
