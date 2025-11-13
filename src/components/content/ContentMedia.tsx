@@ -16,11 +16,19 @@ interface Media {
 interface ContentMediaProps {
   contentId: string;
   type: string;
+  preloadedUrls?: Map<string, string>;
 }
 
-// Hook auxiliar para uma mídia individual
-function useMediaUrl(media: Media | undefined) {
-  // Sempre chamar hooks na mesma ordem
+// Hook auxiliar para uma mídia individual com suporte a URLs pré-carregadas
+function useMediaUrl(media: Media | undefined, preloadedUrls?: Map<string, string>) {
+  // Se URLs foram pré-carregadas, usar elas
+  if (preloadedUrls && media) {
+    const srcUrl = preloadedUrls.get(media.src_url) || media.src_url;
+    const thumbUrl = media.thumb_url ? (preloadedUrls.get(media.thumb_url) || media.thumb_url) : srcUrl;
+    return { srcUrl, thumbUrl };
+  }
+
+  // Fallback: comportamento original com useStorageUrl
   const srcFilePath = media?.src_url?.includes('/content-media/')
     ? media.src_url.split('/content-media/')[1]
     : media?.src_url;
@@ -42,7 +50,7 @@ function useMediaUrl(media: Media | undefined) {
   return { srcUrl, thumbUrl };
 }
 
-export function ContentMedia({ contentId, type }: ContentMediaProps) {
+export function ContentMedia({ contentId, type, preloadedUrls }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -90,7 +98,7 @@ export function ContentMedia({ contentId, type }: ContentMediaProps) {
 
   // Calcular currentMedia de forma segura e chamar hook ANTES dos returns condicionais
   const currentMedia = media.length > 0 ? media[Math.min(currentIndex, media.length - 1)] : undefined;
-  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia);
+  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia, preloadedUrls);
 
   if (loading) {
     return (

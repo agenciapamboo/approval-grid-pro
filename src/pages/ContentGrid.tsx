@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ContentCard } from "@/components/content/ContentCard";
+import { VirtualizedContentGrid } from "@/components/content/VirtualizedContentGrid";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RateLimitBlockedAlert } from "@/components/admin/RateLimitBlockedAlert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useBatchStorageUrls } from "@/hooks/useBatchStorageUrls";
 
 interface Profile {
   id: string;
@@ -506,8 +507,15 @@ export default function ContentGrid() {
 
   const sortedMonthKeys = Object.keys(groupedContents).sort((a, b) => b.localeCompare(a));
   
-  // Filtrar pelo mês selecionado
-  const filteredContents = selectedMonth ? (groupedContents[selectedMonth] || []) : contents;
+  // Para aprovadores 2FA: mostrar TODOS os conteúdos SEM filtro de mês
+  // Para outros: filtrar pelo mês selecionado
+  const hasSessionToken = !!sessionToken;
+  const hasSession = !!user;
+  const isApproverView = hasSessionToken && !hasSession;
+  
+  const filteredContents = isApproverView 
+    ? contents // Aprovadores veem TUDO sem filtro de mês
+    : (selectedMonth ? (groupedContents[selectedMonth] || []) : contents);
 
   // Calcular contadores de status
   const statusCounts = contents.reduce((acc, content) => {
@@ -521,6 +529,62 @@ export default function ContentGrid() {
     acc.total = (acc.total || 0) + 1;
     return acc;
   }, { pending: 0, approved: 0, changes: 0, total: 0 });
+
+  // Coletar todos os file paths das mídias para batch loading
+  const mediaFilePaths = useMemo(() => {
+    const paths: (string | null | undefined)[] = [];
+    filteredContents.forEach(content => {
+      // Buscar mídias desse conteúdo (será feito async no hook)
+      // Por ora, retornar array vazio para inicializar hook
+    });
+    return paths;
+  }, [filteredContents]);
+
+  // Carregar URLs das mídias em batch
+  const [mediaData, setMediaData] = useState<Array<{ content_id: string; src_url: string; thumb_url?: string }>>([]);
+  
+  useEffect(() => {
+    async function loadAllMedia() {
+      if (filteredContents.length === 0) return;
+      
+      const contentIds = filteredContents.map(c => c.id);
+      const { data, error } = await supabase
+        .from("content_media")
+        .select("content_id, src_url, thumb_url")
+        .in("content_id", contentIds);
+      
+      if (!error && data) {
+        setMediaData(data);
+      }
+    }
+    loadAllMedia();
+  }, [filteredContents]);
+
+  const allMediaPaths = useMemo(() => {
+    const paths: (string | null | undefined)[] = [];
+    mediaData.forEach(media => {
+      // Extrair path do src_url
+      const srcPath = media.src_url?.includes('/content-media/')
+        ? media.src_url.split('/content-media/')[1]
+        : media.src_url;
+      paths.push(srcPath);
+      
+      // Extrair path do thumb_url
+      if (media.thumb_url) {
+        const thumbPath = media.thumb_url?.includes('/content-media/')
+          ? media.thumb_url.split('/content-media/')[1]
+          : media.thumb_url;
+        paths.push(thumbPath);
+      }
+    });
+    return paths;
+  }, [mediaData]);
+
+  const { urls: mediaUrls, loading: mediaLoading } = useBatchStorageUrls({
+    bucket: 'content-media',
+    filePaths: allMediaPaths,
+    expiresIn: 3600,
+  });
 
   // Debug: Log state changes
   useEffect(() => {
@@ -718,8 +782,8 @@ export default function ContentGrid() {
           </div>
         )}
 
-        {/* Seletor de Mês - desabilitado na visualização pública */}
-        {!isPublicView && sortedMonthKeys.length > 0 && (
+        {/* Seletor de Mês - desabilitado para aprovadores 2FA e na visualização pública */}
+        {!isApproverView && !isPublicView && sortedMonthKeys.length > 0 && (
           <div className="mb-6">
             <select
               value={selectedMonth}
@@ -754,25 +818,22 @@ export default function ContentGrid() {
             }
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredContents.map((content) => (
-              <ContentCard 
-                key={content.id} 
-                content={content}
-                isResponsible={false}
-                isAgencyView={false}
-                isPublicApproval={isPublicView}
-                sessionToken={sessionToken || undefined}
-                onUpdate={() => {
-                  if (isPublicView && client) {
-                    loadContents(client.id, selectedMonth);
-                  } else {
-                    loadContents(client!.id, selectedMonth);
-                  }
-                }}
-              />
-            ))}
-          </div>
+          <VirtualizedContentGrid
+            contents={filteredContents}
+            mediaUrls={mediaUrls}
+            isResponsible={false}
+            isAgencyView={false}
+            isPublicApproval={isPublicView}
+            sessionToken={sessionToken || undefined}
+            onUpdate={() => {
+              if (isPublicView && client) {
+                loadContents(client.id, selectedMonth);
+              } else {
+                loadContents(client!.id, selectedMonth);
+              }
+            }}
+            blockSize={9}
+          />
         )}
       </main>
       

@@ -39,6 +39,7 @@ interface ContentCardProps {
     is_content_plan?: boolean;
     plan_description?: string | null;
   };
+  mediaUrls?: Map<string, string>;
   isResponsible: boolean;
   isAgencyView?: boolean;
   isPublicApproval?: boolean;
@@ -46,7 +47,7 @@ interface ContentCardProps {
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, sessionToken, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = false, isPublicApproval = false, sessionToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const [showComments, setShowComments] = useState(false);
@@ -905,7 +906,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
               )}
             </>
           ) : (
-            <ContentMedia contentId={content.id} type={content.type} />
+            <ContentMedia contentId={content.id} type={content.type} preloadedUrls={mediaUrls} />
           )}
 
           {/* Linha 3: Legenda */}
