@@ -60,7 +60,13 @@ const Clientes = () => {
         .from('profiles')
         .select('*')
         .eq('id', user!.id)
-        .single();
+        .maybeSingle();
+      
+      if (!profileData) {
+        toast.error('Perfil não encontrado');
+        navigate('/auth');
+        return;
+      }
       
       setProfile(profileData);
 

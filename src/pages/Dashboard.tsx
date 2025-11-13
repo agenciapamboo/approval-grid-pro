@@ -59,7 +59,13 @@ const Dashboard = () => {
         .from('profiles')
         .select('*')
         .eq('id', user!.id)
-        .single();
+        .maybeSingle();
+      
+      if (!profileData) {
+        toast.error('Perfil não encontrado');
+        navigate('/auth');
+        return;
+      }
       
       setProfile(profileData);
 
@@ -92,7 +98,7 @@ const Dashboard = () => {
         const agencyResponse = await supabase
           .from('agencies')
           .select('id, name, slug')
-          .single();
+          .maybeSingle();
         
         if (agencyResponse.data) {
           const clientsResponse = await supabase
@@ -106,20 +112,22 @@ const Dashboard = () => {
               clients: clientsResponse.data || [],
             },
           });
+        } else {
+          setDashboardData({ agency: null });
         }
       } else if (role === 'client_user') {
         // RLS filtra por client_id automaticamente
         const clientResponse = await supabase
           .from('clients')
           .select('id, name, slug, agency_id')
-          .single();
+          .maybeSingle();
         
         if (clientResponse.data) {
           const agencyResponse = await supabase
             .from('agencies')
             .select('id, name, slug')
             .eq('id', clientResponse.data.agency_id)
-            .single();
+            .maybeSingle();
           
           setDashboardData({
             client: {
@@ -127,6 +135,8 @@ const Dashboard = () => {
               agencies: agencyResponse.data,
             },
           });
+        } else {
+          setDashboardData({ client: null });
         }
       } else if (role === 'approver') {
         // Usar helper para evitar recursão de tipos
@@ -212,26 +222,32 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {(dashboardData.agency.clients || []).map((client: any) => (
-                      <Card key={client.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <CardTitle className="text-lg">{client.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => navigate(`/clientes/${client.id}`)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  {dashboardData.agency.clients && dashboardData.agency.clients.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {dashboardData.agency.clients.map((client: any) => (
+                        <Card key={client.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+                          <CardHeader>
+                            <CardTitle className="text-lg">{client.name}</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => navigate(`/clientes/${client.id}`)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">
+                      Nenhum cliente cadastrado ainda
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
