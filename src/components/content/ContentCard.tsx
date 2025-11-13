@@ -28,6 +28,7 @@ interface ContentCardProps {
     id: string;
     title: string;
     date: string;
+    scheduled_at?: string | null;
     deadline?: string;
     type: string;
     status: string;
@@ -38,6 +39,10 @@ interface ContentCardProps {
     supplier_link?: string | null;
     is_content_plan?: boolean;
     plan_description?: string | null;
+    media_path?: string | null;
+    caption?: string | null;
+    legend?: string | null;
+    agency_id?: string | null;
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
@@ -57,9 +62,15 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [newDate, setNewDate] = useState<Date>(new Date(content.date));
+  const contentDateValue = content.scheduled_at ?? content.date;
+  const parsedContentDate = (() => {
+    if (!contentDateValue) return new Date();
+    const parsed = new Date(contentDateValue);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  })();
+  const [newDate, setNewDate] = useState<Date>(parsedContentDate);
   const [selectedTime, setSelectedTime] = useState<string>(() => {
-    const raw = String(content.date || "");
+    const raw = String(contentDateValue || "");
     const parts = raw.includes("T") ? raw.split("T")[1] : raw.split(" ")[1] || "12:00:00";
     const [hh = "12", mm = "00"] = parts.split(":");
     return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`;
@@ -193,7 +204,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
         await createNotification('content.approved', content.id, {
           title: content.title,
-          date: content.date,
+          date: contentDateValue || content.date,
           channels: content.channels || [],
         });
 
@@ -249,7 +260,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
         await createNotification('content.rejected', content.id, {
           title: content.title,
-          date: content.date,
+          date: contentDateValue || content.date,
           comment: rejectReason,
           channels: content.channels || [],
         });
@@ -459,7 +470,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       // Disparar apenas o gatilho de aprovação (sem alterar status)
       const resReady = await createNotification('content.ready_for_approval', content.id, {
         title: content.title,
-        date: content.date,
+        date: contentDateValue || content.date,
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Agência',
           email: user?.email,
@@ -500,7 +511,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
       // Disparar notificação de ajuste concluído (notify-event)
       const resAdj = await createNotification('content.adjustment_completed', content.id, {
         title: content.title,
-        date: content.date,
+        date: contentDateValue || content.date,
         actor: {
           name: user?.user_metadata?.name || user?.email || 'Agência',
           email: user?.email,
@@ -595,7 +606,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
 
       toast({
         title: "Agendamento ativado",
-        description: `Conteúdo será publicado automaticamente em ${format(new Date(content.date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+      description: `Conteúdo será publicado automaticamente em ${format(parsedContentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
       });
 
       onUpdate();
@@ -770,7 +781,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                   <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
                     <PopoverTrigger asChild>
                       <span className="font-medium text-sm cursor-pointer hover:text-primary transition-colors">
-                        {format(new Date(content.date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {format(parsedContentDate, "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </span>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-4" align="start">
@@ -853,11 +864,21 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
               )}
             </>
           ) : (
-            <ContentMedia contentId={content.id} type={content.type} approvalToken={approvalToken} />
+            <ContentMedia
+              contentId={content.id}
+              type={content.type}
+              approvalToken={approvalToken}
+              mediaPath={content.media_path}
+            />
           )}
 
           {/* Linha 3: Legenda */}
-          <ContentCaption contentId={content.id} version={content.version} approvalToken={approvalToken} />
+          <ContentCaption
+            contentId={content.id}
+            version={content.version}
+            approvalToken={approvalToken}
+            initialCaption={content.caption ?? content.legend ?? undefined}
+          />
 
           {/* Ações - Simplificado para visualização pública */}
           {!isAgencyView && (

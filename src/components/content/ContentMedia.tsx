@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 interface Media {
   id: string;
   src_url: string;
-  thumb_url?: string;
+  thumb_url?: string | null;
   kind: string;
   order_index: number;
 }
@@ -16,7 +16,35 @@ interface ContentMediaProps {
   contentId: string;
   type: string;
   approvalToken?: string;
+  mediaPath?: string | null;
 }
+
+const STORAGE_PREFIX = 'content-media/';
+
+const isExternalUrl = (value?: string | null) => {
+  if (!value) return false;
+  return /^https?:\/\//i.test(value);
+};
+
+const normalizeStoragePath = (value?: string | null) => {
+  if (!value) return null;
+  let trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (isExternalUrl(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith(STORAGE_PREFIX)) {
+    trimmed = trimmed.slice(STORAGE_PREFIX.length);
+  }
+
+  while (trimmed.startsWith('/')) {
+    trimmed = trimmed.slice(1);
+  }
+
+  return trimmed;
+};
 
 // Hook para buscar signed URL via edge function
 function useSignedUrl(path: string | null | undefined) {
@@ -24,42 +52,79 @@ function useSignedUrl(path: string | null | undefined) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!path) {
+    const normalizedPath = normalizeStoragePath(path);
+
+    if (!normalizedPath) {
       setUrl(null);
+      setLoading(false);
       return;
     }
 
-    // Se já é URL externa, usar diretamente
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      setUrl(path);
+    if (isExternalUrl(normalizedPath)) {
+      setUrl(normalizedPath);
+      setLoading(false);
       return;
     }
 
+    let isMounted = true;
     setLoading(true);
-    
-    supabase.functions
-      .invoke('get-media-url', {
-        body: { path },
-      })
-      .then(({ data, error }) => {
+
+    const fetchSignedUrl = async () => {
+      try {
+        // Primeiro tenta via rota de API (se existir no ambiente)
+        try {
+          const response = await fetch('/api/media-url', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ path: normalizedPath })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result?.url && isMounted) {
+              setUrl(result.url);
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('Falha ao buscar signed URL via rota /api/media-url:', error);
+        }
+
+        const { data, error } = await supabase.functions.invoke('get-media-url', {
+          body: { path: normalizedPath }
+        });
+
         if (error) {
           console.error('Erro ao buscar signed URL:', error);
-          setUrl(null);
-        } else if (data?.url) {
-          setUrl(data.url);
+          if (isMounted) setUrl(null);
+          return;
         }
-      })
-      .catch((err) => {
+
+        const signedUrl = data?.url || data?.signedUrl;
+        if (signedUrl && isMounted) {
+          setUrl(signedUrl);
+        } else if (isMounted) {
+          setUrl(null);
+        }
+      } catch (err) {
         console.error('Erro na requisição:', err);
-        setUrl(null);
-      })
-      .finally(() => setLoading(false));
+        if (isMounted) setUrl(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchSignedUrl();
+
+    return () => {
+      isMounted = false;
+    };
   }, [path]);
 
   return { url, loading };
 }
 
-export function ContentMedia({ contentId, type, approvalToken }: ContentMediaProps) {
+export function ContentMedia({ contentId, type, approvalToken, mediaPath }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -68,8 +133,24 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
+    const normalizedPath = normalizeStoragePath(mediaPath);
+
+    if (normalizedPath) {
+      setMedia([
+        {
+          id: `${contentId}-primary`,
+          kind: type === "video" ? "video" : "image",
+          order_index: 0,
+          src_url: normalizedPath,
+          thumb_url: null
+        }
+      ]);
+      setLoading(false);
+      return;
+    }
+
     loadMedia();
-  }, [contentId, approvalToken]);
+  }, [contentId, approvalToken, mediaPath]);
 
   useEffect(() => {
     if (media.length === 0) {
@@ -96,9 +177,9 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
             id: m.id,
             kind: m.kind,
             order_index: m.order_index,
-            src_url: m.srcUrl,
-            thumb_url: m.thumbUrl
-          }));
+            src_url: normalizeStoragePath(m.srcUrl) || '',
+            thumb_url: normalizeStoragePath(m.thumbUrl)
+          })).filter((item) => !!item.src_url) as Media[];
           setMedia(mappedMedia);
         }
       } else {
@@ -112,7 +193,14 @@ export function ContentMedia({ contentId, type, approvalToken }: ContentMediaPro
           console.error("Erro ao carregar mídias:", error);
           setMedia([]);
         } else {
-          setMedia(data || []);
+          const sanitizedMedia = (data || [])
+            .map((item) => ({
+              ...item,
+              src_url: normalizeStoragePath(item.src_url) || '',
+              thumb_url: normalizeStoragePath(item.thumb_url)
+            }))
+            .filter((item) => !!item.src_url) as Media[];
+          setMedia(sanitizedMedia);
         }
       }
     } finally {

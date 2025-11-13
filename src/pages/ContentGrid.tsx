@@ -48,15 +48,21 @@ interface Content {
   id: string;
   title: string;
   date: string;
+  scheduled_at?: string | null;
   deadline?: string;
   type: string;
   status: string;
   client_id: string;
+  agency_id?: string | null;
   owner_user_id: string;
   version: number;
   created_at: string;
   updated_at: string;
   channels?: string[];
+  published_at?: string | null;
+  media_path?: string | null;
+  caption?: string | null;
+  legend?: string | null;
 }
 
 export default function ContentGrid() {
@@ -311,28 +317,6 @@ export default function ContentGrid() {
     }
   };
 
-  const fetchContentsViaToken = async (token: string) => {
-    console.log('[ContentGrid] Fetching contents via direct query (no legacy RPC)');
-    
-    // Fetch contents directly from database (no RPC)
-    const { data: contentData, error } = await supabase
-      .from('contents')
-      .select('*')
-      .order('date', { ascending: true });
-
-    if (error) {
-      console.error('[ContentGrid] Query error:', error);
-      setContents([]);
-      return;
-    }
-
-    console.log('[ContentGrid] Contents loaded:', {
-      count: contentData?.length || 0,
-      statuses: contentData?.map((c: any) => c.status)
-    });
-    setContents(contentData || []);
-  };
-
   const validateTokenAndLoadData = async (token: string) => {
     try {
       console.log('=== Validating approval token with rate limiting ===');
@@ -454,8 +438,8 @@ export default function ContentGrid() {
         console.warn('[ContentGrid] Public client/agency fetch skipped due to error:', e);
       }
 
-      // Fetch contents via RPC
-      await fetchContentsViaToken(token);
+      // Carregar conteúdos da conta do cliente validado
+      await loadContents(data.client_id, data.month, true);
     } catch (error) {
       console.error("Error validating token:", error);
       setTokenValid(false);
@@ -563,7 +547,7 @@ export default function ContentGrid() {
       }
 
       console.log('[ContentGrid] Final client:', finalClient);
-      await loadContents(finalClient.id, undefined, false);
+      await loadContents(finalClient.id, selectedMonth, false);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -578,54 +562,97 @@ export default function ContentGrid() {
 
   const loadContents = async (clientId: string, filterMonth?: string, tokenAccess: boolean = false) => {
     console.log('[ContentGrid] loadContents - clientId:', clientId, 'role:', role);
-    
+
     const { data: { session } } = await supabase.auth.getSession();
     console.log('[ContentGrid] Session:', !!session, 'Token access:', tokenAccess);
-    
-    // Filtrar DIRETAMENTE no código usando client_id
+
+    const profileAgencyId = profile?.agency_id
+      ?? (userProfile as Profile | null)?.agency_id
+      ?? userAgency?.id
+      ?? agency?.id
+      ?? null;
+
+    const profileClientId = profile?.client_id
+      ?? (userProfile as Profile | null)?.client_id
+      ?? userClient?.id
+      ?? client?.id
+      ?? clientId;
+
     let query = supabase
-      .from("contents")
-      .select("*")
-      .eq("client_id", clientId);
-    
-    // Com token: mostrar "draft" OU "in_review" (ambos podem precisar de aprovação)
+      .from('contents')
+      .select(`
+        id,
+        title,
+        status,
+        date,
+        scheduled_at,
+        deadline,
+        type,
+        client_id,
+        agency_id,
+        owner_user_id,
+        version,
+        created_at,
+        updated_at,
+        channels,
+        published_at,
+        media_path,
+        caption,
+        legend
+      `);
+
     if (tokenAccess) {
-      console.log('[ContentGrid] Token access - filtering draft and in_review contents');
-      query = query.in("status", ["draft", "in_review"]);
-    }
-    // Sem sessão e sem token: mostrar apenas aprovados (visualização pública)
-    else if (!session) {
-      console.log('No session - filtering only approved contents');
-      query = query.eq("status", "approved");
-    } 
-    // Com sessão de cliente: aplicar filtro baseado na tab selecionada
-    else if (session && statusFilter !== 'all') {
-      console.log('Client session - applying status filter:', statusFilter);
-      if (statusFilter === 'pending') {
-        query = query.in("status", ["draft", "in_review"]);
-      } else if (statusFilter === 'approved') {
-        query = query.eq("status", "approved");
-      } else if (statusFilter === 'changes_requested') {
-        query = query.eq("status", "changes_requested");
+      query = query.eq('client_id', clientId);
+    } else if (role === 'super_admin') {
+      // acesso total
+    } else if (role === 'agency_admin') {
+      if (profileAgencyId) {
+        query = query.eq('agency_id', profileAgencyId);
+      } else if (clientId) {
+        query = query.eq('client_id', clientId);
       }
-    }
-    // Se statusFilter for 'all', mostrar todos
-    else {
-      console.log('Session exists - loading all contents');
+    } else if (role === 'client_user' || role === 'approver') {
+      if (profileClientId) {
+        query = query.eq('client_id', profileClientId);
+      } else {
+        console.warn('[ContentGrid] No client_id available for client user');
+        setContents([]);
+        return;
+      }
+    } else if (clientId) {
+      query = query.eq('client_id', clientId);
     }
 
-    // Filtrar por mês se especificado
+    if (tokenAccess) {
+      console.log('[ContentGrid] Token access - filtering draft and in_review contents');
+      query = query.in('status', ['draft', 'in_review']);
+    } else if (!session) {
+      console.log('No session - filtering only approved contents');
+      query = query.eq('status', 'approved');
+    } else if (statusFilter !== 'all') {
+      console.log('Client session - applying status filter:', statusFilter);
+      if (statusFilter === 'pending') {
+        query = query.in('status', ['draft', 'in_review']);
+      } else if (statusFilter === 'approved') {
+        query = query.eq('status', 'approved');
+      } else if (statusFilter === 'changes_requested') {
+        query = query.eq('status', 'changes_requested');
+      }
+    }
+
     if (filterMonth) {
       const [year, month] = filterMonth.split('-');
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
-      
+
       query = query
         .gte('date', startDate.toISOString())
         .lte('date', endDate.toISOString());
     }
-    
-    const { data, error } = await query.order("date", { ascending: false });
+
+    const { data, error } = await query
+      .order('scheduled_at', { ascending: false, nullsFirst: true })
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('[ContentGrid] Error loading contents:', error);
@@ -656,9 +683,16 @@ export default function ContentGrid() {
     loadPublicData();
   };
 
+  const resolveContentDate = (content: Content) => {
+    const raw = content.scheduled_at || content.date || content.created_at;
+    if (!raw) return new Date();
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
   // Agrupar conteúdos por mês
   const groupedContents = contents.reduce((groups, content) => {
-    const date = new Date(content.date);
+    const date = resolveContentDate(content);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     if (!groups[key]) {
       groups[key] = [];
@@ -891,7 +925,8 @@ export default function ContentGrid() {
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
-                loadContents(client!.id, e.target.value, isPublicView);
+                if (!client) return;
+                loadContents(client.id, e.target.value, isPublicView);
               }}
               className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
@@ -922,19 +957,16 @@ export default function ContentGrid() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredContents.map((content) => (
-              <ContentCard 
-                key={content.id} 
+              <ContentCard
+                key={content.id}
                 content={content}
                 isResponsible={false}
                 isAgencyView={false}
                 isPublicApproval={isPublicView}
                 approvalToken={approvalToken || undefined}
                 onUpdate={() => {
-                  if (isPublicView && approvalToken) {
-                    fetchContentsViaToken(approvalToken);
-                  } else {
-                    loadContents(client!.id, selectedMonth, false);
-                  }
+                  if (!client) return;
+                  loadContents(client.id, selectedMonth, isPublicView);
                 }}
               />
             ))}

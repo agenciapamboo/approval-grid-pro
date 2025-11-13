@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -8,20 +8,17 @@ interface ContentCaptionProps {
   contentId: string;
   version: number;
   approvalToken?: string;
+  initialCaption?: string | null;
 }
 
-export function ContentCaption({ contentId, version, approvalToken }: ContentCaptionProps) {
+export function ContentCaption({ contentId, version, approvalToken, initialCaption }: ContentCaptionProps) {
   const { toast } = useToast();
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption] = useState(initialCaption ?? "");
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadCaption();
-  }, [contentId, version]);
-
-  const loadCaption = async () => {
+  const loadCaption = useCallback(async () => {
     // Fluxo normal autenticado (sem RPC legado)
     const { data, error } = await supabase
       .from("content_texts")
@@ -33,7 +30,15 @@ export function ContentCaption({ contentId, version, approvalToken }: ContentCap
     if (!error && data) {
       setCaption(data.caption || "");
     }
-  };
+  }, [contentId, version]);
+
+  useEffect(() => {
+    if (initialCaption !== undefined) {
+      setCaption(initialCaption || "");
+      return;
+    }
+    loadCaption();
+  }, [contentId, version, initialCaption, loadCaption]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -63,6 +68,11 @@ export function ContentCaption({ contentId, version, approvalToken }: ContentCap
       });
 
       setEditing(false);
+      if (initialCaption !== undefined) {
+        setCaption(caption);
+      } else {
+        loadCaption();
+      }
     } catch (error) {
       console.error("Erro ao salvar legenda:", error);
       toast({
