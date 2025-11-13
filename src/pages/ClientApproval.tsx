@@ -163,9 +163,17 @@ export default function ClientApproval() {
         return;
       }
 
-      // Salvar token no localStorage
-      localStorage.setItem('client_session_token', data.session_token);
-      localStorage.setItem('client_session_expires', data.expires_at);
+      // Criar sessão Supabase Auth
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+
+      if (sessionError) {
+        console.error('❌ Error setting session:', sessionError);
+        toast.error('Erro ao criar sessão de autenticação');
+        return;
+      }
 
       toast.success(`Bem-vindo, ${data.approver?.name || 'Aprovador'}!`);
 
@@ -183,8 +191,8 @@ export default function ClientApproval() {
         approver: data.approver.name
       });
 
-      // Redirecionar usando dados da edge function
-      const redirectUrl = `/${data.agency.slug}/${data.client.slug}?session_token=${data.session_token}`;
+      // Redirecionar sem session_token na URL (usa sessão Supabase Auth)
+      const redirectUrl = `/${data.agency.slug}/${data.client.slug}`;
       console.log('✅ Redirecionando para:', redirectUrl);
       
       navigate(redirectUrl);

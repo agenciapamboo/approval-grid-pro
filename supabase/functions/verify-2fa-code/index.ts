@@ -104,49 +104,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Gerar token de sessão
-    const sessionToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-    const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
-
-    // Criar sessão
-    const { error: sessionError } = await supabase
-      .from('client_sessions')
-      .insert({
-        approver_id: codeData.approver_id,
-        client_id: codeData.client_id,
-        session_token: sessionToken,
-        expires_at: sessionExpiresAt.toISOString(),
-        ip_address: clientIP,
-        user_agent: userAgent,
-      });
-
-    if (sessionError) {
-      console.error('[verify-2fa-code] Error creating session:', sessionError);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao criar sessão' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`[verify-2fa-code] Session created successfully for client: ${codeData.client_id}`);
-
-    // Buscar dados do aprovador COM agency_id
+    // Buscar user_id do aprovador
     const { data: approverData, error: approverError } = await supabase
       .from('client_approvers')
-      .select('name, email, is_primary, agency_id, client_id')
+      .select('user_id, name, email, is_primary, agency_id, client_id')
       .eq('id', codeData.approver_id)
       .single();
 
-    if (approverError || !approverData) {
-      console.error('[verify-2fa-code] Error fetching approver:', approverError);
+    if (approverError || !approverData?.user_id) {
+      console.error('[verify-2fa-code] Error fetching approver user_id:', approverError);
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar dados do aprovador' }),
+        JSON.stringify({ 
+          error: 'Aprovador não possui conta de usuário. Execute a migração de aprovadores.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[verify-2fa-code] Creating Supabase session for user ${approverData.user_id}`);
+
+    // Gerar link mágico para criar sessão Supabase
+    const { data: authData, error: authError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: approverData.email,
+    });
+
+    if (authError || !authData) {
+      console.error('[verify-2fa-code] Error generating magic link:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao criar sessão de autenticação' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log('[verify-2fa-code] Approver data:', {
       approver_id: codeData.approver_id,
+      user_id: approverData.user_id,
       client_id: approverData.client_id,
       agency_id: approverData.agency_id
     });
@@ -165,7 +158,7 @@ Deno.serve(async (req) => {
         .single()
     ]);
 
-    const { data: clientData, error: clientError } = clientResult;
+    const { data: clientData, error: clientError} = clientResult;
     const { data: agencyData, error: agencyError } = agencyResult;
 
     if (clientError || !clientData) {
@@ -201,7 +194,7 @@ Deno.serve(async (req) => {
       entity: '2fa_login',
       action: 'login_success',
       entity_id: codeData.client_id,
-      actor_user_id: null,
+      actor_user_id: approverData.user_id,
       metadata: {
         approver_id: codeData.approver_id,
         approver_name: approverData.name,
@@ -211,11 +204,14 @@ Deno.serve(async (req) => {
       },
     });
 
+    console.log(`[verify-2fa-code] 2FA login successful for ${approverData.email}`);
+
     return new Response(
       JSON.stringify({
         success: true,
-        session_token: sessionToken,
-        expires_at: sessionExpiresAt.toISOString(),
+        access_token: authData.properties.access_token,
+        refresh_token: authData.properties.refresh_token,
+        expires_at: authData.properties.expires_at,
         client: {
           id: clientData.id,
           name: clientData.name,

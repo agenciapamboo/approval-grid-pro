@@ -138,7 +138,47 @@ export function AddApproverDialog({
         }
       }
 
+      // Criar usuário auth.users primeiro
+      const randomPassword = `${Math.random().toString(36)}${Math.random().toString(36)}${Date.now()}`;
+      
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email: data.email,
+        password: randomPassword,
+        email_confirm: true,
+        user_metadata: {
+          name: data.name,
+          is_approver: true,
+        },
+      });
+
+      if (authError) {
+        toast({
+          title: "Erro ao criar usuário",
+          description: authError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Criar role 'approver'
+      const { error: roleError } = await supabase.from("user_roles").insert({
+        user_id: authUser.user.id,
+        role: "approver",
+        created_by: (await supabase.auth.getUser()).data.user?.id,
+      });
+
+      if (roleError) {
+        toast({
+          title: "Erro ao criar role",
+          description: roleError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Criar aprovador vinculado ao usuário
       const { error } = await supabase.from("client_approvers").insert({
+        user_id: authUser.user.id,
         client_id: clientId,
         agency_id: clientData.agency_id,
         name: data.name,
