@@ -2,55 +2,52 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const sendTest2FACode = async () => {
   try {
-    // Buscar URL do webhook de 2FA
-    const { data: settingsData } = await supabase
-      .from("system_settings")
-      .select("value")
-      .eq("key", "two_factor_webhook_url")
-      .single();
+    console.log('🔔 Iniciando teste de webhook 2FA via edge function...');
 
-    const webhookUrl = settingsData?.value;
-    
-    if (!webhookUrl) {
+    // Chamar edge function em vez de fazer fetch direto
+    const { data, error } = await supabase.functions.invoke('test-2fa-webhook', {
+      body: {}
+    });
+
+    if (error) {
+      console.error('❌ Erro ao chamar edge function:', error);
       return { 
         success: false, 
-        error: "Webhook de 2FA não configurado em Configurações do Sistema" 
+        error: error.message || "Erro ao enviar teste de webhook 2FA"
       };
     }
 
-    // Payload de teste simulando envio de código 2FA
-    const testPayload = {
-      approver_email: "teste@exemplo.com",
-      approver_phone: "+5511999999999",
-      client_name: "Cliente Teste",
-      code: "123456",
-      expires_in: "15 minutos",
-      ip_address: "192.168.1.1",
-      user_agent: "Mozilla/5.0 (Test Webhook)",
-      timestamp: new Date().toISOString(),
-      test: true
-    };
-
-    // Enviar requisição GET com parâmetros na URL
-    const urlParams = new URLSearchParams(testPayload as any);
-    const fullUrl = `${webhookUrl}?${urlParams.toString()}`;
-
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!data?.success) {
+      console.error('❌ Edge function retornou erro:', data?.error);
+      return {
+        success: false,
+        error: data?.error || "Erro desconhecido ao testar webhook"
+      };
     }
 
-    const data = await response.json();
-    
-    return { success: true, data, payload: testPayload };
+    console.log('✅ Webhook testado com sucesso:', data);
+    return { 
+      success: true, 
+      data: data.data,
+      payload: data.payload,
+      status: data.status,
+      message: data.message
+    };
+
   } catch (error) {
-    console.error('Erro ao enviar código 2FA de teste:', error);
-    return { success: false, error };
+    console.error('❌ Erro ao enviar código 2FA de teste:', error);
+    
+    // Mensagens de erro mais específicas
+    if (error instanceof TypeError && error.message.includes('NetworkError')) {
+      return {
+        success: false,
+        error: "Erro de rede: Verifique sua conexão com a internet"
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Erro desconhecido ao testar webhook"
+    };
   }
 };

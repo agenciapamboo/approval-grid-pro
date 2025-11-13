@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { ArrowLeft, Search, Users, DollarSign, TrendingUp, Send, Eye, Building2 } from "lucide-react";
 import { Loader2 } from "lucide-react";
@@ -126,10 +126,118 @@ const Clientes = () => {
     setFilteredClients(filtered);
   };
 
+  const [monthlyStats, setMonthlyStats] = useState({
+    totalUsed: 0,
+    totalLimit: 0,
+    percentage: 0,
+    archivedCount: 0,
+    activeCreatives: 0,
+    remaining: 0,
+  });
+
+  useEffect(() => {
+    if (clients.length > 0) {
+      loadMonthlyStats();
+    }
+  }, [clients]);
+
+  const loadMonthlyStats = async () => {
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const clientIds = clients.map(c => c.id);
+
+    // Buscar dados da agência (assumindo que todos os clientes são da mesma agência para agency_admin)
+    const agencyId = profile?.agency_id;
+    let totalMonthlyLimit = 0;
+
+    if (agencyId) {
+      const { data: agencyData } = await supabase
+        .from('agencies')
+        .select('plan')
+        .eq('id', agencyId)
+        .single();
+
+      // Buscar limite do plano da agência
+      if (agencyData) {
+        const { data: entitlements } = await supabase
+          .from('plan_entitlements')
+          .select('posts_limit')
+          .eq('plan', agencyData.plan)
+          .single();
+        
+        totalMonthlyLimit = entitlements?.posts_limit || 0;
+      }
+    }
+
+    // Contar posts criados no mês
+    const { count: totalUsed } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .gte('created_at', startOfMonth.toISOString());
+
+    // Contar todos os criativos do período contratado (baseado em history_days do plano)
+    let historyDays = 90; // padrão
+    if (agencyId) {
+      const { data: agencyData } = await supabase
+        .from('agencies')
+        .select('plan')
+        .eq('id', agencyId)
+        .single();
+
+      if (agencyData) {
+        const { data: entitlements } = await supabase
+          .from('plan_entitlements')
+          .select('history_days')
+          .eq('plan', agencyData.plan)
+          .single();
+        
+        historyDays = entitlements?.history_days || 90;
+      }
+    }
+
+    const historyStartDate = new Date();
+    historyStartDate.setDate(historyStartDate.getDate() - historyDays);
+
+    // Arquivados = todos do mês + todos armazenados no período contratado
+    const { count: archivedThisMonth } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .eq('status', 'archived')
+      .gte('created_at', startOfMonth.toISOString());
+
+    const { count: archivedInHistory } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .eq('status', 'archived')
+      .gte('created_at', historyStartDate.toISOString())
+      .lt('created_at', startOfMonth.toISOString());
+
+    const totalArchived = (archivedThisMonth || 0) + (archivedInHistory || 0);
+
+    // Contar criativos ativos
+    const { count: activeCreatives } = await supabase
+      .from('contents')
+      .select('*', { count: 'exact', head: true })
+      .in('client_id', clientIds)
+      .neq('status', 'archived');
+
+    const percentage = totalMonthlyLimit > 0 ? (totalUsed || 0) / totalMonthlyLimit * 100 : 0;
+    const remaining = totalMonthlyLimit > 0 ? totalMonthlyLimit - (totalUsed || 0) : 0;
+
+    setMonthlyStats({
+      totalUsed: totalUsed || 0,
+      totalLimit: totalMonthlyLimit,
+      percentage,
+      archivedCount: totalArchived,
+      activeCreatives: activeCreatives || 0,
+      remaining,
+    });
+  };
+
   const stats = {
     total: clients.length,
-    expectedRevenue: clients.length * 150, // Exemplo
-    avgTicket: clients.length > 0 ? Math.round((clients.length * 150) / clients.length) : 0,
   };
 
   if (loading) {
@@ -170,7 +278,7 @@ const Clientes = () => {
           </div>
 
           {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -185,31 +293,68 @@ const Clientes = () => {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Receita Esperada
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Publicações do Mês</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.expectedRevenue)}
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold">{monthlyStats.totalUsed}</p>
+                    <span className="text-muted-foreground text-sm">/ {monthlyStats.totalLimit}</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{ width: `${Math.min(monthlyStats.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {monthlyStats.percentage.toFixed(1)}% da cota mensal utilizada
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Ticket Médio
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Criativos Arquivados</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.avgTicket)}
-                </p>
+                <p className="text-3xl font-bold">{monthlyStats.archivedCount}</p>
+                <p className="text-xs text-muted-foreground mt-1">Conteúdos arquivados</p>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Criativos Ativos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{monthlyStats.activeCreatives}</p>
+                {monthlyStats.activeCreatives > monthlyStats.totalLimit && (
+                  <Badge variant="destructive" className="mt-2">Excedendo limite</Badge>
+                )}
+              </CardContent>
+            </Card>
+
+            {monthlyStats.totalLimit > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Faltam para a Cota
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{monthlyStats.remaining}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {monthlyStats.remaining > 0 ? 'posts disponíveis' : 'cota excedida'}
+                  </p>
+                  {monthlyStats.remaining <= 5 && monthlyStats.remaining > 0 && (
+                    <Badge variant="outline" className="mt-2">Cota quase atingida</Badge>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Filtros */}
@@ -218,25 +363,14 @@ const Clientes = () => {
               <CardTitle>Filtros</CardTitle>
             </CardHeader>
           <CardContent>
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome ou slug..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Tabs value={selectedPlan} onValueChange={setSelectedPlan}>
-                  <TabsList>
-                    <TabsTrigger value="all">Todos</TabsTrigger>
-                    <TabsTrigger value="creator">Creator</TabsTrigger>
-                    <TabsTrigger value="eugencia">Eugência</TabsTrigger>
-                    <TabsTrigger value="socialmidia">Social Mídia</TabsTrigger>
-                    <TabsTrigger value="fullservice">Full Service</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome ou slug..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </CardContent>
           </Card>
@@ -322,6 +456,7 @@ const Clientes = () => {
       <SendPlatformNotificationDialog
         open={notificationDialogOpen}
         onOpenChange={setNotificationDialogOpen}
+        agencyId={profile?.agency_id}
       />
 
       <AppFooter />
