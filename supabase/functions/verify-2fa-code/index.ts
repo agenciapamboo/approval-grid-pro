@@ -123,19 +123,57 @@ Deno.serve(async (req) => {
 
     console.log(`[verify-2fa-code] Creating Supabase session for user ${approverData.user_id}`);
 
-    // Gerar link mágico para criar sessão Supabase
-    const { data: authData, error: authError } = await supabase.auth.admin.generateLink({
+    // Confirmar email do usuário
+    const { data: { user }, error: userUpdateError } = await supabase.auth.admin.updateUserById(
+      approverData.user_id,
+      { 
+        email_confirm: true,
+      }
+    );
+
+    if (userUpdateError) {
+      console.error('[verify-2fa-code] Error confirming user:', userUpdateError);
+    }
+
+    // Gerar tokens via admin API usando generateLink com magiclink
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: approverData.email,
     });
 
-    if (authError || !authData) {
-      console.error('[verify-2fa-code] Error generating magic link:', authError);
+    if (linkError || !linkData) {
+      console.error('[verify-2fa-code] Error generating auth link:', linkError);
       return new Response(
         JSON.stringify({ error: 'Erro ao criar sessão de autenticação' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Extrair hash do link mágico e criar sessão
+    const hashMatch = linkData.properties.action_link.match(/#(.+)$/);
+    if (!hashMatch) {
+      console.error('[verify-2fa-code] Could not extract hash from magic link');
+      return new Response(
+        JSON.stringify({ error: 'Erro ao processar link de autenticação' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const hash = hashMatch[1];
+    const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
+      token_hash: hash,
+      type: 'magiclink',
+    });
+
+    if (sessionError || !sessionData?.session) {
+      console.error('[verify-2fa-code] Error creating session from magic link:', sessionError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao criar sessão de autenticação' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[verify-2fa-code] Session created successfully');
 
     console.log('[verify-2fa-code] Approver data:', {
       approver_id: codeData.approver_id,
@@ -209,6 +247,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        access_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
         client: {
           id: clientData.id,
           name: clientData.name,
