@@ -588,16 +588,12 @@ export default function ContentGrid() {
         deadline,
         type,
         client_id,
-        agency_id,
         owner_user_id,
         version,
         created_at,
         updated_at,
         channels,
-        published_at,
-        media_path,
-        caption,
-        legend
+        published_at
       `)
       .order('date', { ascending: false });
 
@@ -607,7 +603,16 @@ export default function ContentGrid() {
       // acesso total
     } else if (role === 'agency_admin') {
       if (profileAgencyId) {
-        query = query.eq('agency_id', profileAgencyId);
+        // Filtrar por agency_id através da junção com clients
+        const { data: agencyClients } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('agency_id', profileAgencyId);
+        
+        if (agencyClients && agencyClients.length > 0) {
+          const clientIds = agencyClients.map(c => c.id);
+          query = query.in('client_id', clientIds);
+        }
       } else if (clientId) {
         query = query.eq('client_id', clientId);
       }
