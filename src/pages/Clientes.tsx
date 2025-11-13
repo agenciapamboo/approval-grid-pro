@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { ArrowLeft, Search, Users, DollarSign, TrendingUp, Send, Eye, Building2 } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Client {
   id: string;
@@ -25,6 +26,7 @@ interface Client {
 
 const Clientes = () => {
   const navigate = useNavigate();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -240,10 +242,33 @@ const Clientes = () => {
     total: clients.length,
   };
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Verificar permissão de manage_clients
+  if (!hasPermission('manage_clients')) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Acesso Negado</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Você não tem permissão para gerenciar clientes.</p>
+              <Button onClick={() => navigate("/dashboard")} className="mt-4">
+                Voltar ao Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <AppFooter />
       </div>
     );
   }

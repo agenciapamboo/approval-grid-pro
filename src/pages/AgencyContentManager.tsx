@@ -13,6 +13,8 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { triggerWebhook } from "@/lib/webhooks";
 import { createNotification } from "@/lib/notifications";
 import { format } from "date-fns";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGuard } from "@/components/admin/PermissionGuard";
 
 interface Profile {
   id: string;
@@ -59,6 +61,7 @@ export default function AgencyContentManager() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -340,23 +343,27 @@ export default function AgencyContentManager() {
               </Button>
             </div>
 
-            {/* Bloco de Cadastro de Conteúdo - Sempre Visível */}
-            <CreateContentCard 
-              clientId={client.id}
-              onContentCreated={() => {
-                loadContents(client.id);
-              }}
-              category={selectedCategory}
-            />
+            {/* Bloco de Cadastro de Conteúdo - Condicional */}
+            <PermissionGuard permission="create_content">
+              <CreateContentCard 
+                clientId={client.id}
+                onContentCreated={() => {
+                  loadContents(client.id);
+                }}
+                category={selectedCategory}
+              />
+            </PermissionGuard>
             
             <div className="flex justify-end">
-              <Button
-                onClick={handleSendAllForReview}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Todos para Aprovação
-              </Button>
+              <PermissionGuard permission="approve_content">
+                <Button
+                  onClick={handleSendAllForReview}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar Todos para Aprovação
+                </Button>
+              </PermissionGuard>
             </div>
           </div>
         )}

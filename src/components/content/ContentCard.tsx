@@ -21,7 +21,7 @@ import { EditContentDialog } from "./EditContentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useContentPermissions } from "@/hooks/useContentPermissions";
 
 interface ContentCardProps {
   content: {
@@ -49,7 +49,7 @@ interface ContentCardProps {
 
 export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = false, isPublicApproval = false, sessionToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
-  const { hasPermission } = usePermissions();
+  const { permissions } = useContentPermissions();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
