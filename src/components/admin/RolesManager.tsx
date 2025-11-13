@@ -63,13 +63,11 @@ export const RolesManager = () => {
   const [permissions, setPermissions] = useState<PermissionsByRole>({});
   const [editedPermissions, setEditedPermissions] = useState<PermissionsByRole>({});
   const [savingPermissions, setSavingPermissions] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
   
   // Plan Permissions State
   const [planPermissions, setPlanPermissions] = useState<PermissionsByPlan>({});
   const [editedPlanPermissions, setEditedPlanPermissions] = useState<PermissionsByPlan>({});
   const [savingPlanPermissions, setSavingPlanPermissions] = useState(false);
-  const [isPlanEditMode, setIsPlanEditMode] = useState(false);
   
   // Plan Entitlements State
   const [planEntitlements, setPlanEntitlements] = useState<PlanEntitlement[]>([]);
@@ -221,7 +219,6 @@ export const RolesManager = () => {
         description: "Permissões atualizadas com sucesso!",
       });
       await loadPermissions();
-      setIsEditMode(false);
     } catch (error) {
       console.error("Erro ao salvar permissões:", error);
       toast({
@@ -232,11 +229,6 @@ export const RolesManager = () => {
     } finally {
       setSavingPermissions(false);
     }
-  };
-
-  const handleCancelPermissions = () => {
-    setEditedPermissions(JSON.parse(JSON.stringify(permissions)));
-    setIsEditMode(false);
   };
 
   const hasChanges = () => {
@@ -301,7 +293,6 @@ export const RolesManager = () => {
         description: "Permissões de planos atualizadas com sucesso!",
       });
       await loadPlanPermissions();
-      setIsPlanEditMode(false);
     } catch (error) {
       console.error("Erro ao salvar permissões de planos:", error);
       toast({
@@ -312,11 +303,6 @@ export const RolesManager = () => {
     } finally {
       setSavingPlanPermissions(false);
     }
-  };
-
-  const handleCancelPlanPermissions = () => {
-    setEditedPlanPermissions(JSON.parse(JSON.stringify(planPermissions)));
-    setIsPlanEditMode(false);
   };
 
   const hasPlanChanges = () => {
@@ -490,7 +476,6 @@ export const RolesManager = () => {
       agency_admin: "Admin de Agência",
       team_member: "Membro da Equipe",
       client_user: "Usuário Cliente",
-      approver: "Aprovador (2FA)",
     };
     return labels[role] || role;
   };
@@ -541,53 +526,12 @@ export const RolesManager = () => {
 
             {/* Aba 1: Permissões por Função */}
             <TabsContent value="roles" className="space-y-4">
-              {/* Header com modo de edição e badges */}
-              <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Badge variant={isEditMode ? "default" : "outline"}>
-                    {isEditMode ? "Modo Edição" : "Visualização"}
-                  </Badge>
-                  {hasChanges() && (
-                    <Badge variant="destructive" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
-                      Alterações Pendentes
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {!isEditMode ? (
-                    <Button onClick={() => setIsEditMode(true)} size="sm">
-                      Editar Permissões
-                    </Button>
-                  ) : (
-                    <>
-                      <Button variant="outline" onClick={handleCancelPermissions} size="sm">
-                        Cancelar
-                      </Button>
-                      <Button onClick={handleSavePermissions} disabled={savingPermissions} size="sm">
-                        {savingPermissions ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Salvando...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
               <Tabs defaultValue="super_admin">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="super_admin">Super Admin</TabsTrigger>
                   <TabsTrigger value="agency_admin">Agency Admin</TabsTrigger>
                   <TabsTrigger value="client_user">Client User</TabsTrigger>
                   <TabsTrigger value="team_member">Team Member</TabsTrigger>
-                  <TabsTrigger value="approver">Approver</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="super_admin" className="space-y-4 pt-4">
@@ -596,68 +540,19 @@ export const RolesManager = () => {
                   </p>
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Permissões</h4>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(editedPermissions.super_admin || {}).map(([key, enabled]) => {
-                          const permLabels: Record<string, string> = {
-                            view_content: 'Visualizar Conteúdo',
-                            create_content: 'Criar Conteúdo',
-                            approve_content: 'Aprovar Conteúdo',
-                            delete_content: 'Deletar Conteúdo',
-                            edit_content: 'Editar Conteúdo',
-                            add_comment: 'Adicionar Comentários',
-                            view_media_blocks: 'Ver Blocos de Mídia',
-                            view_action_buttons: 'Ver Botões de Ação',
-                            view_history_box: 'Ver Histórico',
-                            view_comment_box: 'Ver Caixa de Comentários',
-                            view_content_details: 'Ver Detalhes do Conteúdo',
-                            filter_by_status: 'Filtrar por Status',
-                            filter_by_month: 'Filtrar por Mês',
-                            view_all_statuses: 'Ver Todos os Status',
-                            request_adjustment: 'Solicitar Ajustes',
-                            reject_content: 'Rejeitar Conteúdo',
-                            manage_approvers: 'Gerenciar Aprovadores',
-                            view_analytics: 'Ver Analytics',
-                            manage_clients: 'Gerenciar Clientes',
-                            manage_team: 'Gerenciar Equipe',
-                            view_financeiro: 'Ver Financeiro',
-                            manage_settings: 'Gerenciar Configurações',
-                            manage_agencies: 'Gerenciar Agências',
-                            manage_users: 'Gerenciar Usuários',
-                            view_audit_log: 'Ver Log de Auditoria',
-                            manage_subscriptions: 'Gerenciar Assinaturas',
-                            view_security_dashboard: 'Ver Dashboard de Segurança',
-                          };
-                          const isModified = permissions.super_admin?.[key] !== enabled;
-                          return (
-                            <div 
-                              key={key} 
-                              className={`flex items-center space-x-2 p-2 rounded ${
-                                isModified ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''
-                              }`}
-                            >
-                              <Checkbox 
-                                checked={enabled}
-                                onCheckedChange={(checked) => handlePermissionChange('super_admin', key, !!checked)}
-                                id={`super_admin_${key}`}
-                                disabled={!isEditMode}
-                              />
-                              <Label 
-                                htmlFor={`super_admin_${key}`} 
-                                className={`cursor-pointer text-sm ${!isEditMode ? 'opacity-70' : ''}`}
-                              >
-                                {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </Label>
-                              {isModified && (
-                                <Badge variant="outline" className="ml-auto text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
-                                  Modificado
-                                </Badge>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.super_admin || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('super_admin', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -667,68 +562,19 @@ export const RolesManager = () => {
                   </p>
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Permissões</h4>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(editedPermissions.agency_admin || {}).map(([key, enabled]) => {
-                          const permLabels: Record<string, string> = {
-                            view_content: 'Visualizar Conteúdo',
-                            create_content: 'Criar Conteúdo',
-                            approve_content: 'Aprovar Conteúdo',
-                            delete_content: 'Deletar Conteúdo',
-                            edit_content: 'Editar Conteúdo',
-                            add_comment: 'Adicionar Comentários',
-                            view_media_blocks: 'Ver Blocos de Mídia',
-                            view_action_buttons: 'Ver Botões de Ação',
-                            view_history_box: 'Ver Histórico',
-                            view_comment_box: 'Ver Caixa de Comentários',
-                            view_content_details: 'Ver Detalhes do Conteúdo',
-                            filter_by_status: 'Filtrar por Status',
-                            filter_by_month: 'Filtrar por Mês',
-                            view_all_statuses: 'Ver Todos os Status',
-                            request_adjustment: 'Solicitar Ajustes',
-                            reject_content: 'Rejeitar Conteúdo',
-                            manage_approvers: 'Gerenciar Aprovadores',
-                            view_analytics: 'Ver Analytics',
-                            manage_clients: 'Gerenciar Clientes',
-                            manage_team: 'Gerenciar Equipe',
-                            view_financeiro: 'Ver Financeiro',
-                            manage_settings: 'Gerenciar Configurações',
-                            manage_agencies: 'Gerenciar Agências',
-                            manage_users: 'Gerenciar Usuários',
-                            view_audit_log: 'Ver Log de Auditoria',
-                            manage_subscriptions: 'Gerenciar Assinaturas',
-                            view_security_dashboard: 'Ver Dashboard de Segurança',
-                          };
-                          const isModified = permissions.agency_admin?.[key] !== enabled;
-                          return (
-                            <div 
-                              key={key} 
-                              className={`flex items-center space-x-2 p-2 rounded ${
-                                isModified ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''
-                              }`}
-                            >
-                              <Checkbox 
-                                checked={enabled}
-                                onCheckedChange={(checked) => handlePermissionChange('agency_admin', key, !!checked)}
-                                id={`agency_admin_${key}`}
-                                disabled={!isEditMode}
-                              />
-                              <Label 
-                                htmlFor={`agency_admin_${key}`} 
-                                className={`cursor-pointer text-sm ${!isEditMode ? 'opacity-70' : ''}`}
-                              >
-                                {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </Label>
-                              {isModified && (
-                                <Badge variant="outline" className="ml-auto text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
-                                  Modificado
-                                </Badge>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.agency_admin || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('agency_admin', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -738,53 +584,19 @@ export const RolesManager = () => {
                   </p>
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Permissões</h4>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(editedPermissions.client_user || {}).map(([key, enabled]) => {
-                          const permLabels: Record<string, string> = {
-                            view_content: 'Visualizar Conteúdo',
-                            create_content: 'Criar Conteúdo',
-                            approve_content: 'Aprovar Conteúdo',
-                            delete_content: 'Deletar Conteúdo',
-                            edit_content: 'Editar Conteúdo',
-                            add_comment: 'Adicionar Comentários',
-                            view_media_blocks: 'Ver Blocos de Mídia',
-                            view_action_buttons: 'Ver Botões de Ação',
-                            view_history_box: 'Ver Histórico',
-                            view_comment_box: 'Ver Caixa de Comentários',
-                            view_content_details: 'Ver Detalhes do Conteúdo',
-                            filter_by_status: 'Filtrar por Status',
-                            filter_by_month: 'Filtrar por Mês',
-                            view_all_statuses: 'Ver Todos os Status',
-                            request_adjustment: 'Solicitar Ajustes',
-                            reject_content: 'Rejeitar Conteúdo',
-                            manage_approvers: 'Gerenciar Aprovadores',
-                            view_analytics: 'Ver Analytics',
-                            manage_clients: 'Gerenciar Clientes',
-                            manage_team: 'Gerenciar Equipe',
-                            view_financeiro: 'Ver Financeiro',
-                            manage_settings: 'Gerenciar Configurações',
-                            manage_agencies: 'Gerenciar Agências',
-                            manage_users: 'Gerenciar Usuários',
-                            view_audit_log: 'Ver Log de Auditoria',
-                            manage_subscriptions: 'Gerenciar Assinaturas',
-                            view_security_dashboard: 'Ver Dashboard de Segurança',
-                          };
-                          return (
-                            <div key={key} className="flex items-center space-x-2">
-                              <Checkbox 
-                                checked={enabled}
-                                onCheckedChange={(checked) => handlePermissionChange('client_user', key, !!checked)}
-                                id={`client_user_${key}`}
-                              />
-                              <Label htmlFor={`client_user_${key}`} className="cursor-pointer text-sm">
-                                {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.client_user || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('client_user', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -794,109 +606,19 @@ export const RolesManager = () => {
                   </p>
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">Permissões</h4>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(editedPermissions.team_member || {}).map(([key, enabled]) => {
-                          const permLabels: Record<string, string> = {
-                            view_content: 'Visualizar Conteúdo',
-                            create_content: 'Criar Conteúdo',
-                            approve_content: 'Aprovar Conteúdo',
-                            delete_content: 'Deletar Conteúdo',
-                            edit_content: 'Editar Conteúdo',
-                            add_comment: 'Adicionar Comentários',
-                            view_media_blocks: 'Ver Blocos de Mídia',
-                            view_action_buttons: 'Ver Botões de Ação',
-                            view_history_box: 'Ver Histórico',
-                            view_comment_box: 'Ver Caixa de Comentários',
-                            view_content_details: 'Ver Detalhes do Conteúdo',
-                            filter_by_status: 'Filtrar por Status',
-                            filter_by_month: 'Filtrar por Mês',
-                            view_all_statuses: 'Ver Todos os Status',
-                            request_adjustment: 'Solicitar Ajustes',
-                            reject_content: 'Rejeitar Conteúdo',
-                            manage_approvers: 'Gerenciar Aprovadores',
-                            view_analytics: 'Ver Analytics',
-                            manage_clients: 'Gerenciar Clientes',
-                            manage_team: 'Gerenciar Equipe',
-                            view_financeiro: 'Ver Financeiro',
-                            manage_settings: 'Gerenciar Configurações',
-                            manage_agencies: 'Gerenciar Agências',
-                            manage_users: 'Gerenciar Usuários',
-                            view_audit_log: 'Ver Log de Auditoria',
-                            manage_subscriptions: 'Gerenciar Assinaturas',
-                            view_security_dashboard: 'Ver Dashboard de Segurança',
-                          };
-                          return (
-                            <div key={key} className="flex items-center space-x-2">
-                              <Checkbox 
-                                checked={enabled}
-                                onCheckedChange={(checked) => handlePermissionChange('team_member', key, !!checked)}
-                                id={`team_member_${key}`}
-                              />
-                              <Label htmlFor={`team_member_${key}`} className="cursor-pointer text-sm">
-                                {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="approver" className="space-y-4 pt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Aprovadores acessam via 2FA para aprovar conteúdos sem login tradicional.
-                  </p>
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Permissões</h4>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(editedPermissions.approver || {}).map(([key, enabled]) => {
-                          const permLabels: Record<string, string> = {
-                            view_content: 'Visualizar Conteúdo',
-                            create_content: 'Criar Conteúdo',
-                            approve_content: 'Aprovar Conteúdo',
-                            delete_content: 'Deletar Conteúdo',
-                            edit_content: 'Editar Conteúdo',
-                            add_comment: 'Adicionar Comentários',
-                            view_media_blocks: 'Ver Blocos de Mídia',
-                            view_action_buttons: 'Ver Botões de Ação',
-                            view_history_box: 'Ver Histórico',
-                            view_comment_box: 'Ver Caixa de Comentários',
-                            view_content_details: 'Ver Detalhes do Conteúdo',
-                            filter_by_status: 'Filtrar por Status',
-                            filter_by_month: 'Filtrar por Mês',
-                            view_all_statuses: 'Ver Todos os Status',
-                            request_adjustment: 'Solicitar Ajustes',
-                            reject_content: 'Rejeitar Conteúdo',
-                            manage_approvers: 'Gerenciar Aprovadores',
-                            view_analytics: 'Ver Analytics',
-                            manage_clients: 'Gerenciar Clientes',
-                            manage_team: 'Gerenciar Equipe',
-                            view_financeiro: 'Ver Financeiro',
-                            manage_settings: 'Gerenciar Configurações',
-                            manage_agencies: 'Gerenciar Agências',
-                            manage_users: 'Gerenciar Usuários',
-                            view_audit_log: 'Ver Log de Auditoria',
-                            manage_subscriptions: 'Gerenciar Assinaturas',
-                            view_security_dashboard: 'Ver Dashboard de Segurança',
-                          };
-                          return (
-                            <div key={key} className="flex items-center space-x-2">
-                              <Checkbox 
-                                checked={enabled}
-                                onCheckedChange={(checked) => handlePermissionChange('approver', key, !!checked)}
-                                id={`approver_${key}`}
-                              />
-                              <Label htmlFor={`approver_${key}`} className="cursor-pointer text-sm">
-                                {permLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </ScrollArea>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(editedPermissions.team_member || {}).map(([key, enabled]) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={enabled}
+                            onCheckedChange={(checked) => handlePermissionChange('team_member', key, !!checked)}
+                          />
+                          <Label className="cursor-pointer">
+                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>

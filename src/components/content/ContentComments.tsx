@@ -24,10 +24,10 @@ interface ContentCommentsProps {
   contentId: string;
   onUpdate: () => void;
   showHistory?: boolean;
-  sessionToken?: string;
+  approvalToken?: string;
 }
 
-export function ContentComments({ contentId, onUpdate, showHistory = true, sessionToken }: ContentCommentsProps) {
+export function ContentComments({ contentId, onUpdate, showHistory = true, approvalToken }: ContentCommentsProps) {
   const { toast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -36,10 +36,10 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, sessi
 
   useEffect(() => {
     loadComments();
-    if (!sessionToken) {
+    if (!approvalToken) {
       getCurrentUser();
     }
-  }, [contentId, sessionToken]);
+  }, [contentId, approvalToken]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -48,20 +48,40 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, sessi
 
   const loadComments = async () => {
     try {
-      // Sempre usar SELECT normal agora
-      const { data, error } = await supabase
-        .from("comments")
-        .select(`
-          *,
-          profiles:author_user_id (
-            name
-          )
-        `)
-        .eq("content_id", contentId)
-        .order("created_at", { ascending: true });
+      if (approvalToken) {
+        // Modo token: usar RPC
+        const { data, error } = await supabase.rpc('get_comments_for_approval', {
+          p_token: approvalToken,
+          p_content_id: contentId
+        });
 
-      if (error) throw error;
-      setComments(data as any);
+        if (error) throw error;
+
+        setComments((data || []).map(d => ({
+          id: d.id,
+          body: d.body,
+          author_user_id: d.author_user_id,
+          created_at: d.created_at,
+          is_adjustment_request: d.is_adjustment_request,
+          adjustment_reason: d.adjustment_reason || undefined,
+          profiles: d.author_name ? { name: d.author_name } : null
+        })));
+      } else {
+        // Modo autenticado: SELECT normal
+        const { data, error } = await supabase
+          .from("comments")
+          .select(`
+            *,
+            profiles:author_user_id (
+              name
+            )
+          `)
+          .eq("content_id", contentId)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        setComments(data as any);
+      }
     } catch (error: any) {
       console.error('Erro ao carregar comentários:', error);
       toast({
@@ -78,18 +98,15 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, sessi
     if (!newComment.trim()) return;
 
     try {
-      if (sessionToken) {
-        // Approver flow - call edge function
-        const { data, error } = await supabase.functions.invoke('approver-add-comment', {
-          body: {
-            session_token: sessionToken,
-            content_id: contentId,
-            body: newComment
-          }
+      if (approvalToken) {
+        // Usar RPC para adicionar comentário via token
+        const { error } = await supabase.rpc('add_comment_for_approval', {
+          p_token: approvalToken,
+          p_content_id: contentId,
+          p_body: newComment
         });
 
         if (error) throw error;
-        if (!data?.success) throw new Error(data?.error || 'Erro ao adicionar comentário');
 
         setNewComment("");
         loadComments();

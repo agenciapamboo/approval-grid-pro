@@ -18,7 +18,7 @@ interface RequestAdjustmentDialogProps {
   onOpenChange: (open: boolean) => void;
   contentId: string;
   onSuccess: () => void;
-  sessionToken?: string;
+  approvalToken?: string;
 }
 
 export function RequestAdjustmentDialog({
@@ -26,7 +26,7 @@ export function RequestAdjustmentDialog({
   onOpenChange,
   contentId,
   onSuccess,
-  sessionToken,
+  approvalToken,
 }: RequestAdjustmentDialogProps) {
   const { toast } = useToast();
   const [reason, setReason] = useState("");
@@ -45,19 +45,15 @@ export function RequestAdjustmentDialog({
 
     setLoading(true);
     try {
-      if (sessionToken) {
-        // Approver flow - call edge function
-        const { data, error } = await supabase.functions.invoke('approver-request-adjustment', {
-          body: {
-            session_token: sessionToken,
-            content_id: contentId,
-            reason: reason.trim(),
-            details: details.trim() || undefined
-          }
+      if (approvalToken) {
+        // Fluxo de aprovação por token
+        const { error } = await supabase.rpc('reject_content_for_approval', {
+          p_token: approvalToken,
+          p_content_id: contentId,
+          p_reason: `${reason}${details ? '\n\nDetalhes: ' + details : ''}`
         });
 
         if (error) throw error;
-        if (!data?.success) throw new Error(data?.error || 'Erro ao solicitar ajuste');
 
         toast({
           title: "Ajuste solicitado",

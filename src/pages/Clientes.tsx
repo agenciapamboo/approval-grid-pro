@@ -11,7 +11,6 @@ import { Progress } from "@/components/ui/progress";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { ArrowLeft, Search, Users, DollarSign, TrendingUp, Send, Eye, Building2 } from "lucide-react";
 import { Loader2 } from "lucide-react";
-import { usePermissions } from "@/hooks/usePermissions";
 
 interface Client {
   id: string;
@@ -26,7 +25,6 @@ interface Client {
 
 const Clientes = () => {
   const navigate = useNavigate();
-  const { hasPermission, loading: permissionsLoading, permissions } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -40,15 +38,6 @@ const Clientes = () => {
     checkAuth();
   }, []);
 
-  // Debug log para permissões
-  useEffect(() => {
-    console.log('📊 [Clientes.tsx] Permissions loaded:', {
-      hasManageClients: hasPermission('manage_clients'),
-      allPermissions: permissions,
-      loading: permissionsLoading
-    });
-  }, [permissions, permissionsLoading]);
-
   useEffect(() => {
     filterClients();
   }, [searchQuery, selectedPlan, clients]);
@@ -56,31 +45,19 @@ const Clientes = () => {
   const checkAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 [Clientes] Current user:', user?.id);
-      
       if (!user) {
         navigate("/auth");
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
 
-      if (profileError) {
-        console.error('❌ [Clientes] Error loading profile:', profileError);
-      }
-      console.log('📋 [Clientes] Profile data:', profileData);
-
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roleData } = await supabase
         .rpc('get_user_role', { _user_id: user.id });
-
-      if (roleError) {
-        console.error('❌ [Clientes] Error loading role:', roleError);
-      }
-      console.log('🔐 [Clientes] User role:', roleData);
 
       if (profileData) {
         const enrichedProfile = { ...profileData, role: roleData || 'client_user' };
@@ -88,16 +65,9 @@ const Clientes = () => {
 
         // Carregar clientes baseado no role
         if (roleData === 'super_admin') {
-          console.log('🔑 [Clientes] User is super_admin, loading all clients');
           await loadAllClients();
         } else if (roleData === 'agency_admin' && profileData.agency_id) {
-          console.log('🔑 [Clientes] User is agency_admin with agency_id:', profileData.agency_id);
           await loadAgencyClients(profileData.agency_id);
-        } else {
-          console.warn('⚠️ [Clientes] User role does not allow client management:', {
-            role: roleData,
-            hasAgencyId: !!profileData.agency_id
-          });
         }
 
         // Carregar notificações recentes
@@ -111,34 +81,22 @@ const Clientes = () => {
   };
 
   const loadAllClients = async () => {
-    console.log('📂 [Clientes] Loading all clients (super_admin)');
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("clients")
       .select("*, agencies(name)")
       .order("name");
     
-    if (error) {
-      console.error('❌ [Clientes] Error loading all clients:', error);
-    } else {
-      console.log('✅ [Clientes] All clients loaded:', data?.length, 'clients');
-      if (data) setClients(data);
-    }
+    if (data) setClients(data);
   };
 
   const loadAgencyClients = async (agencyId: string) => {
-    console.log('📂 [Clientes] Loading agency clients for agency_id:', agencyId);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("clients")
       .select("*, agencies(name)")
       .eq("agency_id", agencyId)
       .order("name");
     
-    if (error) {
-      console.error('❌ [Clientes] Error loading agency clients:', error);
-    } else {
-      console.log('✅ [Clientes] Agency clients loaded:', data?.length, 'clients', data);
-      if (data) setClients(data);
-    }
+    if (data) setClients(data);
   };
 
   const loadRecentNotifications = async () => {
@@ -282,40 +240,10 @@ const Clientes = () => {
     total: clients.length,
   };
 
-  if (loading || permissionsLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Check access with direct role check to avoid race condition with usePermissions
-  console.log('🔍 [Clientes] Access check:', { 
-    hasProfile: !!profile, 
-    role: profile?.role,
-    loading,
-    permissionsLoading 
-  });
-  
-  if (!loading && !permissionsLoading && (!profile || (profile.role !== 'super_admin' && profile.role !== 'agency_admin'))) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acesso Negado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Você não tem permissão para gerenciar clientes.</p>
-              <Button onClick={() => navigate("/dashboard")} className="mt-4">
-                Voltar ao Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <AppFooter />
       </div>
     );
   }

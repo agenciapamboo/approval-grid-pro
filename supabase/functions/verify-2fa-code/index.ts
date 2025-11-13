@@ -104,167 +104,75 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Buscar user_id do aprovador
-    const { data: approverData, error: approverError } = await supabase
-      .from('client_approvers')
-      .select('user_id, name, email, is_primary, agency_id, client_id')
-      .eq('id', codeData.approver_id)
+    // Gerar token de sessão
+    const sessionToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
+    const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+    // Criar sessão
+    const { error: sessionError } = await supabase
+      .from('client_sessions')
+      .insert({
+        approver_id: codeData.approver_id,
+        client_id: codeData.client_id,
+        session_token: sessionToken,
+        expires_at: sessionExpiresAt.toISOString(),
+        ip_address: clientIP,
+        user_agent: userAgent,
+      });
+
+    if (sessionError) {
+      console.error('[verify-2fa-code] Error creating session:', sessionError);
+      return new Response(
+        JSON.stringify({ error: 'Erro ao criar sessão' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[verify-2fa-code] Session created successfully for client: ${codeData.client_id}`);
+
+    // Buscar dados do cliente para retornar
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('id, name, slug, logo_url')
+      .eq('id', codeData.client_id)
       .single();
 
-    if (approverError || !approverData?.user_id) {
-      console.error('[verify-2fa-code] Error fetching approver user_id:', approverError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Aprovador não possui conta de usuário. Execute a migração de aprovadores.' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`[verify-2fa-code] Creating Supabase session for user ${approverData.user_id}`);
-
-    // Confirmar email do usuário
-    const { data: { user }, error: userUpdateError } = await supabase.auth.admin.updateUserById(
-      approverData.user_id,
-      { 
-        email_confirm: true,
-      }
-    );
-
-    if (userUpdateError) {
-      console.error('[verify-2fa-code] Error confirming user:', userUpdateError);
-    }
-
-    // Gerar tokens via admin API usando generateLink com magiclink
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: approverData.email,
-    });
-
-    if (linkError || !linkData) {
-      console.error('[verify-2fa-code] Error generating auth link:', linkError);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao criar sessão de autenticação' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Extrair hash do link mágico e criar sessão
-    const hashMatch = linkData.properties.action_link.match(/#(.+)$/);
-    if (!hashMatch) {
-      console.error('[verify-2fa-code] Could not extract hash from magic link');
-      return new Response(
-        JSON.stringify({ error: 'Erro ao processar link de autenticação' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const hash = hashMatch[1];
-    const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
-      token_hash: hash,
-      type: 'magiclink',
-    });
-
-    if (sessionError || !sessionData?.session) {
-      console.error('[verify-2fa-code] Error creating session from magic link:', sessionError);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao criar sessão de autenticação' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('[verify-2fa-code] Session created successfully');
-
-    console.log('[verify-2fa-code] Approver data:', {
-      approver_id: codeData.approver_id,
-      user_id: approverData.user_id,
-      client_id: approverData.client_id,
-      agency_id: approverData.agency_id
-    });
-
-    // Buscar cliente E agência em PARALELO (mais rápido)
-    const [clientResult, agencyResult] = await Promise.all([
-      supabase
-        .from('clients')
-        .select('id, name, slug, logo_url')
-        .eq('id', approverData.client_id)
-        .single(),
-      supabase
-        .from('agencies')
-        .select('id, slug, name')
-        .eq('id', approverData.agency_id)
-        .single()
-    ]);
-
-    const { data: clientData, error: clientError} = clientResult;
-    const { data: agencyData, error: agencyError } = agencyResult;
-
-    if (clientError || !clientData) {
-      console.error('[verify-2fa-code] Error fetching client:', clientError);
-      return new Response(
-        JSON.stringify({ error: 'Cliente não encontrado no sistema' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (agencyError || !agencyData) {
-      console.error('[verify-2fa-code] Error fetching agency:', agencyError);
-      return new Response(
-        JSON.stringify({ error: 'Agência não encontrada no sistema' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validar slugs antes de retornar
-    if (!clientData.slug || !agencyData.slug) {
-      console.error('[verify-2fa-code] Missing slugs:', {
-        client_slug: clientData.slug,
-        agency_slug: agencyData.slug
-      });
-      return new Response(
-        JSON.stringify({ error: 'Dados incompletos do cliente ou agência' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Buscar dados do aprovador
+    const { data: approverData } = await supabase
+      .from('client_approvers')
+      .select('name, email, is_primary')
+      .eq('id', codeData.approver_id)
+      .single();
 
     // Registrar no log de atividades
     await supabase.from('activity_log').insert({
       entity: '2fa_login',
       action: 'login_success',
       entity_id: codeData.client_id,
-      actor_user_id: approverData.user_id,
+      actor_user_id: null,
       metadata: {
         approver_id: codeData.approver_id,
-        approver_name: approverData.name,
-        client_slug: clientData.slug,
-        agency_slug: agencyData.slug,
+        approver_name: approverData?.name,
+        client_slug: clientData?.slug,
         ip_address: clientIP,
       },
     });
 
-    console.log(`[verify-2fa-code] 2FA login successful for ${approverData.email}`);
-
     return new Response(
       JSON.stringify({
         success: true,
-        access_token: sessionData.session.access_token,
-        refresh_token: sessionData.session.refresh_token,
+        session_token: sessionToken,
+        expires_at: sessionExpiresAt.toISOString(),
         client: {
-          id: clientData.id,
-          name: clientData.name,
-          slug: clientData.slug,
-          logo_url: clientData.logo_url,
-        },
-        agency: {
-          id: agencyData.id,
-          slug: agencyData.slug,
-          name: agencyData.name,
+          id: clientData?.id || codeData.client_id,
+          name: clientData?.name || 'Cliente',
+          slug: clientData?.slug || '',
+          logo_url: clientData?.logo_url,
         },
         approver: {
-          id: codeData.approver_id,
-          name: approverData.name,
-          email: approverData.email,
-          is_primary: approverData.is_primary,
+          name: approverData?.name || 'Aprovador',
+          email: approverData?.email,
+          is_primary: approverData?.is_primary || false,
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

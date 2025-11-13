@@ -1,12 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { VirtualizedContentGrid } from "@/components/content/VirtualizedContentGrid";
+import { ContentCard } from "@/components/content/ContentCard";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
@@ -17,7 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RateLimitBlockedAlert } from "@/components/admin/RateLimitBlockedAlert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useBatchStorageUrls } from "@/hooks/useBatchStorageUrls";
 
 interface Profile {
   id: string;
@@ -62,12 +60,10 @@ interface Content {
 
 export default function ContentGrid() {
   const { agencySlug, clientSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, session, loading: authLoading } = useAuth();
-  
   const [loading, setLoading] = useState(true);
-  const [isApprover, setIsApprover] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [agency, setAgency] = useState<Agency | null>(null);
@@ -75,9 +71,26 @@ export default function ContentGrid() {
   const [showConsent, setShowConsent] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [approvalToken, setApprovalToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [sessionData, setSessionData] = useState<{
+    client_id: string;
+    client_name: string;
+    client_slug: string;
+    client_logo_url?: string;
+    approver_name: string;
+    approver_email: string;
+    is_primary: boolean;
+  } | null>(null);
   const [showAllContents, setShowAllContents] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("all");
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const tokenMonth = searchParams.get('month');
+    if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
+      return tokenMonth;
+    }
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
@@ -122,78 +135,352 @@ export default function ContentGrid() {
     }
   }, [rateLimitError.type, rateLimitError.blockedUntil]);
 
-  // Check if user is an approver
-  useEffect(() => {
-    const checkApproverRole = async () => {
-      if (!user) {
-        setIsApprover(false);
-        return;
-      }
-
-      console.log('[ContentGrid] Checking if user is approver:', user.id);
-
-      const { data: roleData, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'approver')
-        .maybeSingle();
-
-      if (error) {
-        console.error('[ContentGrid] Error checking approver role:', error);
-        setIsApprover(false);
-        return;
-      }
-
-      const hasApproverRole = !!roleData;
-      console.log('[ContentGrid] Is approver:', hasApproverRole);
-      setIsApprover(hasApproverRole);
-    };
-
-    checkApproverRole();
-  }, [user]);
 
   useEffect(() => {
     const initializePage = async () => {
-      if (authLoading) {
-        console.log('[ContentGrid] Waiting for auth to load...');
-        return;
-      }
-
-      console.log('[ContentGrid] Initializing page...', { 
-        hasUser: !!user, 
-        hasSession: !!session,
-        isApprover 
-      });
+      console.log('[ContentGrid] Initializing page...');
       
-      // Se tem usuário autenticado, carregar dados
-      if (user && session) {
-        console.log('[ContentGrid] Authenticated user access');
-        await loadPublicData();
-        return;
+      // 1. PRIORIDADE: Verificar session_token 2FA PRIMEIRO
+      const sessionTkn = searchParams.get('session_token');
+      if (sessionTkn) {
+        console.log('[ContentGrid] 2FA session-based access (priority) - validating session:', sessionTkn.substring(0, 10) + '...');
+        setSessionToken(sessionTkn);
+        await validateSessionAndLoadData(sessionTkn);
+        return; // Session token tem prioridade máxima, encerra aqui
       }
       
-      // Sem autenticação = acesso restrito (público)
-      console.log('[ContentGrid] Public access - restricted view');
+      // 2. PRIORIDADE 2: Verificar token de aprovação
+      const token = searchParams.get('token');
+      if (token) {
+        console.log('[ContentGrid] Token-based access - validating token:', token.substring(0, 10) + '...');
+        setApprovalToken(token);
+        await validateTokenAndLoadData(token);
+        return; // Token tem prioridade, encerra aqui
+      }
+      
+      // 3. Se não tem token, verificar sessão autenticada
+      const { data: { session } } = await supabase.auth.getSession();
+      
+    // 4. Se tem sessão, carregar dados via autenticação
+    if (session) {
+      console.log('[ContentGrid] Authenticated access - loading via session');
+      setUser(session.user);
+      setTokenValid(true); // Marcar como válido para usuários autenticados
+      await loadPublicData();
+      return;
+    }
+      
+      // 5. Sem token e sem sessão = acesso restrito
+      console.log('[ContentGrid] No authentication and no token - restricted access');
+      setTokenValid(false);
       setLoading(false);
     };
     
     initializePage();
-  }, [user, session, authLoading, isApprover, agencySlug, clientSlug]);
+  }, [agencySlug, clientSlug, searchParams]);
+
+  const validateSessionAndLoadData = async (sessionTkn: string) => {
+    try {
+      console.log('=== Validating 2FA client session ===');
+      setRateLimitError({ type: null, message: '' });
+      
+      // Call the edge function to validate session
+      const { data, error } = await supabase.functions.invoke('validate-client-session', {
+        body: { session_token: sessionTkn }
+      });
+
+      if (error) {
+        console.error('Session validation error:', error);
+        setTokenValid(false);
+        setLoading(false);
+        
+        toast({
+          title: "Sessão inválida",
+          description: "Sua sessão expirou ou é inválida. Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || !data.valid) {
+        console.error('Session validation failed:', data);
+        setTokenValid(false);
+        setLoading(false);
+        toast({
+          title: "Sessão expirada",
+          description: data?.error || "Sua sessão expirou. Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Session validated successfully:', data);
+      setTokenValid(true);
+      
+      // Store session data
+      setSessionData({
+        client_id: data.client.id,
+        client_name: data.client.name,
+        client_slug: data.client.slug,
+        client_logo_url: data.client.logo_url,
+        approver_name: data.approver.name,
+        approver_email: data.approver.email,
+        is_primary: data.approver.is_primary
+      });
+
+      // Set client data
+      setClient({
+        id: data.client.id,
+        name: data.client.name,
+        slug: data.client.slug,
+        logo_url: data.client.logo_url || undefined,
+        agency_id: ''
+      } as any);
+
+      // Load agency from public table via slug
+      if (agencySlug) {
+        const { data: agencyData } = await supabase
+          .from('agencies_public')
+          .select('*')
+          .eq('slug', agencySlug)
+          .maybeSingle();
+        if (agencyData) setAgency(agencyData);
+      }
+
+      // Fetch contents for this client
+      await loadContents(data.client.id, undefined);
+    } catch (error) {
+      console.error("Error validating session:", error);
+      setTokenValid(false);
+      toast({
+        title: "Erro",
+        description: "Erro ao validar a sessão",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSessionLogout = async () => {
+    if (!sessionToken) return;
+
+    try {
+      console.log('=== Logging out 2FA session ===');
+      
+      // Expirar a sessão no banco de dados
+      const { error } = await supabase
+        .from("client_sessions")
+        .update({ expires_at: new Date().toISOString() })
+        .eq("session_token", sessionToken);
+
+      if (error) {
+        console.error('Error expiring session:', error);
+        toast({
+          title: "Erro ao encerrar sessão",
+          description: "Ocorreu um erro ao encerrar sua sessão.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Session expired successfully');
+      
+      // Limpar estados locais
+      setSessionToken(null);
+      setSessionData(null);
+      setTokenValid(false);
+      setContents([]);
+      
+      toast({
+        title: "Sessão encerrada",
+        description: "Você foi desconectado com sucesso.",
+      });
+
+      // Redirecionar para a página de aprovação
+      navigate("/aprovar");
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao encerrar a sessão",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchContentsViaToken = async (token: string) => {
+    console.log('[ContentGrid] Fetching contents via RPC with token');
+    const { data: contentData, error: rpcError } = await supabase.rpc('get_contents_for_approval', {
+      p_token: token
+    });
+
+    if (rpcError) {
+      console.error('[ContentGrid] RPC error:', rpcError);
+      setContents([]);
+      return;
+    }
+
+    console.log('[ContentGrid] Contents via RPC:', {
+      count: contentData?.length || 0,
+      statuses: contentData?.map((c: any) => c.status)
+    });
+    setContents(contentData || []);
+  };
+
+  const validateTokenAndLoadData = async (token: string) => {
+    try {
+      console.log('=== Validating approval token with rate limiting ===');
+      setRateLimitError({ type: null, message: '' });
+      
+      // Call the edge function with rate limiting
+      const { data, error } = await supabase.functions.invoke('validate-approval-token', {
+        body: { token }
+      });
+
+      if (error) {
+        console.error('Token validation error:', error);
+        setTokenValid(false);
+        setLoading(false);
+        
+        // Try to parse error message as JSON
+        let errorData: any = {};
+        try {
+          errorData = typeof error.message === 'string' ? JSON.parse(error.message) : error;
+        } catch {
+          errorData = { error: error.message };
+        }
+        
+        // Handle rate limiting errors
+        if (errorData.error === 'IP_BLOCKED_PERMANENT' || errorData.error === 'IP_BLOCKED_TEMPORARY') {
+          setRateLimitError({
+            type: errorData.error,
+            message: errorData.message || 'Seu IP foi bloqueado.',
+            blockedUntil: errorData.blocked_until,
+            ipAddress: errorData.ip_address,
+            failedAttempts: errorData.failed_attempts
+          });
+          return;
+        }
+        
+        if (errorData.error === 'RATE_LIMIT_EXCEEDED') {
+          setRateLimitError({
+            type: 'RATE_LIMIT',
+            message: errorData.message || 'Limite de tentativas excedido.',
+            attemptsRemaining: errorData.attempts_remaining
+          });
+          setCountdown(errorData.retry_after || 60);
+          return;
+        }
+        
+        if (errorData.error === 'INVALID_TOKEN') {
+          setRateLimitError({
+            type: 'INVALID_TOKEN',
+            message: 'Token inválido ou expirado.',
+            failedAttempts: errorData.failed_attempts,
+            attemptsRemaining: errorData.attempts_remaining
+          });
+          return;
+        }
+        
+        // Generic error
+        toast({
+          title: "Erro ao validar token",
+          description: errorData.message || "Ocorreu um erro ao validar o link de aprovação.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || !data.success) {
+        console.error('Token validation failed:', data);
+        setTokenValid(false);
+        setLoading(false);
+        toast({
+          title: "Link inválido ou expirado",
+          description: "Este link de aprovação não é mais válido. Entre em contato com a agência.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Token validated successfully:', data);
+      setTokenValid(true);
+      setRateLimitError({ type: null, message: '' });
+      setSelectedMonth(data.month);
+
+      // Load client from public table (no RLS)
+      try {
+        const { data: clientPub, error: clientPubErr } = await supabase
+          .from('clients_public')
+          .select('*')
+          .eq('id', data.client_id)
+          .maybeSingle();
+
+        if (clientPub) {
+          setClient({
+            id: clientPub.id,
+            name: clientPub.name,
+            slug: clientPub.slug,
+            logo_url: clientPub.logo_url || undefined,
+            agency_id: ''
+          } as any);
+        } else {
+          // Fallback: use data from token validation
+          setClient({
+            id: data.client_id,
+            name: data.client_name,
+            slug: data.client_slug,
+            logo_url: undefined,
+            agency_id: ''
+          } as any);
+        }
+
+        // Load agency from public table via slug
+        if (agencySlug) {
+          const { data: agencyData } = await supabase
+            .from('agencies_public')
+            .select('*')
+            .eq('slug', agencySlug)
+            .maybeSingle();
+          if (agencyData) setAgency(agencyData);
+        }
+      } catch (e) {
+        console.warn('[ContentGrid] Public client/agency fetch skipped due to error:', e);
+      }
+
+      // Fetch contents via RPC
+      await fetchContentsViaToken(token);
+    } catch (error) {
+      console.error("Error validating token:", error);
+      setTokenValid(false);
+      toast({
+        title: "Erro",
+        description: "Erro ao validar o link de aprovação",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadPublicData = async () => {
     try {
       console.log('=== ContentGrid loadPublicData started ===');
       console.log('agencySlug:', agencySlug, 'clientSlug:', clientSlug);
-      console.log('User:', user?.id, 'Is Approver:', isApprover);
       
-      if (user) {
+      // Verificar se há sessão ativa (opcional)
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session exists:', !!session);
+      
+      if (session) {
+        setUser(session.user);
         // Carregar perfil se logado
-        console.log('Loading profile for user:', user.id);
+        console.log('Loading profile for user:', session.user.id);
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", session.user.id)
           .maybeSingle();
 
         if (profileError) {
@@ -202,8 +489,8 @@ export default function ContentGrid() {
           console.log('Profile loaded:', profileData);
           setProfile(profileData);
           
-          // Verificar consentimento LGPD apenas para usuários logados não-aprovadores
-          if (!isApprover && !profileData.accepted_terms_at) {
+          // Verificar consentimento LGPD apenas para usuários logados
+          if (!profileData.accepted_terms_at) {
             console.log('User needs to accept terms');
             setShowConsent(true);
             return;
@@ -276,9 +563,12 @@ export default function ContentGrid() {
   const loadContents = async (clientId: string, filterMonth?: string) => {
     console.log('=== loadContents started for client:', clientId);
     
+    const { data: { session } } = await supabase.auth.getSession();
+    const hasSessionToken = !!sessionToken; // Verificar se é sessão 2FA
+    
     console.log('[ContentGrid] Load details:', {
-      hasUser: !!user,
-      isApprover,
+      hasSession: !!session,
+      hasSessionToken,
       statusFilter,
       clientId
     });
@@ -288,14 +578,14 @@ export default function ContentGrid() {
       .select("*")
       .eq("client_id", clientId);
     
-    // CASO 1: Aprovador autenticado (visualização COMPLETA sem filtros)
-    // Aprovadores veem TODOS os conteúdos independente de status ou tabs
-    if (isApprover) {
-      console.log('[ContentGrid] Approver view - showing ALL contents (no filters applied)');
-      // Não aplica nenhum filtro de status - aprovadores veem tudo
+    // CASO 1: Aprovador com token 2FA (visualização limitada a pendentes)
+    // Identifica aprovador: tem sessionToken MAS NÃO tem sessão Supabase Auth
+    if (hasSessionToken && !session) {
+      console.log('[ContentGrid] 2FA Approver - showing ONLY pending contents (draft + in_review)');
+      query = query.in("status", ["draft", "in_review"]);
     }
     // CASO 2: Cliente autenticado via Supabase Auth (visualização COMPLETA)
-    else if (user && !isApprover) {
+    else if (session) {
       console.log('[ContentGrid] Authenticated client - showing ALL contents, applying tab filter:', statusFilter);
       
       // Aplicar filtro de status apenas se não for 'all'
@@ -316,8 +606,8 @@ export default function ContentGrid() {
       query = query.eq("status", "approved");
     }
 
-    // Filtrar por mês se especificado (exceto para aprovadores que veem todos os meses)
-    if (filterMonth && !isApprover) {
+    // Filtrar por mês se especificado
+    if (filterMonth) {
       const [year, month] = filterMonth.split('-');
       const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
       const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
@@ -338,8 +628,8 @@ export default function ContentGrid() {
       count: data?.length || 0,
       clientId,
       filterMonth,
-      isApprover,
-      hasUser: !!user,
+      hasSessionToken,
+      hasSession: !!session,
       statuses: data?.map(c => c.status)
     });
     setContents(data || []);
@@ -372,101 +662,29 @@ export default function ContentGrid() {
 
   const sortedMonthKeys = Object.keys(groupedContents).sort((a, b) => b.localeCompare(a));
   
-  // Para aprovadores: mostrar TODOS os conteúdos SEM filtro de mês
-  // Para outros: filtrar pelo mês selecionado
-  const filteredContents = useMemo(() => {
-    if (isApprover) {
-      // Aprovadores veem todos os conteúdos sem filtro de mês
-      return contents;
+  // Filtrar pelo mês selecionado
+  const filteredContents = selectedMonth ? (groupedContents[selectedMonth] || []) : contents;
+
+  // Calcular contadores de status
+  const statusCounts = contents.reduce((acc, content) => {
+    if (content.status === 'draft' || content.status === 'in_review') {
+      acc.pending = (acc.pending || 0) + 1;
+    } else if (content.status === 'approved') {
+      acc.approved = (acc.approved || 0) + 1;
+    } else if (content.status === 'changes_requested') {
+      acc.changes = (acc.changes || 0) + 1;
     }
-    // Outros usuários veem apenas do mês selecionado
-    return groupedContents[selectedMonth] || [];
-  }, [contents, selectedMonth, isApprover, groupedContents]);
-
-  // Contar conteúdos por status
-  const statusCounts = useMemo(() => {
-    const counts = {
-      pending: 0,
-      approved: 0,
-      changes: 0,
-      total: filteredContents.length
-    };
-
-    filteredContents.forEach(content => {
-      if (content.status === 'draft' || content.status === 'in_review') {
-        counts.pending++;
-      } else if (content.status === 'approved') {
-        counts.approved++;
-      } else if (content.status === 'changes_requested') {
-        counts.changes++;
-      }
-    });
-
-    return counts;
-  }, [filteredContents]);
-
-  // Coletar todos os file paths das mídias para batch loading
-  const mediaFilePaths = useMemo(() => {
-    const paths: (string | null | undefined)[] = [];
-    filteredContents.forEach(content => {
-      // Buscar mídias desse conteúdo (será feito async no hook)
-      // Por ora, retornar array vazio para inicializar hook
-    });
-    return paths;
-  }, [filteredContents]);
-
-  // Carregar URLs das mídias em batch
-  const [mediaData, setMediaData] = useState<Array<{ content_id: string; src_url: string; thumb_url?: string }>>([]);
-  
-  useEffect(() => {
-    async function loadAllMedia() {
-      if (filteredContents.length === 0) return;
-      
-      const contentIds = filteredContents.map(c => c.id);
-      const { data, error } = await supabase
-        .from("content_media")
-        .select("content_id, src_url, thumb_url")
-        .in("content_id", contentIds);
-      
-      if (!error && data) {
-        setMediaData(data);
-      }
-    }
-    loadAllMedia();
-  }, [filteredContents]);
-
-  const allMediaPaths = useMemo(() => {
-    const paths: (string | null | undefined)[] = [];
-    mediaData.forEach(media => {
-      // Extrair path do src_url
-      const srcPath = media.src_url?.includes('/content-media/')
-        ? media.src_url.split('/content-media/')[1]
-        : media.src_url;
-      paths.push(srcPath);
-      
-      // Extrair path do thumb_url
-      if (media.thumb_url) {
-        const thumbPath = media.thumb_url?.includes('/content-media/')
-          ? media.thumb_url.split('/content-media/')[1]
-          : media.thumb_url;
-        paths.push(thumbPath);
-      }
-    });
-    return paths;
-  }, [mediaData]);
-
-  const { urls: mediaUrls, loading: mediaLoading } = useBatchStorageUrls({
-    bucket: 'content-media',
-    filePaths: allMediaPaths,
-    expiresIn: 3600,
-  });
+    acc.total = (acc.total || 0) + 1;
+    return acc;
+  }, { pending: 0, approved: 0, changes: 0, total: 0 });
 
   // Debug: Log state changes
   useEffect(() => {
     console.log('[ContentGrid] State changed:', {
       loading,
       contentsCount: filteredContents.length,
-      isApprover,
+      tokenValid,
+      hasToken: !!approvalToken,
       rateLimitError: rateLimitError.type
     });
     
@@ -476,7 +694,7 @@ export default function ContentGrid() {
     } else if (!loading && filteredContents.length === 0) {
       console.warn('[ContentGrid] No contents found after loading');
     }
-  }, [filteredContents, loading, isApprover, rateLimitError.type]);
+  }, [filteredContents, loading, tokenValid, approvalToken, rateLimitError.type]);
 
   if (loading) {
     return (
@@ -490,8 +708,12 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado
-  if (!user) {
+  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver token válido E NÃO houver sessão 2FA
+  const hasUser = !!user;
+  const hasValidToken = approvalToken && tokenValid === true;
+  const hasValidSession = sessionToken && tokenValid === true;
+  
+  if (!hasUser && !hasValidToken && !hasValidSession) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full space-y-4">
@@ -517,20 +739,24 @@ export default function ContentGrid() {
               
               <div className="space-y-2">
                 <p className="text-muted-foreground">
-                  Esta página requer autenticação para acesso.
+                  {sessionToken 
+                    ? 'Sua sessão expirou ou é inválida.'
+                    : approvalToken 
+                      ? 'O link de aprovação que você está usando é inválido ou expirou.'
+                      : 'Esta página requer autenticação ou um link de aprovação válido para acesso.'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Faça login via 2FA para continuar.
+                  {sessionToken 
+                    ? 'Faça login novamente para continuar.'
+                    : 'Links de aprovação têm validade de 7 dias e são enviados por email pela agência.'}
                 </p>
               </div>
 
               <div className="pt-4 border-t">
-                <Button
-                  onClick={() => navigate('/aprovar')}
-                  className="w-full"
-                >
-                  Fazer Login 2FA
-                </Button>
+                <p className="text-sm font-medium mb-2">Precisa de acesso?</p>
+                <p className="text-sm text-muted-foreground">
+                  Entre em contato com sua agência para solicitar um novo link de aprovação.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -539,15 +765,57 @@ export default function ContentGrid() {
     );
   }
 
+  const isPublicView = (!!approvalToken && tokenValid) || (!!sessionToken && tokenValid);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header padrão */}
-      <AppHeader 
-        userName={isApprover ? "Aprovador" : (client?.name || "Cliente")}
-        userRole={isApprover ? "Aprovador de Conteúdo" : (agency ? `Cliente ${agency.name}` : "Cliente")}
-        onProfileClick={() => setShowProfileDialog(true)}
-        onSignOut={handleSignOut}
-      />
+      {/* Mostrar header apenas se NÃO for visualização pública com token */}
+      {!isPublicView && (
+        <AppHeader 
+          userName={client?.name}
+          userRole={agency ? `Cliente ${agency.name}` : "Cliente"}
+          onProfileClick={() => setShowProfileDialog(true)}
+          onSignOut={handleSignOut}
+        />
+      )}
+
+      {/* Cabeçalho especial para visualização pública */}
+      {isPublicView && (
+        <header className="border-b bg-card">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {agency?.logo_url && (
+                  <img 
+                    src={agency.logo_url} 
+                    alt={agency.name} 
+                    className="h-10 w-auto"
+                  />
+                )}
+                <div>
+                  <h1 className="text-lg font-semibold">{client?.name}</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {sessionData ? `Aprovador: ${sessionData.approver_name}` : 'Aprovação de Conteúdo'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+                {sessionToken && sessionData && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSessionLogout}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+      )}
 
       {/* Diálogo de Perfil com Preferências */}
       {profile && user && (
@@ -561,21 +829,23 @@ export default function ContentGrid() {
       )}
 
       <main className="container mx-auto px-4 py-8">
-        {/* Aviso para aprovadores */}
-        {isApprover && (
+        {/* Aviso de acesso via link */}
+        {isPublicView && (
           <Alert className="mb-6">
             <AlertDescription>
-              Você está visualizando como aprovador. Pode ver todos os conteúdos sem restrição de período ou status.
+              {sessionToken 
+                ? `Você está logado como ${sessionData?.approver_name}. Sua sessão expira em algumas horas.`
+                : 'Você está visualizando os conteúdos aguardando aprovação via link temporário. Este link expira em 7 dias a partir do envio.'}
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Tabs de filtro por status - apenas para não-aprovadores */}
-        {!isApprover && user && (
+        {/* Tabs de filtro por status - apenas quando logado e não em modo de aprovação */}
+        {!isPublicView && user && (
           <div className="mb-6">
             <Tabs value={statusFilter} onValueChange={(value: any) => {
               setStatusFilter(value);
-              loadContents(client!.id, selectedMonth);
+      loadContents(client!.id, selectedMonth);
             }}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pending" className="flex items-center gap-2">
@@ -607,8 +877,8 @@ export default function ContentGrid() {
           </div>
         )}
 
-        {/* Seletor de Mês - desabilitado para aprovadores */}
-        {!isApprover && sortedMonthKeys.length > 0 && (
+        {/* Seletor de Mês - desabilitado na visualização pública */}
+        {!isPublicView && sortedMonthKeys.length > 0 && (
           <div className="mb-6">
             <select
               value={selectedMonth}
@@ -637,21 +907,31 @@ export default function ContentGrid() {
 
         {filteredContents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhum conteúdo encontrado
+            {isPublicView 
+              ? "Nenhum conteúdo aguardando aprovação neste período" 
+              : "Nenhum conteúdo encontrado para este mês"
+            }
           </div>
         ) : (
-          <VirtualizedContentGrid
-            contents={filteredContents}
-            mediaUrls={mediaUrls}
-            isResponsible={false}
-            isAgencyView={false}
-            isPublicApproval={isApprover}
-            sessionToken={undefined}
-            onUpdate={() => {
-              loadContents(client!.id, selectedMonth);
-            }}
-            blockSize={9}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredContents.map((content) => (
+              <ContentCard 
+                key={content.id} 
+                content={content}
+                isResponsible={false}
+                isAgencyView={false}
+                isPublicApproval={isPublicView}
+                approvalToken={approvalToken || undefined}
+                onUpdate={() => {
+                  if (isPublicView && approvalToken) {
+                    fetchContentsViaToken(approvalToken);
+                  } else {
+                    loadContents(client!.id, selectedMonth);
+                  }
+                }}
+              />
+            ))}
+          </div>
         )}
       </main>
       

@@ -5,13 +5,9 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { ManageApprovers as ManageApproversComponent } from "@/components/client/ManageApprovers";
 import { Loader2 } from "lucide-react";
-import { usePermissions } from "@/hooks/usePermissions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 const ManageApprovers = () => {
   const navigate = useNavigate();
-  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
 
@@ -55,33 +51,10 @@ const ManageApprovers = () => {
     }
   };
 
-  if (loading || permissionsLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Verificar permissão de manage_approvers
-  if (!hasPermission('manage_approvers')) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acesso Negado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Você não tem permissão para gerenciar aprovadores.</p>
-              <Button onClick={() => navigate("/dashboard")} className="mt-4">
-                Voltar ao Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <AppFooter />
       </div>
     );
   }

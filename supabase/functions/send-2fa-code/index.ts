@@ -40,46 +40,28 @@ Deno.serve(async (req) => {
 
     console.log(`[send-2fa-code] Looking for approver with identifier: ${identifier.substring(0, 3)}***`);
 
-    // Função para normalizar WhatsApp (remover formatação)
-    const normalizeWhatsApp = (value: string): string => {
-      return value.replace(/\D/g, ''); // Remove tudo que não é número
-    };
-
     // Validar formato do identificador
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const whatsappRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
 
     const trimmedIdentifier = identifier.trim();
     const isEmail = emailRegex.test(trimmedIdentifier);
-    const isWhatsApp = whatsappRegex.test(trimmedIdentifier) || /^\d{10,11}$/.test(trimmedIdentifier.replace(/\D/g, ''));
+    const isWhatsApp = whatsappRegex.test(trimmedIdentifier);
 
     if (!isEmail && !isWhatsApp) {
       console.error('[send-2fa-code] Invalid identifier format');
       return new Response(
         JSON.stringify({ 
-          error: 'Formato inválido. Use um email válido ou WhatsApp no formato (35) 99896-9680' 
+          error: 'Formato inválido. Use um email válido ou WhatsApp no formato (XX) XXXXX-XXXX' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Normalizar WhatsApp se for WhatsApp (remover formatação para buscar no banco)
-    let searchIdentifier = trimmedIdentifier;
-    if (isWhatsApp) {
-      searchIdentifier = normalizeWhatsApp(trimmedIdentifier);
-      console.log(`[send-2fa-code] WhatsApp normalizado: ${searchIdentifier.substring(0, 3)}***${searchIdentifier.slice(-2)}`);
-    }
-
-    console.log('[send-2fa-code] Parâmetros de busca:', {
-      original: identifier.substring(0, 3) + '***',
-      normalized: searchIdentifier.substring(0, 3) + '***',
-      type: isEmail ? 'email' : 'whatsapp'
-    });
-
-    // Buscar aprovador usando a função do banco com identificador normalizado
+    // Buscar aprovador usando a função do banco
     const { data: approverData, error: approverError } = await supabase.rpc(
       'find_approver_by_identifier',
-      { p_identifier: searchIdentifier }
+      { p_identifier: identifier.trim() }
     );
 
     if (approverError) {

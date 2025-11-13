@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Facebook, Instagram, Linkedin, Calendar as CalendarIcon, MoreVertical, Edit, ImagePlus, Download, Link2, CheckCircle, Trash2, Save, AlertCircle, ThumbsUp, XCircle, AlertTriangle, Edit2 } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Calendar as CalendarIcon, MoreVertical, Edit, ImagePlus, Download, Link2, CheckCircle, Trash2, Save, AlertCircle } from "lucide-react";
 import { ContentMedia } from "./ContentMedia";
 import { ContentCaption } from "./ContentCaption";
 import { ContentComments } from "./ContentComments";
@@ -16,10 +16,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { TimeInput } from "@/components/ui/time-input";
 import { EditContentDialog } from "./EditContentDialog";
-import { ApproveContentDialog } from "./ApproveContentDialog";
-import { RejectContentDialog } from "./RejectContentDialog";
-import { EditCaptionDialog } from "./EditCaptionDialog";
-import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,7 +26,6 @@ interface ContentDetailsDialogProps {
   contentId: string;
   onUpdate: () => void;
   isAgencyView?: boolean;
-  sessionToken?: string;
 }
 
 interface Content {
@@ -103,7 +98,6 @@ export function ContentDetailsDialog({
   contentId,
   onUpdate,
   isAgencyView = false,
-  sessionToken,
 }: ContentDetailsDialogProps) {
   const [content, setContent] = useState<Content | null>(null);
   const [adjustments, setAdjustments] = useState<Comment[]>([]);
@@ -117,13 +111,6 @@ export function ContentDetailsDialog({
   const [selectedTime, setSelectedTime] = useState<string>("12:00");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Estados para dialogs de aprovador
-  const [showApprove, setShowApprove] = useState(false);
-  const [showReject, setShowReject] = useState(false);
-  const [showEditCaption, setShowEditCaption] = useState(false);
-  const [showAdjustment, setShowAdjustment] = useState(false);
-  const [currentCaption, setCurrentCaption] = useState("");
 
   const loadContentDetails = async () => {
     try {
@@ -147,16 +134,6 @@ export function ContentDetailsDialog({
         : contentData.date.split(" ")[1] || "12:00:00";
       const [hh = "12", mm = "00"] = dateParts.split(":");
       setSelectedTime(`${hh.padStart(2, '0')}:${mm.padStart(2, '0')}`);
-
-      // Buscar legenda atual para o EditCaptionDialog
-      const { data: captionData } = await supabase
-        .from("content_texts")
-        .select("caption")
-        .eq("content_id", contentId)
-        .eq("version", contentData.version || 1)
-        .maybeSingle();
-      
-      setCurrentCaption(captionData?.caption || "");
 
       // Buscar histórico de ajustes (comentários com is_adjustment_request: true)
       const { data: commentsData, error: commentsError } = await supabase
@@ -511,49 +488,6 @@ export function ContentDetailsDialog({
 
               <Separator />
 
-              {/* Botões de ação para aprovadores */}
-              {sessionToken && (
-                <>
-                  <Separator />
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowEditCaption(true)}
-                    >
-                      <Edit2 className="h-4 w-4 mr-2" />
-                      Editar Legenda
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowAdjustment(true)}
-                    >
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Solicitar Ajuste
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => setShowReject(true)}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reprovar
-                    </Button>
-                    <Button 
-                      variant="default" 
-                      size="sm"
-                      onClick={() => setShowApprove(true)}
-                    >
-                      <ThumbsUp className="h-4 w-4 mr-2" />
-                      Aprovar
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              <Separator />
-
               {/* Seção de Comentários */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">Comentários</h3>
@@ -561,7 +495,6 @@ export function ContentDetailsDialog({
                   contentId={contentId}
                   onUpdate={onUpdate}
                   showHistory={true}
-                  sessionToken={sessionToken}
                 />
               </div>
             </div>
@@ -669,52 +602,6 @@ export function ContentDetailsDialog({
         accept="image/*,video/*"
         onChange={handleFileSelect}
         className="hidden"
-      />
-
-      {/* Dialogs de aprovação */}
-      <ApproveContentDialog
-        open={showApprove}
-        onOpenChange={setShowApprove}
-        contentId={contentId}
-        sessionToken={sessionToken}
-        onSuccess={() => {
-          loadContentDetails();
-          onUpdate();
-        }}
-      />
-
-      <RejectContentDialog
-        open={showReject}
-        onOpenChange={setShowReject}
-        contentId={contentId}
-        sessionToken={sessionToken}
-        onSuccess={() => {
-          loadContentDetails();
-          onUpdate();
-        }}
-      />
-
-      <EditCaptionDialog
-        open={showEditCaption}
-        onOpenChange={setShowEditCaption}
-        contentId={contentId}
-        currentCaption={currentCaption}
-        sessionToken={sessionToken}
-        onSuccess={() => {
-          loadContentDetails();
-          onUpdate();
-        }}
-      />
-
-      <RequestAdjustmentDialog
-        open={showAdjustment}
-        onOpenChange={setShowAdjustment}
-        contentId={contentId}
-        sessionToken={sessionToken}
-        onSuccess={() => {
-          loadContentDetails();
-          onUpdate();
-        }}
       />
     </Dialog>
   );

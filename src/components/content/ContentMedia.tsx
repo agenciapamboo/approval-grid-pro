@@ -16,19 +16,12 @@ interface Media {
 interface ContentMediaProps {
   contentId: string;
   type: string;
-  preloadedUrls?: Map<string, string>;
+  approvalToken?: string;
 }
 
-// Hook auxiliar para uma mídia individual com suporte a URLs pré-carregadas
-function useMediaUrl(media: Media | undefined, preloadedUrls?: Map<string, string>) {
-  // Se URLs foram pré-carregadas, usar elas
-  if (preloadedUrls && media) {
-    const srcUrl = preloadedUrls.get(media.src_url) || media.src_url;
-    const thumbUrl = media.thumb_url ? (preloadedUrls.get(media.thumb_url) || media.thumb_url) : srcUrl;
-    return { srcUrl, thumbUrl };
-  }
-
-  // Fallback: comportamento original com useStorageUrl
+// Hook auxiliar para uma mídia individual
+function useMediaUrl(media: Media | undefined) {
+  // Sempre chamar hooks na mesma ordem
   const srcFilePath = media?.src_url?.includes('/content-media/')
     ? media.src_url.split('/content-media/')[1]
     : media?.src_url;
@@ -50,7 +43,7 @@ function useMediaUrl(media: Media | undefined, preloadedUrls?: Map<string, strin
   return { srcUrl, thumbUrl };
 }
 
-export function ContentMedia({ contentId, type, preloadedUrls }: ContentMediaProps) {
+export function ContentMedia({ contentId, type, approvalToken }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -60,7 +53,7 @@ export function ContentMedia({ contentId, type, preloadedUrls }: ContentMediaPro
 
   useEffect(() => {
     loadMedia();
-  }, [contentId]);
+  }, [contentId, approvalToken]);
 
   // Proteger currentIndex quando media.length mudar
   useEffect(() => {
@@ -73,23 +66,48 @@ export function ContentMedia({ contentId, type, preloadedUrls }: ContentMediaPro
 
   const loadMedia = async () => {
     setLoading(true);
-    console.log('🔍 ContentMedia: Loading media', { contentId });
+    console.log('🔍 ContentMedia: Loading media', { contentId, approvalToken });
     
     try {
-      const { data, error } = await supabase
-        .from("content_media")
-        .select("*")
-        .eq("content_id", contentId)
-        .order("order_index");
+      if (approvalToken) {
+        console.log('🔐 Using approval token flow');
+        const { data, error } = await supabase.functions.invoke('approval-media-urls', {
+          body: { token: approvalToken, contentId }
+        });
 
-      console.log('📦 Supabase response:', { data, error });
-
-      if (error) {
-        console.error("❌ Erro ao carregar mídias:", error);
-        setMedia([]);
+        console.log('📦 Edge function response:', { data, error });
+        
+        if (error) {
+          console.error('❌ Erro ao carregar mídias via token:', error);
+          setMedia([]);
+        } else {
+          const mappedMedia = (data?.media || []).map((m: any) => ({
+            id: m.id,
+            kind: m.kind,
+            order_index: m.order_index,
+            src_url: m.srcUrl,
+            thumb_url: m.thumbUrl
+          }));
+          console.log('✅ Media loaded via token:', mappedMedia);
+          setMedia(mappedMedia);
+        }
       } else {
-        console.log('✅ Media loaded:', data);
-        setMedia(data || []);
+        console.log('🔓 Using authenticated flow');
+        const { data, error } = await supabase
+          .from("content_media")
+          .select("*")
+          .eq("content_id", contentId)
+          .order("order_index");
+
+        console.log('📦 Supabase response:', { data, error });
+
+        if (error) {
+          console.error("❌ Erro ao carregar mídias:", error);
+          setMedia([]);
+        } else {
+          console.log('✅ Media loaded:', data);
+          setMedia(data || []);
+        }
       }
     } finally {
       setLoading(false);
@@ -98,7 +116,7 @@ export function ContentMedia({ contentId, type, preloadedUrls }: ContentMediaPro
 
   // Calcular currentMedia de forma segura e chamar hook ANTES dos returns condicionais
   const currentMedia = media.length > 0 ? media[Math.min(currentIndex, media.length - 1)] : undefined;
-  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia, preloadedUrls);
+  const { srcUrl, thumbUrl } = useMediaUrl(currentMedia);
 
   if (loading) {
     return (

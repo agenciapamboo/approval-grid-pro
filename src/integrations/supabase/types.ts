@@ -18,8 +18,6 @@ export type Database = {
         Row: {
           action: string
           actor_user_id: string | null
-          approver_id: string | null
-          approver_name: string | null
           created_at: string
           entity: string
           entity_id: string | null
@@ -29,8 +27,6 @@ export type Database = {
         Insert: {
           action: string
           actor_user_id?: string | null
-          approver_id?: string | null
-          approver_name?: string | null
           created_at?: string
           entity: string
           entity_id?: string | null
@@ -40,8 +36,6 @@ export type Database = {
         Update: {
           action?: string
           actor_user_id?: string | null
-          approver_id?: string | null
-          approver_name?: string | null
           created_at?: string
           entity?: string
           entity_id?: string | null
@@ -54,13 +48,6 @@ export type Database = {
             columns: ["actor_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activity_log_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "client_approvers"
             referencedColumns: ["id"]
           },
         ]
@@ -183,45 +170,8 @@ export type Database = {
           },
         ]
       }
-      approval_tokens_backup: {
-        Row: {
-          backup_date: string | null
-          client_id: string | null
-          created_at: string | null
-          created_by: string | null
-          expires_at: string | null
-          id: string | null
-          month: string | null
-          token: string | null
-          used_at: string | null
-        }
-        Insert: {
-          backup_date?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string | null
-          month?: string | null
-          token?: string | null
-          used_at?: string | null
-        }
-        Update: {
-          backup_date?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string | null
-          month?: string | null
-          token?: string | null
-          used_at?: string | null
-        }
-        Relationships: []
-      }
       client_approvers: {
         Row: {
-          agency_id: string
           client_id: string
           created_at: string
           created_by: string | null
@@ -231,11 +181,9 @@ export type Database = {
           is_primary: boolean
           name: string
           updated_at: string
-          user_id: string | null
           whatsapp: string | null
         }
         Insert: {
-          agency_id: string
           client_id: string
           created_at?: string
           created_by?: string | null
@@ -245,11 +193,9 @@ export type Database = {
           is_primary?: boolean
           name: string
           updated_at?: string
-          user_id?: string | null
           whatsapp?: string | null
         }
         Update: {
-          agency_id?: string
           client_id?: string
           created_at?: string
           created_by?: string | null
@@ -259,31 +205,9 @@ export type Database = {
           is_primary?: boolean
           name?: string
           updated_at?: string
-          user_id?: string | null
           whatsapp?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "client_approvers_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_approvers_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_approvers_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "client_approvers_client_id_fkey"
             columns: ["client_id"]
@@ -595,8 +519,6 @@ export type Database = {
       comments: {
         Row: {
           adjustment_reason: string | null
-          approver_id: string | null
-          approver_name: string | null
           author_user_id: string | null
           body: string
           content_id: string
@@ -607,8 +529,6 @@ export type Database = {
         }
         Insert: {
           adjustment_reason?: string | null
-          approver_id?: string | null
-          approver_name?: string | null
           author_user_id?: string | null
           body: string
           content_id: string
@@ -619,8 +539,6 @@ export type Database = {
         }
         Update: {
           adjustment_reason?: string | null
-          approver_id?: string | null
-          approver_name?: string | null
           author_user_id?: string | null
           body?: string
           content_id?: string
@@ -630,13 +548,6 @@ export type Database = {
           version?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "comments_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "client_approvers"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "comments_author_user_id_fkey"
             columns: ["author_user_id"]
@@ -810,10 +721,6 @@ export type Database = {
           caption: string | null
           content_id: string
           created_at: string
-          edited_at: string | null
-          edited_by_approver_id: string | null
-          edited_by_approver_name: string | null
-          edited_by_user_id: string | null
           id: string
           version: number
         }
@@ -821,10 +728,6 @@ export type Database = {
           caption?: string | null
           content_id: string
           created_at?: string
-          edited_at?: string | null
-          edited_by_approver_id?: string | null
-          edited_by_approver_name?: string | null
-          edited_by_user_id?: string | null
           id?: string
           version: number
         }
@@ -832,10 +735,6 @@ export type Database = {
           caption?: string | null
           content_id?: string
           created_at?: string
-          edited_at?: string | null
-          edited_by_approver_id?: string | null
-          edited_by_approver_name?: string | null
-          edited_by_user_id?: string | null
           id?: string
           version?: number
         }
@@ -845,13 +744,6 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "contents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_texts_edited_by_approver_id_fkey"
-            columns: ["edited_by_approver_id"]
-            isOneToOne: false
-            referencedRelation: "client_approvers"
             referencedColumns: ["id"]
           },
         ]
@@ -2500,6 +2392,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_comment_for_approval: {
+        Args: { p_body: string; p_content_id: string; p_token: string }
+        Returns: Json
+      }
+      approve_content_for_approval: {
+        Args: { p_content_id: string; p_token: string }
+        Returns: Json
+      }
       check_client_permission: {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
@@ -2526,6 +2426,10 @@ export type Database = {
         }
         Returns: Json
       }
+      generate_approval_token: {
+        Args: { p_client_id: string; p_month: string }
+        Returns: string
+      }
       get_agency_admin_email: {
         Args: { agency_id_param: string }
         Returns: string
@@ -2540,11 +2444,48 @@ export type Database = {
           user_agents: string[]
         }[]
       }
+      get_comments_for_approval: {
+        Args: { p_content_id: string; p_token: string }
+        Returns: {
+          adjustment_reason: string
+          author_name: string
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          is_adjustment_request: boolean
+        }[]
+      }
+      get_content_caption_for_approval: {
+        Args: { p_content_id: string; p_token: string; p_version: number }
+        Returns: {
+          caption: string
+        }[]
+      }
+      get_contents_for_approval: {
+        Args: { p_token: string }
+        Returns: {
+          auto_publish: boolean
+          category: string
+          channels: string[]
+          client_id: string
+          created_at: string
+          date: string
+          deadline: string
+          id: string
+          owner_user_id: string
+          publish_error: string
+          published_at: string
+          status: Database["public"]["Enums"]["content_status"]
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at: string
+          version: number
+        }[]
+      }
       get_database_size_mb: { Args: never; Returns: number }
       get_monthly_bandwidth_gb: { Args: never; Returns: number }
       get_storage_size_gb: { Args: never; Returns: number }
-      get_user_agency_id: { Args: { _user_id: string }; Returns: string }
-      get_user_client_id: { Args: { _user_id: string }; Returns: string }
       get_user_entitlements: {
         Args: { user_id: string }
         Returns: {
@@ -2593,7 +2534,15 @@ export type Database = {
         Returns: boolean
       }
       normalize_whatsapp: { Args: { phone: string }; Returns: string }
+      reject_content_for_approval: {
+        Args: { p_content_id: string; p_reason: string; p_token: string }
+        Returns: Json
+      }
       sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
+      save_caption_for_approval: {
+        Args: { p_caption: string; p_content_id: string; p_token: string }
+        Returns: Json
+      }
       send_notification: {
         Args: {
           p_agency_id?: string
@@ -2609,22 +2558,18 @@ export type Database = {
         Args: { p_ip_address: string; p_unblocked_by: string }
         Returns: Json
       }
-      user_belongs_to_agency: {
-        Args: { _agency_id: string; _user_id: string }
-        Returns: boolean
-      }
-      user_belongs_to_client: {
-        Args: { _client_id: string; _user_id: string }
-        Returns: boolean
+      validate_approval_token: {
+        Args: { p_token: string }
+        Returns: {
+          client_id: string
+          client_name: string
+          client_slug: string
+          month: string
+        }[]
       }
     }
     Enums: {
-      app_role:
-        | "super_admin"
-        | "agency_admin"
-        | "client_user"
-        | "team_member"
-        | "approver"
+      app_role: "super_admin" | "agency_admin" | "client_user" | "team_member"
       content_status:
         | "draft"
         | "in_review"
@@ -2772,13 +2717,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: [
-        "super_admin",
-        "agency_admin",
-        "client_user",
-        "team_member",
-        "approver",
-      ],
+      app_role: ["super_admin", "agency_admin", "client_user", "team_member"],
       content_status: [
         "draft",
         "in_review",

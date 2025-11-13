@@ -21,7 +21,7 @@ import { EditContentDialog } from "./EditContentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
-import { useContentPermissions } from "@/hooks/useContentPermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ContentCardProps {
   content: {
@@ -39,17 +39,16 @@ interface ContentCardProps {
     is_content_plan?: boolean;
     plan_description?: string | null;
   };
-  mediaUrls?: Map<string, string>;
   isResponsible: boolean;
   isAgencyView?: boolean;
   isPublicApproval?: boolean;
-  sessionToken?: string;
+  approvalToken?: string;
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = false, isPublicApproval = false, sessionToken, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
-  const { permissions } = useContentPermissions();
+  const { hasPermission } = usePermissions();
   const [showComments, setShowComments] = useState(false);
   const [showAdjustment, setShowAdjustment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -177,20 +176,21 @@ export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = 
       contentId: content.id,
       currentStatus: content.status,
       isPublicApproval,
-      hasSessionToken: !!sessionToken
+      hasToken: !!approvalToken
     });
     
     try {
-      if (isPublicApproval && sessionToken) {
-        // Usar edge function para aprovação via 2FA session
-        const { error } = await supabase.functions.invoke('approver-approve-content', {
-          body: {
-            session_token: sessionToken,
-            content_id: content.id
-          }
+      if (isPublicApproval && approvalToken) {
+        // Usar RPC para aprovação via token
+        const { data, error } = await supabase.rpc('approve_content_for_approval', {
+          p_token: approvalToken,
+          p_content_id: content.id
         });
 
         if (error) throw error;
+        
+        const result = data as any;
+        if (!result?.success) throw new Error(result?.error || 'Erro ao aprovar');
 
         toast({
           title: "Conteúdo aprovado",
@@ -254,21 +254,22 @@ export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = 
       currentStatus: content.status,
       reason: rejectReason,
       isPublicApproval,
-      hasSessionToken: !!sessionToken
+      hasToken: !!approvalToken
     });
 
     try {
-      if (isPublicApproval && sessionToken) {
-        // Usar edge function para reprovação via 2FA session
-        const { error } = await supabase.functions.invoke('approver-reject-content', {
-          body: {
-            session_token: sessionToken,
-            content_id: content.id,
-            reason: rejectReason
-          }
+      if (isPublicApproval && approvalToken) {
+        // Usar RPC para reprovação via token
+        const { data, error } = await supabase.rpc('reject_content_for_approval', {
+          p_token: approvalToken,
+          p_content_id: content.id,
+          p_reason: rejectReason
         });
 
         if (error) throw error;
+        
+        const result = data as any;
+        if (!result?.success) throw new Error(result?.error || 'Erro ao reprovar');
 
         toast({
           title: "Conteúdo reprovado",
@@ -906,11 +907,11 @@ export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = 
               )}
             </>
           ) : (
-            <ContentMedia contentId={content.id} type={content.type} preloadedUrls={mediaUrls} />
+            <ContentMedia contentId={content.id} type={content.type} approvalToken={approvalToken} />
           )}
 
           {/* Linha 3: Legenda */}
-          <ContentCaption contentId={content.id} version={content.version} />
+          <ContentCaption contentId={content.id} version={content.version} approvalToken={approvalToken} />
 
           {/* Ações - Simplificado para visualização pública */}
           {!isAgencyView && (
@@ -1140,7 +1141,7 @@ export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = 
           {/* Comentários expandidos - sempre visível para clientes */}
           {(isPublicApproval || !isAgencyView) && (
             <div className="border-t">
-              <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} sessionToken={sessionToken} />
+              <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
             </div>
           )}
         </CardContent>
@@ -1158,7 +1159,7 @@ export function ContentCard({ content, mediaUrls, isResponsible, isAgencyView = 
         onOpenChange={setShowAdjustment}
         contentId={content.id}
         onSuccess={onUpdate}
-        sessionToken={sessionToken}
+        approvalToken={approvalToken}
       />
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
