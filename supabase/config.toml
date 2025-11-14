@@ -1,4 +1,4 @@
-project_id = "sgarwrreywadxsodnxng"
+project_id = "dhwuvhcpqlbmqnklsgjz"
 
 [functions.admin-change-plan]
 verify_jwt = true
