@@ -61,6 +61,7 @@ export default function AgencyContentManager() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [agency, setAgency] = useState<Agency | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
@@ -116,6 +117,8 @@ export default function AgencyContentManager() {
       }
 
       setProfile(profileData);
+      setRole(profileData.role);
+
 
       // Carregar cliente
       const { data: clientData, error: clientError } = await supabase
@@ -369,6 +372,7 @@ export default function AgencyContentManager() {
             onStatusChange={setStatusFilter}
             dateFilter={dateFilter}
             onDateChange={setDateFilter}
+            isClientUser={role === 'client_user'}
           />
         </div>
         

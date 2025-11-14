@@ -15,6 +15,7 @@ interface ContentFiltersProps {
   onStatusChange: (value: string) => void;
   dateFilter: Date | undefined;
   onDateChange: (date: Date | undefined) => void;
+  isClientUser?: boolean;
 }
 
 export function ContentFilters({
@@ -24,9 +25,19 @@ export function ContentFilters({
   onStatusChange,
   dateFilter,
   onDateChange,
+  isClientUser = false,
 }: ContentFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
+    <div className="space-y-4">
+      {isClientUser && (
+        <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-md border border-blue-200 dark:border-blue-800">
+          <p className="text-xs text-blue-600 dark:text-blue-400">
+            💡 <strong>Visualização Completa:</strong> Você pode ver todos os conteúdos do seu cliente em qualquer status.
+          </p>
+        </div>
+      )}
+      
+      <div className="flex flex-col sm:flex-row gap-4">
       <div className="flex-1 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -82,6 +93,7 @@ export function ContentFilters({
           />
         </PopoverContent>
       </Popover>
+      </div>
     </div>
   );
 }
