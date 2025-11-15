@@ -75,15 +75,15 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 48%) 100%);
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.8) 0%, hsl(0 0% 100% / 0.6) 100%);
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 100% / 0.7;
-    --sidebar-foreground: 215 25% 15%;
-    --sidebar-primary: 175 65% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 215 25% 15%;
-    --sidebar-border: 210 20% 90%;
-    --sidebar-ring: 175 65% 50%;
+    /* Sidebar - Verde/Branco (Light Mode) */
+    --sidebar-background: 158 100% 32%;        /* Verde #00B878 */
+    --sidebar-foreground: 0 0% 100%;           /* Branco */
+    --sidebar-primary: 158 100% 42%;           /* Verde mais claro para hover */
+    --sidebar-primary-foreground: 0 0% 100%;   /* Branco */
+    --sidebar-accent: 158 100% 38%;            /* Verde médio para itens ativos */
+    --sidebar-accent-foreground: 0 0% 100%;    /* Branco */
+    --sidebar-border: 158 100% 28%;            /* Verde escuro para bordas */
+    --sidebar-ring: 158 100% 48%;              /* Verde claro para focus ring */
 
     /* Transitions */
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -155,15 +155,15 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 48%) 100%);
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.05) 0%, hsl(0 0% 100% / 0.02) 100%);
 
-    /* Sidebar */
-    --sidebar-background: 215 25% 12% / 0.7;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 165 80% 55%;
-    --sidebar-primary-foreground: 215 30% 8%;
-    --sidebar-accent: 215 20% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 20% 20%;
-    --sidebar-ring: 165 80% 55%;
+    /* Sidebar - Preto/Verde (Dark Mode) */
+    --sidebar-background: 0 0% 8%;             /* Preto (#141414) */
+    --sidebar-foreground: 158 100% 42%;        /* Verde claro */
+    --sidebar-primary: 0 0% 12%;               /* Preto mais claro para hover */
+    --sidebar-primary-foreground: 158 100% 48%; /* Verde brilhante */
+    --sidebar-accent: 0 0% 15%;                /* Cinza escuro para itens ativos */
+    --sidebar-accent-foreground: 158 100% 52%; /* Verde mais claro */
+    --sidebar-border: 158 100% 28%;            /* Verde escuro para bordas */
+    --sidebar-ring: 158 100% 48%;              /* Verde claro para focus ring */
   }
 }
 

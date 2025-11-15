@@ -1,18 +1,15 @@
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { UserAuditLog as UserAuditLogComponent } from "@/components/admin/UserAuditLog";
 import AccessGate from "@/components/auth/AccessGate";
 
 export default function UserAuditLog() {
   return (
     <AccessGate allow={['super_admin']}>
-      <div className="min-h-screen flex flex-col">
-        <AppHeader />
-        <main className="flex-1 container mx-auto px-4 py-8">
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
           <UserAuditLogComponent />
-        </main>
-        <AppFooter />
-      </div>
+        </div>
+      </AppLayout>
     </AccessGate>
   );
 }

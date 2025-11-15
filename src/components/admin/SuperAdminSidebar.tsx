@@ -160,8 +160,8 @@ export function SuperAdminSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r bg-sidebar text-sidebar-foreground">
+      <SidebarContent className="bg-sidebar">
         {categories.map((category) => {
           const items = menuItems.filter(item => item.category === category.id);
           if (items.length === 0) return null;

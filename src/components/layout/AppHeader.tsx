@@ -6,15 +6,17 @@ import { ExpandableTabs } from "@/components/ui/expandable-tabs";
 import { useTheme } from "next-themes";
 import { PlatformNotificationsBell } from "@/components/notifications/PlatformNotificationsBell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface AppHeaderProps {
   userName?: string;
   userRole?: string;
   onProfileClick?: () => void;
   onSignOut?: () => void;
+  showSidebarTrigger?: boolean;
 }
 
-export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: AppHeaderProps) {
+export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showSidebarTrigger }: AppHeaderProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +40,8 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut }: App
       <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
+          {showSidebarTrigger && <SidebarTrigger />}
+          
           {!isOnDashboard && (
             <Button
               variant="ghost"
