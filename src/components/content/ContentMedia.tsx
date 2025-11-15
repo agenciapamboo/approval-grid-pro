@@ -130,6 +130,7 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
   const [showModal, setShowModal] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     const normalizedPath = normalizeStoragePath(mediaPath);
@@ -236,6 +237,23 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
     }
   };
 
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const maxWidth = window.innerWidth * 0.9;
+    const maxHeight = window.innerHeight * 0.9;
+    
+    let width = img.naturalWidth;
+    let height = img.naturalHeight;
+    
+    if (width > maxWidth || height > maxHeight) {
+      const ratio = Math.min(maxWidth / width, maxHeight / height);
+      width = width * ratio;
+      height = height * ratio;
+    }
+    
+    setImageDimensions({ width, height });
+  };
+
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
   };
@@ -333,8 +351,18 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
       </div>
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-screen-lg w-full h-[90vh] p-0">
-          <div className="relative w-full h-full flex items-center justify-center bg-black">
+        <DialogContent 
+          className="p-0"
+          style={imageDimensions ? {
+            maxWidth: `${imageDimensions.width}px`,
+            width: 'auto',
+            maxHeight: '90vh'
+          } : {
+            maxWidth: '90vw',
+            width: 'auto'
+          }}
+        >
+          <div className="relative bg-black">
             <Button
               variant="ghost"
               size="icon"
@@ -349,6 +377,7 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
                 src={srcUrl}
                 alt={`Mídia ${currentIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
+                onLoad={handleImageLoad}
               />
             )}
 
