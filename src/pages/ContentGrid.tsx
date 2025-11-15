@@ -32,7 +32,7 @@ interface Client {
   name: string;
   slug: string;
   logo_url?: string;
-  agency_id: string;
+  agency_id?: string;
 }
 
 interface Agency {
@@ -64,6 +64,14 @@ interface Content {
   caption?: string | null;
   legend?: string | null;
 }
+
+type MinimalClientRow = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  agency_id?: string | null;
+};
 
 export default function ContentGrid() {
   const { agencySlug, clientSlug } = useParams();
@@ -255,8 +263,8 @@ export default function ContentGrid() {
         name: data.client.name,
         slug: data.client.slug,
         logo_url: data.client.logo_url || undefined,
-        agency_id: ''
-      } as any);
+         agency_id: data.client.agency_id || undefined
+      });
 
       // Load agency from public table via slug
       if (agencySlug) {
@@ -425,8 +433,8 @@ export default function ContentGrid() {
             name: clientPub.name,
             slug: clientPub.slug,
             logo_url: clientPub.logo_url || undefined,
-            agency_id: ''
-          } as any);
+              agency_id: undefined
+          });
         } else {
           // Fallback: use data from token validation
           setClient({
@@ -434,8 +442,8 @@ export default function ContentGrid() {
             name: data.client_name,
             slug: data.client_slug,
             logo_url: undefined,
-            agency_id: ''
-          } as any);
+              agency_id: undefined
+          });
         }
 
         // Load agency from public table via slug
@@ -519,33 +527,83 @@ export default function ContentGrid() {
           setAgency(agencyData);
         }
       }
-
+      
+     const normalizeClient = (data: MinimalClientRow): Client => ({
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        logo_url: data.logo_url || undefined,
+        agency_id: data.agency_id || undefined,
+      });
+      
       if (!finalClient && clientSlug) {
         console.log('[ContentGrid] Loading client by slug:', clientSlug);
-        const { data: clientData } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("slug", clientSlug)
+        const { data: secureClient, error: secureError } = await supabase
+          .from('clients_secure')
+          .select('id, name, slug, logo_url, agency_id')
+          .eq('slug', clientSlug)
           .maybeSingle();
 
-        if (clientData) {
-          finalClient = clientData;
-          setClient(clientData);
+        if (secureError) {
+          console.warn('[ContentGrid] clients_secure lookup failed, falling back to public view:', secureError);
+        }
+
+        if (secureClient) {
+          const normalized = normalizeClient(secureClient);
+          finalClient = normalized;
+          setClient(normalized);
+        } else {
+          const { data: publicClient, error: publicError } = await supabase
+            .from('clients_public')
+            .select('id, name, slug, logo_url')
+            .eq('slug', clientSlug)
+            .maybeSingle();
+
+          if (publicError) {
+            console.error('[ContentGrid] clients_public lookup failed:', publicError);
+          }
+
+          if (publicClient) {
+            const normalized = normalizeClient(publicClient);
+            finalClient = normalized;
+            setClient(normalized);
+          }
         }
       }
       
       // Usar client_id do profile se role = client_user
       if (role === 'client_user' && userProfile?.client_id && !finalClient) {
         console.log('[ContentGrid] Loading client by profile.client_id:', userProfile.client_id);
-        const { data: clientData } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("id", userProfile.client_id)
-          .single();
-        
-        if (clientData) {
-          finalClient = clientData;
-          setClient(clientData);
+         const { data: secureClient, error: secureError } = await supabase
+          .from('clients_secure')
+          .select('id, name, slug, logo_url, agency_id')
+          .eq('id', userProfile.client_id)
+          .maybeSingle();
+
+        if (secureError) {
+          console.warn('[ContentGrid] clients_secure lookup by id failed, falling back to public view:', secureError);
+        }
+
+        if (secureClient) {
+          const normalized = normalizeClient(secureClient);
+          finalClient = normalized;
+          setClient(normalized);
+        } else {
+          const { data: publicClient, error: publicError } = await supabase
+            .from('clients_public')
+            .select('id, name, slug, logo_url')
+            .eq('id', userProfile.client_id)
+            .maybeSingle();
+
+          if (publicError) {
+            console.error('[ContentGrid] clients_public lookup by id failed:', publicError);
+          }
+
+          if (publicClient) {
+            const normalized = normalizeClient(publicClient);
+            finalClient = normalized;
+            setClient(normalized);
+          }
         }
       }
 
