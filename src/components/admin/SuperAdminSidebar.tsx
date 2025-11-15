@@ -56,12 +56,6 @@ const menuItems = [
     category: "financeiro"
   },
   {
-    title: "Relatórios",
-    url: "/admin/usuarios",
-    icon: BarChart3,
-    category: "financeiro"
-  },
-  {
     title: "Usuários",
     url: "/admin/usuarios",
     icon: UserCheck,
@@ -80,34 +74,10 @@ const menuItems = [
     category: "seguranca"
   },
   {
-    title: "IPs Bloqueados",
-    url: "/admin/blocked-ips",
-    icon: Lock,
-    category: "seguranca"
-  },
-  {
-    title: "IPs Confiáveis",
-    url: "/admin/ips-confiaveis",
-    icon: UserCheck,
-    category: "seguranca"
-  },
-  {
     title: "Sessões Ativas",
     url: "/admin/sessoes-ativas",
     icon: Monitor,
     category: "seguranca"
-  },
-  {
-    title: "Histórico 2FA",
-    url: "/admin/historico-2fa",
-    icon: History,
-    category: "seguranca"
-  },
-  {
-    title: "Perfis",
-    url: "/admin/perfis",
-    icon: UserCog,
-    category: "sistema"
   },
   {
     title: "Membros Equipe",
@@ -125,12 +95,6 @@ const menuItems = [
     title: "Configuração Stripe",
     url: "/admin/stripe",
     icon: CreditCard,
-    category: "integracao"
-  },
-  {
-    title: "Sincronizar Stripe",
-    url: "/admin/stripe-sync",
-    icon: Database,
     category: "integracao"
   },
   {

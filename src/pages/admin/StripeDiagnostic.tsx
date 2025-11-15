@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
 import { useToast } from "@/hooks/use-toast";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, RefreshCw, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { STRIPE_PRODUCTS, StripePlan } from "@/lib/stripe-config";
@@ -123,9 +122,9 @@ export default function StripeDiagnostic() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <main className="container mx-auto px-4 py-8 space-y-6">
+    <AccessGate allow={['super_admin']}>
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Diagnóstico Stripe</h1>
@@ -330,7 +329,8 @@ export default function StripeDiagnostic() {
             </CardContent>
           </Card>
         )}
-      </main>
-    </div>
+        </div>
+      </AppLayout>
+    </AccessGate>
   );
 }

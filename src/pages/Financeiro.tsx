@@ -10,8 +10,9 @@ import { CostPerClientTable } from "@/components/admin/CostPerClientTable";
 import { LovablePlanConfig } from "@/components/admin/LovablePlanConfig";
 import { RevenueTaxesManager } from "@/components/admin/RevenueTaxesManager";
 import { OperationalCostsManager } from "@/components/admin/OperationalCostsManager";
-import { ArrowLeft, DollarSign, Database } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { DollarSign, Database, Loader2 } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import AccessGate from "@/components/auth/AccessGate";
 
 const Financeiro = () => {
   const navigate = useNavigate();
@@ -58,18 +59,10 @@ const Financeiro = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
-
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Dashboard
-          </Button>
-        </div>
-
-        <div className="space-y-6">
+    <AccessGate allow={['super_admin']}>
+      <AppLayout>
+        <div className="container mx-auto px-4 py-6">
+          <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
               <DollarSign className="h-8 w-8" />
@@ -108,10 +101,9 @@ const Financeiro = () => {
           {/* Custo por Cliente */}
           <CostPerClientTable />
         </div>
-      </main>
-
-      <AppFooter />
-    </div>
+        </div>
+      </AppLayout>
+    </AccessGate>
   );
 };
 

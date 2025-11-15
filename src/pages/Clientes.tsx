@@ -12,6 +12,7 @@ import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformN
 import { ArrowLeft, Search, Users, Building2, Eye, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 interface Client {
   id: string;
@@ -112,28 +113,15 @@ const Clientes = () => {
 
   return (
     <AccessGate allow={['super_admin', 'agency_admin']}>
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-        <AppHeader userName={profile?.name} userRole={role || undefined} onSignOut={() => navigate("/auth")} />
-
-        <main className="flex-1 container mx-auto px-4 py-6">
+      <AppLayout>
+        <div className="container mx-auto px-4 py-6">
           <div className="mb-6">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/dashboard")}
-              className="mb-4"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar ao Dashboard
-            </Button>
-
-            <div className="flex flex-col gap-2">
-              <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                Clientes
-              </h1>
-              <p className="text-muted-foreground">
-                Gerencie seus clientes e acompanhe suas métricas
-              </p>
-            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              Clientes
+            </h1>
+            <p className="text-muted-foreground">
+              Gerencie seus clientes e acompanhe suas métricas
+            </p>
 
             {role === 'super_admin' && (
               <div className="mt-4">
@@ -247,15 +235,13 @@ const Clientes = () => {
               ))}
             </div>
           )}
-        </main>
 
-        <AppFooter />
-
-        <SendPlatformNotificationDialog
-          open={notificationDialogOpen}
-          onOpenChange={setNotificationDialogOpen}
-        />
-      </div>
+          <SendPlatformNotificationDialog
+            open={notificationDialogOpen}
+            onOpenChange={setNotificationDialogOpen}
+          />
+        </div>
+      </AppLayout>
     </AccessGate>
   );
 };

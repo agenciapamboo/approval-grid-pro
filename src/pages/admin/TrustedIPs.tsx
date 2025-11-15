@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
 import { TrustedIPsManager } from "@/components/admin/TrustedIPsManager";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AppLayout } from "@/components/layout/AppLayout";
+import AccessGate from "@/components/auth/AccessGate";
 
 interface TrustedIP {
   id: string;
@@ -95,14 +95,9 @@ const TrustedIPs = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader 
-        userName={profile?.name} 
-        userRole={profile?.role} 
-        onSignOut={() => navigate("/auth")} 
-      />
-
-      <main className="flex-1 container mx-auto px-4 py-6">
+    <AccessGate allow={['super_admin']}>
+      <AppLayout>
+        <div className="container mx-auto px-4 py-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">IPs Confiáveis</h1>
           <p className="text-muted-foreground mt-2">
@@ -114,10 +109,9 @@ const TrustedIPs = () => {
           trustedIPs={trustedIPs} 
           onRefresh={loadTrustedIPs}
         />
-      </main>
-
-      <AppFooter />
-    </div>
+        </div>
+      </AppLayout>
+    </AccessGate>
   );
 };
 

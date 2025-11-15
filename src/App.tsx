@@ -43,13 +43,10 @@ const SupportTicketsAdmin = lazy(() => import("./pages/admin/SupportTicketsAdmin
 const UsersManager = lazy(() => import("./pages/admin/UsersManager"));
 const UserAuditLog = lazy(() => import("./pages/admin/UserAuditLog"));
 const StripeConfig = lazy(() => import("./pages/admin/StripeConfig"));
-const StripeSync = lazy(() => import("./pages/admin/StripeSync"));
 const StripeDiagnostic = lazy(() => import("./pages/admin/StripeDiagnostic"));
 const SecurityDashboard = lazy(() => import("./pages/admin/SecurityDashboard"));
 const TrustedIPs = lazy(() => import("./pages/admin/TrustedIPs"));
-const LoginHistory = lazy(() => import("./pages/admin/LoginHistory"));
 const ActiveSessions = lazy(() => import("./pages/admin/ActiveSessions"));
-const ProfilesManager = lazy(() => import("./pages/admin/ProfilesManager"));
 const TeamMembersManager = lazy(() => import("./pages/admin/TeamMembersManager"));
 const ManageApprovers = lazy(() => import("./pages/ManageApprovers"));
 const CheckoutLoading = lazy(() => import("./pages/CheckoutLoading"));
@@ -124,13 +121,10 @@ const App = () => (
                 <Route path="/admin/usuarios" element={<ProtectedRoute><UsersManager /></ProtectedRoute>} />
                 <Route path="/admin/auditoria-usuarios" element={<ProtectedRoute><UserAuditLog /></ProtectedRoute>} />
                 <Route path="/admin/stripe" element={<ProtectedRoute><StripeConfig /></ProtectedRoute>} />
-                <Route path="/admin/stripe-sync" element={<ProtectedRoute><StripeSync /></ProtectedRoute>} />
                 <Route path="/admin/stripe-diagnostic" element={<ProtectedRoute><StripeDiagnostic /></ProtectedRoute>} />
                 <Route path="/admin/dashboard-seguranca" element={<ProtectedRoute><SecurityDashboard /></ProtectedRoute>} />
                 <Route path="/admin/ips-confiaveis" element={<ProtectedRoute><TrustedIPs /></ProtectedRoute>} />
-                <Route path="/admin/historico-2fa" element={<ProtectedRoute><LoginHistory /></ProtectedRoute>} />
                 <Route path="/admin/sessoes-ativas" element={<ProtectedRoute><ActiveSessions /></ProtectedRoute>} />
-                <Route path="/admin/perfis" element={<ProtectedRoute><ProfilesManager /></ProtectedRoute>} />
                 <Route path="/admin/membros-equipe" element={<ProtectedRoute><TeamMembersManager /></ProtectedRoute>} />
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />
                 <Route path="/content-grid" element={<ProtectedRoute><ContentGrid /></ProtectedRoute>} />
