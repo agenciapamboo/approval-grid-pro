@@ -19,8 +19,10 @@ import {
   ArrowLeft, Settings, Shield, Database, TestTube, Image, Users, 
   Webhook, Building2, DollarSign, Bell, TrendingUp, CreditCard, 
   TicketCheck, FileText, UserCog, Loader2, RefreshCw, KeyRound,
-  XCircle, CheckCircle2, History, BarChart3
+  XCircle, CheckCircle2, BarChart3
 } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import AccessGate from "@/components/auth/AccessGate";
 
 const Configuracoes = () => {
   const navigate = useNavigate();
@@ -69,37 +71,27 @@ const Configuracoes = () => {
   // Apenas super admins podem acessar esta página
   if (profile?.role !== 'super_admin') {
     return (
-      <div className="min-h-screen flex flex-col">
-        <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acesso Negado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Você não tem permissão para acessar esta página.</p>
-              <Button onClick={() => navigate("/dashboard")} className="mt-4">
-                Voltar ao Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <AppFooter />
-      </div>
+      <AccessGate allow={['super_admin']}>
+        <AppLayout>
+          <div className="container mx-auto px-4 py-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Acesso Negado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Você não tem permissão para acessar esta página.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </AppLayout>
+      </AccessGate>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
-
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Dashboard
-          </Button>
-        </div>
+    <AccessGate allow={['super_admin']}>
+      <AppLayout>
+        <div className="container mx-auto px-4 py-6">
 
         <div className="space-y-6">
           <div>
@@ -180,10 +172,6 @@ const Configuracoes = () => {
                       <BarChart3 className="h-4 w-4 mr-2" />
                       Dashboard de Segurança 2FA
                     </Button>
-                    <Button onClick={() => navigate("/admin/historico-2fa")} variant="outline" className="w-full justify-start">
-                      <History className="h-4 w-4 mr-2" />
-                      Histórico de Acessos 2FA
-                    </Button>
                     <Button onClick={() => navigate("/admin/ips-confiaveis")} variant="outline" className="w-full justify-start">
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       IPs Confiáveis
@@ -222,10 +210,6 @@ const Configuracoes = () => {
                     <Button onClick={() => navigate("/admin/stripe-diagnostic")} variant="outline" className="w-full justify-start">
                       <Database className="h-4 w-4 mr-2" />
                       Diagnóstico Stripe
-                    </Button>
-                    <Button onClick={() => navigate("/admin/stripe-sync")} variant="outline" className="w-full justify-start">
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Sincronização Stripe
                     </Button>
                   </CardContent>
                 </AccordionContent>
@@ -388,10 +372,9 @@ const Configuracoes = () => {
             </AccordionItem>
           </Accordion>
         </div>
-      </main>
-
-      <AppFooter />
-    </div>
+        </div>
+      </AppLayout>
+    </AccessGate>
   );
 };
 

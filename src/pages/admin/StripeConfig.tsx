@@ -12,8 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 export default function StripeConfig() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -85,7 +84,9 @@ export default function StripeConfig() {
   const loading = loadingProducts || loadingPrices;
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <AccessGate allow={['super_admin']}>
+      <AppLayout>
+        <div className="container mx-auto py-8 px-4">
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -288,6 +289,8 @@ export default function StripeConfig() {
           </Tabs>
         </>
       )}
-    </div>
+        </div>
+      </AppLayout>
+    </AccessGate>
   );
 }

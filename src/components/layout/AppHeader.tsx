@@ -19,10 +19,7 @@ interface AppHeaderProps {
 export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showSidebarTrigger }: AppHeaderProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  
-  const isOnDashboard = location.pathname === '/dashboard';
 
   return (
     <>
@@ -42,17 +39,6 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
         <div className="flex items-center gap-4">
           {showSidebarTrigger && <SidebarTrigger />}
           
-          {!isOnDashboard && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Voltar ao Dashboard</span>
-            </Button>
-          )}
           <Link to="/dashboard" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glass transition-all duration-300 group-hover:shadow-glass-lg group-hover:scale-105">
               <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
