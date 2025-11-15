@@ -915,51 +915,15 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                     </Button>
                   </>
                 ) : (
-                    <>
-                      <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Aprovar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="warning"
-                        onClick={() => setShowAdjustment(true)}
-                        className="w-full"
-                      >
-                        <AlertCircle className="h-4 w-4 mr-2" />
-                        Solicitar ajuste
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowRejectDialog(true)}
-                        className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reprovar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowComments(!showComments)}
-                        className="w-full"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
-                      </Button>
-                    </>
-                  ) : (
-                    // Para aprovados/publicados: apenas histórico
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowComments(!showComments)}
-                      className="w-full"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
-                    </Button>
-                  )
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowComments(!showComments)}
+                    className="w-full"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
+                  </Button>
                 )}
               </div>
             </div>
@@ -1085,10 +1049,10 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
             );
           })()}
 
-          {/* Comentários expandidos - sempre visível para clientes */}
-          {(isPublicApproval || !isAgencyView) && (
+          {/* Comentários expandidos */}
+          {!isAgencyView && showComments && (
             <div className="border-t">
-              <ContentComments contentId={content.id} onUpdate={onUpdate} showHistory={showComments} approvalToken={approvalToken} />
+              <ContentComments contentId={content.id} onUpdate={onUpdate} />
             </div>
           )}
         </CardContent>
@@ -1106,7 +1070,6 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
         onOpenChange={setShowAdjustment}
         contentId={content.id}
         onSuccess={onUpdate}
-        approvalToken={approvalToken}
       />
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
