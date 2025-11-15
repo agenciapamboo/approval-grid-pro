@@ -9,6 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Building2, Users, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SuperAdminSidebar } from "@/components/admin/SuperAdminSidebar";
+import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
+import { NotificationSender } from "@/components/admin/NotificationSender";
+import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
+import AccessGate from "@/components/auth/AccessGate";
 
 // Helper para evitar inferência de tipos recursiva do Supabase
 async function fetchApproverClients(userId: string) {
@@ -146,6 +152,43 @@ const Dashboard = () => {
     );
   }
 
+  // Super Admin: Dashboard Completo com Sidebar
+  if (role === 'super_admin') {
+    return (
+      <AccessGate allow={['super_admin']}>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full">
+            <SuperAdminSidebar />
+            <div className="flex-1 flex flex-col">
+              <header className="h-14 flex items-center border-b px-4 sticky top-0 bg-background z-10">
+                <SidebarTrigger />
+                <h1 className="ml-4 text-lg font-semibold">Dashboard Super Admin</h1>
+              </header>
+              
+              <main className="flex-1 p-6 space-y-6">
+                {/* Cards de Resumo */}
+                <SuperAdminStats />
+
+                {/* Notificações do Sistema */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Enviar Notificações do Sistema</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <NotificationSender />
+                  </CardContent>
+                </Card>
+
+                {/* Uso de Recursos */}
+                <ResourceUsagePanel />
+              </main>
+            </div>
+          </div>
+        </SidebarProvider>
+      </AccessGate>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
       <AppHeader userName={profile?.name} userRole={role || undefined} onSignOut={() => navigate("/auth")} />
@@ -158,45 +201,6 @@ const Dashboard = () => {
               Bem-vindo, {profile?.name}
             </p>
           </div>
-
-          {/* Super Admin View */}
-          {role === 'super_admin' && dashboardData?.agencies && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Agências ({dashboardData.agencies.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {dashboardData.agencies.map((agency: any) => (
-                      <Card key={agency.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <CardTitle className="text-lg">{agency.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground">
-                            {agency.clients?.length || 0} cliente(s)
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full mt-3"
-                            onClick={() => navigate('/agencias')}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
 
           {/* Agency Admin / Team Member View */}
           {(role === 'agency_admin' || role === 'team_member') && dashboardData?.agency && (
