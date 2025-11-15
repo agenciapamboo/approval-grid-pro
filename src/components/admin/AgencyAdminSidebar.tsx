@@ -30,7 +30,7 @@ const menuItems = [
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Calendário", url: "/agenda", icon: Calendar },
   { title: "Kanban", url: "/kanban", icon: KanbanSquare },
-  { title: "Solicitações Criativas", url: "/agency/creative-requests", icon: Paintbrush },
+  { title: "Solicitações de Criativos", url: "/creative-requests", icon: Paintbrush },
   { title: "Tickets da Agência", url: "/agencia/tickets", icon: Ticket },
   { title: "Meus Tickets", url: "/meus-tickets", icon: MessageSquare },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
@@ -44,15 +44,6 @@ export function AgencyAdminSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <div className="p-4 border-b border-border">
-        {!collapsed && agency && (
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-foreground">{agency.name}</h2>
-            <p className="text-xs text-muted-foreground">Painel de Gestão</p>
-          </div>
-        )}
-      </div>
-
       <SidebarContent>
         <SidebarGroup>
           {!collapsed && <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>}

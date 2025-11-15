@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -227,8 +226,7 @@ const ClienteDetalhes = () => {
 
   if (!client) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
+      <AppLayout>
         <main className="flex-1 container mx-auto px-4 py-8">
           <Card>
             <CardHeader>
@@ -241,8 +239,7 @@ const ClienteDetalhes = () => {
             </CardContent>
           </Card>
         </main>
-        <AppFooter />
-      </div>
+      </AppLayout>
     );
   }
 
@@ -254,8 +251,7 @@ const ClienteDetalhes = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader userName={profile?.name} userRole={profile?.role} onSignOut={() => navigate("/auth")} />
+    <AppLayout>
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="mb-6">
@@ -574,9 +570,7 @@ const ClienteDetalhes = () => {
         open={socialDialogOpen}
         onOpenChange={setSocialDialogOpen}
       />
-
-      <AppFooter />
-    </div>
+    </AppLayout>
   );
 };
 

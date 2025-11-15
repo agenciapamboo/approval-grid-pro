@@ -119,8 +119,8 @@ const App = () => (
                 <Route path="/agencias" element={<RoleProtectedRoute allow={['super_admin']}><Agencias /></RoleProtectedRoute>} />
                 <Route path="/agencias/:id" element={<RoleProtectedRoute allow={['super_admin']}><AgenciaDetalhes /></RoleProtectedRoute>} />
                 <Route path="/agency/client/:clientId" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><AgencyContentManager /></RoleProtectedRoute>} />
-                <Route path="/agency/creative-requests" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><CreativeRequests /></RoleProtectedRoute>} />
-                <Route path="/agency/creative-requests/:clientId" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><CreativeRequests /></RoleProtectedRoute>} />
+                <Route path="/creative-requests" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><CreativeRequests /></RoleProtectedRoute>} />
+                <Route path="/creative-requests/:clientId" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><CreativeRequests /></RoleProtectedRoute>} />
                 
                 {/* Other Protected Routes */}
                 <Route path="/client/:clientId/history" element={<ProtectedRoute><ClientHistory /></ProtectedRoute>} />

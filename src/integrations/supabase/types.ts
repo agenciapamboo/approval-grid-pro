@@ -850,7 +850,7 @@ export type Database = {
       }
       kanban_columns: {
         Row: {
-          agency_id: string
+          agency_id: string | null
           column_color: string
           column_id: string
           column_name: string
@@ -861,7 +861,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          agency_id: string
+          agency_id?: string | null
           column_color?: string
           column_id: string
           column_name: string
@@ -872,7 +872,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          agency_id?: string
+          agency_id?: string | null
           column_color?: string
           column_id?: string
           column_name?: string
