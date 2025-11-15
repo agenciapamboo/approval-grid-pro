@@ -11,7 +11,7 @@ interface UserData {
   } | null;
   role: 'super_admin' | 'agency_admin' | 'team_member' | 'client_user' | 'approver' | null;
   agency: { id: string; name: string; slug: string } | null;
-  client: { id: string; name: string; slug: string } | null;
+  client: { id: string; name: string; slug: string; agency_id: string } | null;
   loading: boolean;
 }
 
@@ -85,7 +85,7 @@ export function useUserData(): UserData {
       if (profile?.client_id) {
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
-          .select('id, name, slug')
+          .select('id, name, slug, agency_id')
           .eq('id', profile.client_id)
           .single();
         

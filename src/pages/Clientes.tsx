@@ -195,7 +195,7 @@ const Clientes = () => {
                 <Card
                   key={client.id}
                   className="group bg-card/50 backdrop-blur border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105"
-                  onClick={() => navigate(`/cliente/${client.slug}`)}
+                  onClick={() => navigate(`/cliente/${client.id}`)}
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
