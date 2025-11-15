@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LogOut, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
-import { ContentFilters } from "@/components/content/ContentFilters";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -14,8 +13,6 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RateLimitBlockedAlert } from "@/components/admin/RateLimitBlockedAlert";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { useUserData } from "@/hooks/useUserData";
 
 interface Profile {
@@ -90,15 +87,6 @@ export default function ContentGrid() {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showAllContents, setShowAllContents] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "changes_requested" | "all">("pending");
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    const tokenMonth = searchParams.get('month');
-    if (tokenMonth && /^\d{4}-\d{2}$/.test(tokenMonth)) {
-      return tokenMonth;
-    }
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
   const [debugMode, setDebugMode] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<{
     type: 'RATE_LIMIT' | 'IP_BLOCKED_PERMANENT' | 'IP_BLOCKED_TEMPORARY' | 'INVALID_TOKEN' | null;
@@ -302,7 +290,7 @@ export default function ContentGrid() {
       }
 
       console.log('[ContentGrid] Final client:', finalClient);
-      await loadContents(finalClient.id, selectedMonth);
+      await loadContents(finalClient.id);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -315,8 +303,9 @@ export default function ContentGrid() {
     }
   };
 
-  const loadContents = async (clientId: string, filterMonth?: string) => {
+  const loadContents = async (clientId: string) => {
     console.log('[ContentGrid] loadContents - clientId:', clientId, 'role:', role);
+    console.log('[ContentGrid] Carregando TODOS os conteúdos (sem filtros de status ou mês)');
 
     const { data: { session } } = await supabase.auth.getSession();
     console.log('[ContentGrid] Session:', !!session);
@@ -398,33 +387,7 @@ export default function ContentGrid() {
       query = query.eq('client_id', clientId);
     }
 
-      // Aplicar filtro de status
-      if (session && role === 'client_user') {
-      // Client User autenticado: ver TODOS os status (não aplicar filtro)
-      console.log('[ContentGrid] Client user - mostrando todos os status');
-      
-    } else if (statusFilter && statusFilter !== 'all') {
-      // Outros roles com filtro
-      console.log('[ContentGrid] Aplicando filtro de status:', statusFilter);
-      
-      if (statusFilter === 'pending') {
-        query = query.in('status', ['draft', 'in_review']);
-      } else if (statusFilter === 'approved') {
-        query = query.eq('status', 'approved');
-      } else if (statusFilter === 'changes_requested') {
-        query = query.eq('status', 'changes_requested');
-      }
-    }
-
-    if (filterMonth) {
-      const [year, month] = filterMonth.split('-');
-      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
-
-      query = query
-        .gte('date', startDate.toISOString())
-        .lte('date', endDate.toISOString());
-    }
+      // Não aplicar nenhum filtro de status ou mês - exibir TODOS os conteúdos
 
     const { data, error } = await query
       .order('scheduled_at', { ascending: false, nullsFirst: true })
@@ -469,41 +432,8 @@ export default function ContentGrid() {
     loadPublicData();
   };
 
-  const resolveContentDate = (content: Content) => {
-    const raw = content.scheduled_at || content.date || content.created_at;
-    if (!raw) return new Date();
-    const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-  };
-
-  // Agrupar conteúdos por mês
-  const groupedContents = contents.reduce((groups, content) => {
-    const date = resolveContentDate(content);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    if (!groups[key]) {
-      groups[key] = [];
-    }
-    groups[key].push(content);
-    return groups;
-  }, {} as Record<string, Content[]>);
-
-  const sortedMonthKeys = Object.keys(groupedContents).sort((a, b) => b.localeCompare(a));
-  
-  // Filtrar pelo mês selecionado
-  const filteredContents = selectedMonth ? (groupedContents[selectedMonth] || []) : contents;
-
-  // Calcular contadores de status
-  const statusCounts = contents.reduce((acc, content) => {
-    if (content.status === 'draft' || content.status === 'in_review') {
-      acc.pending = (acc.pending || 0) + 1;
-    } else if (content.status === 'approved') {
-      acc.approved = (acc.approved || 0) + 1;
-    } else if (content.status === 'changes_requested') {
-      acc.changes = (acc.changes || 0) + 1;
-    }
-    acc.total = (acc.total || 0) + 1;
-    return acc;
-  }, { pending: 0, approved: 0, changes: 0, total: 0 });
+  // Exibir todos os conteúdos sem filtros ou agrupamento
+  const filteredContents = contents;
 
   // Debug: Log state changes
   useEffect(() => {
@@ -611,71 +541,7 @@ export default function ContentGrid() {
 
       <main className="container mx-auto px-4 py-8">
 
-        {/* Tabs de filtro por status - apenas quando logado e não em modo de aprovação */}
-        {user && (
-          <div className="mb-6">
-            <Tabs value={statusFilter} onValueChange={(value: any) => {
-              setStatusFilter(value);
-              loadContents(client!.id, selectedMonth);
-            }}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="pending" className="flex items-center gap-2">
-                  Pendentes
-                  <Badge variant="pending" className="ml-1">
-                    {statusCounts.pending}
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger value="approved" className="flex items-center gap-2">
-                  Aprovados
-                  <Badge variant="success" className="ml-1">
-                    {statusCounts.approved}
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger value="changes_requested" className="flex items-center gap-2">
-                  Ajustes
-                  <Badge variant="warning" className="ml-1">
-                    {statusCounts.changes}
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger value="all" className="flex items-center gap-2">
-                  Todos
-                  <Badge variant="outline" className="ml-1">
-                    {statusCounts.total}
-                  </Badge>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        )}
-
-        {/* Seletor de Mês - desabilitado na visualização pública */}
-        {sortedMonthKeys.length > 0 && (
-          <div className="mb-6">
-            <select
-              value={selectedMonth}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value);
-                if (!client) return;
-                loadContents(client.id, e.target.value);
-              }}
-              className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {sortedMonthKeys.map((monthKey) => {
-                const [year, month] = monthKey.split('-');
-                const monthDate = new Date(parseInt(year), parseInt(month) - 1);
-                const monthName = monthDate.toLocaleDateString('pt-BR', { 
-                  month: 'long', 
-                  year: 'numeric' 
-                });
-                return (
-                  <option key={monthKey} value={monthKey}>
-                    {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        )}
+        {/* Filtros removidos - exibindo todos os conteúdos */}
 
         {/* Debug Mode Info */}
         {debugMode && (
@@ -690,8 +556,6 @@ export default function ContentGrid() {
                   clientId: client?.id,
                   totalContents: contents.length,
                   filteredContents: filteredContents.length,
-                  selectedMonth,
-                  statusFilter,
                   statuses: [...new Set(contents.map(c => c.status))],
                   loadingStage
                 }, null, 2)}
@@ -716,8 +580,7 @@ export default function ContentGrid() {
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">Nenhum Conteúdo Encontrado</h3>
                   <p className="text-muted-foreground max-w-md">
-                    Sua agência ainda não criou conteúdos para este período.
-                    {selectedMonth && ` Tente selecionar outro mês ou aguarde novos conteúdos.`}
+                    Sua agência ainda não criou conteúdos para você.
                   </p>
                 </div>
                 
@@ -744,7 +607,7 @@ export default function ContentGrid() {
                 isAgencyView={false}
                 onUpdate={() => {
                   if (!client) return;
-                  loadContents(client.id, selectedMonth);
+                  loadContents(client.id);
                 }}
               />
             ))}
