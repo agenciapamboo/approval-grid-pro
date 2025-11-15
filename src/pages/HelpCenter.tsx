@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Mail, BookOpen, Building2, UserCircle, LifeBuoy, HelpCircle, CreditCard, MessageSquare } from "lucide-react";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 import { useNavigate } from "react-router-dom";
 import { TicketCategory } from "@/hooks/useSupportTickets";
@@ -25,8 +25,8 @@ const HelpCenter = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-12 max-w-6xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Central de Ajuda</h1>
           <p className="text-muted-foreground text-lg">
@@ -410,9 +410,7 @@ const HelpCenter = () => {
         onOpenChange={setTicketDialogOpen}
         defaultCategory={selectedCategory}
       />
-
-      <AppFooter />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -11,8 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, AlertTriangle, ArrowLeft, User, Shield, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 const MyAccount = () => {
@@ -239,22 +238,9 @@ const MyAccount = () => {
   const isClientUser = profile?.role === 'client_user';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader 
-        userName={profile?.name}
-        userRole={profile?.role}
-        onSignOut={() => navigate("/auth")}
-      />
-
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Dashboard
-          </Button>
-        </div>
-
-        <div className="space-y-6 max-w-4xl mx-auto">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold mb-2">Minha Conta</h1>
             <p className="text-muted-foreground">
@@ -583,10 +569,8 @@ const MyAccount = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-
-      <AppFooter />
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
