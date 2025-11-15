@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Building2, Users, Loader2, FileText, Settings } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
+import { AgencyStats } from "@/components/dashboard/AgencyStats";
 
 // Helper para evitar inferência de tipos recursiva do Supabase
 async function fetchApproverClients(userId: string) {
@@ -171,6 +172,52 @@ const Dashboard = () => {
 
         {(role === 'agency_admin' || role === 'team_member') && dashboardData?.agency && (
           <div className="grid gap-6">
+            {/* Agency Statistics */}
+            {profile?.agency_id && <AgencyStats agencyId={profile.agency_id} />}
+            
+            {/* Quick Navigation Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
+                onClick={() => navigate('/clientes')}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Gerenciar Clientes
+                  </CardTitle>
+                  <CardDescription>Ver e editar clientes da agência</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
+                onClick={() => navigate('/agency/creative-requests')}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Solicitações Criativas
+                  </CardTitle>
+                  <CardDescription>Ver solicitações pendentes</CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
+                onClick={() => navigate('/configuracoes')}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Configurações
+                  </CardTitle>
+                  <CardDescription>Ajustar preferências do sistema</CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+
+            {/* Clients List */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
