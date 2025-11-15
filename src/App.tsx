@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { lazy, Suspense, useEffect } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { RoleProtectedRoute } from "@/components/auth/RoleProtectedRoute";
 import { useConversionTracking } from "@/hooks/useConversionTracking";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -101,31 +102,33 @@ const App = () => (
                 <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
                 <Route path="/minha-assinatura" element={<ProtectedRoute><MySubscription /></ProtectedRoute>} />
                 <Route path="/minha-conta" element={<ProtectedRoute><MyAccount /></ProtectedRoute>} />
-                <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-                <Route path="/clientes/:clientId" element={<ProtectedRoute><ClienteDetalhes /></ProtectedRoute>} />
-                <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-                <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
-                <Route path="/agencias" element={<ProtectedRoute><Agencias /></ProtectedRoute>} />
-                <Route path="/agencias/:id" element={<ProtectedRoute><AgenciaDetalhes /></ProtectedRoute>} />
-                <Route path="/agency/client/:clientId" element={<ProtectedRoute><AgencyContentManager /></ProtectedRoute>} />
-                <Route path="/agency/creative-requests" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />
-                <Route path="/agency/creative-requests/:clientId" element={<ProtectedRoute><CreativeRequests /></ProtectedRoute>} />
-                <Route path="/social-connect" element={<ProtectedRoute><SocialConnect /></ProtectedRoute>} />
-                <Route path="/admin/blocked-ips" element={<ProtectedRoute><BlockedIPs /></ProtectedRoute>} />
+                {/* Admin Routes - Super Admin only */}
+                <Route path="/clientes" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><Clientes /></RoleProtectedRoute>} />
+                <Route path="/clientes/:clientId" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><ClienteDetalhes /></RoleProtectedRoute>} />
+                <Route path="/configuracoes" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><Configuracoes /></RoleProtectedRoute>} />
+                <Route path="/financeiro" element={<RoleProtectedRoute allow={['super_admin']}><Financeiro /></RoleProtectedRoute>} />
+                <Route path="/agencias" element={<RoleProtectedRoute allow={['super_admin']}><Agencias /></RoleProtectedRoute>} />
+                <Route path="/agencias/:id" element={<RoleProtectedRoute allow={['super_admin']}><AgenciaDetalhes /></RoleProtectedRoute>} />
+                <Route path="/agency/client/:clientId" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><AgencyContentManager /></RoleProtectedRoute>} />
+                <Route path="/agency/creative-requests" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><CreativeRequests /></RoleProtectedRoute>} />
+                <Route path="/agency/creative-requests/:clientId" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><CreativeRequests /></RoleProtectedRoute>} />
+                
+                {/* Other Protected Routes */}
                 <Route path="/client/:clientId/history" element={<ProtectedRoute><ClientHistory /></ProtectedRoute>} />
                 <Route path="/hero" element={<ProtectedRoute><HeroDemo /></ProtectedRoute>} />
                 <Route path="/notificacoes" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/meus-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
-                <Route path="/agencia/tickets" element={<ProtectedRoute><AgencyTicketsManager /></ProtectedRoute>} />
-                <Route path="/admin/tickets" element={<ProtectedRoute><SupportTicketsAdmin /></ProtectedRoute>} />
-                <Route path="/admin/usuarios" element={<ProtectedRoute><UsersManager /></ProtectedRoute>} />
-                <Route path="/admin/auditoria-usuarios" element={<ProtectedRoute><UserAuditLog /></ProtectedRoute>} />
-                <Route path="/admin/stripe" element={<ProtectedRoute><StripeConfig /></ProtectedRoute>} />
-                <Route path="/admin/stripe-diagnostic" element={<ProtectedRoute><StripeDiagnostic /></ProtectedRoute>} />
-                <Route path="/admin/dashboard-seguranca" element={<ProtectedRoute><SecurityDashboard /></ProtectedRoute>} />
-                <Route path="/admin/ips-confiaveis" element={<ProtectedRoute><TrustedIPs /></ProtectedRoute>} />
-                <Route path="/admin/sessoes-ativas" element={<ProtectedRoute><ActiveSessions /></ProtectedRoute>} />
-                <Route path="/admin/membros-equipe" element={<ProtectedRoute><TeamMembersManager /></ProtectedRoute>} />
+                <Route path="/agencia/tickets" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><AgencyTicketsManager /></RoleProtectedRoute>} />
+                <Route path="/admin/blocked-ips" element={<RoleProtectedRoute allow={['super_admin']}><BlockedIPs /></RoleProtectedRoute>} />
+                <Route path="/admin/tickets" element={<RoleProtectedRoute allow={['super_admin']}><SupportTicketsAdmin /></RoleProtectedRoute>} />
+                <Route path="/admin/usuarios" element={<RoleProtectedRoute allow={['super_admin']}><UsersManager /></RoleProtectedRoute>} />
+                <Route path="/admin/auditoria-usuarios" element={<RoleProtectedRoute allow={['super_admin']}><UserAuditLog /></RoleProtectedRoute>} />
+                <Route path="/admin/stripe" element={<RoleProtectedRoute allow={['super_admin']}><StripeConfig /></RoleProtectedRoute>} />
+                <Route path="/admin/stripe-diagnostic" element={<RoleProtectedRoute allow={['super_admin']}><StripeDiagnostic /></RoleProtectedRoute>} />
+                <Route path="/admin/dashboard-seguranca" element={<RoleProtectedRoute allow={['super_admin']}><SecurityDashboard /></RoleProtectedRoute>} />
+                <Route path="/admin/ips-confiaveis" element={<RoleProtectedRoute allow={['super_admin']}><TrustedIPs /></RoleProtectedRoute>} />
+                <Route path="/admin/sessoes-ativas" element={<RoleProtectedRoute allow={['super_admin']}><ActiveSessions /></RoleProtectedRoute>} />
+                <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />
                 <Route path="/content-grid" element={<ProtectedRoute><ContentGrid /></ProtectedRoute>} />
                 
