@@ -139,6 +139,14 @@ const Configuracoes = () => {
                       <FileText className="h-4 w-4 mr-2" />
                       Log de Auditoria
                     </Button>
+                    <Button onClick={() => navigate("/admin/perfis")} variant="outline" className="w-full justify-start">
+                      <Users className="h-4 w-4 mr-2" />
+                      Gerenciar Perfis
+                    </Button>
+                    <Button onClick={() => navigate("/admin/membros-equipe")} variant="outline" className="w-full justify-start">
+                      <Users className="h-4 w-4 mr-2" />
+                      Membros da Equipe
+                    </Button>
                     <Separator className="my-2" />
                     <div className="text-sm font-medium mb-2">Contas Órfãs</div>
                     <OrphanedAccountsManager />

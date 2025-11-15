@@ -15,6 +15,7 @@ import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import AccessGate from "@/components/auth/AccessGate";
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   open: "Aberto",

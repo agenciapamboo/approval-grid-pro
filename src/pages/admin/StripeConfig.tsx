@@ -11,6 +11,9 @@ import { STRIPE_PRODUCTS } from "@/lib/stripe-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import AccessGate from "@/components/auth/AccessGate";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 
 export default function StripeConfig() {
   const [activeTab, setActiveTab] = useState("overview");

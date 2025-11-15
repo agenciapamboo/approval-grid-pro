@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { AppFooter } from "@/components/layout/AppFooter";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, RefreshCw, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { STRIPE_PRODUCTS, StripePlan } from "@/lib/stripe-config";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AccessGate from "@/components/auth/AccessGate";
 
 interface StripePrice {
   id: string;
