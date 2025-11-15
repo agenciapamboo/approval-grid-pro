@@ -41,15 +41,6 @@ export function ClientUserSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <div className="p-4 border-b border-border">
-        {!collapsed && client && (
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-foreground">{client.name}</h2>
-            <p className="text-xs text-muted-foreground">Portal do Cliente</p>
-          </div>
-        )}
-      </div>
-
       <SidebarContent>
         <SidebarGroup>
           {!collapsed && <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>}

@@ -123,7 +123,7 @@ const Dashboard = () => {
         setDashboardData({
           client: {
             ...client,
-            agencies: agency
+            agency: agency
           }
         });
         
@@ -192,12 +192,12 @@ const Dashboard = () => {
               
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
-                onClick={() => navigate('/agency/creative-requests')}
+                onClick={() => navigate('/creative-requests')}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    Solicitações Criativas
+                    Solicitações de Criativos
                   </CardTitle>
                   <CardDescription>Ver solicitações pendentes</CardDescription>
                 </CardHeader>
@@ -264,7 +264,7 @@ const Dashboard = () => {
               <CardContent>
                 <div className="space-y-2">
                   <p><strong>Nome:</strong> {dashboardData.client.name}</p>
-                  <p><strong>Agência:</strong> {dashboardData.client.agencies?.name}</p>
+                  <p><strong>Agência:</strong> {dashboardData.client.agency?.name || 'Não informada'}</p>
                 </div>
               </CardContent>
             </Card>
