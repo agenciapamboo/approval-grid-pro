@@ -1,8 +1,7 @@
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import AccessGate from "@/components/auth/AccessGate";
 import { ProfilesManager as ProfilesManagerComponent } from "@/components/admin/ProfilesManager";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, UserCog } from "lucide-react";
@@ -24,7 +23,6 @@ export default function ProfilesManager() {
 
       if (error) throw error;
 
-      // Get user roles
       const profilesWithRoles = await Promise.all(
         (data || []).map(async (profile) => {
           const { data: roleData } = await supabase
@@ -54,9 +52,8 @@ export default function ProfilesManager() {
 
   return (
     <AccessGate allow={['super_admin']}>
-      <div className="min-h-screen flex flex-col">
-        <AppHeader />
-        <main className="flex-1 container mx-auto px-4 py-8">
+      <AppLayout>
+        <div className="container mx-auto px-4 py-8">
           {loading ? (
             <Card>
               <CardContent className="flex justify-center items-center py-12">
@@ -81,9 +78,9 @@ export default function ProfilesManager() {
               />
             </>
           )}
-        </main>
-        <AppFooter />
-      </div>
+        </div>
+      </AppLayout>
     </AccessGate>
   );
 }
+

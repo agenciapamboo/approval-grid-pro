@@ -3,18 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, Building2, Users, Eye } from "lucide-react";
+import { Building2, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { SuperAdminSidebar } from "@/components/admin/SuperAdminSidebar";
+import AccessGate from "@/components/auth/AccessGate";
 import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
-import AccessGate from "@/components/auth/AccessGate";
 
 // Helper para evitar inferência de tipos recursiva do Supabase
 async function fetchApproverClients(userId: string) {
@@ -152,157 +148,116 @@ const Dashboard = () => {
     );
   }
 
-  // Super Admin: Dashboard Completo com Sidebar
+  // Super Admin View
   if (role === 'super_admin') {
     return (
       <AccessGate allow={['super_admin']}>
-        <SidebarProvider>
-          <div className="min-h-screen flex w-full">
-            <SuperAdminSidebar />
-            <div className="flex-1 flex flex-col">
-              <header className="h-14 flex items-center border-b px-4 sticky top-0 bg-background z-10">
-                <SidebarTrigger />
-                <h1 className="ml-4 text-lg font-semibold">Dashboard Super Admin</h1>
-              </header>
-              
-              <main className="flex-1 p-6 space-y-6">
-                {/* Cards de Resumo */}
-                <SuperAdminStats />
-
-                {/* Notificações do Sistema */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Enviar Notificações do Sistema</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <NotificationSender />
-                  </CardContent>
-                </Card>
-
-                {/* Uso de Recursos */}
-                <ResourceUsagePanel />
-              </main>
-            </div>
+        <AppLayout>
+          <div className="container mx-auto px-6 py-8 space-y-6">
+            <SuperAdminStats />
+            <NotificationSender />
+            <ResourceUsagePanel />
           </div>
-        </SidebarProvider>
+        </AppLayout>
       </AccessGate>
     );
   }
 
+  // Other Roles View
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-background">
-      <AppHeader userName={profile?.name} userRole={role || undefined} onSignOut={() => navigate("/auth")} />
+    <AppLayout>
+      <div className="container mx-auto px-6 py-8">
+        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Bem-vindo, {profile?.name}
-            </p>
-          </div>
-
-          {/* Agency Admin / Team Member View */}
-          {(role === 'agency_admin' || role === 'team_member') && dashboardData?.agency && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Clientes ({dashboardData.agency.clients?.length || 0})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {dashboardData.agency.clients && dashboardData.agency.clients.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {dashboardData.agency.clients.map((client: any) => (
-                        <Card key={client.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                          <CardHeader>
-                            <CardTitle className="text-lg">{client.name}</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full"
-                              onClick={() => navigate(`/clientes/${client.id}`)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalhes
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-8">
-                      Nenhum cliente cadastrado ainda
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Client User View */}
-          {role === 'client_user' && dashboardData?.client && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Seus Dados</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p><strong>Cliente:</strong> {dashboardData.client.name}</p>
-                    <p><strong>Agência:</strong> {dashboardData.client.agencies?.name}</p>
-                  </div>
-                  <Button 
-                    className="w-full mt-4"
-                    onClick={() => navigate('/content-grid')}
-                  >
-                    Ver Conteúdos
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Approver View */}
-          {role === 'approver' && dashboardData?.clients && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Clientes para Aprovação</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {dashboardData.clients.map((client: any) => (
-                      <Card key={client.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+        {(role === 'agency_admin' || role === 'team_member') && dashboardData?.agency && (
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Clientes ({dashboardData.agency.clients?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {dashboardData.agency.clients && dashboardData.agency.clients.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dashboardData.agency.clients.map((client: any) => (
+                      <Card
+                        key={client.id}
+                        className="cursor-pointer hover:shadow-lg transition-shadow"
+                        onClick={() => navigate(`/cliente/${client.id}/conteudo`)}
+                      >
                         <CardHeader>
-                          <CardTitle className="text-lg">{client.name}</CardTitle>
+                          <CardTitle>{client.name}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => navigate('/content-grid')}
-                          >
-                            Ver Conteúdos
-                          </Button>
+                          <p className="text-sm text-muted-foreground">
+                            Clique para ver o conteúdo
+                          </p>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-      </main>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    Nenhum cliente cadastrado ainda
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      <AppFooter />
-    </div>
+        {role === 'client_user' && dashboardData?.client && (
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações do Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p><strong>Nome:</strong> {dashboardData.client.name}</p>
+                  <p><strong>Agência:</strong> {dashboardData.client.agencies?.name}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {role === 'approver' && dashboardData?.clients && (
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Meus Clientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {dashboardData.clients.map((client: any) => (
+                    <Card
+                      key={client.id}
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => navigate(`/cliente/${client.id}/conteudo`)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          {client.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Clique para revisar conteúdo
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </AppLayout>
   );
 };
 
