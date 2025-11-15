@@ -244,7 +244,7 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
     setCurrentIndex((prev) => (prev < media.length - 1 ? prev + 1 : prev));
   };
 
-  const displayUrl = thumbUrl || srcUrl;
+  const displayUrl = srcUrl || thumbUrl;
 
   return (
     <>
