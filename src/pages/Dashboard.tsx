@@ -5,7 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Building2, Users, Loader2, FileText, Settings } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Building2, Users, Loader2, FileText, Settings, Plus } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
@@ -120,10 +122,48 @@ const Dashboard = () => {
           return;
         }
         
+        // Buscar estatísticas de conteúdo
+        const { data: contents } = await supabase
+          .from('contents')
+          .select('status, created_at, published_at')
+          .eq('client_id', profile.client_id);
+        
+        // Buscar dados completos do cliente
+        const { data: fullClient } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', profile.client_id)
+          .single();
+        
+        // Calcular stats
+        const stats = {
+          draft: contents?.filter(c => c.status === 'draft').length || 0,
+          in_review: contents?.filter(c => c.status === 'in_review').length || 0,
+          approved: contents?.filter(c => c.status === 'approved').length || 0,
+          published: contents?.filter(c => c.status === 'approved' && c.published_at).length || 0,
+        };
+        
+        // Calcular criativos do mês
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const creativesThisMonth = contents?.filter(
+          c => new Date(c.created_at) >= startOfMonth
+        ).length || 0;
+        
+        const monthlyLimit = fullClient?.monthly_creatives || 0;
+        const percentage = monthlyLimit > 0 
+          ? (creativesThisMonth / monthlyLimit) * 100 
+          : 0;
+        
         setDashboardData({
           client: {
             ...client,
             agency: agency
+          },
+          stats,
+          monthlyCreatives: {
+            used: creativesThisMonth,
+            limit: monthlyLimit,
+            percentage
           }
         });
         
@@ -256,15 +296,127 @@ const Dashboard = () => {
         )}
 
         {role === 'client_user' && dashboardData?.client && (
-          <div className="grid gap-6">
+          <div className="space-y-6">
+            {/* Header do Cliente */}
             <Card>
               <CardHeader>
-                <CardTitle>Informações do Cliente</CardTitle>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    {dashboardData.client.logo_url ? (
+                      <img 
+                        src={dashboardData.client.logo_url} 
+                        alt={dashboardData.client.name} 
+                        className="h-16 w-16 object-contain rounded" 
+                      />
+                    ) : (
+                      <div className="h-16 w-16 bg-muted rounded flex items-center justify-center">
+                        <Building2 className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <CardTitle className="text-2xl">{dashboardData.client.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        {dashboardData.client.slug}
+                      </p>
+                      {dashboardData.client.agency && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Agência: {dashboardData.client.agency.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo`)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Conteúdos
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => navigate('/solicitar-criativo')}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Solicitar Criativos
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p><strong>Nome:</strong> {dashboardData.client.name}</p>
-                  <p><strong>Agência:</strong> {dashboardData.client.agency?.name || 'Não informada'}</p>
+            </Card>
+
+            {/* Cards de Estatísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Card Pendentes (Rascunhos + Em Revisão) */}
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo?status=pendentes`)}
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">
+                    {(dashboardData.stats?.draft || 0) + (dashboardData.stats?.in_review || 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rascunhos e em revisão
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Card Aprovados */}
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo?status=approved`)}
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Aprovados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{dashboardData.stats?.approved || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Prontos para publicar
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Card Publicados */}
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo?status=published`)}
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Publicados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{dashboardData.stats?.published || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Conteúdos ao vivo
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Informações do Plano */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações do Plano</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Criativos do Mês</span>
+                    <span className="text-sm font-medium">
+                      {dashboardData.monthlyCreatives?.used || 0} / {dashboardData.monthlyCreatives?.limit || 0}
+                    </span>
+                  </div>
+                  <Progress value={dashboardData.monthlyCreatives?.percentage || 0} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(dashboardData.monthlyCreatives?.percentage || 0).toFixed(1)}% da cota utilizada
+                  </p>
                 </div>
               </CardContent>
             </Card>
