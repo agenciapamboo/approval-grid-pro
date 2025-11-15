@@ -123,8 +123,9 @@ Deno.serve(async (req) => {
         console.log(`✅ ${table}: ${data.length} registros exportados`);
         
       } catch (err) {
+        const error = err as Error;
         console.error(`❌ Erro exportando ${table}:`, err);
-        sqlBackup += `-- ❌ ERRO em ${table}: ${err.message}\n\n`;
+        sqlBackup += `-- ❌ ERRO em ${table}: ${error.message}\n\n`;
       }
     }
 
@@ -148,7 +149,8 @@ Deno.serve(async (req) => {
         });
       }
     } catch (err) {
-      sqlBackup += `-- Erro ao listar usuários: ${err.message}\n`;
+      const error = err as Error;
+      sqlBackup += `-- Erro ao listar usuários: ${error.message}\n`;
     }
 
     sqlBackup += `\n\n`;
@@ -182,8 +184,9 @@ Deno.serve(async (req) => {
       },
     });
     
-  } catch (error) {
-    console.error('❌ Erro ao gerar backup:', error);
+  } catch (err) {
+    const error = err as Error;
+    console.error('❌ Erro ao gerar backup:', err);
     return new Response(
       JSON.stringify({ 
         error: error.message,
