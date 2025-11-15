@@ -59,6 +59,7 @@ export default function ContentGrid() {
       setLoadingContents(true);
       console.log('[ContentGrid] Carregando conteúdos para cliente:', clientId);
 
+      // Buscar conteúdos básicos
       const { data: contentsData, error } = await supabase
         .from('contents')
         .select(`
@@ -88,8 +89,46 @@ export default function ContentGrid() {
         return;
       }
 
-      console.log('[ContentGrid] Conteúdos carregados:', contentsData?.length || 0);
-      setContents(contentsData || []);
+      if (!contentsData || contentsData.length === 0) {
+        console.log('[ContentGrid] Nenhum conteúdo encontrado');
+        setContents([]);
+        return;
+      }
+
+      console.log('[ContentGrid] Carregados', contentsData.length, 'conteúdos');
+
+      // Carregar mídias e legendas em paralelo para cada conteúdo
+      const enrichedContents = await Promise.all(
+        contentsData.map(async (content) => {
+          const [mediaResult, textResult] = await Promise.all([
+            // Buscar primeira mídia
+            supabase
+              .from('content_media')
+              .select('src_url, thumb_url')
+              .eq('content_id', content.id)
+              .order('order_index', { ascending: true })
+              .limit(1)
+              .maybeSingle(),
+            
+            // Buscar legenda mais recente
+            supabase
+              .from('content_texts')
+              .select('caption')
+              .eq('content_id', content.id)
+              .eq('version', content.version)
+              .maybeSingle()
+          ]);
+
+          return {
+            ...content,
+            media_path: mediaResult.data?.src_url || null,
+            caption: textResult.data?.caption || null
+          };
+        })
+      );
+
+      console.log('[ContentGrid] Enriquecidos conteúdos com mídias e legendas');
+      setContents(enrichedContents);
     } catch (error: any) {
       console.error('[ContentGrid] Erro ao carregar conteúdos:', error);
       toast({

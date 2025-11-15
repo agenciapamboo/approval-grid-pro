@@ -74,8 +74,9 @@ Deno.serve(async (req) => {
 
         sqlBackup += `\n`;
       } catch (err) {
+        const error = err as Error;
         console.error(`Error backing up table ${table}:`, err);
-        sqlBackup += `-- Error backing up table ${table}: ${err.message}\n\n`;
+        sqlBackup += `-- Error backing up table ${table}: ${error.message}\n\n`;
       }
     }
 
@@ -121,7 +122,8 @@ Deno.serve(async (req) => {
         'Content-Disposition': `attachment; filename="database-backup-${new Date().toISOString().split('T')[0]}.sql"`,
       },
     });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     console.error('Error generating backup:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
