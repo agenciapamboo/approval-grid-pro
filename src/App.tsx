@@ -13,7 +13,6 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const ClientApproval = lazy(() => import("./pages/ClientApproval"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ContentGrid = lazy(() => import("./pages/ContentGrid"));
 const AgencyContentManager = lazy(() => import("./pages/AgencyContentManager"));
@@ -46,8 +45,6 @@ const UserAuditLog = lazy(() => import("./pages/admin/UserAuditLog"));
 const StripeConfig = lazy(() => import("./pages/admin/StripeConfig"));
 const StripeSync = lazy(() => import("./pages/admin/StripeSync"));
 const StripeDiagnostic = lazy(() => import("./pages/admin/StripeDiagnostic"));
-const ActiveSessions = lazy(() => import("./pages/admin/ActiveSessions"));
-const TwoFactorHistory = lazy(() => import("./pages/admin/TwoFactorHistory"));
 const SecurityDashboard = lazy(() => import("./pages/admin/SecurityDashboard"));
 const TrustedIPs = lazy(() => import("./pages/admin/TrustedIPs"));
 const ManageApprovers = lazy(() => import("./pages/ManageApprovers"));
@@ -90,7 +87,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/linkderecuperacao" element={<ResetPassword />} />
-                <Route path="/aprovar" element={<ClientApproval />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/data-deletion" element={<DataDeletion />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -125,8 +122,6 @@ const App = () => (
                 <Route path="/admin/stripe" element={<ProtectedRoute><StripeConfig /></ProtectedRoute>} />
                 <Route path="/admin/stripe-sync" element={<ProtectedRoute><StripeSync /></ProtectedRoute>} />
                 <Route path="/admin/stripe-diagnostic" element={<ProtectedRoute><StripeDiagnostic /></ProtectedRoute>} />
-                <Route path="/admin/sessoes-2fa" element={<ProtectedRoute><ActiveSessions /></ProtectedRoute>} />
-                <Route path="/admin/historico-2fa" element={<ProtectedRoute><TwoFactorHistory /></ProtectedRoute>} />
                 <Route path="/admin/dashboard-seguranca" element={<ProtectedRoute><SecurityDashboard /></ProtectedRoute>} />
                 <Route path="/admin/ips-confiaveis" element={<ProtectedRoute><TrustedIPs /></ProtectedRoute>} />
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />

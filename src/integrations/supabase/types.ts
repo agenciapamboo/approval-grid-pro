@@ -128,97 +128,6 @@ export type Database = {
         }
         Relationships: []
       }
-      approval_tokens: {
-        Row: {
-          client_id: string
-          created_at: string
-          created_by: string | null
-          expires_at: string
-          id: string
-          month: string
-          token: string
-          used_at: string | null
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          created_by?: string | null
-          expires_at: string
-          id?: string
-          month: string
-          token: string
-          used_at?: string | null
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string
-          id?: string
-          month?: string
-          token?: string
-          used_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "approval_tokens_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "approval_tokens_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "approval_tokens_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      approval_tokens_backup: {
-        Row: {
-          backup_date: string | null
-          client_id: string | null
-          created_at: string | null
-          created_by: string | null
-          expires_at: string | null
-          id: string | null
-          month: string | null
-          token: string | null
-          used_at: string | null
-        }
-        Insert: {
-          backup_date?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string | null
-          month?: string | null
-          token?: string | null
-          used_at?: string | null
-        }
-        Update: {
-          backup_date?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string | null
-          month?: string | null
-          token?: string | null
-          used_at?: string | null
-        }
-        Relationships: []
-      }
       client_approvers: {
         Row: {
           agency_id: string
@@ -346,71 +255,6 @@ export type Database = {
           },
           {
             foreignKeyName: "client_notes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      client_sessions: {
-        Row: {
-          approver_id: string
-          client_id: string
-          created_at: string
-          expires_at: string
-          id: string
-          ip_address: string | null
-          last_activity: string
-          session_token: string
-          user_agent: string | null
-        }
-        Insert: {
-          approver_id: string
-          client_id: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          ip_address?: string | null
-          last_activity?: string
-          session_token: string
-          user_agent?: string | null
-        }
-        Update: {
-          approver_id?: string
-          client_id?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          ip_address?: string | null
-          last_activity?: string
-          session_token?: string
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_sessions_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "client_approvers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_sessions_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_sessions_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_sessions_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients_secure"
@@ -858,6 +702,7 @@ export type Database = {
       }
       contents: {
         Row: {
+          agency_id: string | null
           auto_publish: boolean | null
           category: string | null
           channels: string[] | null
@@ -879,6 +724,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          agency_id?: string | null
           auto_publish?: boolean | null
           category?: string | null
           channels?: string[] | null
@@ -900,6 +746,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          agency_id?: string | null
           auto_publish?: boolean | null
           category?: string | null
           channels?: string[] | null
@@ -1195,6 +1042,36 @@ export type Database = {
           id?: string
           page_type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      login_validation_attempts: {
+        Row: {
+          attempted_at: string
+          blocked_until: string | null
+          id: string
+          ip_address: string
+          success: boolean
+          token_attempted: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          blocked_until?: string | null
+          id?: string
+          ip_address: string
+          success?: boolean
+          token_attempted?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          blocked_until?: string | null
+          id?: string
+          ip_address?: string
+          success?: boolean
+          token_attempted?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -1914,36 +1791,6 @@ export type Database = {
           },
         ]
       }
-      token_validation_attempts: {
-        Row: {
-          attempted_at: string
-          blocked_until: string | null
-          id: string
-          ip_address: string
-          success: boolean
-          token_attempted: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          attempted_at?: string
-          blocked_until?: string | null
-          id?: string
-          ip_address: string
-          success?: boolean
-          token_attempted?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          attempted_at?: string
-          blocked_until?: string | null
-          id?: string
-          ip_address?: string
-          success?: boolean
-          token_attempted?: string | null
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
       tracking_pixels: {
         Row: {
           created_at: string | null
@@ -2036,77 +1883,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      two_factor_codes: {
-        Row: {
-          approver_id: string
-          client_id: string
-          code: string
-          created_at: string
-          expires_at: string
-          id: string
-          identifier: string
-          identifier_type: string
-          ip_address: string | null
-          used_at: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          approver_id: string
-          client_id: string
-          code: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          identifier: string
-          identifier_type: string
-          ip_address?: string | null
-          used_at?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          approver_id?: string
-          client_id?: string
-          code?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          identifier?: string
-          identifier_type?: string
-          ip_address?: string | null
-          used_at?: string | null
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "two_factor_codes_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "client_approvers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "two_factor_codes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "two_factor_codes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "two_factor_codes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_preferences: {
         Row: {
@@ -2504,17 +2280,12 @@ export type Database = {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
       }
-      cleanup_expired_2fa_data: { Args: never; Returns: undefined }
-      cleanup_old_validation_attempts: { Args: never; Returns: undefined }
+      cleanup_old_login_attempts: { Args: never; Returns: undefined }
       decrypt_social_token: {
         Args: { encrypted_token: string }
         Returns: string
       }
       encrypt_social_token: { Args: { token: string }; Returns: string }
-      find_approver_by_identifier: {
-        Args: { p_identifier: string }
-        Returns: Record<string, unknown>
-      }
       fix_orphaned_user: {
         Args: {
           p_agency_email: string
@@ -2583,16 +2354,15 @@ export type Database = {
       }
       is_subscription_active: { Args: { user_id: string }; Returns: boolean }
       is_team_member: { Args: { _user_id: string }; Returns: boolean }
-      log_validation_attempt: {
+      log_login_attempt: {
         Args: {
           p_ip_address: string
           p_success: boolean
-          p_token_attempted: string
           p_user_agent?: string
+          p_user_identifier: string
         }
         Returns: boolean
       }
-      normalize_whatsapp: { Args: { phone: string }; Returns: string }
       sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
       send_notification: {
         Args: {
