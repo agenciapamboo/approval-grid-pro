@@ -51,7 +51,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="flex min-h-screen w-full">
         {SidebarComponent && <SidebarComponent />}
 
