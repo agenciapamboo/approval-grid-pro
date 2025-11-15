@@ -41,7 +41,16 @@ serve(async (req) => {
       throw new Error("Only super admins can list prices");
     }
 
-    const { limit = 20 } = await req.json();
+    // Try to get limit from request body, fallback to query params or default
+    let limit = 20;
+    try {
+      const body = await req.json();
+      limit = body.limit || 20;
+    } catch {
+      // If JSON parsing fails, try query params
+      const url = new URL(req.url);
+      limit = parseInt(url.searchParams.get("limit") || "20", 10);
+    }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
