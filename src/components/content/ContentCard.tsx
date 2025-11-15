@@ -18,6 +18,7 @@ import { ContentCaption } from "./ContentCaption";
 import { ContentComments } from "./ContentComments";
 import { RequestAdjustmentDialog } from "./RequestAdjustmentDialog";
 import { EditContentDialog } from "./EditContentDialog";
+import { ContentDetailsDialog } from "./ContentDetailsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
@@ -76,6 +77,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [publishing, setPublishing] = useState(false);
   const [supplierLink, setSupplierLink] = useState(content.supplier_link || "");
   const [showSupplierDialog, setShowSupplierDialog] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getStatusBadge = (status: string, publishedAt?: string | null) => {
@@ -862,11 +864,13 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               )}
             </>
           ) : (
-        <ContentMedia 
-          contentId={content.id} 
-          type={content.type}
-          mediaPath={content.media_path}
-        />
+        <div className="w-full overflow-hidden bg-muted">
+          <ContentMedia 
+            contentId={content.id} 
+            type={content.type}
+            mediaPath={content.media_path}
+          />
+        </div>
           )}
 
           {/* Linha 3: Legenda */}
@@ -1055,6 +1059,30 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               <ContentComments contentId={content.id} onUpdate={onUpdate} />
             </div>
           )}
+
+          {/* Botões de ação da agência */}
+          {isAgencyView && (
+            <div className="p-4 border-t flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHistory(true)}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Exibir Histórico
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEditDialog(true)}
+                className="gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Editar
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1204,6 +1232,16 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {showHistory && (
+        <ContentDetailsDialog
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          contentId={content.id}
+          onUpdate={onUpdate}
+          isAgencyView={isAgencyView}
+        />
+      )}
 
       <input
         ref={fileInputRef}
