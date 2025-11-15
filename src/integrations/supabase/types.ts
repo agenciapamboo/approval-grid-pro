@@ -180,38 +180,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "client_approvers_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_approvers_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "client_approvers_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_approvers_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_approvers_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
         ]
@@ -244,20 +216,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_notes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_notes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
         ]
@@ -311,20 +269,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_social_accounts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_social_accounts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
         ]
@@ -411,20 +355,6 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
             referencedColumns: ["id"]
           },
           {
@@ -531,20 +461,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "consents_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consents_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "consents_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -631,20 +547,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_suggestions_feedback_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_suggestions_feedback_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
         ]
@@ -773,20 +675,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contents_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contents_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
           {
@@ -1002,20 +890,6 @@ export type Database = {
             referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "kanban_columns_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kanban_columns_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
-            referencedColumns: ["id"]
-          },
         ]
       }
       lgpd_pages: {
@@ -1175,38 +1049,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notifications_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "notifications_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
           {
@@ -1525,38 +1371,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profiles_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "profiles_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
             referencedColumns: ["id"]
           },
         ]
@@ -1974,108 +1792,10 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "webhook_events_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "webhook_events_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Views: {
-      agencies_public: {
-        Row: {
-          brand_primary: string | null
-          brand_secondary: string | null
-          created_at: string | null
-          id: string | null
-          logo_url: string | null
-          name: string | null
-          slug: string | null
-        }
-        Insert: {
-          brand_primary?: string | null
-          brand_secondary?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          slug?: string | null
-        }
-        Update: {
-          brand_primary?: string | null
-          brand_secondary?: string | null
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          slug?: string | null
-        }
-        Relationships: []
-      }
-      agencies_secure: {
-        Row: {
-          brand_primary: string | null
-          brand_secondary: string | null
-          created_at: string | null
-          email: string | null
-          id: string | null
-          last_payment_date: string | null
-          logo_url: string | null
-          name: string | null
-          plan: string | null
-          plan_renewal_date: string | null
-          plan_type: string | null
-          slug: string | null
-          updated_at: string | null
-          webhook_url: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          brand_primary?: string | null
-          brand_secondary?: string | null
-          created_at?: string | null
-          email?: never
-          id?: string | null
-          last_payment_date?: string | null
-          logo_url?: string | null
-          name?: string | null
-          plan?: string | null
-          plan_renewal_date?: string | null
-          plan_type?: string | null
-          slug?: string | null
-          updated_at?: string | null
-          webhook_url?: never
-          whatsapp?: never
-        }
-        Update: {
-          brand_primary?: string | null
-          brand_secondary?: string | null
-          created_at?: string | null
-          email?: never
-          id?: string | null
-          last_payment_date?: string | null
-          logo_url?: string | null
-          name?: string | null
-          plan?: string | null
-          plan_renewal_date?: string | null
-          plan_type?: string | null
-          slug?: string | null
-          updated_at?: string | null
-          webhook_url?: never
-          whatsapp?: never
-        }
-        Relationships: []
-      }
       client_social_accounts_decrypted: {
         Row: {
           access_token: string | null
@@ -2125,142 +1845,6 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_social_accounts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_social_accounts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients_secure"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      clients_public: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          logo_url: string | null
-          name: string | null
-          slug: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          slug?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          logo_url?: string | null
-          name?: string | null
-          slug?: string | null
-        }
-        Relationships: []
-      }
-      clients_secure: {
-        Row: {
-          address: string | null
-          agency_id: string | null
-          cnpj: string | null
-          created_at: string | null
-          email: string | null
-          id: string | null
-          logo_url: string | null
-          monthly_creatives: number | null
-          name: string | null
-          notify_email: boolean | null
-          notify_webhook: boolean | null
-          notify_whatsapp: boolean | null
-          plan_renewal_date: string | null
-          responsible_user_id: string | null
-          slug: string | null
-          timezone: string | null
-          updated_at: string | null
-          webhook_url: string | null
-          website: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          address?: string | null
-          agency_id?: string | null
-          cnpj?: string | null
-          created_at?: string | null
-          email?: never
-          id?: string | null
-          logo_url?: string | null
-          monthly_creatives?: number | null
-          name?: string | null
-          notify_email?: boolean | null
-          notify_webhook?: boolean | null
-          notify_whatsapp?: boolean | null
-          plan_renewal_date?: string | null
-          responsible_user_id?: string | null
-          slug?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-          webhook_url?: never
-          website?: string | null
-          whatsapp?: never
-        }
-        Update: {
-          address?: string | null
-          agency_id?: string | null
-          cnpj?: string | null
-          created_at?: string | null
-          email?: never
-          id?: string | null
-          logo_url?: string | null
-          monthly_creatives?: number | null
-          name?: string | null
-          notify_email?: boolean | null
-          notify_webhook?: boolean | null
-          notify_whatsapp?: boolean | null
-          plan_renewal_date?: string | null
-          responsible_user_id?: string | null
-          slug?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-          webhook_url?: never
-          website?: string | null
-          whatsapp?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies_secure"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_responsible_user"
-            columns: ["responsible_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

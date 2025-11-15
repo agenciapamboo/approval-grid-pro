@@ -77,6 +77,7 @@ export default function ContentGrid() {
   const { toast } = useToast();
   const { profile: userProfile, role, agency: userAgency, client: userClient, loading: userDataLoading } = useUserData();
   const [loading, setLoading] = useState(true);
+  const isLoading = loading || userDataLoading;
   const [loadingStage, setLoadingStage] = useState<'auth' | 'profile' | 'contents' | 'done'>('auth');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -142,15 +143,31 @@ export default function ContentGrid() {
   }, [debugMode]);
 
   useEffect(() => {
-    console.log('[ContentGrid] Initial load effect - START');
+    if (userDataLoading) {
+      console.log('[ContentGrid] Aguardando useUserData terminar...');
+      return;
+    }
+    
+    console.log('[ContentGrid] useUserData carregado, executando loadPublicData');
     loadPublicData();
-  }, []);
+  }, [agencySlug, clientSlug, userDataLoading]);
 
   const loadPublicData = async () => {
     try {
-      console.log('[ContentGrid] loadPublicData started');
-      console.log('[ContentGrid] agencySlug:', agencySlug, 'clientSlug:', clientSlug);
-      console.log('[ContentGrid] userProfile:', userProfile, 'role:', role);
+      console.log('[ContentGrid] === loadPublicData START ===');
+      console.log('[ContentGrid] DEBUG:', {
+        userDataLoading,
+        role,
+        hasProfile: !!userProfile,
+        clientId: userProfile?.client_id,
+        agencySlug,
+        clientSlug,
+        hasUserClient: !!userClient,
+        hasUserAgency: !!userAgency
+      });
+      
+      setLoading(true);
+      setLoadingStage('profile');
       
       // Verificar se há sessão ativa (opcional)
       const { data: { session } } = await supabase.auth.getSession();
@@ -170,113 +187,92 @@ export default function ContentGrid() {
             setShowConsent(true);
             return;
           }
-          
-          // Usar agency e client do hook
-          if (userAgency) {
-            setAgency(userAgency as any);
-          }
-          if (userClient) {
-            setClient(userClient as any);
-          }
         }
       }
 
-      // Carregar dados da agência e cliente usando filtros DIRETOS
-      let finalAgency = userAgency as any;
-      let finalClient = userClient as any;
+      // PRIORIDADE 1: Se é client_user logado, carregar cliente do profile
+      let finalClient: Client | null = null;
+      let finalAgency: Agency | null = null;
       
-      // Se não tem dados do hook, carregar pelo slug
-      if (!finalAgency && agencySlug) {
-        console.log('[ContentGrid] Loading agency by slug:', agencySlug);
-        const { data: agencyData } = await supabase
-          .from("agencies_public")
-          .select("*")
-          .eq("slug", agencySlug)
+      if (role === 'client_user' && userProfile?.client_id) {
+        console.log('[ContentGrid] Loading client from profile (client_user):', userProfile.client_id);
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select('id, name, slug, logo_url, agency_id')
+          .eq('id', userProfile.client_id)
           .maybeSingle();
         
-        if (agencyData) {
-          finalAgency = agencyData;
-          setAgency(agencyData);
+        if (clientError) {
+          console.error('[ContentGrid] Error loading client from profile:', clientError);
+        } else if (clientData) {
+          finalClient = clientData;
+          setClient(clientData);
+          console.log('[ContentGrid] Client loaded from profile:', finalClient.name);
+          
+          // Carregar agency do cliente
+          if (clientData.agency_id) {
+            const { data: agencyData } = await supabase
+              .from('agencies')
+              .select('id, name, slug, logo_url, brand_primary, brand_secondary')
+              .eq('id', clientData.agency_id)
+              .maybeSingle();
+            
+            if (agencyData) {
+              finalAgency = agencyData;
+              setAgency(agencyData);
+            }
+          }
         }
       }
       
-     const normalizeClient = (data: MinimalClientRow): Client => ({
-        id: data.id,
-        name: data.name,
-        slug: data.slug,
-        logo_url: data.logo_url || undefined,
-        agency_id: data.agency_id || undefined,
-      });
+      // PRIORIDADE 2: Se tem agencySlug na URL, carregar agency
+      if (!finalAgency && agencySlug) {
+        console.log('[ContentGrid] Loading agency by slug:', agencySlug);
+        const { data: agencyData, error: agencyError } = await supabase
+          .from("agencies")
+          .select("id, name, slug, logo_url, brand_primary, brand_secondary")
+          .eq("slug", agencySlug)
+          .maybeSingle();
+
+        if (agencyError) {
+          console.error('[ContentGrid] Error loading agency:', agencyError);
+        } else if (agencyData) {
+          finalAgency = agencyData;
+          setAgency(finalAgency);
+          console.log('[ContentGrid] Agency loaded:', finalAgency.name);
+        }
+      }
       
+      // PRIORIDADE 3: Se tem clientSlug na URL (e ainda não carregou), carregar cliente
       if (!finalClient && clientSlug) {
         console.log('[ContentGrid] Loading client by slug:', clientSlug);
-        const { data: secureClient, error: secureError } = await supabase
-          .from('clients_secure')
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
           .select('id, name, slug, logo_url, agency_id')
           .eq('slug', clientSlug)
           .maybeSingle();
 
-        if (secureError) {
-          console.warn('[ContentGrid] clients_secure lookup failed, falling back to public view:', secureError);
-        }
-
-        if (secureClient) {
-          const normalized = normalizeClient(secureClient);
-          finalClient = normalized;
-          setClient(normalized);
-        } else {
-          const { data: publicClient, error: publicError } = await supabase
-            .from('clients_public')
-            .select('id, name, slug, logo_url')
-            .eq('slug', clientSlug)
-            .maybeSingle();
-
-          if (publicError) {
-            console.error('[ContentGrid] clients_public lookup failed:', publicError);
-          }
-
-          if (publicClient) {
-            const normalized = normalizeClient(publicClient);
-            finalClient = normalized;
-            setClient(normalized);
-          }
+        if (clientError) {
+          console.error('[ContentGrid] Error loading client by slug:', clientError);
+        } else if (clientData) {
+          finalClient = clientData;
+          setClient(clientData);
+          console.log('[ContentGrid] Client loaded by slug:', finalClient.name);
         }
       }
       
-      // Usar client_id do profile se role = client_user
-      if (role === 'client_user' && userProfile?.client_id && !finalClient) {
-        console.log('[ContentGrid] Loading client by profile.client_id:', userProfile.client_id);
-         const { data: secureClient, error: secureError } = await supabase
-          .from('clients_secure')
-          .select('id, name, slug, logo_url, agency_id')
-          .eq('id', userProfile.client_id)
-          .maybeSingle();
-
-        if (secureError) {
-          console.warn('[ContentGrid] clients_secure lookup by id failed, falling back to public view:', secureError);
-        }
-
-        if (secureClient) {
-          const normalized = normalizeClient(secureClient);
-          finalClient = normalized;
-          setClient(normalized);
-        } else {
-          const { data: publicClient, error: publicError } = await supabase
-            .from('clients_public')
-            .select('id, name, slug, logo_url')
-            .eq('id', userProfile.client_id)
-            .maybeSingle();
-
-          if (publicError) {
-            console.error('[ContentGrid] clients_public lookup by id failed:', publicError);
-          }
-
-          if (publicClient) {
-            const normalized = normalizeClient(publicClient);
-            finalClient = normalized;
-            setClient(normalized);
-          }
-        }
+      // PRIORIDADE 4: Se tem userClient do hook, usar direto
+      if (!finalClient && userClient) {
+        console.log('[ContentGrid] Using client from useUserData:', userClient);
+        finalClient = userClient;
+        setClient(userClient);
+      }
+      
+      // PRIORIDADE 5: Se tem userAgency do hook, usar direto
+      if (!finalAgency && userAgency) {
+        console.log('[ContentGrid] Using agency from useUserData:', userAgency);
+        finalAgency = userAgency;
+        setAgency(userAgency);
       }
 
       if (!finalClient) {
@@ -451,7 +447,7 @@ export default function ContentGrid() {
     }
   }, [filteredContents, loading, rateLimitError.type]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-6">
