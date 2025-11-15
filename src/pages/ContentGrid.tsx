@@ -32,6 +32,9 @@ interface Content {
   media_path?: string | null;
   caption?: string | null;
   legend?: string | null;
+  is_content_plan?: boolean;
+  plan_description?: string | null;
+  category?: string;
 }
 
 export default function ContentGrid() {
@@ -74,7 +77,9 @@ export default function ContentGrid() {
           version,
           owner_user_id,
           created_at,
-          updated_at
+          updated_at,
+          is_content_plan,
+          plan_description
         `)
         .eq('client_id', clientId)
         .order('date', { ascending: true });
