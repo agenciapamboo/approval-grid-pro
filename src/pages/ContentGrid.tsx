@@ -81,7 +81,7 @@ export default function ContentGrid() {
           plan_description
         `)
         .eq('client_id', clientId)
-        .order('date', { ascending: true });
+        .order('date', { ascending: false });
 
       if (error) {
         console.error('[ContentGrid] Erro ao carregar conteúdos:', error);
