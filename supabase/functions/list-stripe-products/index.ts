@@ -41,7 +41,9 @@ serve(async (req) => {
       throw new Error("Only super admins can list products");
     }
 
-    const { limit = 10 } = await req.json();
+    // Get limit from query params (default 10)
+    const url = new URL(req.url);
+    const limit = parseInt(url.searchParams.get("limit") || "10", 10);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
