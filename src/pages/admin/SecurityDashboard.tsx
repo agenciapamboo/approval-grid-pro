@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
-import { TwoFactorSecurityDashboard } from "@/components/admin/TwoFactorSecurityDashboard";
+import { BlockedIPsManager } from "@/components/admin/BlockedIPsManager";
+import { TrustedIPsManager } from "@/components/admin/TrustedIPsManager";
 import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SecurityDashboard = () => {
   const navigate = useNavigate();
@@ -69,15 +72,49 @@ const SecurityDashboard = () => {
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Dashboard de Segurança 2FA</h1>
+          <h1 className="text-3xl font-bold">Dashboard de Segurança</h1>
           <p className="text-muted-foreground mt-2">
-            {profile?.role === 'agency_admin' 
-              ? 'Monitore tentativas de acesso e atividades suspeitas dos seus clientes'
-              : 'Visão geral de segurança e tentativas de autenticação do sistema'}
+            Gerencie bloqueios de IP e whitelist de endereços confiáveis
           </p>
         </div>
 
-        <TwoFactorSecurityDashboard agencyId={profile?.role === 'agency_admin' ? profile?.agency_id : undefined} />
+        <Tabs defaultValue="blocked" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="blocked">IPs Bloqueados</TabsTrigger>
+            <TabsTrigger value="trusted">IPs Confiáveis</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="blocked">
+            <Card>
+              <CardHeader>
+                <CardTitle>IPs Bloqueados por Tentativas de Login</CardTitle>
+                <CardDescription>
+                  Visualize e desbloqueie endereços IP que foram bloqueados automaticamente por excesso de tentativas de login
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BlockedIPsManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="trusted">
+            <Card>
+              <CardHeader>
+                <CardTitle>Whitelist de IPs Confiáveis</CardTitle>
+                <CardDescription>
+                  Gerencie IPs que nunca serão bloqueados pelo sistema de segurança
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TrustedIPsManager 
+                  trustedIPs={[]} 
+                  onRefresh={() => {}}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       <AppFooter />
