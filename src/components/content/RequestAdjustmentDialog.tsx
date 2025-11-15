@@ -18,7 +18,6 @@ interface RequestAdjustmentDialogProps {
   onOpenChange: (open: boolean) => void;
   contentId: string;
   onSuccess: () => void;
-  approvalToken?: string;
 }
 
 export function RequestAdjustmentDialog({
@@ -26,7 +25,6 @@ export function RequestAdjustmentDialog({
   onOpenChange,
   contentId,
   onSuccess,
-  approvalToken,
 }: RequestAdjustmentDialogProps) {
   const { toast } = useToast();
   const [reason, setReason] = useState("");
@@ -45,19 +43,16 @@ export function RequestAdjustmentDialog({
 
     setLoading(true);
     try {
-      // Fluxo autenticado normal
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-        // Pegar a versão atual do conteúdo
-        const { data: contentData } = await supabase
+      const { data: contentData } = await supabase
           .from("contents")
           .select("version")
           .eq("id", contentId)
           .single();
 
-        // Criar comentário de ajuste
-        const { error: commentError } = await supabase
+      const { error: commentError } = await supabase
           .from("comments")
           .insert({
             content_id: contentId,
@@ -68,38 +63,34 @@ export function RequestAdjustmentDialog({
             version: contentData?.version || 1,
           });
 
-        if (commentError) throw commentError;
+      if (commentError) throw commentError;
 
-        // Atualizar status do conteúdo
-        const { error: updateError } = await supabase
+      const { error: updateError } = await supabase
           .from("contents")
           .update({ status: "changes_requested" })
           .eq("id", contentId);
 
-        if (updateError) throw updateError;
+      if (updateError) throw updateError;
 
-        // Buscar dados do conteúdo para notificação
-        const { data: content } = await supabase
+      const { data: content } = await supabase
           .from("contents")
           .select("title, date, channels")
           .eq("id", contentId)
           .single();
 
-        // Importar função de notificação
-        const { createNotification } = await import("@/lib/notifications");
+      const { createNotification } = await import("@/lib/notifications");
 
-        // Disparar notificação de ajuste solicitado
-        await createNotification('content.revised', contentId, {
+      await createNotification('content.revised', contentId, {
           title: content?.title || '',
           date: content?.date || '',
           comment: details || reason,
           channels: content?.channels || [],
         });
 
-        toast({
-          title: "Ajuste solicitado",
-          description: "A solicitação de ajuste foi enviada com sucesso",
-        });
+      toast({
+        title: "Ajuste solicitado",
+        description: "A solicitação de ajuste foi enviada com sucesso",
+      });
 
       setReason("");
       setDetails("");
