@@ -1240,6 +1240,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           contentId={content.id}
           onUpdate={onUpdate}
           isAgencyView={isAgencyView}
+          focusHistory={true}
         />
       )}
 

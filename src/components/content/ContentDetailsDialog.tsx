@@ -26,6 +26,7 @@ interface ContentDetailsDialogProps {
   contentId: string;
   onUpdate: () => void;
   isAgencyView?: boolean;
+  focusHistory?: boolean;
 }
 
 interface Content {
@@ -98,12 +99,15 @@ export function ContentDetailsDialog({
   contentId,
   onUpdate,
   isAgencyView = false,
+  focusHistory = false,
 }: ContentDetailsDialogProps) {
   const [content, setContent] = useState<Content | null>(null);
   const [adjustments, setAdjustments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
   const [showSupplierDialog, setShowSupplierDialog] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [supplierLink, setSupplierLink] = useState("");
@@ -355,6 +359,14 @@ export function ContentDetailsDialog({
     }
   }, [open, contentId]);
 
+  useEffect(() => {
+    if (open && focusHistory && historyRef.current && !loading) {
+      setTimeout(() => {
+        historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [open, focusHistory, loading]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] overflow-hidden p-0">
@@ -488,9 +500,9 @@ export function ContentDetailsDialog({
 
               <Separator />
 
-              {/* Seção de Comentários */}
-              <div>
-                <h3 className="text-sm font-semibold mb-3">Comentários</h3>
+              {/* Seção de Comentários e Histórico */}
+              <div ref={historyRef}>
+                <h3 className="text-sm font-semibold mb-3">Comentários e Histórico</h3>
                 <ContentComments
                   contentId={contentId}
                   onUpdate={onUpdate}
