@@ -232,7 +232,7 @@ const Dashboard = () => {
                       <Card
                         key={client.id}
                         className="cursor-pointer hover:shadow-lg transition-shadow"
-                        onClick={() => navigate(`/cliente/${client.id}/conteudo`)}
+                  onClick={() => navigate(`/cliente/${client.id}`)}
                       >
                         <CardHeader>
                           <CardTitle>{client.name}</CardTitle>
