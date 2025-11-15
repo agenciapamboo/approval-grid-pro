@@ -127,6 +127,36 @@ const getDeadlineStatus = (contentDate: string) => {
   return { status: 'normal', color: 'hsl(var(--muted-foreground))', label: 'Normal', variant: 'outline' as const };
 };
 
+// Função para mapear conteúdo para a coluna correta
+const getColumnForContent = (content: Content, isRequest: boolean = false): string => {
+  // Solicitações de criativos e ajustes vão para "solicitacoes"
+  if (isRequest) {
+    return 'solicitacoes';
+  }
+  
+  // Plano de conteúdo vai para "em_producao"
+  if (content.is_content_plan) {
+    return 'em_producao';
+  }
+  
+  // Mapeamento por status
+  switch (content.status) {
+    case 'draft':
+    case 'in_review':
+      return 'em_revisao';
+    case 'approved':
+      // Se a data for futura, vai para agendados
+      if (new Date(content.date) > new Date()) {
+        return 'agendados';
+      }
+      return 'aprovados';
+    case 'published':
+      return 'publicados';
+    default:
+      return 'em_revisao';
+  }
+};
+
 export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const { toast } = useToast();
   const [contents, setContents] = useState<Content[]>([]);
@@ -413,10 +443,11 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const loadColumns = async () => {
     try {
+      // Buscar colunas do sistema (agency_id = NULL) + colunas customizadas da agência
       const { data, error } = await supabase
         .from("kanban_columns")
         .select("*")
-        .eq("agency_id", agencyId)
+        .or(`agency_id.is.null,agency_id.eq.${agencyId}`)
         .order("column_order", { ascending: true });
 
       if (error) throw error;

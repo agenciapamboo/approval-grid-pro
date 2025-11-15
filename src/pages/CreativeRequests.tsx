@@ -13,8 +13,7 @@ import { ArrowLeft, Clock, CheckCircle, AlertCircle, Loader2, MessageSquare, Che
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { triggerWebhook } from "@/lib/webhooks";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 interface CreativeRequest {
   id: string;
@@ -365,12 +364,7 @@ export default function CreativeRequests() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader 
-        userName={profile?.name}
-        userRole="Administrador da Agência"
-        onSignOut={handleSignOut}
-      />
+    <AppLayout>
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
@@ -634,8 +628,6 @@ export default function CreativeRequests() {
         </DialogContent>
       </Dialog>
       </main>
-      
-      <AppFooter />
-    </div>
+    </AppLayout>
   );
 }

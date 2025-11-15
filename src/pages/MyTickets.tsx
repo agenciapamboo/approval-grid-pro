@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupportTickets, Ticket, TicketStatus, TicketCategory } from "@/hooks/useSupportTickets";
 import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -135,12 +134,7 @@ const MyTickets = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <AppHeader 
-        userName={profile?.name} 
-        userRole={profile?.role} 
-        onSignOut={() => navigate("/auth")} 
-      />
+    <AppLayout>
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="mb-6">
@@ -303,9 +297,7 @@ const MyTickets = () => {
           />
         </div>
       </main>
-
-      <AppFooter />
-    </div>
+    </AppLayout>
   );
 };
 

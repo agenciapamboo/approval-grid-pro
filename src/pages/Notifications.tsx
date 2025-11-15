@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -66,9 +67,10 @@ export default function Notifications() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Notificações</h1>
+    <AppLayout>
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Notificações</h1>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
@@ -149,5 +151,6 @@ export default function Notifications() {
         </Tabs>
       </div>
     </div>
+    </AppLayout>
   );
 }

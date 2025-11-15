@@ -8,8 +8,7 @@ import { ContentCard } from "@/components/content/ContentCard";
 import { CreateContentCard } from "@/components/content/CreateContentCard";
 import { ContentCategorySelector } from "@/components/content/ContentCategorySelector";
 import { ContentFilters } from "@/components/content/ContentFilters";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { triggerWebhook } from "@/lib/webhooks";
 import { createNotification } from "@/lib/notifications";
 import { format } from "date-fns";
@@ -317,12 +316,7 @@ export default function AgencyContentManager() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader 
-        userName={profile?.name}
-        userRole="Administrador da Agência"
-        onSignOut={handleSignOut}
-      />
+    <AppLayout>
 
       <main className="container mx-auto px-4 py-8">
         {client && (
@@ -414,8 +408,6 @@ export default function AgencyContentManager() {
           </div>
         )}
       </main>
-      
-      <AppFooter />
-    </div>
+    </AppLayout>
   );
 }

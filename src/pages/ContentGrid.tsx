@@ -8,8 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { useUserData } from "@/hooks/useUserData";
 
@@ -219,12 +218,7 @@ export default function ContentGrid() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <AppHeader 
-        userName={userProfile.name}
-        userRole={role}
-        onProfileClick={() => setShowProfileDialog(true)}
-      />
+    <AppLayout>
 
       <main className="flex-1 container py-6">
         <div className="mb-6 flex justify-between items-center">
@@ -270,8 +264,6 @@ export default function ContentGrid() {
         )}
       </main>
 
-      <AppFooter />
-
       {showCreateDialog && (
         <CreateContentWrapper
           clientId={userClient.id}
@@ -291,6 +283,6 @@ export default function ContentGrid() {
           onUpdate={() => {}}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }
