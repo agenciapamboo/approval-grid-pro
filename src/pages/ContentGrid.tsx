@@ -302,7 +302,7 @@ export default function ContentGrid() {
       }
 
       console.log('[ContentGrid] Final client:', finalClient);
-      await loadContents(finalClient.id, selectedMonth, false);
+      await loadContents(finalClient.id, selectedMonth);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -315,11 +315,11 @@ export default function ContentGrid() {
     }
   };
 
-  const loadContents = async (clientId: string, filterMonth?: string, tokenAccess: boolean = false) => {
+  const loadContents = async (clientId: string, filterMonth?: string) => {
     console.log('[ContentGrid] loadContents - clientId:', clientId, 'role:', role);
 
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('[ContentGrid] Session:', !!session, 'Token access:', tokenAccess);
+    console.log('[ContentGrid] Session:', !!session);
 
     const profileAgencyId = profile?.agency_id
       ?? (userProfile as Profile | null)?.agency_id
@@ -352,9 +352,7 @@ export default function ContentGrid() {
       `)
       .order('date', { ascending: false });
 
-    if (tokenAccess) {
-      query = query.eq('client_id', clientId);
-    } else if (role === 'super_admin') {
+    if (role === 'super_admin') {
       // acesso total
     } else if (role === 'agency_admin') {
       if (profileAgencyId) {
@@ -400,13 +398,8 @@ export default function ContentGrid() {
       query = query.eq('client_id', clientId);
     }
 
-    // Aplicar filtro de status
-    if (tokenAccess) {
-      // Acesso via token de aprovação: apenas draft e in_review
-      console.log('[ContentGrid] Token access - filtrando draft e in_review');
-      query = query.in('status', ['draft', 'in_review']);
-      
-    } else if (session && role === 'client_user') {
+      // Aplicar filtro de status
+      if (session && role === 'client_user') {
       // Client User autenticado: ver TODOS os status (não aplicar filtro)
       console.log('[ContentGrid] Client user - mostrando todos os status');
       
@@ -623,7 +616,7 @@ export default function ContentGrid() {
           <div className="mb-6">
             <Tabs value={statusFilter} onValueChange={(value: any) => {
               setStatusFilter(value);
-              loadContents(client!.id, selectedMonth, false);
+              loadContents(client!.id, selectedMonth);
             }}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pending" className="flex items-center gap-2">
@@ -663,7 +656,7 @@ export default function ContentGrid() {
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
                 if (!client) return;
-                loadContents(client.id, e.target.value, false);
+                loadContents(client.id, e.target.value);
               }}
               className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
@@ -751,7 +744,7 @@ export default function ContentGrid() {
                 isAgencyView={false}
                 onUpdate={() => {
                   if (!client) return;
-                  loadContents(client.id, selectedMonth, false);
+                  loadContents(client.id, selectedMonth);
                 }}
               />
             ))}
