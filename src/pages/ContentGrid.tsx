@@ -517,8 +517,6 @@ export default function ContentGrid() {
     console.log('[ContentGrid] State changed:', {
       loading,
       contentsCount: filteredContents.length,
-      tokenValid,
-      hasToken: !!approvalToken,
       rateLimitError: rateLimitError.type
     });
     
@@ -528,7 +526,7 @@ export default function ContentGrid() {
     } else if (!loading && filteredContents.length === 0) {
       console.warn('[ContentGrid] No contents found after loading');
     }
-  }, [filteredContents, loading, tokenValid, approvalToken, rateLimitError.type]);
+  }, [filteredContents, loading, rateLimitError.type]);
 
   if (loading) {
     return (
@@ -552,12 +550,8 @@ export default function ContentGrid() {
     return <LGPDConsent onAccept={handleConsentAccepted} />;
   }
 
-  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado E NÃO houver token válido E NÃO houver sessão 2FA
-  const hasUser = !!user;
-  const hasValidToken = approvalToken && tokenValid === true;
-  const hasValidSession = sessionToken && tokenValid === true;
-  
-  if (!hasUser && !hasValidToken && !hasValidSession) {
+  // Mostrar "Acesso Restrito" APENAS se NÃO houver usuário logado
+  if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-2xl w-full space-y-4">
@@ -583,24 +577,17 @@ export default function ContentGrid() {
               
               <div className="space-y-2">
                 <p className="text-muted-foreground">
-                  {sessionToken 
-                    ? 'Sua sessão expirou ou é inválida.'
-                    : approvalToken 
-                      ? 'O link de aprovação que você está usando é inválido ou expirou.'
-                      : 'Esta página requer autenticação ou um link de aprovação válido para acesso.'}
+                  Esta página requer autenticação para acesso.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {sessionToken 
-                    ? 'Faça login novamente para continuar.'
-                    : 'Links de aprovação têm validade de 7 dias e são enviados por email pela agência.'}
+                  Faça login para continuar.
                 </p>
               </div>
 
               <div className="pt-4 border-t">
-                <p className="text-sm font-medium mb-2">Precisa de acesso?</p>
-                <p className="text-sm text-muted-foreground">
-                  Entre em contato com sua agência para solicitar um novo link de aprovação.
-                </p>
+                <Button onClick={() => navigate('/auth')} className="w-full">
+                  Fazer Login
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -609,57 +596,14 @@ export default function ContentGrid() {
     );
   }
 
-  const isPublicView = (!!approvalToken && tokenValid) || (!!sessionToken && tokenValid);
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Mostrar header apenas se NÃO for visualização pública com token */}
-      {!isPublicView && (
-        <AppHeader 
-          userName={client?.name}
-          userRole={agency ? `Cliente ${agency.name}` : "Cliente"}
-          onProfileClick={() => setShowProfileDialog(true)}
-          onSignOut={handleSignOut}
-        />
-      )}
-
-      {/* Cabeçalho especial para visualização pública */}
-      {isPublicView && (
-        <header className="border-b bg-card">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {agency?.logo_url && (
-                  <img 
-                    src={agency.logo_url} 
-                    alt={agency.name} 
-                    className="h-10 w-auto"
-                  />
-                )}
-                <div>
-                  <h1 className="text-lg font-semibold">{client?.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {sessionData ? `Aprovador: ${sessionData.approver_name}` : 'Aprovação de Conteúdo'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Lock className="h-5 w-5 text-muted-foreground" />
-                {sessionToken && sessionData && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSessionLogout}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sair
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
-      )}
+      <AppHeader 
+        userName={client?.name}
+        userRole={agency ? `Cliente ${agency.name}` : "Cliente"}
+        onProfileClick={() => setShowProfileDialog(true)}
+        onSignOut={handleSignOut}
+      />
 
       {/* Diálogo de Perfil com Preferências */}
       {profile && user && (
@@ -673,19 +617,9 @@ export default function ContentGrid() {
       )}
 
       <main className="container mx-auto px-4 py-8">
-        {/* Aviso de acesso via link */}
-        {isPublicView && (
-          <Alert className="mb-6">
-            <AlertDescription>
-              {sessionToken 
-                ? `Você está logado como ${sessionData?.approver_name}. Sua sessão expira em algumas horas.`
-                : 'Você está visualizando os conteúdos aguardando aprovação via link temporário. Este link expira em 7 dias a partir do envio.'}
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Tabs de filtro por status - apenas quando logado e não em modo de aprovação */}
-        {!isPublicView && user && (
+        {user && (
           <div className="mb-6">
             <Tabs value={statusFilter} onValueChange={(value: any) => {
               setStatusFilter(value);
@@ -722,14 +656,14 @@ export default function ContentGrid() {
         )}
 
         {/* Seletor de Mês - desabilitado na visualização pública */}
-        {!isPublicView && sortedMonthKeys.length > 0 && (
+        {sortedMonthKeys.length > 0 && (
           <div className="mb-6">
             <select
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
                 if (!client) return;
-                loadContents(client.id, e.target.value, isPublicView);
+                loadContents(client.id, e.target.value, false);
               }}
               className="px-4 py-2 rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
@@ -766,7 +700,6 @@ export default function ContentGrid() {
                   selectedMonth,
                   statusFilter,
                   statuses: [...new Set(contents.map(c => c.status))],
-                  isPublicView,
                   loadingStage
                 }, null, 2)}
               </pre>
@@ -805,10 +738,7 @@ export default function ContentGrid() {
             </Card>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
-              {isPublicView 
-                ? "Nenhum conteúdo aguardando aprovação neste período" 
-                : "Nenhum conteúdo encontrado para este mês"
-              }
+              Nenhum conteúdo encontrado para este mês
             </div>
           )
         ) : (
@@ -819,11 +749,9 @@ export default function ContentGrid() {
                 content={content}
                 isResponsible={false}
                 isAgencyView={false}
-                isPublicApproval={isPublicView}
-                approvalToken={approvalToken || undefined}
                 onUpdate={() => {
                   if (!client) return;
-                  loadContents(client.id, selectedMonth, isPublicView);
+                  loadContents(client.id, selectedMonth, false);
                 }}
               />
             ))}

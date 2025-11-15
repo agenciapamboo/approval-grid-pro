@@ -163,45 +163,28 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
     setLoading(true);
     
     try {
-      if (approvalToken) {
-        const { data, error } = await supabase.functions.invoke('approval-media-urls', {
-          body: { token: approvalToken, contentId }
-        });
+      const { data, error } = await supabase
+        .from("content_media")
+        .select("*")
+        .eq("content_id", contentId)
+        .order("order_index");
 
-        if (error) {
-          console.error('Erro ao carregar mídias via token:', error);
-          setMedia([]);
-        } else {
-          const mappedMedia = (data?.media || []).map((m: any) => ({
-            id: m.id,
-            kind: m.kind,
-            order_index: m.order_index,
-            src_url: normalizeStoragePath(m.srcUrl) || '',
-            thumb_url: normalizeStoragePath(m.thumbUrl)
-          })).filter((item) => !!item.src_url) as Media[];
-          setMedia(mappedMedia);
-        }
+      if (error) {
+        console.error("Erro ao carregar mídias:", error);
+        setMedia([]);
       } else {
-        const { data, error } = await supabase
-          .from("content_media")
-          .select("*")
-          .eq("content_id", contentId)
-          .order("order_index");
-
-        if (error) {
-          console.error("Erro ao carregar mídias:", error);
-          setMedia([]);
-        } else {
-          const sanitizedMedia = (data || [])
-            .map((item) => ({
-              ...item,
-              src_url: normalizeStoragePath(item.src_url) || '',
-              thumb_url: normalizeStoragePath(item.thumb_url)
-            }))
-            .filter((item) => !!item.src_url) as Media[];
-          setMedia(sanitizedMedia);
-        }
+        const sanitizedMedia = (data || [])
+          .map((item) => ({
+            ...item,
+            src_url: normalizeStoragePath(item.src_url) || '',
+            thumb_url: normalizeStoragePath(item.thumb_url)
+          }))
+          .filter((item) => !!item.src_url) as Media[];
+        setMedia(sanitizedMedia);
       }
+    } catch (error) {
+      console.error('Erro ao carregar mídia:', error);
+      setMedia([]);
     } finally {
       setLoading(false);
     }
