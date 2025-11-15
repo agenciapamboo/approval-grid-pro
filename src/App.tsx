@@ -112,6 +112,7 @@ const App = () => (
                 <Route path="/cliente/:clientId/conteudo" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><AgencyContentManager /></RoleProtectedRoute>} />
                 <Route path="/agenda" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><AgencyAgenda /></RoleProtectedRoute>} />
                 <Route path="/kanban" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'team_member']}><AgencyKanban /></RoleProtectedRoute>} />
+                <Route path="/conteudo" element={<RoleProtectedRoute allow={['client_user']}><ContentGrid /></RoleProtectedRoute>} />
                 <Route path="/solicitar-criativo" element={<RoleProtectedRoute allow={['client_user']}><SolicitarCriativo /></RoleProtectedRoute>} />
                 <Route path="/minhas-solicitacoes" element={<RoleProtectedRoute allow={['client_user']}><MinhasSolicitacoes /></RoleProtectedRoute>} />
                 <Route path="/configuracoes" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><Configuracoes /></RoleProtectedRoute>} />

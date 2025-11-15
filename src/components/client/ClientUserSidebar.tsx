@@ -29,9 +29,9 @@ const menuItems = [
   { title: "Solicitar Criativo", url: "/solicitar-criativo", icon: Plus },
   { title: "Minhas Solicitações", url: "/minhas-solicitacoes", icon: List },
   { title: "Meus Tickets", url: "/meus-tickets", icon: Ticket },
-  { title: "Central de Ajuda", url: "/central-de-ajuda", icon: HelpCircle },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Minha Conta", url: "/minha-conta", icon: User },
+  { title: "Central de Ajuda", url: "/central-de-ajuda", icon: HelpCircle },
 ];
 
 export function ClientUserSidebar() {
