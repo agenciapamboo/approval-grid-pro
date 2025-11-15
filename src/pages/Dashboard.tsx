@@ -329,7 +329,7 @@ const Dashboard = () => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo`)}
+                      onClick={() => navigate('/conteudo')}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Conteúdos
@@ -352,7 +352,7 @@ const Dashboard = () => {
               {/* Card Pendentes (Rascunhos + Em Revisão) */}
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo?status=pendentes`)}
+                onClick={() => navigate('/conteudo?status=pendentes')}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
@@ -370,7 +370,7 @@ const Dashboard = () => {
               {/* Card Aprovados */}
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo?status=approved`)}
+                onClick={() => navigate('/conteudo?status=approved')}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">Aprovados</CardTitle>
@@ -386,7 +386,7 @@ const Dashboard = () => {
               {/* Card Publicados */}
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                onClick={() => navigate(`/cliente/${dashboardData.client.id}/conteudo?status=published`)}
+                onClick={() => navigate('/conteudo?status=published')}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">Publicados</CardTitle>
