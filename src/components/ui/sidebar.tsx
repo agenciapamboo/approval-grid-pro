@@ -27,6 +27,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  handleMouseEnter?: () => void;
+  handleMouseLeave?: () => void;
 };
 
 const SidebarContext = React.createContext<SidebarContext | null>(null);
@@ -50,6 +52,10 @@ const SidebarProvider = React.forwardRef<
 >(({ defaultOpen = true, open: openProp, onOpenChange: setOpenProp, className, style, children, ...props }, ref) => {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  
+  // Estado para controlar hover temporário
+  const [isHovering, setIsHovering] = React.useState(false);
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -74,6 +80,37 @@ const SidebarProvider = React.forwardRef<
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [isMobile, setOpen, setOpenMobile]);
+  
+  // Funções para lidar com hover
+  const handleMouseEnter = React.useCallback(() => {
+    if (isMobile) return;
+    
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    if (!open) {
+      setIsHovering(true);
+    }
+  }, [isMobile, open]);
+  
+  const handleMouseLeave = React.useCallback(() => {
+    if (isMobile) return;
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovering(false);
+    }, 300);
+  }, [isMobile]);
+  
+  // Cleanup do timeout
+  React.useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -90,19 +127,22 @@ const SidebarProvider = React.forwardRef<
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
-  const state = open ? "expanded" : "collapsed";
+  const effectiveOpen = open || isHovering;
+  const state = effectiveOpen ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo<SidebarContext>(
     () => ({
       state,
-      open,
+      open: effectiveOpen,
       setOpen,
       isMobile,
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      handleMouseEnter,
+      handleMouseLeave,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [state, effectiveOpen, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, handleMouseEnter, handleMouseLeave],
   );
 
   return (
@@ -136,7 +176,7 @@ const Sidebar = React.forwardRef<
     collapsible?: "offcanvas" | "icon" | "none";
   }
 >(({ side = "left", variant = "sidebar", collapsible = "offcanvas", className, children, ...props }, ref) => {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, handleMouseEnter, handleMouseLeave } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -179,19 +219,21 @@ const Sidebar = React.forwardRef<
     );
   }
 
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        "group peer hidden md:block",
-        "text-sidebar-foreground",
-        "dark:text-foreground"
-      )}
-      data-state={state}
-      data-collapsible={state === "collapsed" ? collapsible : ""}
-      data-variant={variant}
-      data-side={side}
-    >
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "group peer hidden md:block",
+          "text-sidebar-foreground",
+          "dark:text-foreground"
+        )}
+        data-state={state}
+        data-collapsible={state === "collapsed" ? collapsible : ""}
+        data-variant={variant}
+        data-side={side}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
       {/* This is what handles the sidebar gap on desktop */}
       <div
         className={cn(
