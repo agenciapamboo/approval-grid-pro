@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Media {
   id: string;
@@ -272,7 +272,7 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div className="relative overflow-hidden rounded-lg bg-muted">
+        <div className="relative overflow-hidden bg-muted">
           {displayUrl ? (
             currentMedia.kind === "video" ? (
               <video
@@ -362,6 +362,10 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
             width: 'auto'
           }}
         >
+          <DialogHeader className="sr-only">
+            <DialogTitle>Visualização da mídia</DialogTitle>
+            <DialogDescription>Visualização em tamanho completo do conteúdo</DialogDescription>
+          </DialogHeader>
           <div className="relative bg-black">
             <Button
               variant="ghost"
