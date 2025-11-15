@@ -46,12 +46,10 @@ interface ContentCardProps {
   };
   isResponsible: boolean;
   isAgencyView?: boolean;
-  isPublicApproval?: boolean;
-  approvalToken?: string;
   onUpdate: () => void;
 }
 
-export function ContentCard({ content, isResponsible, isAgencyView = false, isPublicApproval = false, approvalToken, onUpdate }: ContentCardProps) {
+export function ContentCard({ content, isResponsible, isAgencyView = false, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const [showComments, setShowComments] = useState(false);
@@ -864,64 +862,48 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
               )}
             </>
           ) : (
-            <ContentMedia
-              contentId={content.id}
-              type={content.type}
-              approvalToken={approvalToken}
-              mediaPath={content.media_path}
-            />
+        <ContentMedia 
+          contentId={content.id} 
+          type={content.type}
+          mediaPath={content.media_path}
+        />
           )}
 
           {/* Linha 3: Legenda */}
           <ContentCaption
             contentId={content.id}
             version={content.version}
-            approvalToken={approvalToken}
             initialCaption={content.caption ?? content.legend ?? undefined}
           />
 
-          {/* Ações - Simplificado para visualização pública */}
+          {/* Ações - Simplificado para visualização autenticada */}
           {!isAgencyView && (
             <div className="p-4 border-t">
               <div className="flex flex-col gap-2">
-                {isPublicApproval ? (
-                  // Visualização pública via token - exibir botões para TODOS exceto approved e publicados
-                  (!content.published_at && content.status !== "approved") ? (
-                    <>
-                      <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Aprovar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="warning"
-                        onClick={() => setShowAdjustment(true)}
-                        className="w-full"
-                      >
-                        <AlertCircle className="h-4 w-4 mr-2" />
-                        Solicitar ajuste
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowRejectDialog(true)}
-                        className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reprovar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowComments(!showComments)}
-                        className="w-full"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
-                      </Button>
-                    </>
-                  ) : (
-                    // Para aprovados/publicados: apenas histórico/comentários
+                {(!content.published_at && content.status !== "approved") ? (
+                  <>
+                    <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Aprovar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="warning"
+                      onClick={() => setShowAdjustment(true)}
+                      className="w-full"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Solicitar ajuste
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowRejectDialog(true)}
+                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reprovar
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -931,10 +913,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, isPu
                       <MessageSquare className="h-4 w-4 mr-2" />
                       {showComments ? "Ocultar Histórico" : "Exibir Histórico"}
                     </Button>
-                  )
+                  </>
                 ) : (
-                  // Visualização autenticada - exibir botões para TODOS exceto approved e publicados
-                  (!content.published_at && content.status !== "approved") ? (
                     <>
                       <Button size="sm" variant="success" onClick={handleApprove} className="w-full">
                         <CheckCircle className="h-4 w-4 mr-2" />

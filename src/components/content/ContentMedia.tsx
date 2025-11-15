@@ -15,7 +15,6 @@ interface Media {
 interface ContentMediaProps {
   contentId: string;
   type: string;
-  approvalToken?: string;
   mediaPath?: string | null;
 }
 
@@ -124,7 +123,7 @@ function useSignedUrl(path: string | null | undefined) {
   return { url, loading };
 }
 
-export function ContentMedia({ contentId, type, approvalToken, mediaPath }: ContentMediaProps) {
+export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -150,7 +149,7 @@ export function ContentMedia({ contentId, type, approvalToken, mediaPath }: Cont
     }
 
     loadMedia();
-  }, [contentId, approvalToken, mediaPath]);
+  }, [contentId, mediaPath]);
 
   useEffect(() => {
     if (media.length === 0) {

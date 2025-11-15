@@ -7,11 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 interface ContentCaptionProps {
   contentId: string;
   version: number;
-  approvalToken?: string;
   initialCaption?: string | null;
 }
 
-export function ContentCaption({ contentId, version, approvalToken, initialCaption }: ContentCaptionProps) {
+export function ContentCaption({ contentId, version, initialCaption }: ContentCaptionProps) {
   const { toast } = useToast();
   const [caption, setCaption] = useState(initialCaption ?? "");
   const [editing, setEditing] = useState(false);
@@ -19,7 +18,6 @@ export function ContentCaption({ contentId, version, approvalToken, initialCapti
   const [saving, setSaving] = useState(false);
 
   const loadCaption = useCallback(async () => {
-    // Fluxo normal autenticado (sem RPC legado)
     const { data, error } = await supabase
       .from("content_texts")
       .select("caption")
@@ -43,7 +41,6 @@ export function ContentCaption({ contentId, version, approvalToken, initialCapti
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Fluxo normal autenticado - criar nova versão da legenda
       const { error: insertError } = await supabase
         .from("content_texts")
         .insert({

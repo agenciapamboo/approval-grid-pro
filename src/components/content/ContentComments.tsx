@@ -27,7 +27,7 @@ interface ContentCommentsProps {
   approvalToken?: string;
 }
 
-export function ContentComments({ contentId, onUpdate, showHistory = true, approvalToken }: ContentCommentsProps) {
+export function ContentComments({ contentId, onUpdate, showHistory = true }: ContentCommentsProps) {
   const { toast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -36,10 +36,8 @@ export function ContentComments({ contentId, onUpdate, showHistory = true, appro
 
   useEffect(() => {
     loadComments();
-    if (!approvalToken) {
-      getCurrentUser();
-    }
-  }, [contentId, approvalToken]);
+    getCurrentUser();
+  }, [contentId]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
