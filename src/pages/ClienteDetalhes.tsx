@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { ApproversManager } from "@/components/admin/ApproversManager";
 import { SocialAccountsDialog } from "@/components/admin/SocialAccountsDialog";
+import { ClientCreativeRequestsTable } from "@/components/admin/ClientCreativeRequestsTable";
+import { ClientContentLogsTable } from "@/components/admin/ClientContentLogsTable";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Building2, Edit, Calendar, FileText, Users, Shield,
@@ -526,42 +528,33 @@ const ClienteDetalhes = () => {
           </TabsContent>
 
           {/* Tab: Histórico de Solicitações */}
-          <TabsContent value="solicitacoes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Solicitações</CardTitle>
-                <CardDescription>Todas as solicitações de criação de conteúdo deste cliente</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-8 gap-4">
-                  <p className="text-muted-foreground">Acesse a página de solicitações para ver todos os pedidos</p>
-                  <Button onClick={() => navigate(`/agency/creative-requests/${clientId}`)}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Ver Solicitações Criativas
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="solicitacoes">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Solicitações</CardTitle>
+                  <CardDescription>Todas as solicitações de criação de conteúdo deste cliente</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ClientCreativeRequestsTable 
+                    clientId={clientId || ""} 
+                    showClientColumn={false} 
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
           {/* Tab: Histórico de Aprovação */}
-          <TabsContent value="aprovacoes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Aprovação</CardTitle>
-                <CardDescription>Histórico completo de aprovações, comentários e ajustes solicitados</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-8 gap-4">
-                  <p className="text-muted-foreground">Acesse o histórico completo de aprovações deste cliente</p>
-                  <Button onClick={() => navigate(`/client/${clientId}/history`)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Histórico de Aprovação
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="aprovacoes">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Aprovação</CardTitle>
+                  <CardDescription>Histórico completo de aprovações, comentários e ajustes solicitados</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ClientContentLogsTable clientId={clientId || ""} />
+                </CardContent>
+              </Card>
+            </TabsContent>
         </Tabs>
       </main>
 
