@@ -354,19 +354,19 @@ export default function ContentGrid() {
             </div>
           </Card>
         ) : isMobile ? (
-          // Instagram-style grid for mobile - Apenas imagem + badge
+          // Instagram-style grid for mobile - Apenas imagem + badge (sem bordas)
           <div className="grid grid-cols-3 gap-0.5 pb-20">
             {filterContentsByStatus(contents).map((content) => (
               <div
                 key={content.id}
                 onClick={() => setSelectedContent(content)}
-                className="relative aspect-square cursor-pointer group overflow-hidden border-0"
+                className="relative aspect-square cursor-pointer group overflow-hidden"
               >
                 {/* Imagem ou placeholder */}
                 {content.media_path ? (
                   <img 
                     src={content.media_path} 
-                    alt=""
+                    alt={content.title}
                     className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
                     loading="lazy"
                   />
