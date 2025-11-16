@@ -119,19 +119,19 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     const statusConfig: Record<string, { label: string; classes: string }> = {
       pending: { 
         label: "Pendente", 
-        classes: "bg-[hsl(var(--warning))] text-white" 
+        classes: "bg-orange-500 text-white" 
       },
       producing: { 
         label: "Produzindo", 
-        classes: "bg-[hsl(var(--accent))] text-white" 
+        classes: "bg-blue-500 text-white" 
       },
       scheduled: { 
-        label: "Agendados", 
-        classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" 
+        label: "Agendado", 
+        classes: "bg-purple-500 text-white" 
       },
       published: { 
-        label: "Publicados", 
-        classes: "bg-[hsl(var(--success))] text-white" 
+        label: "Publicado", 
+        classes: "bg-green-500 text-white" 
       }
     };
     

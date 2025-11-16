@@ -96,8 +96,8 @@ export default function ContentGrid() {
     const labels: Record<string, string> = {
       'pending': 'Pendente',
       'producing': 'Produzindo',
-      'scheduled': 'Agendados',
-      'published': 'Publicados'
+      'scheduled': 'Agendado',
+      'published': 'Publicado'
     };
     return labels[clientStatus] || clientStatus;
   };
@@ -110,31 +110,34 @@ export default function ContentGrid() {
   };
 
   const filterContentsByStatus = (contents: Content[]) => {
-    if (!filterParam) return contents;
+    // SEMPRE excluir stories da grade principal
+    const nonStoryContents = contents.filter(c => c.type !== 'story');
+    
+    if (!filterParam) return nonStoryContents;
     
     const now = new Date();
     
     switch(filterParam) {
       case 'pending':
-        return contents.filter(c => c.status === 'draft' || c.status === 'in_review');
+        return nonStoryContents.filter(c => c.status === 'draft' || c.status === 'in_review');
       
       case 'producing':
-        return contents.filter(c => c.is_content_plan === true || c.status === 'changes_requested');
+        return nonStoryContents.filter(c => c.is_content_plan === true || c.status === 'changes_requested');
       
       case 'scheduled':
-        return contents.filter(c => 
+        return nonStoryContents.filter(c => 
           c.status === 'approved' && 
           (!c.date || new Date(c.date) > now)
         );
       
       case 'published':
-        return contents.filter(c => {
+        return nonStoryContents.filter(c => {
           if (c.published_at) return true;
           return c.status === 'approved' && c.date && new Date(c.date) <= now;
         });
       
       default:
-        return contents;
+        return nonStoryContents;
     }
   };
 
@@ -461,20 +464,45 @@ export default function ContentGrid() {
                   </div>
                 )}
                 
+                {/* Ícone de tipo - Canto inferior esquerdo */}
+                {!content.is_content_plan && content.media_path && (
+                  <div className="absolute bottom-1 left-1">
+                    {content.type === 'reels' || content.type === 'video' ? (
+                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
+                        <Video className="h-3 w-3 text-white" />
+                      </div>
+                    ) : content.type === 'carousel' ? (
+                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
+                        <Images className="h-3 w-3 text-white" />
+                      </div>
+                    ) : (
+                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
+                        <ImageIcon className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Badge de Status - Canto superior direito */}
-                    {(() => {
-                      const clientStatus = getClientStatus(content);
-                      if (!clientStatus) return null;
-                      
-                      return (
-                        <Badge 
-                          variant={getStatusBadgeVariant(clientStatus)}
-                          className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 shadow-sm"
-                        >
-                          {getStatusLabel(clientStatus)}
-                        </Badge>
-                      );
-                    })()}
+                {(() => {
+                  const clientStatus = getClientStatus(content);
+                  if (!clientStatus) return null;
+                  
+                  const badgeColors: Record<string, string> = {
+                    pending: 'bg-orange-500',
+                    producing: 'bg-blue-500',
+                    scheduled: 'bg-purple-500',
+                    published: 'bg-green-500'
+                  };
+                  
+                  return (
+                    <span 
+                      className={`absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded shadow-sm font-semibold text-white ${badgeColors[clientStatus]}`}
+                    >
+                      {getStatusLabel(clientStatus)}
+                    </span>
+                  );
+                })()}
               </div>
             ))}
           </div>
