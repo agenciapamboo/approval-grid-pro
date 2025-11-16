@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2, Plus, FileText, ArrowLeft, X, ImageIcon } from "lucide-react";
+import { AlertCircle, Loader2, Plus, FileText, ArrowLeft, X, ImageIcon, Video, Images } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
@@ -214,7 +214,14 @@ export default function ContentGrid() {
         })
       );
 
-      console.log('[ContentGrid] Enriquecidos conteúdos com mídias e legendas');
+      console.log('[ContentGrid] Conteúdos carregados:', enrichedContents.map(c => ({
+        id: c.id.slice(0, 8),
+        title: c.title,
+        type: c.type,
+        is_plan: c.is_content_plan,
+        has_media: !!c.media_path,
+        media_url: c.media_path?.slice(0, 50)
+      })));
       setContents(enrichedContents);
     } catch (error: any) {
       console.error('[ContentGrid] Erro ao carregar conteúdos:', error);
@@ -366,34 +373,49 @@ export default function ContentGrid() {
               >
                 {/* Renderizar baseado no tipo de conteúdo */}
                 {content.is_content_plan ? (
-                  // Ícone diferenciado para planos de conteúdo
+                  // Ícones diferenciados por tipo de plano
                   <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-primary/5">
-                    <FileText className="h-8 w-8 text-primary/40" />
-                    <span className="text-[8px] text-primary/60 font-medium uppercase">Plano</span>
+                    {content.type === 'reels' ? (
+                      <>
+                        <Video className="h-8 w-8 text-primary/40" />
+                        <span className="text-[8px] text-primary/60 font-medium uppercase">Vídeo</span>
+                      </>
+                    ) : content.type === 'carousel' ? (
+                      <>
+                        <Images className="h-8 w-8 text-primary/40" />
+                        <span className="text-[8px] text-primary/60 font-medium uppercase">Galeria</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-8 w-8 text-primary/40" />
+                        <span className="text-[8px] text-primary/60 font-medium uppercase">Feed</span>
+                      </>
+                    )}
                   </div>
                 ) : content.media_path ? (
                   // Imagem principal do conteúdo
                   <img 
+                    key={`media-${content.id}`}
                     src={content.media_path}
                     alt={content.title}
                     className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
                     loading="lazy"
+                    decoding="async"
                     onError={(e) => {
-                      // Fallback visual se imagem falhar
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       const parent = target.parentElement;
                       if (parent) {
-                        const fallbackDiv = document.createElement('div');
-                        fallbackDiv.className = 'w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50';
-                        fallbackDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-muted-foreground/30"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                        parent.appendChild(fallbackDiv);
+                        const fallback = document.createElement('div');
+                        fallback.className = 'w-full h-full flex items-center justify-center bg-muted/50';
+                        fallback.innerHTML = '<div class="text-muted-foreground/30">⚠</div>';
+                        parent.appendChild(fallback);
                       }
                     }}
                   />
                 ) : (
-                  // Placeholder para conteúdos sem mídia
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                  // Placeholder apenas para conteúdos sem mídia
+                  <div className="w-full h-full flex items-center justify-center bg-muted/50">
                     <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
                   </div>
                 )}
