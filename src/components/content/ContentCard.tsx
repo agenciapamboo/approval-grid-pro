@@ -116,24 +116,24 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     // Não exibir badge se status não for um dos 4 principais
     if (!clientStatus) return null;
     
-    const statusConfig: Record<string, { label: string; classes: string }> = {
-      pending: { 
-        label: "Pendente", 
-        classes: "bg-[hsl(var(--warning))] text-white" 
-      },
-      producing: { 
-        label: "Produzindo", 
-        classes: "bg-[hsl(var(--accent))] text-white" 
-      },
-      scheduled: { 
-        label: "Agendados", 
-        classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" 
-      },
-      published: { 
-        label: "Publicados", 
-        classes: "bg-[hsl(var(--success))] text-white" 
-      }
-    };
+  const statusConfig: Record<string, { label: string; classes: string }> = {
+    pending: { 
+      label: "Pendente", 
+      classes: "bg-[hsl(var(--warning))] text-white" 
+    },
+    producing: { 
+      label: "Produzindo", 
+      classes: "bg-[hsl(var(--accent))] text-white" 
+    },
+    scheduled: { 
+      label: "Agendados", 
+      classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" 
+    },
+    published: { 
+      label: "Publicado", 
+      classes: "bg-[hsl(var(--success))] text-white" 
+    }
+  };
     
     const cfg = statusConfig[clientStatus];
     

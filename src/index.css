@@ -155,15 +155,22 @@ All colors MUST be HSL.
     --gradient-success: linear-gradient(135deg, hsl(158 100% 36%) 0%, hsl(158 100% 48%) 100%);
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.05) 0%, hsl(0 0% 100% / 0.02) 100%);
 
-    /* Sidebar - Design System Dark Mode */
-    --sidebar: 222 47% 11%;
+    /* Sidebar - Design System Dark Mode com Glassmorphism */
+    --sidebar: 222 47% 11% / 0.8;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 32% 17%;
+    --sidebar-accent: 217 33% 17% / 0.8;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 32% 17%;
+    --sidebar-border: 217 33% 17% / 0.5;
     --sidebar-ring: 160 84% 39%;
+  }
+  
+  /* Glassmorphism para sidebar no dark mode */
+  .dark [data-sidebar] {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid hsl(var(--sidebar-border));
   }
 }
 
@@ -286,4 +293,22 @@ All colors MUST be HSL.
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Barra inferior mobile com glassmorphism */
+.bottom-nav-glass {
+  background: hsl(var(--sidebar) / 0.9);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid hsl(var(--sidebar-border));
+  box-shadow: 
+    0 -4px 6px -1px rgb(0 0 0 / 0.1),
+    0 -2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.dark .bottom-nav-glass {
+  background: hsl(var(--sidebar) / 0.8);
+  box-shadow: 
+    0 -4px 6px -1px rgb(0 0 0 / 0.3),
+    0 -2px 4px -2px rgb(0 0 0 / 0.2);
 }
