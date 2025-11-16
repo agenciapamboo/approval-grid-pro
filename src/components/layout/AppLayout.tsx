@@ -92,7 +92,7 @@ export function AppLayout({
                 
                 <Button variant="ghost" size="sm" onClick={() => navigate('/solicitar-criativo')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
                   <Plus className="h-5 w-5" />
-                  <span className="text-xs">Solicitar Criativos</span>
+                  <span className="text-xs">Criativos</span>
                 </Button>
               </>}
             
