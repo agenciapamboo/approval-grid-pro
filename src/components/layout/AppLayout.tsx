@@ -62,10 +62,20 @@ export function AppLayout({
         <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={false} />
         
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r-0">
-            <SidebarProvider defaultOpen={true}>
-              <SidebarComponent />
-            </SidebarProvider>
+          <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r-0 overflow-y-auto">
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+                <h2 className="text-lg font-semibold text-sidebar-foreground">Menu Principal</h2>
+                <SheetClose asChild>
+                  <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
+                    <X className="h-5 w-5" />
+                  </Button>
+                </SheetClose>
+              </div>
+              <div className="flex-1">
+                <SidebarComponent />
+              </div>
+            </div>
           </SheetContent>
         </Sheet>
 
