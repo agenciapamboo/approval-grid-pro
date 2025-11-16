@@ -62,8 +62,10 @@ export function AppLayout({
         <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={false} />
         
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="left" className="p-0 w-60">
-            <SidebarComponent />
+          <SheetContent side="left" className="p-0 w-60 bg-sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <SidebarComponent />
+            </SidebarProvider>
           </SheetContent>
         </Sheet>
 

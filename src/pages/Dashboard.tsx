@@ -315,9 +315,6 @@ const Dashboard = () => {
                     )}
                     <div>
                       <CardTitle className="text-2xl">{dashboardData.client.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground font-mono">
-                        {dashboardData.client.slug}
-                      </p>
                       {dashboardData.client.agency && (
                         <p className="text-sm text-muted-foreground mt-1">
                           Agência: {dashboardData.client.agency.name}
@@ -345,6 +342,27 @@ const Dashboard = () => {
                   </div>
                 </div>
               </CardHeader>
+            </Card>
+
+            {/* Informações do Plano */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações do Plano</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Criativos do Mês</span>
+                    <span className="text-sm font-medium">
+                      {dashboardData.monthlyCreatives?.used || 0} / {dashboardData.monthlyCreatives?.limit || 0}
+                    </span>
+                  </div>
+                  <Progress value={dashboardData.monthlyCreatives?.percentage || 0} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(dashboardData.monthlyCreatives?.percentage || 0).toFixed(1)}% da cota utilizada
+                  </p>
+                </div>
+              </CardContent>
             </Card>
 
             {/* Cards de Estatísticas */}
@@ -399,27 +417,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Informações do Plano */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações do Plano</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Criativos do Mês</span>
-                    <span className="text-sm font-medium">
-                      {dashboardData.monthlyCreatives?.used || 0} / {dashboardData.monthlyCreatives?.limit || 0}
-                    </span>
-                  </div>
-                  <Progress value={dashboardData.monthlyCreatives?.percentage || 0} />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(dashboardData.monthlyCreatives?.percentage || 0).toFixed(1)}% da cota utilizada
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
 

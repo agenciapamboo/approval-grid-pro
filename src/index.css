@@ -261,3 +261,20 @@ All colors MUST be HSL.
     background-position: 0% 50%;
   }
 }
+
+/* Scroll Snap para Feed de Conteúdos Mobile */
+.snap-y {
+  scroll-snap-type: y mandatory;
+}
+
+.snap-mandatory {
+  scroll-snap-type: y mandatory;
+}
+
+.snap-start {
+  scroll-snap-align: start;
+}
+
+.snap-always {
+  scroll-snap-stop: always;
+}

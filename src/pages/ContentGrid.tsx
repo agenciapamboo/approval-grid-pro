@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2, Plus, FileText } from "lucide-react";
+import { AlertCircle, Loader2, Plus, FileText, ArrowLeft, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
@@ -12,7 +12,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { useUserData } from "@/hooks/useUserData";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
@@ -53,6 +53,7 @@ export default function ContentGrid() {
 
   const getStatusBadgeVariant = (status: string): "success" | "warning" | "destructive" | "outline" => {
     if (status === "approved") return "success";
+    if (status === "in_review") return "warning";
     if (status === "pending") return "warning";
     if (status === "rejected") return "destructive";
     return "outline";
@@ -61,6 +62,7 @@ export default function ContentGrid() {
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       'draft': 'Rascunho',
+      'in_review': 'Em Revisão',
       'pending': 'Pendente',
       'approved': 'Aprovado',
       'rejected': 'Rejeitado',
@@ -69,6 +71,21 @@ export default function ContentGrid() {
     };
     return labels[status] || status;
   };
+
+  // Auto-scroll ao conteúdo selecionado no feed
+  useEffect(() => {
+    if (selectedContent && isMobile) {
+      setTimeout(() => {
+        const element = document.getElementById(`content-${selectedContent.id}`);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'instant',
+            block: 'start'
+          });
+        }
+      }, 100);
+    }
+  }, [selectedContent, isMobile]);
 
   // Carregar conteúdos quando tiver dados do cliente
   useEffect(() => {
@@ -272,35 +289,36 @@ export default function ContentGrid() {
             </div>
           </Card>
         ) : isMobile ? (
-          // Instagram-style grid for mobile
-          <div className="grid grid-cols-3 gap-1">
+          // Instagram-style grid for mobile - Apenas imagem + badge
+          <div className="grid grid-cols-3 gap-1 pb-20">
             {contents.map((content) => (
-              <button
+              <div
                 key={content.id}
                 onClick={() => setSelectedContent(content)}
-                className="aspect-square relative overflow-hidden rounded-lg bg-muted group cursor-pointer"
+                className="relative aspect-square cursor-pointer group overflow-hidden rounded-sm"
               >
+                {/* Imagem ou placeholder */}
                 {content.media_path ? (
-                  <div className="w-full h-full">
-                    <img 
-                      src={content.media_path} 
-                      alt={content.title}
-                      className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
-                      loading="lazy"
-                    />
-                  </div>
+                  <img 
+                    src={content.media_path} 
+                    alt=""
+                    className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
+                    loading="lazy"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                    <FileText className="h-8 w-8 text-muted-foreground/50" />
+                    <FileText className="h-6 w-6 text-muted-foreground/30" />
                   </div>
                 )}
+                
+                {/* Badge de Status - Canto superior direito */}
                 <Badge 
                   variant={getStatusBadgeVariant(content.status)}
-                  className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5"
+                  className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 shadow-sm"
                 >
                   {getStatusLabel(content.status)}
                 </Badge>
-              </button>
+              </div>
             ))}
           </div>
         ) : (
@@ -317,25 +335,51 @@ export default function ContentGrid() {
           </div>
         )}
 
-        {/* Mobile Content Detail Dialog */}
-        <Dialog open={!!selectedContent} onOpenChange={() => setSelectedContent(null)}>
-          <DialogContent className="max-w-full h-full p-0 gap-0">
-            <ScrollArea className="h-full">
-              {selectedContent && (
-                <div className="p-4">
-                  <ContentCard
-                    content={selectedContent}
-                    isResponsible={selectedContent.owner_user_id === userProfile.id}
-                    onUpdate={() => {
-                      loadContents(userClient.id);
-                      setSelectedContent(null);
-                    }}
-                  />
-                </div>
-              )}
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
+        {/* Feed Fullscreen com Scroll Infinito (Mobile) */}
+        {isMobile && selectedContent && (
+          <Dialog open={!!selectedContent} onOpenChange={() => setSelectedContent(null)}>
+            <DialogContent className="max-w-full h-full p-0 gap-0 overflow-hidden">
+              {/* Header fixo com seta voltar e X */}
+              <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 p-3 flex items-center justify-between">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setSelectedContent(null)}
+                  className="h-9 w-9"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                
+                <span className="text-sm font-medium">Conteúdos</span>
+                
+                <DialogClose className="rounded-sm opacity-70 hover:opacity-100 ring-offset-background transition-opacity hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                  <X className="h-5 w-5" />
+                  <span className="sr-only">Fechar</span>
+                </DialogClose>
+              </div>
+              
+              {/* Feed com scroll vertical */}
+              <ScrollArea className="h-full snap-y snap-mandatory overflow-y-auto">
+                {contents.map((content) => (
+                  <div 
+                    key={content.id} 
+                    id={`content-${content.id}`}
+                    className="min-h-screen snap-start snap-always flex items-start p-4 border-b border-border/10"
+                    style={{ scrollSnapStop: 'always' }}
+                  >
+                    <ContentCard
+                      content={content}
+                      isResponsible={content.owner_user_id === userProfile.id}
+                      onUpdate={() => {
+                        loadContents(userClient.id);
+                      }}
+                    />
+                  </div>
+                ))}
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {showCreateDialog && (
           <CreateContentWrapper
