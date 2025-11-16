@@ -133,8 +133,9 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
+    // Se mediaPath foi fornecido, usar diretamente (otimização)
     const normalizedPath = normalizeStoragePath(mediaPath);
-
+    
     if (normalizedPath) {
       setMedia([
         {
@@ -142,15 +143,16 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
           kind: type === "video" ? "video" : "image",
           order_index: 0,
           src_url: normalizedPath,
-          thumb_url: null
+          thumb_url: normalizedPath
         }
       ]);
       setLoading(false);
       return;
     }
 
+    // Caso contrário, buscar do banco
     loadMedia();
-  }, [contentId, mediaPath]);
+  }, [contentId, mediaPath, type]);
 
   useEffect(() => {
     if (media.length === 0) {
