@@ -14,6 +14,8 @@ import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
 import { AgencyStats } from "@/components/dashboard/AgencyStats";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Helper para evitar inferência de tipos recursiva do Supabase
 async function fetchApproverClients(userId: string) {
@@ -370,7 +372,9 @@ const Dashboard = () => {
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Criativos do Mês</span>
+                    <span className="text-sm font-medium">
+                      Criativos de {format(new Date(), "MMMM", { locale: ptBR })}
+                    </span>
                     <span className="text-sm font-medium">
                       {dashboardData.monthlyCreatives?.used || 0} / {dashboardData.monthlyCreatives?.limit || 0}
                     </span>
