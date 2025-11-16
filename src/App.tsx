@@ -115,6 +115,7 @@ const App = () => (
                 <Route path="/conteudo" element={<RoleProtectedRoute allow={['client_user']}><ContentGrid /></RoleProtectedRoute>} />
                 <Route path="/solicitar-criativo" element={<RoleProtectedRoute allow={['client_user']}><SolicitarCriativo /></RoleProtectedRoute>} />
                 <Route path="/minhas-solicitacoes" element={<RoleProtectedRoute allow={['client_user']}><MinhasSolicitacoes /></RoleProtectedRoute>} />
+                <Route path="/gerenciar-aprovadores" element={<RoleProtectedRoute allow={['client_user', 'agency_admin']}><ManageApprovers /></RoleProtectedRoute>} />
                 <Route path="/configuracoes" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><Configuracoes /></RoleProtectedRoute>} />
                 <Route path="/financeiro" element={<RoleProtectedRoute allow={['super_admin']}><Financeiro /></RoleProtectedRoute>} />
                 <Route path="/agencias" element={<RoleProtectedRoute allow={['super_admin']}><Agencias /></RoleProtectedRoute>} />

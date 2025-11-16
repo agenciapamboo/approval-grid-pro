@@ -9,10 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, AlertTriangle, ArrowLeft, User, Shield, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { PlanInfoCard } from "@/components/client/PlanInfoCard";
 
 const MyAccount = () => {
   const navigate = useNavigate();
@@ -25,6 +28,14 @@ const MyAccount = () => {
   const [editedName, setEditedName] = useState("");
   const [editedWhatsapp, setEditedWhatsapp] = useState("");
   const [client, setClient] = useState<any>(null);
+  const [clientData, setClientData] = useState({
+    name: "",
+    cnpj: "",
+    address: "",
+    monthly_creatives: 0,
+    notify_email: true,
+    notify_whatsapp: false,
+  });
   const [agency, setAgency] = useState<any>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -65,12 +76,20 @@ const MyAccount = () => {
         if (roleData === 'client_user' && profileData.client_id) {
           const { data: clientData } = await supabase
             .from("clients")
-            .select("id, name, slug, agency_id")
+            .select("*")
             .eq("id", profileData.client_id)
             .single();
           
           if (clientData) {
             setClient(clientData);
+            setClientData({
+              name: clientData.name || "",
+              cnpj: clientData.cnpj || "",
+              address: clientData.address || "",
+              monthly_creatives: clientData.monthly_creatives || 0,
+              notify_email: clientData.notify_email ?? true,
+              notify_whatsapp: clientData.notify_whatsapp ?? false,
+            });
             
             const { data: agencyData } = await supabase
               .from("agencies")
@@ -187,6 +206,42 @@ const MyAccount = () => {
       });
     } finally {
       setManagingBilling(false);
+    }
+  };
+
+  const handleSaveClientData = async () => {
+    if (!client?.id) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          name: clientData.name,
+          cnpj: clientData.cnpj,
+          address: clientData.address,
+          notify_email: clientData.notify_email,
+          notify_whatsapp: clientData.notify_whatsapp,
+        })
+        .eq("id", client.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Dados atualizados",
+        description: "Suas informações cadastrais foram salvas com sucesso.",
+      });
+
+      await checkAuth();
+    } catch (error) {
+      console.error("Error updating client data:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível atualizar os dados cadastrais.",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -499,24 +554,126 @@ const MyAccount = () => {
               </Card>
 
               {isClientUser && client && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Informações da Empresa</CardTitle>
-                    <CardDescription>Dados do seu cliente gerenciado pela agência</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <p className="text-sm font-medium">Cliente</p>
-                      <p className="text-sm text-muted-foreground">{client.name}</p>
-                    </div>
-                    {agency && (
-                      <div>
-                        <p className="text-sm font-medium">Agência Responsável</p>
-                        <p className="text-sm text-muted-foreground">{agency.name}</p>
+                <>
+                  <PlanInfoCard clientId={client.id} />
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Dados Cadastrais</CardTitle>
+                      <CardDescription>Gerencie as informações da sua empresa</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="client-name">Nome/Razão Social</Label>
+                        <Input
+                          id="client-name"
+                          value={clientData.name}
+                          onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                          placeholder="Nome da empresa"
+                        />
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="cnpj">CPF/CNPJ</Label>
+                        <Input
+                          id="cnpj"
+                          value={clientData.cnpj}
+                          onChange={(e) => setClientData({ ...clientData, cnpj: e.target.value })}
+                          placeholder="00.000.000/0000-00"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Endereço</Label>
+                        <Textarea
+                          id="address"
+                          value={clientData.address}
+                          onChange={(e) => setClientData({ ...clientData, address: e.target.value })}
+                          placeholder="Rua, número, bairro, cidade - Estado"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="monthly-creatives">Criativos Mensais</Label>
+                        <Input
+                          id="monthly-creatives"
+                          type="number"
+                          value={clientData.monthly_creatives}
+                          disabled
+                          className="bg-muted"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Configurado pela agência
+                        </p>
+                      </div>
+
+                      <Separator className="my-4" />
+
+                      <div className="space-y-3">
+                        <Label>Preferências de Notificação</Label>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="client-notify-email" className="flex flex-col gap-1 cursor-pointer">
+                            <span>Notificações por E-mail</span>
+                            <span className="text-xs text-muted-foreground font-normal">
+                              Receber atualizações de aprovações e conteúdos por email
+                            </span>
+                          </Label>
+                          <Switch
+                            id="client-notify-email"
+                            checked={clientData.notify_email}
+                            onCheckedChange={(checked) => setClientData({ ...clientData, notify_email: checked })}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="client-notify-whatsapp" className="flex flex-col gap-1 cursor-pointer">
+                            <span>Notificações por WhatsApp</span>
+                            <span className="text-xs text-muted-foreground font-normal">
+                              Receber atualizações de aprovações e conteúdos por WhatsApp
+                            </span>
+                          </Label>
+                          <Switch
+                            id="client-notify-whatsapp"
+                            checked={clientData.notify_whatsapp}
+                            onCheckedChange={(checked) => setClientData({ ...clientData, notify_whatsapp: checked })}
+                          />
+                        </div>
+                      </div>
+
+                      <Button onClick={handleSaveClientData} disabled={saving} className="w-full">
+                        {saving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          "Salvar Dados Cadastrais"
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Informações da Empresa</CardTitle>
+                      <CardDescription>Dados do seu cliente gerenciado pela agência</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div>
+                        <p className="text-sm font-medium">Cliente</p>
+                        <p className="text-sm text-muted-foreground">{client.name}</p>
+                      </div>
+                      {agency && (
+                        <div>
+                          <p className="text-sm font-medium">Agência Responsável</p>
+                          <p className="text-sm text-muted-foreground">{agency.name}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </TabsContent>
 

@@ -37,6 +37,10 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, 
     setLoading(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       // Upload files if any
       const uploadedUrls: string[] = [];
       for (const file of files) {
@@ -57,24 +61,59 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, 
         uploadedUrls.push(publicUrl);
       }
 
-      // Create a creative request record
+      // Create content in kanban (is_content_plan: true)
+      const { data: contentData, error: contentError } = await supabase
+        .from('contents')
+        .insert({
+          client_id: clientId,
+          agency_id: agencyId,
+          title: formData.title,
+          type: formData.type as any,
+          status: 'draft',
+          is_content_plan: true,
+          plan_description: `${formData.text}\n\nLegenda: ${formData.caption}\n\nObservações: ${formData.observations}`,
+          date: formData.deadline || new Date().toISOString(),
+          deadline: formData.deadline || null,
+          owner_user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (contentError) throw contentError;
+
+      // Store reference files in content_media
+      if (uploadedUrls.length > 0) {
+        const mediaInserts = uploadedUrls.map((url, index) => ({
+          content_id: contentData.id,
+          src_url: url,
+          order_index: index,
+          kind: 'image' as any,
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('content_media')
+          .insert(mediaInserts);
+
+        if (mediaError) throw mediaError;
+      }
+
+      // Create notification for tracking
       const requestData = {
         ...formData,
         client_id: clientId,
         agency_id: agencyId,
         reference_files: uploadedUrls,
-        job_status: 'pending',
-        version: 1,
-        history: [],
+        content_id: contentData.id,
       };
 
-      // Store in notifications table
       const { data: notificationData, error: notificationError } = await supabase
         .from('notifications')
         .insert({
           event: 'novojob',
           client_id: clientId,
           agency_id: agencyId,
+          user_id: user.id,
+          content_id: contentData.id,
           channel: 'webhook',
           status: 'pending',
           payload: requestData,
@@ -82,14 +121,18 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, 
         .select()
         .single();
 
-      if (notificationError) throw notificationError;
+      if (notificationError) console.warn("Failed to create notification:", notificationError);
 
       // Trigger webhook
-      await triggerWebhook('novojob', notificationData.id, clientId, agencyId);
+      try {
+        await triggerWebhook('novojob', contentData.id, clientId, agencyId);
+      } catch (webhookError) {
+        console.warn("Webhook trigger failed:", webhookError);
+      }
 
       toast({
         title: "✅ Solicitação enviada com sucesso!",
-        description: "A agência foi notificada sobre sua solicitação.",
+        description: "Sua solicitação foi adicionada ao kanban da agência.",
       });
 
       onSuccess?.();
@@ -101,7 +144,7 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, 
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível enviar a solicitação.",
+        description: "Não foi possível enviar a solicitação. Verifique os dados e tente novamente.",
       });
     } finally {
       setLoading(false);
@@ -217,7 +260,7 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, 
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
