@@ -55,25 +55,51 @@ export default function ContentGrid() {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
 
-  const getStatusBadgeVariant = (status: string): "success" | "warning" | "destructive" | "outline" => {
-    if (status === "approved") return "success";
-    if (status === "in_review") return "warning";
-    if (status === "pending") return "warning";
-    if (status === "rejected") return "destructive";
+  // Função para converter status do banco em status para client users
+  const getClientStatus = (content: Content): 'pending' | 'producing' | 'scheduled' | 'published' | null => {
+    const now = new Date();
+    
+    // PUBLICADOS: Já publicados OU aprovados com data passada
+    if (content.published_at) return 'published';
+    if (content.status === 'approved' && content.date && new Date(content.date) <= now) {
+      return 'published';
+    }
+    
+    // AGENDADOS: Aprovados com data futura
+    if (content.status === 'approved' && (!content.date || new Date(content.date) > now)) {
+      return 'scheduled';
+    }
+    
+    // PRODUZINDO: Planos de conteúdo OU ajustes solicitados
+    if (content.is_content_plan === true || content.status === 'changes_requested') {
+      return 'producing';
+    }
+    
+    // PENDENTE: Rascunho OU em revisão
+    if (content.status === 'draft' || content.status === 'in_review') {
+      return 'pending';
+    }
+    
+    // Outros status não são exibidos
+    return null;
+  };
+
+  const getStatusBadgeVariant = (clientStatus: string): "success" | "warning" | "destructive" | "outline" => {
+    if (clientStatus === "published") return "success";
+    if (clientStatus === "scheduled") return "outline";
+    if (clientStatus === "producing") return "warning";
+    if (clientStatus === "pending") return "warning";
     return "outline";
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (clientStatus: string) => {
     const labels: Record<string, string> = {
-      'draft': 'Rascunho',
-      'in_review': 'Em Revisão',
       'pending': 'Pendente',
-      'approved': 'Aprovado',
-      'rejected': 'Rejeitado',
-      'published': 'Publicado',
-      'archived': 'Arquivado'
+      'producing': 'Produzindo',
+      'scheduled': 'Agendados',
+      'published': 'Publicados'
     };
-    return labels[status] || status;
+    return labels[clientStatus] || clientStatus;
   };
 
   const filterLabels: Record<string, string> = {
@@ -436,12 +462,19 @@ export default function ContentGrid() {
                 )}
                 
                 {/* Badge de Status - Canto superior direito */}
-                <Badge 
-                  variant={getStatusBadgeVariant(content.status)}
-                  className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 shadow-sm"
-                >
-                  {getStatusLabel(content.status)}
-                </Badge>
+                    {(() => {
+                      const clientStatus = getClientStatus(content);
+                      if (!clientStatus) return null;
+                      
+                      return (
+                        <Badge 
+                          variant={getStatusBadgeVariant(clientStatus)}
+                          className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 shadow-sm"
+                        >
+                          {getStatusLabel(clientStatus)}
+                        </Badge>
+                      );
+                    })()}
               </div>
             ))}
           </div>
