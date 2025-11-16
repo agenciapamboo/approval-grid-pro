@@ -67,8 +67,8 @@ export function AppLayout({
               <div className="p-4 border-b border-sidebar-border">
                 <h2 className="text-lg font-semibold text-sidebar-foreground">Menu Principal</h2>
               </div>
-            <div className="flex-1">
-              <SidebarComponent />
+              <div className="flex-1">
+                <SidebarComponent onSignOut={handleSignOut} />
               </div>
             </div>
           </SheetContent>
@@ -77,7 +77,7 @@ export function AppLayout({
         <main className="flex-1">{children}</main>
 
         {/* Barra de navegação inferior fixa */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong bg-sidebar/90 dark:bg-sidebar/80 border-t border-sidebar-border shadow-lg backdrop-blur-xl bottom-nav-glass">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border shadow-lg">
           <div className="flex items-center justify-around h-16 px-4">
             <Button variant="ghost" size="sm" onClick={() => setSheetOpen(true)} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
               <Menu className="h-5 w-5" />
@@ -113,14 +113,14 @@ export function AppLayout({
         <AppFooter />
       </div>;
   }
-  return <SidebarProvider defaultOpen={true}>
+  return <SidebarProvider defaultOpen={false}>
       <div className="flex min-h-screen w-full">
-        {SidebarComponent && <SidebarComponent />}
+        {SidebarComponent && <SidebarComponent onSignOut={handleSignOut} />}
 
         <div className="flex-1 flex flex-col">
           <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={showSidebar} />
 
-          <main className="flex-1 overflow-auto">{children}</main>
+          <main className="flex-1">{children}</main>
 
           <AppFooter />
         </div>
