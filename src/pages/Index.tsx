@@ -2,68 +2,46 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { 
-  CheckCircle2, 
-  Clock, 
-  Users, 
-  Zap, 
-  Instagram,
-  Facebook,
-  MessageSquare,
-  ArrowRight,
-  ChevronRight,
-  Menu,
-  X
-} from "lucide-react";
-
+import { CheckCircle2, Clock, Users, Zap, Instagram, Facebook, MessageSquare, ArrowRight, ChevronRight, Menu, X } from "lucide-react";
 const Index = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
     };
-
     checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setIsAuthenticated(!!session);
+    const {
+      data: {
+        subscription
       }
-    );
-
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener("scroll", handleScroll);
-
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
-
   if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+    return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "bg-background/95 backdrop-blur-sm border-b shadow-sm" : "bg-transparent"
-        }`}
-      >
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-background/95 backdrop-blur-sm border-b shadow-sm" : "bg-transparent"}`}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -84,71 +62,46 @@ const Index = () => {
               <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
                 Como Funciona
               </a>
-              {isAuthenticated ? (
-                <Button onClick={() => navigate("/dashboard")} variant="default">
+              {isAuthenticated ? <Button onClick={() => navigate("/dashboard")} variant="default">
                   Ir para Dashboard
-                </Button>
-              ) : (
-                <div className="flex items-center gap-3">
+                </Button> : <div className="flex items-center gap-3">
                   <Button onClick={() => navigate("/auth")} variant="ghost">
                     Entrar
                   </Button>
                   <Button onClick={() => navigate("/auth")} variant="default">
                     Começar Grátis
                   </Button>
-                </div>
-              )}
+                </div>}
             </nav>
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors"
-            >
+            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors">
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
 
           {/* Mobile Menu */}
-          {menuOpen && (
-            <nav className="md:hidden pt-4 pb-2 flex flex-col gap-3">
-              <a 
-                href="#features" 
-                className="text-sm font-medium hover:text-primary transition-colors py-2"
-                onClick={() => setMenuOpen(false)}
-              >
+          {menuOpen && <nav className="md:hidden pt-4 pb-2 flex flex-col gap-3 bg-[#f2f7f6] px-[10px]">
+              <a href="#features" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMenuOpen(false)}>
                 Recursos
               </a>
-              <a 
-                href="#benefits" 
-                className="text-sm font-medium hover:text-primary transition-colors py-2"
-                onClick={() => setMenuOpen(false)}
-              >
+              <a href="#benefits" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMenuOpen(false)}>
                 Benefícios
               </a>
-              <a 
-                href="#how-it-works" 
-                className="text-sm font-medium hover:text-primary transition-colors py-2"
-                onClick={() => setMenuOpen(false)}
-              >
+              <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMenuOpen(false)}>
                 Como Funciona
               </a>
-              {isAuthenticated ? (
-                <Button onClick={() => navigate("/dashboard")} className="w-full">
+              {isAuthenticated ? <Button onClick={() => navigate("/dashboard")} className="w-full">
                   Ir para Dashboard
-                </Button>
-              ) : (
-                <>
+                </Button> : <>
                   <Button onClick={() => navigate("/auth")} variant="ghost" className="w-full">
                     Entrar
                   </Button>
                   <Button onClick={() => navigate("/auth")} className="w-full">
                     Começar Grátis
                   </Button>
-                </>
-              )}
-            </nav>
-          )}
+                </>}
+            </nav>}
         </div>
       </header>
 
@@ -173,20 +126,13 @@ const Index = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button 
-                size="lg" 
-                onClick={() => navigate("/auth")}
-                className="text-lg px-8 group"
-              >
+              <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 group">
                 Começar Gratuitamente
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-                className="text-lg px-8"
-              >
+              <Button size="lg" variant="outline" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({
+              behavior: 'smooth'
+            })} className="text-lg px-8">
                 Ver Como Funciona
               </Button>
             </div>
@@ -195,9 +141,7 @@ const Index = () => {
             <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 border-2 border-background" />
-                  ))}
+                  {[1, 2, 3, 4].map(i => <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 border-2 border-background" />)}
                 </div>
                 <span>Usado por 500+ agências</span>
               </div>
@@ -223,49 +167,37 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: CheckCircle2,
-                title: "Aprovação em Tempo Real",
-                description: "Clientes aprovam ou solicitam ajustes diretamente na plataforma, sem trocas infinitas de email."
-              },
-              {
-                icon: Clock,
-                title: "Auto-Aprovação por Prazo",
-                description: "Configure deadlines e aprove automaticamente conteúdos que não tiverem feedback no prazo."
-              },
-              {
-                icon: Zap,
-                title: "Publicação Automática",
-                description: "Publique automaticamente em Instagram, Facebook e outras redes após aprovação."
-              },
-              {
-                icon: MessageSquare,
-                title: "Comentários Organizados",
-                description: "Histórico completo de feedbacks e ajustes solicitados por versão de conteúdo."
-              },
-              {
-                icon: Users,
-                title: "Gestão Multi-Cliente",
-                description: "Gerencie múltiplos clientes e suas aprovações em um único dashboard centralizado."
-              },
-              {
-                icon: Instagram,
-                title: "Integração Social",
-                description: "Conecte contas do Facebook e Instagram para publicação direta."
-              }
-            ].map((feature, index) => (
-              <div 
-                key={index}
-                className="bg-background p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow"
-              >
+            {[{
+            icon: CheckCircle2,
+            title: "Aprovação em Tempo Real",
+            description: "Clientes aprovam ou solicitam ajustes diretamente na plataforma, sem trocas infinitas de email."
+          }, {
+            icon: Clock,
+            title: "Auto-Aprovação por Prazo",
+            description: "Configure deadlines e aprove automaticamente conteúdos que não tiverem feedback no prazo."
+          }, {
+            icon: Zap,
+            title: "Publicação Automática",
+            description: "Publique automaticamente em Instagram, Facebook e outras redes após aprovação."
+          }, {
+            icon: MessageSquare,
+            title: "Comentários Organizados",
+            description: "Histórico completo de feedbacks e ajustes solicitados por versão de conteúdo."
+          }, {
+            icon: Users,
+            title: "Gestão Multi-Cliente",
+            description: "Gerencie múltiplos clientes e suas aprovações em um único dashboard centralizado."
+          }, {
+            icon: Instagram,
+            title: "Integração Social",
+            description: "Conecte contas do Facebook e Instagram para publicação direta."
+          }].map((feature, index) => <div key={index} className="bg-background p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                   <feature.icon className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -279,25 +211,12 @@ const Index = () => {
                 Por que agências escolhem o Aprova Criativos?
               </h2>
               <div className="space-y-4">
-                {[
-                  "Reduza em até 70% o tempo de aprovação de conteúdos",
-                  "Elimine trocas de email e mensagens perdidas",
-                  "Mantenha histórico completo de todas as aprovações",
-                  "Publique nas redes sociais com um clique",
-                  "Notificações automáticas por email e WhatsApp",
-                  "Interface intuitiva que seus clientes vão adorar"
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-start gap-3">
+                {["Reduza em até 70% o tempo de aprovação de conteúdos", "Elimine trocas de email e mensagens perdidas", "Mantenha histórico completo de todas as aprovações", "Publique nas redes sociais com um clique", "Notificações automáticas por email e WhatsApp", "Interface intuitiva que seus clientes vão adorar"].map((benefit, index) => <div key={index} className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
                     <span className="text-lg">{benefit}</span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
-              <Button 
-                size="lg" 
-                onClick={() => navigate("/auth")}
-                className="mt-8"
-              >
+              <Button size="lg" onClick={() => navigate("/auth")} className="mt-8">
                 Começar Agora
                 <ChevronRight className="ml-2 w-5 h-5" />
               </Button>
@@ -337,27 +256,20 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "1",
-                title: "Crie sua Conta",
-                description: "Cadastre-se gratuitamente e configure seus clientes em minutos."
-              },
-              {
-                step: "2",
-                title: "Envie Conteúdos",
-                description: "Faça upload dos criativos e defina prazos de aprovação."
-              },
-              {
-                step: "3",
-                title: "Aprove e Publique",
-                description: "Cliente aprova e o conteúdo é publicado automaticamente."
-              }
-            ].map((step, index) => (
-              <div key={index} className="relative">
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-primary to-transparent -translate-y-1/2" />
-                )}
+            {[{
+            step: "1",
+            title: "Crie sua Conta",
+            description: "Cadastre-se gratuitamente e configure seus clientes em minutos."
+          }, {
+            step: "2",
+            title: "Envie Conteúdos",
+            description: "Faça upload dos criativos e defina prazos de aprovação."
+          }, {
+            step: "3",
+            title: "Aprove e Publique",
+            description: "Cliente aprova e o conteúdo é publicado automaticamente."
+          }].map((step, index) => <div key={index} className="relative">
+                {index < 2 && <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-primary to-transparent -translate-y-1/2" />}
                 <div className="bg-background p-8 rounded-xl border shadow-sm text-center relative z-10">
                   <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center text-2xl font-bold text-primary-foreground mx-auto mb-4">
                     {step.step}
@@ -365,16 +277,11 @@ const Index = () => {
                   <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
                   <p className="text-muted-foreground">{step.description}</p>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
 
           <div className="text-center mt-12">
-            <Button 
-              size="lg" 
-              onClick={() => navigate("/auth")}
-              className="text-lg px-8"
-            >
+            <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8">
               Começar Gratuitamente
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -393,20 +300,10 @@ const Index = () => {
               Junte-se a centenas de agências que já simplificaram seu workflow
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg"
-                variant="secondary"
-                onClick={() => navigate("/auth")}
-                className="text-lg px-8"
-              >
+              <Button size="lg" variant="secondary" onClick={() => navigate("/auth")} className="text-lg px-8">
                 Criar Conta Grátis
               </Button>
-              <Button 
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 border-primary-foreground/20 hover:bg-primary-foreground/10"
-                onClick={() => window.open("mailto:contato@aprovacriativos.com.br", "_blank")}
-              >
+              <Button size="lg" variant="outline" className="text-lg px-8 border-primary-foreground/20 hover:bg-primary-foreground/10" onClick={() => window.open("mailto:contato@aprovacriativos.com.br", "_blank")}>
                 Falar com Vendas
               </Button>
             </div>
@@ -470,8 +367,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
