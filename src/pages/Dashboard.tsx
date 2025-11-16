@@ -325,7 +325,7 @@ const Dashboard = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="gap-2 hidden md:flex">
                     <Button 
                       variant="outline" 
                       size="sm" 

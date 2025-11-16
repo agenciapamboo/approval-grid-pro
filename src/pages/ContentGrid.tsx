@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2, Plus } from "lucide-react";
+import { AlertCircle, Loader2, Plus, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
@@ -50,6 +50,25 @@ export default function ContentGrid() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
+
+  const getStatusBadgeVariant = (status: string): "success" | "warning" | "destructive" | "outline" => {
+    if (status === "approved") return "success";
+    if (status === "pending") return "warning";
+    if (status === "rejected") return "destructive";
+    return "outline";
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'draft': 'Rascunho',
+      'pending': 'Pendente',
+      'approved': 'Aprovado',
+      'rejected': 'Rejeitado',
+      'published': 'Publicado',
+      'archived': 'Arquivado'
+    };
+    return labels[status] || status;
+  };
 
   // Carregar conteúdos quando tiver dados do cliente
   useEffect(() => {
@@ -223,19 +242,6 @@ export default function ContentGrid() {
     );
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'success' as const;
-      case 'pending':
-        return 'warning' as const;
-      case 'rejected':
-        return 'destructive' as const;
-      default:
-        return 'outline' as const;
-    }
-  };
-
   return (
     <AppLayout>
       <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
@@ -272,26 +278,27 @@ export default function ContentGrid() {
               <button
                 key={content.id}
                 onClick={() => setSelectedContent(content)}
-                className="aspect-square relative overflow-hidden rounded bg-muted"
+                className="aspect-square relative overflow-hidden rounded-lg bg-muted group cursor-pointer"
               >
                 {content.media_path ? (
-                  <img 
-                    src={content.media_path} 
-                    alt={content.title}
-                    className="object-cover w-full h-full"
-                  />
+                  <div className="w-full h-full">
+                    <img 
+                      src={content.media_path} 
+                      alt={content.title}
+                      className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
+                      loading="lazy"
+                    />
+                  </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <span className="text-xs text-muted-foreground text-center px-2">
-                      Sem mídia
-                    </span>
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                    <FileText className="h-8 w-8 text-muted-foreground/50" />
                   </div>
                 )}
                 <Badge 
                   variant={getStatusBadgeVariant(content.status)}
                   className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5"
                 >
-                  {content.status}
+                  {getStatusLabel(content.status)}
                 </Badge>
               </button>
             ))}

@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { SuperAdminSidebar } from "@/components/admin/SuperAdminSidebar";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, FileText, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
@@ -55,9 +55,11 @@ export function AppLayout({ children }: AppLayoutProps) {
     SidebarComponent = ClientUserSidebar;
   }
 
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   if (isMobile && SidebarComponent) {
     return (
-      <div className="flex min-h-screen w-full flex-col">
+      <div className="flex min-h-screen w-full flex-col pb-16">
         <AppHeader
           userName={profile?.name}
           userRole={role ? getRoleLabel(role) : undefined}
@@ -65,22 +67,77 @@ export function AppLayout({ children }: AppLayoutProps) {
           showSidebarTrigger={false}
         />
         
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="fixed left-4 bottom-4 z-50 h-14 w-14 rounded-full bg-sidebar text-sidebar-foreground shadow-lg hover:bg-sidebar-accent"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent side="left" className="p-0 w-60">
             <SidebarComponent />
           </SheetContent>
         </Sheet>
 
         <main className="flex-1">{children}</main>
+
+        {/* Barra de navegação inferior fixa */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border shadow-lg">
+          <div className="flex items-center justify-around h-16 px-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSheetOpen(true)}
+              className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="text-xs">Menu</span>
+            </Button>
+            
+            {role === 'client_user' && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/conteudo')}
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
+                  <FileText className="h-5 w-5" />
+                  <span className="text-xs">Conteúdos</span>
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/solicitar-criativo')}
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="text-xs">Solicitar</span>
+                </Button>
+              </>
+            )}
+            
+            {(role === 'agency_admin' || role === 'team_member') && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/clientes')}
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
+                  <Users className="h-5 w-5" />
+                  <span className="text-xs">Clientes</span>
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/creative-requests')}
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
+                  <FileText className="h-5 w-5" />
+                  <span className="text-xs">Solicitações</span>
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
         <AppFooter />
       </div>
     );
