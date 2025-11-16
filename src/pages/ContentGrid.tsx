@@ -183,7 +183,7 @@ export default function ContentGrid() {
 
       console.log('[ContentGrid] Carregados', contentsData.length, 'conteúdos');
 
-      // Carregar mídias e legendas em paralelo para cada conteúdo
+      // Carregar mídias, legendas E resolver URLs assinadas
       const enrichedContents = await Promise.all(
         contentsData.map(async (content) => {
           const [mediaResult, textResult] = await Promise.all([
@@ -205,12 +205,27 @@ export default function ContentGrid() {
               .maybeSingle()
           ]);
 
-      return {
-        ...content,
-        media_path: mediaResult.data?.src_url || mediaResult.data?.thumb_url || null,
-        thumb_path: mediaResult.data?.thumb_url || mediaResult.data?.src_url || null,
-        caption: textResult.data?.caption || null
-      };
+          // Resolver URL assinada se houver mídia
+          let signedMediaUrl = null;
+          const mediaPath = mediaResult.data?.src_url || mediaResult.data?.thumb_url;
+          
+          if (mediaPath) {
+            try {
+              const { data: urlData } = await supabase.functions.invoke('get-media-url', {
+                body: { path: mediaPath }
+              });
+              signedMediaUrl = urlData?.url || urlData?.signedUrl || null;
+            } catch (error) {
+              console.error('[ContentGrid] Erro ao resolver URL para', content.id.slice(0, 8), error);
+            }
+          }
+
+          return {
+            ...content,
+            media_path: signedMediaUrl,
+            thumb_path: mediaResult.data?.thumb_url,
+            caption: textResult.data?.caption || null
+          };
         })
       );
 
@@ -220,7 +235,7 @@ export default function ContentGrid() {
         type: c.type,
         is_plan: c.is_content_plan,
         has_media: !!c.media_path,
-        media_url: c.media_path?.slice(0, 50)
+        media_url_resolved: c.media_path ? 'Sim ✅' : 'Não ❌'
       })));
       setContents(enrichedContents);
     } catch (error: any) {
