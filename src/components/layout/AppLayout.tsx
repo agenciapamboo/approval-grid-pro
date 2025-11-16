@@ -62,14 +62,9 @@ export function AppLayout({
         <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={false} />
         
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="left" className="p-0 w-60 bg-sidebar border-r-0">
-            <SheetClose className="absolute right-4 top-4 rounded-sm opacity-90 hover:opacity-100 z-50 text-sidebar-foreground">
-              <X className="h-5 w-5" />
-            </SheetClose>
+          <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r-0">
             <SidebarProvider defaultOpen={true}>
-              <div className="h-full">
-                <SidebarComponent />
-              </div>
+              <SidebarComponent />
             </SidebarProvider>
           </SheetContent>
         </Sheet>

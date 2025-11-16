@@ -24,20 +24,28 @@ export function StoriesHighlights({ contents, onUpdate }: StoriesHighlightsProps
   const [viewerOpen, setViewerOpen] = useState(false);
   const [initialCategory, setInitialCategory] = useState<'pending' | 'approved' | 'published'>('pending');
 
+  // FILTRAR APENAS STORIES (type = 'story')
+  const storyContents = contents.filter(c => c.type === 'story');
+
+  // Se não houver stories, não renderizar nada
+  if (storyContents.length === 0) {
+    return null;
+  }
+
   const getPending = () => {
-    return contents
+    return storyContents
       .filter(c => c.status === 'draft' || c.status === 'in_review')
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
   };
   
   const getApproved = () => {
-    return contents
+    return storyContents
       .filter(c => c.status === 'approved')
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
   };
   
   const getPublished = () => {
-    return contents
+    return storyContents
       .filter(c => c.status === 'published')
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
   };
@@ -70,7 +78,9 @@ export function StoriesHighlights({ contents, onUpdate }: StoriesHighlightsProps
   };
 
   return (
-    <>
+    <div className="mb-8">
+      <h3 className="text-lg font-semibold mb-4 px-1">Stories</h3>
+      
       <div className="flex gap-4 overflow-x-auto pb-4 mb-6 px-1 scrollbar-hide">
         {stories.map((story) => (
           <button
@@ -109,12 +119,12 @@ export function StoriesHighlights({ contents, onUpdate }: StoriesHighlightsProps
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         initialCategory={initialCategory}
-        contents={contents}
+        contents={storyContents}
         onUpdate={() => {
           onUpdate();
           setViewerOpen(false);
         }}
       />
-    </>
+    </div>
   );
 }
