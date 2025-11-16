@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
@@ -11,6 +11,10 @@ import { CreateContentWrapper } from "@/components/content/CreateContentWrapper"
 import { AppLayout } from "@/components/layout/AppLayout";
 import { UserProfileDialog } from "@/components/admin/UserProfileDialog";
 import { useUserData } from "@/hooks/useUserData";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface Content {
   id: string;
@@ -40,10 +44,12 @@ export default function ContentGrid() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile: userProfile, role, agency: userAgency, client: userClient, loading: userDataLoading } = useUserData();
+  const isMobile = useIsMobile();
   const [contents, setContents] = useState<Content[]>([]);
   const [loadingContents, setLoadingContents] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
 
   // Carregar conteúdos quando tiver dados do cliente
   useEffect(() => {
@@ -217,72 +223,133 @@ export default function ContentGrid() {
     );
   }
 
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'success' as const;
+      case 'pending':
+        return 'warning' as const;
+      case 'rejected':
+        return 'destructive' as const;
+      default:
+        return 'outline' as const;
+    }
+  };
+
   return (
     <AppLayout>
-
-      <main className="flex-1 container py-6">
-        <div className="mb-6 flex justify-between items-center">
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Grade de Conteúdos</h1>
-            <p className="text-muted-foreground">
-              Cliente: {userClient.name}
+            <h1 className="text-2xl md:text-3xl font-bold break-words">Meu Conteúdo</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {userClient.name}
             </p>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            Criar Novo Conteúdo
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Conteúdo
           </Button>
         </div>
 
         {loadingContents ? (
           <div className="flex items-center justify-center py-12">
-            <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Carregando conteúdos...</p>
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : contents.length === 0 ? (
+          <Card className="p-8">
+            <div className="text-center">
+              <p className="text-muted-foreground">Nenhum conteúdo encontrado</p>
             </div>
+          </Card>
+        ) : isMobile ? (
+          // Instagram-style grid for mobile
+          <div className="grid grid-cols-3 gap-1">
+            {contents.map((content) => (
+              <button
+                key={content.id}
+                onClick={() => setSelectedContent(content)}
+                className="aspect-square relative overflow-hidden rounded bg-muted"
+              >
+                {content.media_path ? (
+                  <img 
+                    src={content.media_path} 
+                    alt={content.title}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <span className="text-xs text-muted-foreground text-center px-2">
+                      Sem mídia
+                    </span>
+                  </div>
+                )}
+                <Badge 
+                  variant={getStatusBadgeVariant(content.status)}
+                  className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5"
+                >
+                  {content.status}
+                </Badge>
+              </button>
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {contents.length > 0 ? (
-              contents.map((content) => (
-                <ContentCard
-                  key={content.id}
-                  content={content}
-                  isResponsible={true}
-                  onUpdate={() => loadContents(userClient.id)}
-                />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-12">
-                <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum Conteúdo Encontrado</h3>
-                <p className="text-muted-foreground text-center max-w-md">
-                  Não há conteúdos cadastrados para este cliente ainda.
-                </p>
-              </div>
-            )}
+          // Traditional grid for desktop
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {contents.map((content) => (
+              <ContentCard
+                key={content.id}
+                content={content}
+                isResponsible={content.owner_user_id === userProfile.id}
+                onUpdate={() => loadContents(userClient.id)}
+              />
+            ))}
           </div>
         )}
-      </main>
 
-      {showCreateDialog && (
-        <CreateContentWrapper
-          clientId={userClient.id}
-          onContentCreated={() => {
-            setShowCreateDialog(false);
-            loadContents(userClient.id);
-          }}
-        />
-      )}
+        {/* Mobile Content Detail Dialog */}
+        <Dialog open={!!selectedContent} onOpenChange={() => setSelectedContent(null)}>
+          <DialogContent className="max-w-full h-full p-0 gap-0">
+            <ScrollArea className="h-full">
+              {selectedContent && (
+                <div className="p-4">
+                  <ContentCard
+                    content={selectedContent}
+                    isResponsible={selectedContent.owner_user_id === userProfile.id}
+                    onUpdate={() => {
+                      loadContents(userClient.id);
+                      setSelectedContent(null);
+                    }}
+                  />
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
 
-      {showProfileDialog && (
-        <UserProfileDialog
-          user={userProfile}
-          profile={{ ...userProfile, role }}
-          open={showProfileDialog}
-          onOpenChange={setShowProfileDialog}
-          onUpdate={() => {}}
-        />
-      )}
+        {showCreateDialog && (
+          <CreateContentWrapper
+            clientId={userClient.id}
+            onContentCreated={() => {
+              setShowCreateDialog(false);
+              loadContents(userClient.id);
+            }}
+          />
+        )}
+
+        {showProfileDialog && userProfile && (
+          <UserProfileDialog
+            user={userProfile}
+            profile={{ ...userProfile, role }}
+            open={showProfileDialog}
+            onOpenChange={setShowProfileDialog}
+            onUpdate={() => {}}
+          />
+        )}
+      </div>
     </AppLayout>
   );
 }

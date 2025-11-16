@@ -35,22 +35,22 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
       </Dialog>
       
       <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-glass">
-      <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto px-3 md:px-6 py-2 md:py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-4">
           {showSidebarTrigger && <SidebarTrigger />}
           
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glass transition-all duration-300 group-hover:shadow-glass-lg group-hover:scale-105">
-              <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
+          <Link to="/dashboard" className="flex items-center gap-2 md:gap-3 group">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glass transition-all duration-300 group-hover:shadow-glass-lg group-hover:scale-105">
+              <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-semibold transition-all duration-300 group-hover:text-primary">
+            <h1 className="text-base md:text-xl font-semibold transition-all duration-300 group-hover:text-primary hidden sm:block">
               Aprova Criativos
             </h1>
           </Link>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {userName && (
-            <div className="text-right hidden sm:block">
+            <div className="text-right hidden lg:block">
               <p className="text-sm font-medium">{userName}</p>
               <p className="text-xs text-muted-foreground">{userRole}</p>
             </div>
