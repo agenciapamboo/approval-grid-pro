@@ -714,17 +714,17 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-        <CardContent className="p-0">
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow max-w-full">
+        <CardContent className="p-3 md:p-4">
           {/* Linha 1: Data e Tipo */}
-          <div className="p-4 border-b bg-muted/50">
+          <div className="pb-3 md:pb-4 border-b bg-muted/50 -mx-3 md:-mx-4 px-3 md:px-4 mb-3 md:mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {isAgencyView && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8">
+                        <MoreVertical className="h-3 w-3 md:h-4 md:w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="bg-background z-50">

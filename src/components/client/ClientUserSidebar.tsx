@@ -41,9 +41,9 @@ export function ClientUserSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <SidebarContent>
+      <SidebarContent className="bg-sidebar">
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>}
+          {!collapsed && <SidebarGroupLabel className="text-sidebar-foreground/70">Menu Principal</SidebarGroupLabel>}
           
           <SidebarGroupContent>
             <SidebarMenu>
@@ -53,8 +53,8 @@ export function ClientUserSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/dashboard"}
-                      className="flex items-center gap-2 hover:bg-muted/50 rounded-md px-3 py-2"
-                      activeClassName="bg-muted text-primary font-medium"
+                      className="flex items-center gap-2 hover:bg-sidebar-accent rounded-md px-3 py-2 text-sidebar-foreground"
+                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}

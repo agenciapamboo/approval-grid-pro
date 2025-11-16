@@ -207,8 +207,8 @@ const Dashboard = () => {
   // Other Roles View
   return (
     <AppLayout>
-      <div className="container mx-auto px-6 py-8">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Dashboard</h1>
 
         {(role === 'agency_admin' || role === 'team_member') && dashboardData?.agency && (
           <div className="grid gap-6">

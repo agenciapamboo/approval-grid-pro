@@ -132,7 +132,7 @@ export function SuperAdminSidebar() {
 
           return (
             <SidebarGroup key={category.id}>
-              {!isCollapsed && <SidebarGroupLabel>{category.label}</SidebarGroupLabel>}
+              {!isCollapsed && <SidebarGroupLabel className="text-sidebar-foreground/70">{category.label}</SidebarGroupLabel>}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {items.map((item) => (
@@ -141,7 +141,7 @@ export function SuperAdminSidebar() {
                         <NavLink
                           to={item.url}
                           className={({ isActive }) =>
-                            isActive ? "bg-accent text-accent-foreground" : ""
+                            isActive ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" : "hover:bg-sidebar-accent text-sidebar-foreground"
                           }
                         >
                           <item.icon className="h-4 w-4" />

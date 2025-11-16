@@ -8,6 +8,10 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -17,6 +21,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { signOut } = useAuth();
   const { role, profile, loading } = useUserData();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
     await signOut();
@@ -48,6 +53,37 @@ export function AppLayout({ children }: AppLayoutProps) {
     SidebarComponent = AgencyAdminSidebar;
   } else if (role === "client_user") {
     SidebarComponent = ClientUserSidebar;
+  }
+
+  if (isMobile && SidebarComponent) {
+    return (
+      <div className="flex min-h-screen w-full flex-col">
+        <AppHeader
+          userName={profile?.name}
+          userRole={role ? getRoleLabel(role) : undefined}
+          onSignOut={handleSignOut}
+          showSidebarTrigger={false}
+        />
+        
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="fixed left-4 bottom-4 z-50 h-14 w-14 rounded-full bg-sidebar text-sidebar-foreground shadow-lg hover:bg-sidebar-accent"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-60">
+            <SidebarComponent />
+          </SheetContent>
+        </Sheet>
+
+        <main className="flex-1">{children}</main>
+        <AppFooter />
+      </div>
+    );
   }
 
   return (
