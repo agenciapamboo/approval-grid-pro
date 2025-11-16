@@ -270,13 +270,16 @@ export default function ContentGrid() {
               {userClient.name}
             </p>
           </div>
-          <Button 
-            onClick={() => setShowCreateDialog(true)}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Conteúdo
-          </Button>
+          {/* Botão visível apenas para agency_admin e team_member */}
+          {(role === 'agency_admin' || role === 'team_member') && (
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Conteúdo
+            </Button>
+          )}
         </div>
 
         {/* Stories Highlights - Mobile only */}
@@ -299,12 +302,12 @@ export default function ContentGrid() {
           </Card>
         ) : isMobile ? (
           // Instagram-style grid for mobile - Apenas imagem + badge
-          <div className="grid grid-cols-3 gap-1 pb-20">
+          <div className="grid grid-cols-3 gap-0.5 pb-20">
             {contents.map((content) => (
               <div
                 key={content.id}
                 onClick={() => setSelectedContent(content)}
-                className="relative aspect-square cursor-pointer group overflow-hidden rounded-sm"
+                className="relative aspect-square cursor-pointer group overflow-hidden"
               >
                 {/* Imagem ou placeholder */}
                 {content.media_path ? (

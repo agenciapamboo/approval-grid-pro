@@ -125,7 +125,7 @@ const Dashboard = () => {
         // Buscar estatísticas de conteúdo
         const { data: contents } = await supabase
           .from('contents')
-          .select('status, created_at, published_at')
+          .select('id, status, created_at, published_at, is_content_plan, date')
           .eq('client_id', profile.client_id);
         
         // Buscar dados completos do cliente
@@ -135,12 +135,30 @@ const Dashboard = () => {
           .eq('id', profile.client_id)
           .single();
         
-        // Calcular stats
+        const now = new Date();
+        
+        // Calcular stats com nova lógica
         const stats = {
-          draft: contents?.filter(c => c.status === 'draft').length || 0,
-          in_review: contents?.filter(c => c.status === 'in_review').length || 0,
-          approved: contents?.filter(c => c.status === 'approved').length || 0,
-          published: contents?.filter(c => c.status === 'approved' && c.published_at).length || 0,
+          // Pendentes: rascunhos + em revisão
+          pending: contents?.filter(c => 
+            c.status === 'draft' || c.status === 'in_review'
+          ).length || 0,
+          
+          // Produzindo: planos de conteúdo + ajustes solicitados
+          producing: contents?.filter(c => 
+            c.is_content_plan === true || c.status === 'changes_requested'
+          ).length || 0,
+          
+          // Agendados: aprovados que não chegaram na data
+          scheduled: contents?.filter(c => 
+            c.status === 'approved' && 
+            (!c.date || new Date(c.date) > now)
+          ).length || 0,
+          
+          // Publicados: aprovados que chegaram na data (usando published_at)
+          published: contents?.filter(c => 
+            c.status === 'approved' && c.published_at
+          ).length || 0,
         };
         
         // Calcular criativos do mês
@@ -366,37 +384,51 @@ const Dashboard = () => {
             </Card>
 
             {/* Cards de Estatísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Card Pendentes (Rascunhos + Em Revisão) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card Pendentes */}
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                onClick={() => navigate('/conteudo?status=pendentes')}
+                onClick={() => navigate('/conteudo?filter=pending')}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">
-                    {(dashboardData.stats?.draft || 0) + (dashboardData.stats?.in_review || 0)}
-                  </p>
+                  <p className="text-3xl font-bold">{dashboardData.stats?.pending || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Rascunhos e em revisão
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Card Aprovados */}
+              {/* Card Produzindo */}
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                onClick={() => navigate('/conteudo?status=approved')}
+                onClick={() => navigate('/conteudo?filter=producing')}
               >
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Aprovados</CardTitle>
+                  <CardTitle className="text-sm font-medium">Produzindo</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">{dashboardData.stats?.approved || 0}</p>
+                  <p className="text-3xl font-bold">{dashboardData.stats?.producing || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Prontos para publicar
+                    Planos e ajustes solicitados
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Card Agendados */}
+              <Card 
+                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
+                onClick={() => navigate('/conteudo?filter=scheduled')}
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Agendados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{dashboardData.stats?.scheduled || 0}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aprovados aguardando data
                   </p>
                 </CardContent>
               </Card>
@@ -404,7 +436,7 @@ const Dashboard = () => {
               {/* Card Publicados */}
               <Card 
                 className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]"
-                onClick={() => navigate('/conteudo?status=published')}
+                onClick={() => navigate('/conteudo?filter=published')}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">Publicados</CardTitle>
