@@ -92,15 +92,15 @@ export default function ContentGrid() {
     return "outline";
   };
 
-  const getStatusLabel = (clientStatus: string) => {
-    const labels: Record<string, string> = {
-      'pending': 'Pendente',
-      'producing': 'Produzindo',
-      'scheduled': 'Agendados',
-      'published': 'Publicados'
-    };
-    return labels[clientStatus] || clientStatus;
+const getStatusLabel = (clientStatus: string) => {
+  const labels: Record<string, string> = {
+    'pending': 'Pendente',
+    'producing': 'Produzindo',
+    'scheduled': 'Agendados',
+    'published': 'Publicado'
   };
+  return labels[clientStatus] || clientStatus;
+};
 
   const filterLabels: Record<string, string> = {
     'pending': 'Pendentes',
