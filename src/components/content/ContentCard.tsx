@@ -81,19 +81,61 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getStatusBadge = (status: string, publishedAt?: string | null) => {
-    // Se foi publicado, mostrar badge de publicado (não clicável)
-    if (publishedAt) {
-      return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--success))] text-white">Publicado</span>;
+  // Função para converter status do banco em status para client users
+  const getClientStatus = (content: ContentCardProps['content']): 'pending' | 'producing' | 'scheduled' | 'published' | null => {
+    const now = new Date();
+    
+    // PUBLICADOS: Já publicados OU aprovados com data passada
+    if (content.published_at) return 'published';
+    if (content.status === 'approved' && content.date && new Date(content.date) <= now) {
+      return 'published';
     }
     
-    const map: Record<string, { label: string; classes: string }> = {
-      draft: { label: "Rascunho", classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" },
-      in_review: { label: "Em Revisão", classes: "bg-[hsl(var(--accent))] text-white" },
-      changes_requested: { label: "Ajustes Solicitados", classes: "bg-[hsl(var(--warning))] text-white" },
-      approved: { label: "Aprovado", classes: "bg-[hsl(var(--success))] text-white" },
+    // AGENDADOS: Aprovados com data futura
+    if (content.status === 'approved' && (!content.date || new Date(content.date) > now)) {
+      return 'scheduled';
+    }
+    
+    // PRODUZINDO: Planos de conteúdo OU ajustes solicitados
+    if (content.is_content_plan === true || content.status === 'changes_requested') {
+      return 'producing';
+    }
+    
+    // PENDENTE: Rascunho OU em revisão
+    if (content.status === 'draft' || content.status === 'in_review') {
+      return 'pending';
+    }
+    
+    // Outros status não são exibidos
+    return null;
+  };
+
+  const getStatusBadge = (content: ContentCardProps['content']) => {
+    const clientStatus = getClientStatus(content);
+    
+    // Não exibir badge se status não for um dos 4 principais
+    if (!clientStatus) return null;
+    
+    const statusConfig: Record<string, { label: string; classes: string }> = {
+      pending: { 
+        label: "Pendente", 
+        classes: "bg-[hsl(var(--warning))] text-white" 
+      },
+      producing: { 
+        label: "Produzindo", 
+        classes: "bg-[hsl(var(--accent))] text-white" 
+      },
+      scheduled: { 
+        label: "Agendados", 
+        classes: "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]" 
+      },
+      published: { 
+        label: "Publicados", 
+        classes: "bg-[hsl(var(--success))] text-white" 
+      }
     };
-    const cfg = map[status] || { label: status, classes: "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]" };
+    
+    const cfg = statusConfig[clientStatus];
     
     // Apenas clicável na visão da agência
     if (isAgencyView) {
@@ -820,7 +862,7 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]">{getTypeLabel(content.type)}</span>
-                {getStatusBadge(content.status, content.published_at)}
+                {getStatusBadge(content)}
                 {content.channels && content.channels.length > 0 && (
                   <div className="flex items-center gap-1">
                     {content.channels.map((channel) => {
