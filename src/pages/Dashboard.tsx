@@ -130,12 +130,18 @@ const Dashboard = () => {
           .select('id, status, created_at, published_at, is_content_plan, date')
           .eq('client_id', profile.client_id);
         
-        // Buscar dados completos do cliente
+        // Buscar dados completos do cliente e agência
         const { data: fullClient } = await supabase
           .from('clients')
           .select('*')
           .eq('id', profile.client_id)
           .single();
+        
+        const { data: fullAgency } = await supabase
+          .from('agencies')
+          .select('*')
+          .eq('id', fullClient?.agency_id)
+          .maybeSingle();
         
         const now = new Date();
         
@@ -165,8 +171,16 @@ const Dashboard = () => {
         
         // Calcular criativos do mês
         const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+        
         const creativesThisMonth = contents?.filter(
           c => new Date(c.created_at) >= startOfMonth
+        ).length || 0;
+        
+        // Criativos enviados para aprovação no mês (in_review ou aprovados que foram criados este mês)
+        const createdForApproval = contents?.filter(
+          c => new Date(c.created_at) >= startOfMonth && 
+               (c.status === 'in_review' || c.status === 'approved' || c.status === 'changes_requested')
         ).length || 0;
         
         const monthlyLimit = fullClient?.monthly_creatives || 0;
@@ -174,16 +188,50 @@ const Dashboard = () => {
           ? (creativesThisMonth / monthlyLimit) * 100 
           : 0;
         
+        // Buscar histórico de meses anteriores baseado no plano da agência
+        let monthlyHistory = [];
+        if (fullAgency?.plan) {
+          const { data: planEntitlements } = await supabase
+            .from('plan_entitlements')
+            .select('history_days')
+            .eq('plan', fullAgency.plan)
+            .maybeSingle();
+          
+          if (planEntitlements && planEntitlements.history_days > 0) {
+            const monthsToShow = Math.floor(planEntitlements.history_days / 30);
+            
+            for (let i = 1; i <= Math.min(monthsToShow, 12); i++) {
+              const monthStart = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
+              const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() - i + 1, 0, 23, 59, 59);
+              
+              const monthContents = contents?.filter(
+                c => {
+                  const createdDate = new Date(c.created_at);
+                  return createdDate >= monthStart && createdDate <= monthEnd &&
+                         (c.status === 'in_review' || c.status === 'approved' || c.status === 'changes_requested');
+                }
+              ).length || 0;
+              
+              monthlyHistory.push({
+                month: format(monthStart, "MMMM/yyyy", { locale: ptBR }),
+                count: monthContents
+              });
+            }
+          }
+        }
+        
         setDashboardData({
           client: {
             ...client,
-            agency: agency
+            agency: fullAgency || agency
           },
           stats,
           monthlyCreatives: {
             used: creativesThisMonth,
             limit: monthlyLimit,
-            percentage
+            percentage,
+            created: createdForApproval,
+            history: monthlyHistory
           }
         });
         
@@ -370,19 +418,56 @@ const Dashboard = () => {
                 <CardTitle>Informações do Plano</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">
-                      Criativos de {format(new Date(), "MMMM", { locale: ptBR })}
-                    </span>
-                    <span className="text-sm font-medium">
-                      {dashboardData.monthlyCreatives?.used || 0} / {dashboardData.monthlyCreatives?.limit || 0}
-                    </span>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Contratados:</span>
+                    <span className="text-sm font-semibold">{dashboardData.monthlyCreatives?.limit || 0}</span>
                   </div>
-                  <Progress value={dashboardData.monthlyCreatives?.percentage || 0} />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(dashboardData.monthlyCreatives?.percentage || 0).toFixed(1)}% da cota utilizada
-                  </p>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Criados em {format(new Date(), "MMMM", { locale: ptBR })}:</span>
+                    <span className="text-sm font-semibold">{dashboardData.monthlyCreatives?.created || 0}</span>
+                  </div>
+                  
+                  {(dashboardData.monthlyCreatives?.created || 0) > (dashboardData.monthlyCreatives?.limit || 0) && (
+                    <div className="bg-warning/10 border border-warning/20 rounded-md p-3 mt-2">
+                      <p className="text-sm font-medium text-warning mb-1">
+                        Feitos além do plano contratado: {(dashboardData.monthlyCreatives?.created || 0) - (dashboardData.monthlyCreatives?.limit || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Fale com sua agência para ajustar seu plano, descontar do próximo ciclo ou acertar o excedente.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="pt-2">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">
+                        Criativos de {format(new Date(), "MMMM", { locale: ptBR })}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {dashboardData.monthlyCreatives?.used || 0} / {dashboardData.monthlyCreatives?.limit || 0}
+                      </span>
+                    </div>
+                    <Progress value={dashboardData.monthlyCreatives?.percentage || 0} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(dashboardData.monthlyCreatives?.percentage || 0).toFixed(1)}% da cota utilizada
+                    </p>
+                  </div>
+                  
+                  {dashboardData.monthlyCreatives?.history && dashboardData.monthlyCreatives.history.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm font-medium mb-3">Histórico de Meses Anteriores</p>
+                      <div className="space-y-2">
+                        {dashboardData.monthlyCreatives.history.map((item: any, index: number) => (
+                          <div key={index} className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground capitalize">{item.month}</span>
+                            <span className="text-xs font-medium">{item.count} criados</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
