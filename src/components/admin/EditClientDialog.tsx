@@ -48,6 +48,8 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     whatsapp: "",
     address: "",
     monthly_creatives: 0,
+    show_overage_message: true,
+    overage_message_template: "",
     note: "",
     password: "",
   });
@@ -71,6 +73,8 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         whatsapp: client.whatsapp || "",
         address: client.address || "",
         monthly_creatives: (client as any).monthly_creatives || 0,
+        show_overage_message: (client as any).show_overage_message ?? true,
+        overage_message_template: (client as any).overage_message_template || 'Fale com sua {contact_type} para regularizar sua situação.',
         note: "",
         password: "",
       });
@@ -104,6 +108,8 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
           whatsapp: formData.whatsapp || null,
           address: formData.address || null,
           monthly_creatives: formData.monthly_creatives,
+          show_overage_message: formData.show_overage_message,
+          overage_message_template: formData.overage_message_template,
           notify_email: notificationPreferences.notify_email,
           notify_whatsapp: notificationPreferences.notify_whatsapp,
           notify_webhook: notificationPreferences.notify_webhook,
@@ -383,6 +389,44 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
                 Os webhooks são sempre enviados para integração com sistemas externos, independente das outras configurações. As preferências de email e WhatsApp são incluídas no payload.
               </p>
             </div>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div className="space-y-4">
+            <h3 className="font-semibold">Configurações de Excedente</h3>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show_overage_message" className="flex flex-col gap-1">
+                <span>Exibir mensagem de excedente</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Mostrar alerta quando o cliente exceder o limite de criativos
+                </span>
+              </Label>
+              <Switch
+                id="show_overage_message"
+                checked={formData.show_overage_message}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, show_overage_message: checked })
+                }
+              />
+            </div>
+
+            {formData.show_overage_message && (
+              <div className="space-y-2">
+                <Label htmlFor="overage_message_template">Mensagem personalizada</Label>
+                <Textarea
+                  id="overage_message_template"
+                  value={formData.overage_message_template}
+                  onChange={(e) => setFormData({ ...formData, overage_message_template: e.target.value })}
+                  placeholder="Fale com sua {contact_type} para regularizar sua situação."
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use <code className="bg-muted px-1 rounded">{"{contact_type}"}</code> para inserir automaticamente "agência" ou "creator"
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

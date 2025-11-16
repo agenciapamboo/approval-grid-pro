@@ -288,8 +288,10 @@ export type Database = {
           notify_email: boolean | null
           notify_webhook: boolean | null
           notify_whatsapp: boolean | null
+          overage_message_template: string | null
           plan_renewal_date: string | null
           responsible_user_id: string | null
+          show_overage_message: boolean | null
           slug: string
           timezone: string | null
           updated_at: string
@@ -313,8 +315,10 @@ export type Database = {
           notify_email?: boolean | null
           notify_webhook?: boolean | null
           notify_whatsapp?: boolean | null
+          overage_message_template?: string | null
           plan_renewal_date?: string | null
           responsible_user_id?: string | null
+          show_overage_message?: boolean | null
           slug: string
           timezone?: string | null
           updated_at?: string
@@ -338,8 +342,10 @@ export type Database = {
           notify_email?: boolean | null
           notify_webhook?: boolean | null
           notify_whatsapp?: boolean | null
+          overage_message_template?: string | null
           plan_renewal_date?: string | null
           responsible_user_id?: string | null
+          show_overage_message?: boolean | null
           slug?: string
           timezone?: string | null
           updated_at?: string
