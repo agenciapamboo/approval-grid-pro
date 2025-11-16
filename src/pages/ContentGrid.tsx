@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { StoriesHighlights } from "@/components/content/StoriesHighlights";
 
 interface Content {
   id: string;
@@ -167,7 +168,7 @@ export default function ContentGrid() {
 
           return {
             ...content,
-            media_path: mediaResult.data?.src_url || null,
+            media_path: mediaResult.data?.thumb_url || mediaResult.data?.src_url || null,
             caption: textResult.data?.caption || null
           };
         })
@@ -277,6 +278,14 @@ export default function ContentGrid() {
             Novo Conteúdo
           </Button>
         </div>
+
+        {/* Stories Highlights - Mobile only */}
+        {isMobile && contents.length > 0 && (
+          <StoriesHighlights 
+            contents={contents}
+            onUpdate={() => loadContents(userClient!.id)}
+          />
+        )}
 
         {loadingContents ? (
           <div className="flex items-center justify-center py-12">
