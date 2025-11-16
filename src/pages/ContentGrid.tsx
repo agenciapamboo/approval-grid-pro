@@ -34,6 +34,7 @@ interface Content {
   channels?: string[];
   published_at?: string | null;
   media_path?: string | null;
+  thumb_path?: string | null;
   caption?: string | null;
   legend?: string | null;
   is_content_plan?: boolean;
@@ -204,11 +205,12 @@ export default function ContentGrid() {
               .maybeSingle()
           ]);
 
-          return {
-            ...content,
-            media_path: mediaResult.data?.thumb_url || mediaResult.data?.src_url || null,
-            caption: textResult.data?.caption || null
-          };
+      return {
+        ...content,
+        media_path: mediaResult.data?.src_url || mediaResult.data?.thumb_url || null,
+        thumb_path: mediaResult.data?.thumb_url || mediaResult.data?.src_url || null,
+        caption: textResult.data?.caption || null
+      };
         })
       );
 
@@ -363,9 +365,9 @@ export default function ContentGrid() {
                 className="relative aspect-square cursor-pointer group overflow-hidden"
               >
                 {/* Imagem ou placeholder */}
-                {content.media_path ? (
+                {content.thumb_path ? (
                   <img 
-                    src={content.media_path} 
+                    src={content.thumb_path} 
                     alt={content.title}
                     className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
                     loading="lazy"
