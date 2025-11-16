@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,6 +43,8 @@ interface Content {
 
 export default function ContentGrid() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const filterParam = searchParams.get('filter');
   const { toast } = useToast();
   const { profile: userProfile, role, agency: userAgency, client: userClient, loading: userDataLoading } = useUserData();
   const isMobile = useIsMobile();
@@ -71,6 +73,42 @@ export default function ContentGrid() {
       'archived': 'Arquivado'
     };
     return labels[status] || status;
+  };
+
+  const filterLabels: Record<string, string> = {
+    'pending': 'Pendentes',
+    'producing': 'Produzindo',
+    'scheduled': 'Agendados',
+    'published': 'Publicados'
+  };
+
+  const filterContentsByStatus = (contents: Content[]) => {
+    if (!filterParam) return contents;
+    
+    const now = new Date();
+    
+    switch(filterParam) {
+      case 'pending':
+        return contents.filter(c => c.status === 'draft' || c.status === 'in_review');
+      
+      case 'producing':
+        return contents.filter(c => c.is_content_plan === true || c.status === 'changes_requested');
+      
+      case 'scheduled':
+        return contents.filter(c => 
+          c.status === 'approved' && 
+          (!c.date || new Date(c.date) > now)
+        );
+      
+      case 'published':
+        return contents.filter(c => {
+          if (c.published_at) return true;
+          return c.status === 'approved' && c.date && new Date(c.date) <= now;
+        });
+      
+      default:
+        return contents;
+    }
   };
 
   // Auto-scroll ao conteúdo selecionado no feed
@@ -263,6 +301,21 @@ export default function ContentGrid() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+        {filterParam && (
+          <div className="mb-4">
+            <Badge variant="outline" className="text-sm gap-2">
+              Filtro: {filterLabels[filterParam]}
+              <button 
+                onClick={() => navigate('/conteudo')}
+                className="hover:text-destructive transition-colors"
+                aria-label="Remover filtro"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold break-words">Meu Conteúdo</h1>
@@ -282,13 +335,13 @@ export default function ContentGrid() {
           )}
         </div>
 
-        {/* Stories Highlights - Mobile only */}
-        {isMobile && contents.length > 0 && (
-          <StoriesHighlights 
-            contents={contents}
-            onUpdate={() => loadContents(userClient!.id)}
-          />
-        )}
+          {/* Stories Highlights - Mobile only e SEM filtro */}
+          {isMobile && !filterParam && contents.length > 0 && (
+            <StoriesHighlights 
+              contents={contents}
+              onUpdate={() => loadContents(userClient!.id)}
+            />
+          )}
 
         {loadingContents ? (
           <div className="flex items-center justify-center py-12">
@@ -303,11 +356,11 @@ export default function ContentGrid() {
         ) : isMobile ? (
           // Instagram-style grid for mobile - Apenas imagem + badge
           <div className="grid grid-cols-3 gap-0.5 pb-20">
-            {contents.map((content) => (
+            {filterContentsByStatus(contents).map((content) => (
               <div
                 key={content.id}
                 onClick={() => setSelectedContent(content)}
-                className="relative aspect-square cursor-pointer group overflow-hidden"
+                className="relative aspect-square cursor-pointer group overflow-hidden border-0"
               >
                 {/* Imagem ou placeholder */}
                 {content.media_path ? (
@@ -336,7 +389,7 @@ export default function ContentGrid() {
         ) : (
           // Traditional grid for desktop
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {contents.map((content) => (
+            {filterContentsByStatus(contents).map((content) => (
               <ContentCard
                 key={content.id}
                 content={content}
