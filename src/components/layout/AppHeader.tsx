@@ -22,6 +22,9 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  // Apenas super_admin e agency_admin podem ver "Minha Assinatura"
+  const shouldShowSubscription = userRole === 'super_admin' || userRole === 'agency_admin';
+
   return (
     <>
       <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
@@ -62,21 +65,23 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
             <ExpandableTabs
               tabs={[
                 { title: "Minha Conta", icon: User },
-                { title: "Minha Assinatura", icon: CreditCard },
+                ...(shouldShowSubscription ? [{ title: "Minha Assinatura", icon: CreditCard }] : []),
                 { title: (resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"), icon: resolvedTheme === "dark" ? Sun : Moon },
                 { title: "Notificações", icon: Bell },
                 { title: "Sair", icon: LogOut },
               ]}
               onChange={(index) => {
+                const baseIndex = shouldShowSubscription ? 0 : -1;
+                
                 if (index === 0) {
                   navigate("/minha-conta");
-                } else if (index === 1) {
+                } else if (shouldShowSubscription && index === 1) {
                   navigate("/minha-assinatura");
-                } else if (index === 2) {
+                } else if (index === (shouldShowSubscription ? 2 : 1)) {
                   setTheme(resolvedTheme === "dark" ? "light" : "dark");
-                } else if (index === 3) {
+                } else if (index === (shouldShowSubscription ? 3 : 2)) {
                   setNotificationsOpen(true);
-                } else if (index === 4 && onSignOut) {
+                } else if (index === (shouldShowSubscription ? 4 : 3) && onSignOut) {
                   onSignOut();
                 }
               }}
@@ -97,10 +102,12 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
                   <User className="h-4 w-4 mr-2" />
                   Minha Conta
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/minha-assinatura")}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Minha Assinatura
-                </DropdownMenuItem>
+                {shouldShowSubscription && (
+                  <DropdownMenuItem onClick={() => navigate("/minha-assinatura")}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Minha Assinatura
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
                   {resolvedTheme === "dark" ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
                   {resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"}
