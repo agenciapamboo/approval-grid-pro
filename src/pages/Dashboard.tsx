@@ -145,7 +145,7 @@ const Dashboard = () => {
         
         const now = new Date();
         
-        // Calcular stats com nova lógica
+        // Calcular stats com lógica atualizada
         const stats = {
           // Pendentes: rascunhos + em revisão
           pending: contents?.filter(c => 
@@ -157,15 +157,15 @@ const Dashboard = () => {
             c.is_content_plan === true || c.status === 'changes_requested'
           ).length || 0,
           
-          // Agendados: aprovados que não chegaram na data
+          // Agendados: aprovados que não chegaram na data de publicação
           scheduled: contents?.filter(c => 
             c.status === 'approved' && 
-            (!c.date || new Date(c.date) > now)
+            (!c.published_at && (!c.date || new Date(c.date) > now))
           ).length || 0,
           
-          // Publicados: aprovados que chegaram na data (usando published_at)
+          // Publicados: aprovados e agendados que chegaram na data programada
           published: contents?.filter(c => 
-            c.status === 'approved' && c.published_at
+            c.status === 'approved' && (c.published_at || (c.date && new Date(c.date) <= now))
           ).length || 0,
         };
         
