@@ -22,6 +22,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { role, profile, loading } = useUserData();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -54,8 +55,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   } else if (role === "client_user") {
     SidebarComponent = ClientUserSidebar;
   }
-
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   if (isMobile && SidebarComponent) {
     return (
