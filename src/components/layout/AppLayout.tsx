@@ -9,8 +9,8 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, FileText, Plus, Users } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Menu, FileText, Plus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 interface AppLayoutProps {
   children: ReactNode;
@@ -62,9 +62,14 @@ export function AppLayout({
         <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={false} />
         
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="left" className="p-0 w-60 bg-sidebar">
+          <SheetContent side="left" className="p-0 w-60 bg-sidebar border-r-0">
+            <SheetClose className="absolute right-4 top-4 rounded-sm opacity-90 hover:opacity-100 z-50 text-sidebar-foreground">
+              <X className="h-5 w-5" />
+            </SheetClose>
             <SidebarProvider defaultOpen={true}>
-              <SidebarComponent />
+              <div className="h-full">
+                <SidebarComponent />
+              </div>
             </SidebarProvider>
           </SheetContent>
         </Sheet>
