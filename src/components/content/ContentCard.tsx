@@ -6,6 +6,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
 import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save, XCircle, FileText, ImageIcon, Images, Video, Smartphone, CheckCircle2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -775,9 +776,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                   </DropdownMenu>
                 )}
                 <div>
-                  <div className="text-xs text-muted-foreground mb-1">
-                    Previsão de postagem
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="text-xs text-muted-foreground mb-1 line-clamp-1 break-words">
+                          {content.title}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs">
+                        <p>{content.title}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
                     <PopoverTrigger asChild>
                       <span className="font-medium text-sm cursor-pointer hover:text-primary transition-colors">
