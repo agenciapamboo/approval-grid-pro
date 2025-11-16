@@ -17,70 +17,102 @@ import { getErrorMessage, getCheckoutErrorMessage } from "@/lib/error-messages";
 
 // Step 1: Personal data
 const step1Schema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, { message: "O nome deve ter pelo menos 2 caracteres" })
-    .max(100, { message: "O nome deve ter no máximo 100 caracteres" }),
-  email: z
-    .string()
-    .trim()
-    .email({ message: "Email inválido" })
-    .max(255, { message: "Email muito longo" }),
-  password: z
-    .string()
-    .min(8, { message: "A senha deve ter pelo menos 8 caracteres" })
-    .max(72, { message: "A senha deve ter no máximo 72 caracteres" })
-    .regex(/[A-Z]/, { message: "A senha deve conter pelo menos uma letra maiúscula" })
-    .regex(/[a-z]/, { message: "A senha deve conter pelo menos uma letra minúscula" })
-    .regex(/[0-9]/, { message: "A senha deve conter pelo menos um número" })
-    .regex(/[^A-Za-z0-9]/, { message: "A senha deve conter pelo menos um caractere especial" }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+  name: z.string().trim().min(2, {
+    message: "O nome deve ter pelo menos 2 caracteres"
+  }).max(100, {
+    message: "O nome deve ter no máximo 100 caracteres"
+  }),
+  email: z.string().trim().email({
+    message: "Email inválido"
+  }).max(255, {
+    message: "Email muito longo"
+  }),
+  password: z.string().min(8, {
+    message: "A senha deve ter pelo menos 8 caracteres"
+  }).max(72, {
+    message: "A senha deve ter no máximo 72 caracteres"
+  }).regex(/[A-Z]/, {
+    message: "A senha deve conter pelo menos uma letra maiúscula"
+  }).regex(/[a-z]/, {
+    message: "A senha deve conter pelo menos uma letra minúscula"
+  }).regex(/[0-9]/, {
+    message: "A senha deve conter pelo menos um número"
+  }).regex(/[^A-Za-z0-9]/, {
+    message: "A senha deve conter pelo menos um caractere especial"
+  }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
-  path: ["confirmPassword"],
+  path: ["confirmPassword"]
 });
 
 // Step 2: Business data - dynamic validation based on account type
 const createStep2Schema = (accountType: 'agency' | 'creator') => z.object({
-  accountType: z.enum(['agency', 'creator'], { message: "Selecione o tipo de conta" }),
-  agencyName: z.string().trim().min(2, { message: "Nome da agência/creator é obrigatório" }),
-  responsibleName: z.string().trim().min(2, { message: "Nome do responsável é obrigatório" }),
-  whatsapp: z.string().trim().min(10, { message: "WhatsApp inválido" }),
-  document: accountType === 'creator' 
-    ? z.string().trim().length(11, { message: "Creators devem usar apenas CPF (11 dígitos)" })
-    : z.string().trim().min(11, { message: "CPF/CNPJ inválido" }),
-  instagramHandle: accountType === 'creator'
-    ? z.string().trim().min(1, { message: "Instagram é obrigatório para creators" })
-        .regex(/^@?[\w.]+$/, { message: "Instagram inválido (use apenas letras, números, . e _)" })
-    : z.string().optional(),
-  addressZip: z.string().trim().min(8, { message: "CEP inválido" }),
-  addressStreet: z.string().trim().min(3, { message: "Endereço é obrigatório" }),
-  addressNumber: z.string().trim().min(1, { message: "Número é obrigatório" }),
+  accountType: z.enum(['agency', 'creator'], {
+    message: "Selecione o tipo de conta"
+  }),
+  agencyName: z.string().trim().min(2, {
+    message: "Nome da agência/creator é obrigatório"
+  }),
+  responsibleName: z.string().trim().min(2, {
+    message: "Nome do responsável é obrigatório"
+  }),
+  whatsapp: z.string().trim().min(10, {
+    message: "WhatsApp inválido"
+  }),
+  document: accountType === 'creator' ? z.string().trim().length(11, {
+    message: "Creators devem usar apenas CPF (11 dígitos)"
+  }) : z.string().trim().min(11, {
+    message: "CPF/CNPJ inválido"
+  }),
+  instagramHandle: accountType === 'creator' ? z.string().trim().min(1, {
+    message: "Instagram é obrigatório para creators"
+  }).regex(/^@?[\w.]+$/, {
+    message: "Instagram inválido (use apenas letras, números, . e _)"
+  }) : z.string().optional(),
+  addressZip: z.string().trim().min(8, {
+    message: "CEP inválido"
+  }),
+  addressStreet: z.string().trim().min(3, {
+    message: "Endereço é obrigatório"
+  }),
+  addressNumber: z.string().trim().min(1, {
+    message: "Número é obrigatório"
+  }),
   addressComplement: z.string().optional(),
-  addressNeighborhood: z.string().trim().min(2, { message: "Bairro é obrigatório" }),
-  addressCity: z.string().trim().min(2, { message: "Cidade é obrigatória" }),
-  addressState: z.string().trim().length(2, { message: "Estado inválido" }),
+  addressNeighborhood: z.string().trim().min(2, {
+    message: "Bairro é obrigatório"
+  }),
+  addressCity: z.string().trim().min(2, {
+    message: "Cidade é obrigatória"
+  }),
+  addressState: z.string().trim().length(2, {
+    message: "Estado inválido"
+  })
 });
-
 const loginSchema = z.object({
-  email: z.string().trim().email({ message: "Email inválido" }),
-  password: z.string().min(1, { message: "Senha é obrigatória" }),
+  email: z.string().trim().email({
+    message: "Email inválido"
+  }),
+  password: z.string().min(1, {
+    message: "Senha é obrigatória"
+  })
 });
-
 const Auth = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Step 1: Personal data
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
-  
+
   // Step 2: Business data
   const [accountType, setAccountType] = useState<'agency' | 'creator'>('agency');
   const [agencyName, setAgencyName] = useState("");
@@ -95,40 +127,41 @@ const Auth = () => {
   const [addressCity, setAddressCity] = useState("");
   const [addressState, setAddressState] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
-  
+
   // Step 3: Plan selection
   const [selectedPlan, setSelectedPlan] = useState<StripePlan>('creator');
   const [billingCycle, setBillingCycle] = useState<StripePriceInterval>('monthly');
-  
   const [creatingUsers, setCreatingUsers] = useState(false);
-
   const handleCreateUsers = async () => {
     setCreatingUsers(true);
     try {
       const result = await createInitialUsers();
       toast({
         title: "Usuários criados!",
-        description: "Agora você pode fazer login com as credenciais fornecidas.",
+        description: "Agora você pode fazer login com as credenciais fornecidas."
       });
       console.log('Users created:', result);
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erro ao criar usuários",
-        description: error.message,
+        description: error.message
       });
     } finally {
       setCreatingUsers(false);
     }
   };
-
   const handleNextStep = async () => {
     if (!isSignUp) return;
-    
     setLoading(true);
     try {
       if (currentStep === 1) {
-        const validation = step1Schema.safeParse({ name, email, password, confirmPassword });
+        const validation = step1Schema.safeParse({
+          name,
+          email,
+          password,
+          confirmPassword
+        });
         if (!validation.success) {
           throw new Error(validation.error.errors[0].message);
         }
@@ -148,7 +181,7 @@ const Auth = () => {
           addressComplement,
           addressNeighborhood,
           addressCity,
-          addressState,
+          addressState
         });
         if (!validation.success) {
           throw new Error(validation.error.errors[0].message);
@@ -159,13 +192,12 @@ const Auth = () => {
       toast({
         variant: "destructive",
         title: "Erro de validação",
-        description: error.message,
+        description: error.message
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleSignUp = async () => {
     setLoading(true);
     try {
@@ -176,34 +208,39 @@ const Auth = () => {
       const finalAccountType = selectedPlan !== 'creator' ? 'agency' : accountType;
 
       // Create user account with metadata for webhook
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const {
+        data: authData,
+        error: authError
+      } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { 
+          data: {
             name,
             accountType: finalAccountType,
             agencyName,
             selectedPlan,
             billingCycle
           },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
       // Handle "already registered" - try login fallback
       if (authError?.message.includes("already registered") || authError?.message.includes("User already registered")) {
         toast({
           title: "Email já cadastrado",
-          description: "Este email já possui uma conta. Redirecionando para login...",
+          description: "Este email já possui uma conta. Redirecionando para login..."
         });
 
         // Try to login with credentials
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        const {
+          data: loginData,
+          error: loginError
+        } = await supabase.auth.signInWithPassword({
           email,
-          password,
+          password
         });
-
         if (loginError) {
           const errorMsg = getErrorMessage(loginError);
           throw new Error(errorMsg);
@@ -213,13 +250,10 @@ const Auth = () => {
         if (loginData.user && selectedPlan !== 'creator') {
           // Aguardar 500ms para garantir propagação da sessão
           await new Promise(resolve => setTimeout(resolve, 500));
-
           let paymentWindowRef: Window | null = null;
-          
           try {
             // Abrir janela em branco sem noopener/noreferrer para manter controle
             paymentWindowRef = window.open('about:blank', '_blank');
-            
             if (paymentWindowRef) {
               // Escrever HTML de loading direto na janela
               paymentWindowRef.document.write(`
@@ -247,41 +281,33 @@ const Auth = () => {
             }
 
             // Gerar idempotency-key para evitar duplicação
-            const idempotencyKey = `${crypto?.randomUUID?.() || `ck-${Date.now()}`}-${Math.random().toString(36).slice(2,8)}`;
+            const idempotencyKey = `${crypto?.randomUUID?.() || `ck-${Date.now()}`}-${Math.random().toString(36).slice(2, 8)}`;
             console.log('[AUTH] Checkout idempotency-key:', idempotencyKey);
 
             // Timeout helper: 15 segundos
             const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
-              return Promise.race([
-                promise,
-                new Promise<T>((_, reject) => 
-                  setTimeout(() => reject(new Error('timeout')), ms)
-                )
-              ]);
+              return Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
             };
 
             // Invocar create-checkout com timeout
-            const { data: checkoutData, error: checkoutError } = await withTimeout(
-              supabase.functions.invoke('create-checkout', {
-                body: {
-                  plan: selectedPlan,
-                  billingCycle: billingCycle,
-                },
-                headers: {
-                  'idempotency-key': idempotencyKey,
-                }
-              }),
-              15000
-            );
-
+            const {
+              data: checkoutData,
+              error: checkoutError
+            } = await withTimeout(supabase.functions.invoke('create-checkout', {
+              body: {
+                plan: selectedPlan,
+                billingCycle: billingCycle
+              },
+              headers: {
+                'idempotency-key': idempotencyKey
+              }
+            }), 15000);
             if (checkoutError) {
               throw checkoutError;
             }
-
             if (!checkoutData?.url) {
               throw new Error("URL de checkout não recebida");
             }
-
             console.log('[AUTH] Checkout URL recebida, redirecionando...');
 
             // Redirecionar a janela de pagamento ou fallback para mesma aba
@@ -291,42 +317,33 @@ const Auth = () => {
               // Fallback se popup foi bloqueado
               window.location.href = checkoutData.url;
             }
-
             toast({
               title: "Redirecionando para pagamento",
-              description: "Complete o pagamento na janela aberta.",
+              description: "Complete o pagamento na janela aberta."
             });
-
           } catch (checkoutErr: any) {
             // Fechar janela de pagamento em caso de erro
             if (paymentWindowRef && !paymentWindowRef.closed) {
               paymentWindowRef.close();
             }
-
-            const errorMsg = checkoutErr?.message === 'timeout'
-              ? "A requisição demorou muito. Tente novamente."
-              : getCheckoutErrorMessage(checkoutErr);
-            
+            const errorMsg = checkoutErr?.message === 'timeout' ? "A requisição demorou muito. Tente novamente." : getCheckoutErrorMessage(checkoutErr);
             throw new Error(errorMsg);
           }
-          
           return;
         }
 
         // Free plan - just redirect to login
         toast({
           title: "Conta existente",
-          description: "Use a opção Entrar.",
+          description: "Use a opção Entrar."
         });
         setIsSignUp(false);
         return;
       }
-
       if (authError) {
         const errorMsg = getErrorMessage(authError);
         throw new Error(errorMsg);
       }
-
       if (!authData.user) {
         throw new Error("Erro ao criar conta");
       }
@@ -334,33 +351,31 @@ const Auth = () => {
       // If free plan, finish registration
       if (selectedPlan === 'creator') {
         // Save minimal profile data for free plan
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            account_type: finalAccountType,
-            agency_name: agencyName,
-            responsible_name: responsibleName,
-            whatsapp,
-            document: normalizedDocument,
-            instagram_handle: instagramHandle ? instagramHandle.replace('@', '') : null,
-            address_zip: addressZip,
-            address_street: addressStreet,
-            address_number: addressNumber,
-            address_complement: addressComplement,
-            address_neighborhood: addressNeighborhood,
-            address_city: addressCity,
-            address_state: addressState,
-            selected_plan: selectedPlan,
-            plan: selectedPlan,
-            billing_cycle: billingCycle,
-            is_active: true,
-          })
-          .eq('id', authData.user.id);
-
+        const {
+          error: profileError
+        } = await supabase.from('profiles').update({
+          account_type: finalAccountType,
+          agency_name: agencyName,
+          responsible_name: responsibleName,
+          whatsapp,
+          document: normalizedDocument,
+          instagram_handle: instagramHandle ? instagramHandle.replace('@', '') : null,
+          address_zip: addressZip,
+          address_street: addressStreet,
+          address_number: addressNumber,
+          address_complement: addressComplement,
+          address_neighborhood: addressNeighborhood,
+          address_city: addressCity,
+          address_state: addressState,
+          selected_plan: selectedPlan,
+          plan: selectedPlan,
+          billing_cycle: billingCycle,
+          is_active: true
+        }).eq('id', authData.user.id);
         if (profileError) throw profileError;
         toast({
           title: "Conta criada!",
-          description: "Você já pode fazer login.",
+          description: "Você já pode fazer login."
         });
         setIsSignUp(false);
         setCurrentStep(1);
@@ -368,32 +383,30 @@ const Auth = () => {
         // Para planos pagos: garantir sessão válida antes de checkout
         toast({
           title: "Preparando pagamento...",
-          description: "Aguarde enquanto preparamos tudo para você.",
+          description: "Aguarde enquanto preparamos tudo para você."
         });
 
         // Fazer login explícito para garantir sessão válida
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        const {
+          data: loginData,
+          error: loginError
+        } = await supabase.auth.signInWithPassword({
           email,
-          password,
+          password
         });
-
         if (loginError) {
           throw new Error("Não foi possível autenticar. Tente fazer login manualmente.");
         }
-
         if (!loginData.session?.access_token) {
           throw new Error("Sessão não foi criada. Tente fazer login novamente.");
         }
 
         // Aguardar 500ms para garantir propagação da sessão
         await new Promise(resolve => setTimeout(resolve, 500));
-
         let paymentWindowRef: Window | null = null;
-        
         try {
           // Abrir janela em branco sem noopener/noreferrer para manter controle
           paymentWindowRef = window.open('about:blank', '_blank');
-          
           if (paymentWindowRef) {
             // Escrever HTML de loading direto na janela
             paymentWindowRef.document.write(`
@@ -421,41 +434,33 @@ const Auth = () => {
           }
 
           // Gerar idempotency-key para evitar duplicação
-          const idempotencyKey = `${crypto?.randomUUID?.() || `ck-${Date.now()}`}-${Math.random().toString(36).slice(2,8)}`;
+          const idempotencyKey = `${crypto?.randomUUID?.() || `ck-${Date.now()}`}-${Math.random().toString(36).slice(2, 8)}`;
           console.log('[AUTH] Checkout idempotency-key:', idempotencyKey);
 
           // Timeout helper: 15 segundos
           const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
-            return Promise.race([
-              promise,
-              new Promise<T>((_, reject) => 
-                setTimeout(() => reject(new Error('timeout')), ms)
-              )
-            ]);
+            return Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
           };
 
           // Invocar create-checkout com timeout
-          const { data: checkoutData, error: checkoutError } = await withTimeout(
-            supabase.functions.invoke('create-checkout', {
-              body: {
-                plan: selectedPlan,
-                billingCycle: billingCycle,
-              },
-              headers: {
-                'idempotency-key': idempotencyKey,
-              }
-            }),
-            15000
-          );
-
+          const {
+            data: checkoutData,
+            error: checkoutError
+          } = await withTimeout(supabase.functions.invoke('create-checkout', {
+            body: {
+              plan: selectedPlan,
+              billingCycle: billingCycle
+            },
+            headers: {
+              'idempotency-key': idempotencyKey
+            }
+          }), 15000);
           if (checkoutError) {
             throw checkoutError;
           }
-
           if (!checkoutData?.url) {
             throw new Error("URL de checkout não recebida");
           }
-
           console.log('[AUTH] Checkout URL recebida, redirecionando...');
 
           // Redirecionar a janela de pagamento ou fallback para mesma aba
@@ -465,69 +470,61 @@ const Auth = () => {
             // Fallback se popup foi bloqueado
             window.location.href = checkoutData.url;
           }
-
           toast({
             title: "Redirecionando para pagamento",
-            description: "Complete o pagamento na janela aberta.",
+            description: "Complete o pagamento na janela aberta."
           });
-
         } catch (checkoutErr: any) {
           // Fechar janela de pagamento em caso de erro
           if (paymentWindowRef && !paymentWindowRef.closed) {
             paymentWindowRef.close();
           }
-
-          const errorMsg = checkoutErr?.message === 'timeout'
-            ? "A requisição demorou muito. Tente novamente."
-            : getCheckoutErrorMessage(checkoutErr);
-          
+          const errorMsg = checkoutErr?.message === 'timeout' ? "A requisição demorou muito. Tente novamente." : getCheckoutErrorMessage(checkoutErr);
           throw new Error(errorMsg);
         }
       }
     } catch (error: any) {
       console.error('[AUTH] Erro no signup:', error);
       const errorMsg = getErrorMessage(error);
-      
       toast({
         variant: "destructive",
         title: "Erro ao criar conta",
-        description: errorMsg,
+        description: errorMsg
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const validation = loginSchema.safeParse({ email, password });
+      const validation = loginSchema.safeParse({
+        email,
+        password
+      });
       if (!validation.success) {
         throw new Error(validation.error.errors[0].message);
       }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const {
+        data,
+        error
+      } = await supabase.auth.signInWithPassword({
         email: validation.data.email,
-        password: validation.data.password,
+        password: validation.data.password
       });
-
       if (error) {
         const errorMsg = getErrorMessage(error);
         throw new Error(errorMsg);
       }
 
       // Get user profile to check role
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
+      const {
+        data: profileData
+      } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
       toast({
         title: "Login realizado!",
-        description: "Redirecionando...",
+        description: "Redirecionando..."
       });
 
       // Redirect based on role
@@ -539,19 +536,16 @@ const Auth = () => {
     } catch (error: any) {
       console.error('[AUTH] Erro no login:', error);
       const errorMsg = getErrorMessage(error);
-      
       toast({
         variant: "destructive",
         title: "Erro ao fazer login",
-        description: errorMsg,
+        description: errorMsg
       });
     } finally {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative">
+  return <div className="min-h-screen flex flex-col items-center justify-center relative">
       <main className="w-full max-w-md space-y-8 relative z-10 flex-grow flex flex-col justify-center px-4">
         <div className="text-center">
           <div className="flex flex-col items-center space-y-4">
@@ -573,42 +567,19 @@ const Auth = () => {
               {isSignUp ? `Criar conta - Passo ${currentStep} de 3` : "Entrar"}
             </CardTitle>
             <CardDescription>
-              {isSignUp
-                ? currentStep === 1
-                  ? "Preencha seus dados pessoais"
-                  : currentStep === 2
-                  ? "Dados da empresa/profissional"
-                  : "Escolha seu plano"
-                : "Entre com suas credenciais para acessar"}
+              {isSignUp ? currentStep === 1 ? "Preencha seus dados pessoais" : currentStep === 2 ? "Dados da empresa/profissional" : "Escolha seu plano" : "Entre com suas credenciais para acessar"}
             </CardDescription>
           </CardHeader>
 
-          {!isSignUp ? (
-            <form onSubmit={handleLogin}>
+          {!isSignUp ? <form onSubmit={handleLogin}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
+                  <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
+                  <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required disabled={loading} />
                 </div>
                 <div className="text-right">
                   <Link to="/auth/forgot-password" className="text-sm text-primary story-link">
@@ -618,94 +589,45 @@ const Auth = () => {
               </CardContent>
               <CardFooter className="flex-col gap-4">
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
+                  {loading ? <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Processando...
-                    </>
-                  ) : (
-                    "Entrar"
-                  )}
+                    </> : "Entrar"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setIsSignUp(true)}
-                  disabled={loading}
-                >
+                <Button type="button" variant="ghost" className="w-full" onClick={() => setIsSignUp(true)} disabled={loading}>
                   Não tem conta? Criar agora
                 </Button>
               </CardFooter>
-            </form>
-          ) : (
-            <div>
+            </form> : <div>
               <CardContent className="space-y-4">
                 {/* Step 1: Personal Data */}
-                {currentStep === 1 && (
-                  <>
+                {currentStep === 1 && <>
                     <div className="space-y-2">
                       <Label htmlFor="name">Nome completo</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Seu nome"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
+                      <Input id="name" type="text" placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} required disabled={loading} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">E-mail</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
+                      <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">Senha</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                        minLength={8}
-                      />
+                      <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required disabled={loading} minLength={8} />
                       <p className="text-xs text-muted-foreground">
                         Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial
                       </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                        minLength={8}
-                      />
+                      <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required disabled={loading} minLength={8} />
                     </div>
-                  </>
-                )}
+                  </>}
 
                 {/* Step 2: Business Data */}
-                {currentStep === 2 && (
-                  <>
+                {currentStep === 2 && <>
                     <div className="space-y-2">
                       <Label>Tipo de conta</Label>
-                      <RadioGroup value={accountType} onValueChange={(v) => setAccountType(v as 'agency' | 'creator')}>
+                      <RadioGroup value={accountType} onValueChange={v => setAccountType(v as 'agency' | 'creator')}>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="agency" id="agency" />
                           <Label htmlFor="agency" className="cursor-pointer">Agência</Label>
@@ -720,144 +642,63 @@ const Auth = () => {
                       <Label htmlFor="agencyName">
                         {accountType === 'agency' ? 'Nome da Agência' : 'Nome Profissional'}
                       </Label>
-                      <Input
-                        id="agencyName"
-                        value={agencyName}
-                        onChange={(e) => setAgencyName(e.target.value)}
-                        placeholder={accountType === 'agency' ? 'Sua Agência' : 'Seu Nome Profissional'}
-                        required
-                        disabled={loading}
-                      />
+                      <Input id="agencyName" value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder={accountType === 'agency' ? 'Sua Agência' : 'Seu Nome Profissional'} required disabled={loading} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="responsibleName">Nome do Responsável</Label>
-                      <Input
-                        id="responsibleName"
-                        value={responsibleName}
-                        onChange={(e) => setResponsibleName(e.target.value)}
-                        placeholder="Nome completo"
-                        required
-                        disabled={loading}
-                      />
+                      <Input id="responsibleName" value={responsibleName} onChange={e => setResponsibleName(e.target.value)} placeholder="Nome completo" required disabled={loading} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="whatsapp">WhatsApp</Label>
-                        <Input
-                          id="whatsapp"
-                          value={whatsapp}
-                          onChange={(e) => setWhatsapp(e.target.value)}
-                          placeholder="(00) 00000-0000"
-                          required
-                          disabled={loading}
-                        />
+                        <Input id="whatsapp" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 00000-0000" required disabled={loading} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="document">{accountType === 'creator' ? 'CPF' : 'CPF/CNPJ'}</Label>
-                        <Input
-                          id="document"
-                          value={document}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '');
-                            if (accountType === 'creator' && value.length > 11) return;
-                            setDocument(value);
-                          }}
-                          placeholder={accountType === 'creator' ? '00000000000' : '000.000.000-00'}
-                          required
-                          disabled={loading}
-                          maxLength={accountType === 'creator' ? 11 : 14}
-                        />
-                        {accountType === 'creator' && (
-                          <p className="text-xs text-muted-foreground">
+                        <Input id="document" value={document} onChange={e => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (accountType === 'creator' && value.length > 11) return;
+                    setDocument(value);
+                  }} placeholder={accountType === 'creator' ? '00000000000' : '000.000.000-00'} required disabled={loading} maxLength={accountType === 'creator' ? 11 : 14} />
+                        {accountType === 'creator' && <p className="text-xs text-muted-foreground">
                             Apenas CPF (pessoa física)
-                          </p>
-                        )}
+                          </p>}
                       </div>
                     </div>
                     
-                    {accountType === 'creator' && (
-                      <div className="space-y-2">
+                    {accountType === 'creator' && <div className="space-y-2">
                         <Label htmlFor="instagram">Instagram</Label>
-                        <Input
-                          id="instagram"
-                          value={instagramHandle}
-                          onChange={(e) => setInstagramHandle(e.target.value)}
-                          placeholder="@seuusuario"
-                          required
-                          disabled={loading}
-                        />
+                        <Input id="instagram" value={instagramHandle} onChange={e => setInstagramHandle(e.target.value)} placeholder="@seuusuario" required disabled={loading} />
                         <p className="text-xs text-muted-foreground">
                           Apenas contas pessoais ou de criador de conteúdo são aceitas (não empresas)
                         </p>
-                      </div>
-                    )}
+                      </div>}
                     <div className="space-y-2">
                       <Label htmlFor="addressZip">CEP</Label>
-                      <Input
-                        id="addressZip"
-                        value={addressZip}
-                        onChange={(e) => setAddressZip(e.target.value)}
-                        placeholder="00000-000"
-                        required
-                        disabled={loading}
-                      />
+                      <Input id="addressZip" value={addressZip} onChange={e => setAddressZip(e.target.value)} placeholder="00000-000" required disabled={loading} />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="col-span-2 space-y-2">
                         <Label htmlFor="addressStreet">Endereço</Label>
-                        <Input
-                          id="addressStreet"
-                          value={addressStreet}
-                          onChange={(e) => setAddressStreet(e.target.value)}
-                          placeholder="Rua/Avenida"
-                          required
-                          disabled={loading}
-                        />
+                        <Input id="addressStreet" value={addressStreet} onChange={e => setAddressStreet(e.target.value)} placeholder="Rua/Avenida" required disabled={loading} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="addressNumber">Número</Label>
-                        <Input
-                          id="addressNumber"
-                          value={addressNumber}
-                          onChange={(e) => setAddressNumber(e.target.value)}
-                          placeholder="123"
-                          required
-                          disabled={loading}
-                        />
+                        <Input id="addressNumber" value={addressNumber} onChange={e => setAddressNumber(e.target.value)} placeholder="123" required disabled={loading} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="addressComplement">Complemento (opcional)</Label>
-                      <Input
-                        id="addressComplement"
-                        value={addressComplement}
-                        onChange={(e) => setAddressComplement(e.target.value)}
-                        placeholder="Apto, Sala, etc."
-                        disabled={loading}
-                      />
+                      <Input id="addressComplement" value={addressComplement} onChange={e => setAddressComplement(e.target.value)} placeholder="Apto, Sala, etc." disabled={loading} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="addressNeighborhood">Bairro</Label>
-                        <Input
-                          id="addressNeighborhood"
-                          value={addressNeighborhood}
-                          onChange={(e) => setAddressNeighborhood(e.target.value)}
-                          placeholder="Centro"
-                          required
-                          disabled={loading}
-                        />
+                        <Input id="addressNeighborhood" value={addressNeighborhood} onChange={e => setAddressNeighborhood(e.target.value)} placeholder="Centro" required disabled={loading} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="addressCity">Cidade</Label>
-                        <Input
-                          id="addressCity"
-                          value={addressCity}
-                          onChange={(e) => setAddressCity(e.target.value)}
-                          placeholder="São Paulo"
-                          required
-                          disabled={loading}
-                        />
+                        <Input id="addressCity" value={addressCity} onChange={e => setAddressCity(e.target.value)} placeholder="São Paulo" required disabled={loading} />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -897,157 +738,89 @@ const Auth = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                  </>
-                )}
+                  </>}
 
                 {/* Step 3: Plan Selection */}
-                {currentStep === 3 && (
-                  <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                {currentStep === 3 && <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
                     <div className="flex justify-between items-center">
                       <Label className="text-lg font-semibold">Selecione seu plano</Label>
                       <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={billingCycle === 'monthly' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setBillingCycle('monthly')}
-                        >
+                        <Button type="button" variant={billingCycle === 'monthly' ? 'default' : 'outline'} size="sm" onClick={() => setBillingCycle('monthly')}>
                           Mensal
                         </Button>
-                        <Button
-                          type="button"
-                          variant={billingCycle === 'annual' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setBillingCycle('annual')}
-                        >
+                        <Button type="button" variant={billingCycle === 'annual' ? 'default' : 'outline'} size="sm" onClick={() => setBillingCycle('annual')}>
                           Anual
                         </Button>
                       </div>
                     </div>
                     
-                    <RadioGroup value={selectedPlan} onValueChange={(value) => setSelectedPlan(value as StripePlan)}>
+                    <RadioGroup value={selectedPlan} onValueChange={value => setSelectedPlan(value as StripePlan)}>
                       <div className="space-y-3">
-                        {PLAN_ORDER.map((key) => {
-                          const product = STRIPE_PRODUCTS[key];
-                          const isCreator = 'free' in product && product.free;
-                          const price = !isCreator && 'prices' in product ? product.prices[billingCycle] : null;
-                          
-                          return (
-                            <div
-                              key={key}
-                              className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                                selectedPlan === key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                              }`}
-                              onClick={() => setSelectedPlan(key as StripePlan)}
-                            >
+                        {PLAN_ORDER.map(key => {
+                    const product = STRIPE_PRODUCTS[key];
+                    const isCreator = 'free' in product && product.free;
+                    const price = !isCreator && 'prices' in product ? product.prices[billingCycle] : null;
+                    return <div key={key} className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedPlan === key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setSelectedPlan(key as StripePlan)}>
                               <RadioGroupItem value={key} id={key} />
                               <div className="flex-1">
                                 <Label htmlFor={key} className="cursor-pointer font-semibold">
                                   {product.name}
                                 </Label>
                                 <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                                {price && (
-                                  <p className="text-lg font-bold mt-2">
+                                {price && <p className="text-lg font-bold mt-2">
                                     R$ {(price.amount / 100).toFixed(2)}
                                     <span className="text-sm font-normal text-muted-foreground">
                                       /{billingCycle === 'monthly' ? 'mês' : 'ano'}
                                     </span>
-                                  </p>
-                                )}
-                                {isCreator && (
-                                  <p className="text-lg font-bold text-success mt-2">Gratuito</p>
-                                )}
+                                  </p>}
+                                {isCreator && <p className="text-lg font-bold text-success mt-2">Gratuito</p>}
                               </div>
-                              {selectedPlan === key && (
-                                <Check className="h-5 w-5 text-primary" />
-                              )}
-                            </div>
-                          );
-                        })}
+                              {selectedPlan === key && <Check className="h-5 w-5 text-primary" />}
+                            </div>;
+                  })}
                       </div>
                     </RadioGroup>
-                  </div>
-                )}
+                  </div>}
               </CardContent>
               
               <CardFooter className="flex-col gap-4">
                 <div className="w-full flex gap-2">
-                  {currentStep > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep(currentStep - 1)}
-                      disabled={loading}
-                    >
+                  {currentStep > 1 && <Button type="button" variant="outline" onClick={() => setCurrentStep(currentStep - 1)} disabled={loading}>
                       <ChevronLeft className="h-4 w-4 mr-2" />
                       Voltar
-                    </Button>
-                  )}
+                    </Button>}
                   
-                  {currentStep < 3 ? (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={handleNextStep}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
+                  {currentStep < 3 ? <Button type="button" className="flex-1" onClick={handleNextStep} disabled={loading}>
+                      {loading ? <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Validando...
-                        </>
-                      ) : (
-                        "Próximo"
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={handleSignUp}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
+                        </> : "Próximo"}
+                    </Button> : <Button type="button" className="flex-1" onClick={handleSignUp} disabled={loading}>
+                      {loading ? <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processando...
-                        </>
-                      ) : selectedPlan === 'creator' ? (
-                        'Criar conta gratuita'
-                      ) : (
-                        'Continuar para pagamento'
-                      )}
-                    </Button>
-                  )}
+                        </> : selectedPlan === 'creator' ? 'Criar conta gratuita' : 'Continuar para pagamento'}
+                    </Button>}
                 </div>
                 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => {
-                    setIsSignUp(false);
-                    setCurrentStep(1);
-                  }}
-                  disabled={loading}
-                >
+                <Button type="button" variant="ghost" className="w-full" onClick={() => {
+              setIsSignUp(false);
+              setCurrentStep(1);
+            }} disabled={loading}>
                   Já tem uma conta? Entrar
                 </Button>
               </CardFooter>
-            </div>
-          )}
+            </div>}
         </Card>
 
         <div className="text-center mb-24">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-[20px] font-sans text-sm">
             Sistema profissional de aprovação de conteúdos
           </p>
         </div>
       </main>
       
       <AppFooter />
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
