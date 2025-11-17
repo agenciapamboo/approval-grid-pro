@@ -28,12 +28,12 @@ export default function AgencyAgenda() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+      <div className="container mx-auto px-4 md:px-6 py-4 md:py-8">
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Agenda da Agência
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Visualize e gerencie todo o calendário de conteúdos
           </p>
         </div>

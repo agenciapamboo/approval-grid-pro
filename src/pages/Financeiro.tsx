@@ -61,14 +61,14 @@ const Financeiro = () => {
   return (
     <AccessGate allow={['super_admin']}>
       <AppLayout>
-        <div className="container mx-auto px-4 py-6">
-          <div className="space-y-6">
+        <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="space-y-4 md:space-y-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-              <DollarSign className="h-8 w-8" />
-              Painel Financeiro
+            <h1 className="text-2xl md:text-3xl font-bold mb-2 flex flex-wrap items-center gap-2">
+              <DollarSign className="h-6 w-6 md:h-8 md:w-8" />
+              <span>Painel Financeiro</span>
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Acompanhe métricas financeiras, custos e receitas
             </p>
           </div>
@@ -79,11 +79,11 @@ const Financeiro = () => {
           {/* Plano Lovable - Recursos Contratados */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
+              <CardTitle className="text-base md:text-lg flex flex-wrap items-center gap-2">
+                <Database className="h-4 w-4 md:h-5 md:w-5" />
                 Plano Lovable Cloud
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configure limites de recursos e custos de overage do backend
               </CardDescription>
             </CardHeader>
