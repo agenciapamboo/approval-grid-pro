@@ -79,29 +79,38 @@ serve(async (req) => {
     // Validação de status removida - conteúdo pode ser publicado em qualquer status
 
 
-    // Verificar se há ajustes pendentes
+    // Verificar se há ajustes pendentes NÃO RESOLVIDOS da versão atual
+    // Só bloquear se houver ajustes da versão atual que ainda não foram marcados como resolvidos
+    // Um ajuste é considerado resolvido quando:
+    // 1. O conteúdo foi aprovado APÓS a solicitação de ajuste (status = 'approved')
+    // 2. OU existe um comentário de aprovação posterior ao ajuste
     const { data: pendingAdjustments, error: adjustmentsError } = await supabaseClient
       .from('comments')
-      .select('id')
+      .select('id, created_at')
       .eq('content_id', contentId)
       .eq('is_adjustment_request', true)
+      .eq('version', content.version)
+      .order('created_at', { ascending: false })
       .limit(1);
 
     if (adjustmentsError) {
       console.error('Erro ao verificar ajustes pendentes:', adjustmentsError);
     }
 
-    if (pendingAdjustments && pendingAdjustments.length > 0) {
-      console.log(`Conteúdo ${contentId} possui ajustes pendentes`);
+    // Se há ajustes pendentes da versão atual E o status NÃO é 'approved', bloquear
+    if (pendingAdjustments && pendingAdjustments.length > 0 && content.status !== 'approved') {
+      console.log(`Conteúdo ${contentId} possui ajustes pendentes não resolvidos (status: ${content.status})`);
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Conteúdo possui ajustes pendentes',
+          error: 'Conteúdo possui ajustes pendentes não resolvidos',
           pending_adjustments: true
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+    
+    console.log('Verificação de ajustes: OK (status:', content.status, ')');
 
     console.log('Buscando contas sociais do cliente:', content.client_id);
     
