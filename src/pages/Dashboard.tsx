@@ -386,7 +386,7 @@ const Dashboard = () => {
                       <CardTitle className="text-2xl">{dashboardData.client.name}</CardTitle>
                       {dashboardData.client.agency && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          Agência: {dashboardData.client.agency.name}
+                          {dashboardData.client.agency.name}
                         </p>
                       )}
                     </div>

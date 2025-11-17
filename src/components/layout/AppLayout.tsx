@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { SuperAdminSidebar } from "@/components/admin/SuperAdminSidebar";
 import { AgencyAdminSidebar } from "@/components/admin/AgencyAdminSidebar";
@@ -27,8 +27,12 @@ export function AppLayout({
     loading
   } = useUserData();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
+  
+  // Detectar se está numa página de detalhes do cliente
+  const isClientDetailsPage = location.pathname.includes('/cliente/');
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
@@ -99,10 +103,20 @@ export function AppLayout({
               </>}
             
             {(role === 'agency_admin' || role === 'team_member') && <>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/clientes')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
-                  <Users className="h-5 w-5" />
-                  <span className="text-xs">Clientes</span>
-                </Button>
+                {isClientDetailsPage ? (
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    const clientId = location.pathname.split('/cliente/')[1];
+                    navigate(`/agency/client/${clientId}`);
+                  }} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
+                    <FileText className="h-5 w-5" />
+                    <span className="text-xs">Conteúdos</span>
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/clientes')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs">Clientes</span>
+                  </Button>
+                )}
                 
                 <Button variant="ghost" size="sm" onClick={() => navigate('/creative-requests')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
                   <FileText className="h-5 w-5" />

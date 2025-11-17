@@ -66,7 +66,7 @@ export const NewClientsAlert = () => {
               <div>
                 <p className="font-medium">{client.name}</p>
                 {client.agency_name && (
-                  <p className="text-xs text-muted-foreground">Agência: {client.agency_name}</p>
+                  <p className="text-xs text-muted-foreground">{client.agency_name}</p>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
