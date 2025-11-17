@@ -162,7 +162,7 @@ export const KanbanProvider = ({
       onDragStart={onDragStart}
     >
       <div
-        className={cn('grid w-full auto-cols-fr grid-flow-col gap-4', className)}
+        className={cn('contents md:grid md:w-full md:auto-cols-fr md:grid-flow-col md:gap-4', className)}
       >
         {children}
       </div>
