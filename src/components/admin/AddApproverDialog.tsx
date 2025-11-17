@@ -174,7 +174,7 @@ export function AddApproverDialog({
         <DialogHeader>
           <DialogTitle>Adicionar Aprovador</DialogTitle>
           <DialogDescription>
-            Cadastre um novo aprovador para receber códigos de autenticação 2FA
+            Cadastre um novo contato aprovador de conteúdo
           </DialogDescription>
         </DialogHeader>
 
@@ -207,9 +207,6 @@ export function AddApproverDialog({
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Códigos 2FA serão enviados para este email
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -231,9 +228,6 @@ export function AddApproverDialog({
                       }}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Códigos 2FA também podem ser enviados via WhatsApp
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
