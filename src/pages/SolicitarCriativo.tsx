@@ -40,23 +40,48 @@ export default function SolicitarCriativo() {
     setLoading(true);
 
     try {
-      // Criar notificação para a agência
-      const { error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      // Criar conteúdo como plano de conteúdo
+      const { data: contentData, error: contentError } = await supabase
+        .from('contents')
+        .insert({
+          client_id: profile.client_id,
+          title: formData.title,
+          type: formData.type as any,
+          status: 'draft',
+          is_content_plan: true,
+          plan_description: `${formData.text || ''}\n\nObservações: ${formData.observations || ''}`,
+          date: formData.deadline || new Date().toISOString(),
+          deadline: formData.deadline || null,
+          owner_user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (contentError) throw contentError;
+
+      // Criar notificação
+      const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
           event: 'novojob',
           client_id: profile.client_id,
           agency_id: client?.agency_id,
+          content_id: contentData.id,
+          user_id: user.id,
+          channel: 'webhook',
+          status: 'pending',
           payload: {
             ...formData,
+            content_id: contentData.id,
             client_name: client?.name,
             requested_by: profile.name,
           },
-          status: 'pending',
-          channel: 'internal',
         });
 
-      if (error) throw error;
+      if (notificationError) console.error("Erro ao criar notificação:", notificationError);
 
       toast.success("Solicitação enviada com sucesso!");
       navigate("/minhas-solicitacoes");
@@ -153,16 +178,17 @@ export default function SolicitarCriativo() {
                 />
               </div>
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/dashboard")}
                   disabled={loading}
+                  className="w-full sm:w-auto"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="flex-1">
+                <Button type="submit" disabled={loading} className="w-full sm:flex-1">
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, Mail, Phone, CheckCircle, XCircle } from "lucide-react";
+import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit } from "lucide-react";
 import { AddApproverDialog } from "@/components/admin/AddApproverDialog";
 import { EditApproverDialog } from "@/components/admin/EditApproverDialog";
 
-interface Approver {
+interface ClientApprover {
   id: string;
+  client_id: string;
   name: string;
   email: string;
   whatsapp?: string;
@@ -22,13 +23,13 @@ interface Approver {
 
 export function ManageApprovers() {
   const { toast } = useToast();
-  const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [approvers, setApprovers] = useState<ClientApprover[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState<string>("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedApprover, setSelectedApprover] = useState<Approver | null>(null);
+  const [selectedApprover, setSelectedApprover] = useState<ClientApprover | null>(null);
 
   useEffect(() => {
     loadClientAndApprovers();
@@ -99,7 +100,7 @@ export function ManageApprovers() {
     setApprovers(data || []);
   };
 
-  const handleEditApprover = (approver: Approver) => {
+  const handleEditApprover = (approver: ClientApprover) => {
     setSelectedApprover(approver);
     setEditDialogOpen(true);
   };
@@ -125,92 +126,123 @@ export function ManageApprovers() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+    <div className="flex-1 overflow-auto pb-20 sm:pb-4">
+      <div className="container mx-auto px-4 py-6 space-y-6 max-w-6xl">
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle>Gerenciar Aprovadores</CardTitle>
+              <CardTitle>Aprovadores de Conteúdo</CardTitle>
               <CardDescription>
-                Gerencie quem pode aprovar conteúdos de {clientName}
+                Gerencie os aprovadores de conteúdo para {clientName}
               </CardDescription>
             </div>
-            <Button onClick={() => setAddDialogOpen(true)}>
+            <Button 
+              onClick={() => setAddDialogOpen(true)}
+              className="hidden sm:flex"
+            >
               <UserPlus className="h-4 w-4 mr-2" />
               Adicionar Aprovador
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {approvers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum aprovador cadastrado ainda.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {approvers.map((approver) => (
-                  <TableRow key={approver.id}>
-                    <TableCell className="font-medium">{approver.name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {approver.email && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-3 w-3" />
-                            {approver.email}
+          </CardHeader>
+          <CardContent>
+            {approvers.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  Nenhum aprovador cadastrado ainda.
+                </p>
+                <Button onClick={() => setAddDialogOpen(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Adicionar Primeiro Aprovador
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead className="hidden md:table-cell">Contato</TableHead>
+                      <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvers.map((approver) => (
+                      <TableRow key={approver.id}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <div>{approver.name}</div>
+                            <div className="text-xs text-muted-foreground md:hidden">
+                              {approver.email}
+                            </div>
                           </div>
-                        )}
-                        {approver.whatsapp && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-3 w-3" />
-                            {approver.whatsapp}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="space-y-1">
+                            <div className="flex items-center text-sm">
+                              <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                              {approver.email}
+                            </div>
+                            {approver.whatsapp && (
+                              <div className="flex items-center text-sm">
+                                <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
+                                {approver.whatsapp}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={approver.is_primary ? "default" : "outline"}>
-                        {approver.is_primary ? "Principal" : "Secundário"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {approver.is_active ? (
-                        <Badge variant="success" className="flex items-center gap-1 w-fit">
-                          <CheckCircle className="h-3 w-3" />
-                          Ativo
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Inativo
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditApprover(approver)}
-                      >
-                        Editar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {approver.is_primary ? (
+                            <Badge variant="default">Principal</Badge>
+                          ) : (
+                            <Badge variant="outline">Secundário</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {approver.is_active ? (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Ativo
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Inativo
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditApprover(approver)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t sm:hidden pb-safe z-50">
+        <div className="container mx-auto px-4 py-3">
+          <Button 
+            onClick={() => setAddDialogOpen(true)}
+            className="w-full"
+            size="lg"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Adicionar Aprovador
+          </Button>
+        </div>
+      </div>
 
       <AddApproverDialog
         open={addDialogOpen}
@@ -226,7 +258,10 @@ export function ManageApprovers() {
         <EditApproverDialog
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
-          approver={selectedApprover as any}
+          approver={{
+            ...selectedApprover,
+            whatsapp: selectedApprover.whatsapp || ''
+          }}
           onSuccess={() => {
             loadApprovers(clientId);
             setEditDialogOpen(false);
@@ -236,3 +271,4 @@ export function ManageApprovers() {
     </div>
   );
 }
+
