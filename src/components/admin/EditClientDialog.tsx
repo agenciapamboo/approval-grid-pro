@@ -327,6 +327,44 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
             />
           </div>
 
+          <div className="space-y-4 border rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Exibir mensagem de excedente</Label>
+                <p className="text-xs text-muted-foreground">
+                  Mostrar alerta quando ultrapassar o limite de criativos
+                </p>
+              </div>
+              <Switch
+                checked={formData.show_overage_message}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, show_overage_message: checked })
+                }
+              />
+            </div>
+
+            {formData.show_overage_message && (
+              <div className="space-y-2">
+                <Label htmlFor="overage_message_template">
+                  Mensagem de Excedente Personalizada
+                </Label>
+                <Textarea
+                  id="overage_message_template"
+                  value={formData.overage_message_template}
+                  onChange={(e) => 
+                    setFormData({ ...formData, overage_message_template: e.target.value })
+                  }
+                  placeholder="Fale com sua {contact_type} para regularizar sua situação."
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use <code className="text-xs bg-muted px-1 rounded">{'{contact_type}'}</code> 
+                  {' '}para inserir automaticamente "agência" ou "creator"
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="note">Nova Observação</Label>
             <Textarea

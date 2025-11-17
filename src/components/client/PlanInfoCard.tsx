@@ -39,43 +39,42 @@ export function PlanInfoCard({ clientId }: PlanInfoCardProps) {
         setContracted(client.monthly_creatives || 0);
       }
 
-      // Contar criativos do mês atual
+      // Contar criativos do mês atual usando RPC
       const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // JS months are 0-indexed
 
-      const { count: currentCount } = await supabase
-        .from('contents')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', clientId)
-        .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
-
-      setCurrentMonthCount(currentCount || 0);
-
-      // Histórico dos últimos 6 meses (excluindo o atual)
-      const history: { month: string; count: number }[] = [];
-      for (let i = 1; i <= 6; i++) {
-        const targetDate = subMonths(now, i);
-        const start = startOfMonth(targetDate);
-        const end = endOfMonth(targetDate);
-
-        const { count } = await supabase
-          .from('contents')
-          .select('*', { count: 'exact', head: true })
-          .eq('client_id', clientId)
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
-
-        if (count && count > 0) {
-          history.push({
-            month: format(targetDate, 'yyyy-MM'),
-            count: count,
-          });
+      const { data: currentCount, error: countError } = await supabase.rpc(
+        'get_client_monthly_content_count',
+        {
+          p_client_id: clientId,
+          p_year: currentYear,
+          p_month: currentMonth,
         }
+      );
+
+      if (countError) {
+        console.error('Erro ao contar criativos do mês:', countError);
+        setCurrentMonthCount(0);
+      } else {
+        setCurrentMonthCount(currentCount || 0);
       }
 
-      setMonthlyHistory(history);
+      // Histórico dos últimos 6 meses (excluindo o atual) usando RPC
+      const { data: history, error: historyError } = await supabase.rpc(
+        'get_client_monthly_history',
+        {
+          p_client_id: clientId,
+          p_months_back: 6,
+        }
+      );
+
+      if (historyError) {
+        console.error('Erro ao carregar histórico:', historyError);
+        setMonthlyHistory([]);
+      } else {
+        setMonthlyHistory(history || []);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados do plano:', error);
     } finally {
@@ -124,6 +123,7 @@ export function PlanInfoCard({ clientId }: PlanInfoCardProps) {
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Criativos contratados</p>
             <p className="text-2xl font-bold">{contracted}</p>
+            <p className="text-xs text-muted-foreground">Configurado pela agência</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Criados em {format(new Date(), 'MMMM', { locale: ptBR })}</p>
@@ -136,7 +136,7 @@ export function PlanInfoCard({ clientId }: PlanInfoCardProps) {
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Excedente: {excedente} criativos.</strong>
+              <strong>Excedente: {excedente} {excedente === 1 ? 'criativo' : 'criativos'}.</strong>
               <br />
               {getOverageMessage()}
             </AlertDescription>

@@ -1904,6 +1904,17 @@ export type Database = {
           user_agents: string[]
         }[]
       }
+      get_client_monthly_content_count: {
+        Args: { p_client_id: string; p_month: number; p_year: number }
+        Returns: number
+      }
+      get_client_monthly_history: {
+        Args: { p_client_id: string; p_months_back?: number }
+        Returns: {
+          count: number
+          month: string
+        }[]
+      }
       get_database_size_mb: { Args: never; Returns: number }
       get_monthly_bandwidth_gb: { Args: never; Returns: number }
       get_storage_size_gb: { Args: never; Returns: number }

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,8 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
     webhook_url: "",
     timezone: "America/Sao_Paulo",
     monthly_creatives: 0,
+    show_overage_message: true,
+    overage_message_template: 'Fale com sua {contact_type} para regularizar sua situação.',
     notify_email: true,
     notify_whatsapp: false,
     notify_webhook: true,
@@ -48,6 +51,8 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
           timezone: formData.timezone,
           email: formData.email,
           monthly_creatives: formData.monthly_creatives,
+          show_overage_message: formData.show_overage_message,
+          overage_message_template: formData.overage_message_template,
           agency_id: agencyId,
           notify_email: formData.notify_email,
           notify_whatsapp: formData.notify_whatsapp,
@@ -122,6 +127,8 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
         webhook_url: "",
         timezone: "America/Sao_Paulo",
         monthly_creatives: 0,
+        show_overage_message: true,
+        overage_message_template: 'Fale com sua {contact_type} para regularizar sua situação.',
         notify_email: true,
         notify_whatsapp: false,
         notify_webhook: true,
@@ -238,6 +245,44 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
               onChange={(e) => setFormData({ ...formData, monthly_creatives: parseInt(e.target.value) || 0 })}
               placeholder="0"
             />
+          </div>
+
+          <div className="space-y-4 border rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Exibir mensagem de excedente</Label>
+                <p className="text-xs text-muted-foreground">
+                  Mostrar alerta quando ultrapassar o limite de criativos
+                </p>
+              </div>
+              <Switch
+                checked={formData.show_overage_message}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, show_overage_message: checked })
+                }
+              />
+            </div>
+
+            {formData.show_overage_message && (
+              <div className="space-y-2">
+                <Label htmlFor="overage_message_template">
+                  Mensagem de Excedente Personalizada
+                </Label>
+                <Textarea
+                  id="overage_message_template"
+                  value={formData.overage_message_template}
+                  onChange={(e) => 
+                    setFormData({ ...formData, overage_message_template: e.target.value })
+                  }
+                  placeholder="Fale com sua {contact_type} para regularizar sua situação."
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use <code className="text-xs bg-muted px-1 rounded">{'{contact_type}'}</code> 
+                  {' '}para inserir automaticamente "agência" ou "creator"
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
