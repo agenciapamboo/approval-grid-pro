@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,39 @@ import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 import { useNavigate } from "react-router-dom";
 import { TicketCategory } from "@/hooks/useSupportTickets";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserData } from "@/hooks/useUserData";
+import { supabase } from "@/integrations/supabase/client";
 
 const HelpCenter = () => {
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TicketCategory>('suporte');
+  const [agencyAccountType, setAgencyAccountType] = useState<string>('agency');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { client } = useUserData();
+
+  // Buscar account_type da agência
+  useEffect(() => {
+    const fetchAgencyType = async () => {
+      if (!client?.agency_id) return;
+      
+      const { data: agencyData } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('agency_id', client.agency_id)
+        .eq('role', 'agency_admin')
+        .limit(1)
+        .maybeSingle();
+      
+      if (agencyData?.account_type === 'creator') {
+        setAgencyAccountType('creator');
+      }
+    };
+    
+    fetchAgencyType();
+  }, [client]);
+
+  const agencyLabel = agencyAccountType === 'creator' ? 'Creator' : 'Agência';
 
   const handleOpenTicket = (category: TicketCategory) => {
     if (!user) {
@@ -48,51 +75,51 @@ const HelpCenter = () => {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button
-                  variant="outline"
-                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
-                  onClick={() => handleOpenTicket('suporte')}
-                >
-                  <LifeBuoy className="h-6 w-6 mb-2" />
-                  <span className="font-semibold">Suporte Técnico</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Relativo a defeitos e erros do sistema
-                  </span>
-                </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex-col items-start p-4 hover:bg-primary/5 text-left"
+                onClick={() => handleOpenTicket('suporte')}
+              >
+                <LifeBuoy className="h-6 w-6 mb-2 flex-shrink-0" />
+                <span className="font-semibold w-full break-words">Suporte Técnico</span>
+                <span className="text-xs text-muted-foreground mt-1 w-full break-words">
+                  Relativo a defeitos e erros do sistema
+                </span>
+              </Button>
 
                 <Button
                   variant="outline"
-                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5 text-left"
                   onClick={() => handleOpenTicket('duvidas')}
                 >
-                  <HelpCircle className="h-6 w-6 mb-2" />
-                  <span className="font-semibold">Dúvidas</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Dúvidas de qualquer natureza
+                  <HelpCircle className="h-6 w-6 mb-2 flex-shrink-0" />
+                  <span className="font-semibold w-full break-words">Dúvidas</span>
+                  <span className="text-xs text-muted-foreground mt-1 w-full break-words">
+                    Dúvidas e orientações sobre funcionalidades
                   </span>
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5 text-left"
                   onClick={() => handleOpenTicket('financeiro')}
                 >
-                  <CreditCard className="h-6 w-6 mb-2" />
-                  <span className="font-semibold">Financeiro</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Erros de pagamento e vencimento
+                  <CreditCard className="h-6 w-6 mb-2 flex-shrink-0" />
+                  <span className="font-semibold w-full break-words">Financeiro</span>
+                  <span className="text-xs text-muted-foreground mt-1 w-full break-words">
+                    Questões de pagamento e cobrança
                   </span>
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                  className="h-auto flex-col items-start p-4 hover:bg-primary/5 text-left"
                   onClick={() => handleOpenTicket('agencia')}
                 >
-                  <MessageSquare className="h-6 w-6 mb-2" />
-                  <span className="font-semibold">Comunicação</span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    Comunicações com a agência
+                  <MessageSquare className="h-6 w-6 mb-2 flex-shrink-0" />
+                  <span className="font-semibold w-full break-words">Comunicação</span>
+                  <span className="text-xs text-muted-foreground mt-1 w-full break-words">
+                    Comunicações com a {agencyLabel.toLowerCase()}
                   </span>
                 </Button>
               </div>
@@ -409,6 +436,7 @@ const HelpCenter = () => {
         open={ticketDialogOpen}
         onOpenChange={setTicketDialogOpen}
         defaultCategory={selectedCategory}
+        agencyLabel={agencyLabel}
       />
     </AppLayout>
   );
