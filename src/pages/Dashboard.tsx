@@ -14,6 +14,7 @@ import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
 import { AgencyStats } from "@/components/dashboard/AgencyStats";
+import { PlanInfoCard } from "@/components/client/PlanInfoCard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
