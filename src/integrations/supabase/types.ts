@@ -484,6 +484,7 @@ export type Database = {
           converted: boolean
           created_at: string
           id: string
+          is_primary_thumbnail: boolean | null
           kind: Database["public"]["Enums"]["media_kind"]
           order_index: number
           size_bytes: number | null
@@ -495,6 +496,7 @@ export type Database = {
           converted?: boolean
           created_at?: string
           id?: string
+          is_primary_thumbnail?: boolean | null
           kind: Database["public"]["Enums"]["media_kind"]
           order_index?: number
           size_bytes?: number | null
@@ -506,6 +508,7 @@ export type Database = {
           converted?: boolean
           created_at?: string
           id?: string
+          is_primary_thumbnail?: boolean | null
           kind?: Database["public"]["Enums"]["media_kind"]
           order_index?: number
           size_bytes?: number | null

@@ -22,6 +22,8 @@ interface ContentLog {
     src_url: string;
     thumb_url: string | null;
     kind: string;
+    is_primary_thumbnail?: boolean;
+    order_index?: number;
   }>;
   comments: {
     id: string;
@@ -59,7 +61,7 @@ export function ClientContentLogsCards({ clientId }: ClientContentLogsCardsProps
           updated_at,
           version,
           content_texts(caption),
-          content_media(id, src_url, thumb_url, kind)
+          content_media(id, src_url, thumb_url, kind, is_primary_thumbnail, order_index)
         `)
         .eq("client_id", clientId)
         .order("created_at", { ascending: false });
@@ -158,13 +160,25 @@ export function ClientContentLogsCards({ clientId }: ClientContentLogsCardsProps
 
           <CardContent className="space-y-4">
             {/* Miniatura da Imagem */}
-            {log.media?.[0] && (
-              <div className="space-y-2">
-                <img
-                  src={log.media[0].thumb_url || log.media[0].src_url}
-                  alt={log.title}
-                  className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 object-cover rounded-md border"
-                />
+            {log.media && log.media.length > 0 && (
+              <div className="flex items-center justify-center">
+                {(() => {
+                  // Find primary thumbnail or fallback to first media
+                  const primaryMedia = log.media.find(m => m.is_primary_thumbnail) || log.media[0];
+                  const thumbnailUrl = primaryMedia.thumb_url;
+                  
+                  return thumbnailUrl ? (
+                    <img
+                      src={`${supabase.storage.from('content-media').getPublicUrl(thumbnailUrl).data.publicUrl}`}
+                      alt={log.title}
+                      className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 bg-muted rounded-lg flex items-center justify-center">
+                      <span className="text-muted-foreground text-sm">Sem imagem</span>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
