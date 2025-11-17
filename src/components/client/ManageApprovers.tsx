@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit } from "lucide-react";
+import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit, Trash2 } from "lucide-react";
 import { AddApproverDialog } from "@/components/admin/AddApproverDialog";
 import { EditApproverDialog } from "@/components/admin/EditApproverDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -152,6 +152,49 @@ export function ManageApprovers() {
     }
   };
 
+  const handleDeleteApprover = async (approverId: string) => {
+    try {
+      // Verificar se é o último primário ativo
+      const primaryActive = approvers.filter(a => a.is_primary && a.is_active && a.id !== approverId);
+      
+      if (primaryActive.length === 0) {
+        const approverToDelete = approvers.find(a => a.id === approverId);
+        if (approverToDelete?.is_primary) {
+          toast({
+            variant: "destructive",
+            title: "Não é possível deletar",
+            description: "Deve haver pelo menos um aprovador primário ativo. Promova outro aprovador primeiro."
+          });
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from("client_approvers")
+        .delete()
+        .eq("id", approverId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Aprovador removido",
+        description: "O aprovador foi removido permanentemente."
+      });
+
+      loadApprovers(clientId!);
+    } catch (error) {
+      console.error("Erro ao deletar aprovador:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível deletar o aprovador."
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setApproverToDelete(null);
+    }
+  };
+
   const handleReactivateApprover = async (approverId: string) => {
     try {
       const { error } = await supabase
@@ -200,16 +243,18 @@ export function ManageApprovers() {
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-6xl pb-20 md:pb-6">
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle>Aprovadores de Conteúdo</CardTitle>
-            <CardDescription>
-              Gerencie os aprovadores de conteúdo para {clientName}
-            </CardDescription>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Aprovadores de Conteúdo</CardTitle>
+              <CardDescription>
+                Gerencie os aprovadores de conteúdo para {clientName}
+              </CardDescription>
+            </div>
           </div>
           <Button 
             onClick={() => setAddDialogOpen(true)}
-            className="hidden sm:flex"
+            className="w-full sm:w-auto"
           >
             <UserPlus className="h-4 w-4 mr-2" />
             Adicionar Aprovador
@@ -285,18 +330,29 @@ export function ManageApprovers() {
                           </Button>
                           
                           {approver.is_active ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setApproverToDelete(approver);
-                                setDeleteDialogOpen(true);
-                              }}
-                              title="Desativar aprovador"
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setApproverToDelete(approver);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                title="Desativar aprovador"
+                                className="text-orange-600 hover:text-orange-700"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteApprover(approver.id)}
+                                title="Deletar aprovador"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
                           ) : (
                             <Button
                               variant="ghost"
@@ -371,18 +427,29 @@ export function ManageApprovers() {
                           </Button>
                           
                           {approver.is_active ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setApproverToDelete(approver);
-                                setDeleteDialogOpen(true);
-                              }}
-                              className="flex-1 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                            >
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Desativar
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setApproverToDelete(approver);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                className="flex-1 text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white"
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Desativar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteApprover(approver.id)}
+                                className="flex-1 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Deletar
+                              </Button>
+                            </>
                           ) : (
                             <Button
                               variant="outline"

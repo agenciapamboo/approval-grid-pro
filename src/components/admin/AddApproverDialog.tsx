@@ -36,6 +36,9 @@ const approverSchema = z.object({
     .email("Email inválido")
     .max(255, "Email deve ter no máximo 255 caracteres")
     .toLowerCase(),
+  password: z.string()
+    .min(8, "Senha deve ter no mínimo 8 caracteres")
+    .max(100, "Senha deve ter no máximo 100 caracteres"),
   whatsapp: z.string()
     .trim()
     .regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, "WhatsApp deve estar no formato (XX) XXXXX-XXXX")
@@ -67,6 +70,7 @@ export function AddApproverDialog({
     defaultValues: {
       name: "",
       email: "",
+      password: "",
       whatsapp: "",
       is_primary: false,
     },
@@ -135,11 +139,19 @@ export function AddApproverDialog({
         }
       }
 
+      // Hash da senha usando SHA-256
+      const encoder = new TextEncoder();
+      const data_password = encoder.encode(data.password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data_password);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
       const { error } = await supabase.from("client_approvers").insert([{
         client_id: clientId,
         agency_id: clientData.agency_id,
         name: data.name,
         email: data.email,
+        password_hash: password_hash,
         whatsapp: data.whatsapp || null,
         is_primary: data.is_primary,
         is_active: true,
@@ -207,6 +219,27 @@ export function AddApproverDialog({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Senha para acesso do aprovador"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    O aprovador usará esta senha para fazer login
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

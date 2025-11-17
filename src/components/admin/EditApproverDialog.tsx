@@ -235,9 +235,6 @@ export function EditApproverDialog({
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Códigos 2FA serão enviados para este email
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -259,9 +256,6 @@ export function EditApproverDialog({
                       }}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Códigos 2FA também podem ser enviados via WhatsApp
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

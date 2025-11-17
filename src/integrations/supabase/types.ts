@@ -139,6 +139,7 @@ export type Database = {
           is_active: boolean
           is_primary: boolean
           name: string
+          password_hash: string | null
           updated_at: string
           user_id: string | null
           whatsapp: string | null
@@ -153,6 +154,7 @@ export type Database = {
           is_active?: boolean
           is_primary?: boolean
           name: string
+          password_hash?: string | null
           updated_at?: string
           user_id?: string | null
           whatsapp?: string | null
@@ -167,6 +169,7 @@ export type Database = {
           is_active?: boolean
           is_primary?: boolean
           name?: string
+          password_hash?: string | null
           updated_at?: string
           user_id?: string | null
           whatsapp?: string | null
