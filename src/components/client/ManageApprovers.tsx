@@ -1,18 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit, Menu, ArrowLeft } from "lucide-react";
+import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit } from "lucide-react";
 import { AddApproverDialog } from "@/components/admin/AddApproverDialog";
 import { EditApproverDialog } from "@/components/admin/EditApproverDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ClientUserSidebar } from "@/components/client/ClientUserSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ClientApprover {
   id: string;
@@ -27,7 +24,7 @@ interface ClientApprover {
 
 export function ManageApprovers() {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [approvers, setApprovers] = useState<ClientApprover[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientId, setClientId] = useState<string | null>(null);
@@ -37,7 +34,6 @@ export function ManageApprovers() {
   const [selectedApprover, setSelectedApprover] = useState<ClientApprover | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [approverToDelete, setApproverToDelete] = useState<ClientApprover | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadClientAndApprovers();
@@ -202,80 +198,70 @@ export function ManageApprovers() {
   }
 
   return (
-    <div className="flex-1 overflow-auto pb-20 sm:pb-4">
-      <div className="container mx-auto px-4 py-6 space-y-6 max-w-6xl">
-        <Card>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle>Aprovadores de Conteúdo</CardTitle>
-              <CardDescription>
-                Gerencie os aprovadores de conteúdo para {clientName}
-              </CardDescription>
+    <div className="container mx-auto px-4 py-6 space-y-6 max-w-6xl pb-20 md:pb-6">
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle>Aprovadores de Conteúdo</CardTitle>
+            <CardDescription>
+              Gerencie os aprovadores de conteúdo para {clientName}
+            </CardDescription>
+          </div>
+          <Button 
+            onClick={() => setAddDialogOpen(true)}
+            className="hidden sm:flex"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Adicionar Aprovador
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {approvers.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                Nenhum aprovador cadastrado ainda.
+              </p>
+              <Button onClick={() => setAddDialogOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Adicionar Primeiro Aprovador
+              </Button>
             </div>
-            <Button 
-              onClick={() => setAddDialogOpen(true)}
-              className="hidden sm:flex"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Adicionar Aprovador
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {approvers.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Nenhum aprovador cadastrado ainda.
-                </p>
-                <Button onClick={() => setAddDialogOpen(true)}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Adicionar Primeiro Aprovador
-                </Button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead className="hidden md:table-cell">Contato</TableHead>
-                      <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+          ) : (
+            <>
+              {/* Desktop: Tabela */}
+              {!isMobile && (
+                <div className="rounded-md border">
+                  <div className="grid grid-cols-[2fr,2fr,1fr,1fr,120px] gap-4 p-4 bg-muted/50 font-medium text-sm">
+                    <div>Nome</div>
+                    <div>Contato</div>
+                    <div>Tipo</div>
+                    <div>Status</div>
+                    <div className="text-right">Ações</div>
+                  </div>
+                  <div className="divide-y">
                     {approvers.map((approver) => (
-                      <TableRow key={approver.id}>
-                        <TableCell className="font-medium">
-                          <div>
-                            <div>{approver.name}</div>
-                            <div className="text-xs text-muted-foreground md:hidden">
-                              {approver.email}
-                            </div>
+                      <div key={approver.id} className="grid grid-cols-[2fr,2fr,1fr,1fr,120px] gap-4 p-4 items-center">
+                        <div className="font-medium">{approver.name}</div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center">
+                            <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                            {approver.email}
                           </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="space-y-1">
-                            <div className="flex items-center text-sm">
-                              <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
-                              {approver.email}
+                          {approver.whatsapp && (
+                            <div className="flex items-center">
+                              <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
+                              {approver.whatsapp}
                             </div>
-                            {approver.whatsapp && (
-                              <div className="flex items-center text-sm">
-                                <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                                {approver.whatsapp}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
+                          )}
+                        </div>
+                        <div>
                           {approver.is_primary ? (
                             <Badge variant="default">Principal</Badge>
                           ) : (
                             <Badge variant="outline">Secundário</Badge>
                           )}
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div>
                           {approver.is_active ? (
                             <Badge variant="default" className="bg-green-500">
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -287,98 +273,148 @@ export function ManageApprovers() {
                               Inativo
                             </Badge>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditApprover(approver)}
+                            title="Editar aprovador"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          
+                          {approver.is_active ? (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEditApprover(approver)}
-                              title="Editar aprovador"
+                              onClick={() => {
+                                setApproverToDelete(approver);
+                                setDeleteDialogOpen(true);
+                              }}
+                              title="Desativar aprovador"
+                              className="text-destructive hover:text-destructive"
                             >
-                              <Edit className="h-4 w-4" />
+                              <XCircle className="h-4 w-4" />
                             </Button>
-                            
-                            {approver.is_active ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setApproverToDelete(approver);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                title="Desativar aprovador"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleReactivateApprover(approver.id)}
-                                title="Reativar aprovador"
-                                className="text-green-600 hover:text-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleReactivateApprover(approver.id)}
+                              title="Reativar aprovador"
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-sidebar border-t sm:hidden pb-safe z-50">
-        <div className="flex items-center justify-around h-16 px-4">
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="text-xs">Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-sidebar">
-              <div className="flex flex-col h-full">
-                <div className="p-4 border-b border-sidebar-border">
-                  <h2 className="text-lg font-semibold text-sidebar-foreground">Menu Principal</h2>
+                  </div>
                 </div>
-                <ClientUserSidebar />
-              </div>
-            </SheetContent>
-          </Sheet>
+              )}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span className="text-xs">Voltar</span>
-          </Button>
+              {/* Mobile: Cards */}
+              {isMobile && (
+                <div className="space-y-4">
+                  {approvers.map((approver) => (
+                    <Card key={approver.id}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base">{approver.name}</CardTitle>
+                            <div className="flex gap-2 flex-wrap">
+                              {approver.is_primary ? (
+                                <Badge variant="default" className="text-xs">Principal</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Secundário</Badge>
+                              )}
+                              {approver.is_active ? (
+                                <Badge variant="default" className="bg-green-500 text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Ativo
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-xs">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Inativo
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="break-all">{approver.email}</span>
+                          </div>
+                          {approver.whatsapp && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span>{approver.whatsapp}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditApprover(approver)}
+                            className="flex-1"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                          
+                          {approver.is_active ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setApproverToDelete(approver);
+                                setDeleteDialogOpen(true);
+                              }}
+                              className="flex-1 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Desativar
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReactivateApprover(approver.id)}
+                              className="flex-1 text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Reativar
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setAddDialogOpen(true)}
-            className="flex flex-col items-center gap-1 text-primary hover:bg-primary/10 h-auto py-2"
-          >
-            <UserPlus className="h-5 w-5" />
-            <span className="text-xs">Adicionar</span>
-          </Button>
-        </div>
-      </div>
+      {/* Botão flutuante mobile para adicionar */}
+      {isMobile && (
+        <Button
+          onClick={() => setAddDialogOpen(true)}
+          size="lg"
+          className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 md:hidden"
+        >
+          <UserPlus className="h-6 w-6" />
+        </Button>
+      )}
 
       <AddApproverDialog
         open={addDialogOpen}
