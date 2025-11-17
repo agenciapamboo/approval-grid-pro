@@ -160,11 +160,10 @@ export function ClientContentLogsCards({ clientId }: ClientContentLogsCardsProps
             {/* Miniatura da Imagem */}
             {log.media?.[0] && (
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Imagem (Miniatura):</Label>
                 <img
                   src={log.media[0].thumb_url || log.media[0].src_url}
                   alt={log.title}
-                  className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-md border"
+                  className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 object-cover rounded-md border"
                 />
               </div>
             )}

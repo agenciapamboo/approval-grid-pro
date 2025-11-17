@@ -9,34 +9,34 @@ import { AppFooter } from "@/components/layout/AppFooter";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { Menu, FileText, Plus, Users, X } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Menu, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ClientSelectorDialog } from "@/components/admin/ClientSelectorDialog";
+
 interface AppLayoutProps {
   children: ReactNode;
 }
-export function AppLayout({
-  children
-}: AppLayoutProps) {
-  const {
-    signOut
-  } = useAuth();
-  const {
-    role,
-    profile,
-    loading
-  } = useUserData();
+
+export function AppLayout({ children }: AppLayoutProps) {
+  const { signOut } = useAuth();
+  const { role, profile, loading } = useUserData();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [showClientSelector, setShowClientSelector] = useState(false);
   
-  // Detectar se está numa página de detalhes do cliente
   const isClientDetailsPage = location.pathname.includes('/cliente/');
+  const clientId = isClientDetailsPage 
+    ? location.pathname.split('/cliente/')[1]?.split('/')[0]
+    : null;
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
   };
+
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
       super_admin: "Super Admin",
@@ -47,11 +47,11 @@ export function AppLayout({
     };
     return labels[role] || role;
   };
+
   if (loading) {
     return null;
   }
 
-  // Determinar qual sidebar mostrar
   const showSidebar = role === "super_admin" || role === "agency_admin" || role === "team_member" || role === "client_user";
   let SidebarComponent = null;
   if (role === "super_admin") {
@@ -61,9 +61,16 @@ export function AppLayout({
   } else if (role === "client_user") {
     SidebarComponent = ClientUserSidebar;
   }
+
   if (isMobile && SidebarComponent) {
-    return <div className="flex min-h-screen w-full flex-col pb-16">
-        <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={false} />
+    return (
+      <div className="flex min-h-screen w-full flex-col pb-16">
+        <AppHeader 
+          userName={profile?.name} 
+          userRole={role ? getRoleLabel(role) : undefined} 
+          onSignOut={handleSignOut} 
+          showSidebarTrigger={false} 
+        />
         
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r-0 overflow-y-auto">
@@ -82,64 +89,117 @@ export function AppLayout({
 
         <main className="flex-1">{children}</main>
 
-        {/* Barra de navegação inferior fixa */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border shadow-lg">
           <div className="flex items-center justify-around h-16 px-4">
-            <Button variant="ghost" size="sm" onClick={() => setSheetOpen(true)} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSheetOpen(true)} 
+              className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+            >
               <Menu className="h-5 w-5" />
               <span className="text-xs">Menu</span>
             </Button>
             
-            {role === 'client_user' && <>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/conteudo')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
+            {role === 'client_user' && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/conteudo')} 
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
                   <FileText className="h-5 w-5" />
-                  <span className="text-xs">Conteúdos</span>
+                  <span className="text-xs">Conteúdo</span>
                 </Button>
-                
-                <Button variant="ghost" size="sm" onClick={() => navigate('/solicitar-criativo')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/solicitacoes')} 
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
                   <Plus className="h-5 w-5" />
-                  <span className="text-xs">Criativos</span>
+                  <span className="text-xs">Solicitar</span>
                 </Button>
-              </>}
+              </>
+            )}
             
-            {(role === 'agency_admin' || role === 'team_member') && <>
+            {(role === 'agency_admin' || role === 'team_member') && (
+              <>
                 {isClientDetailsPage ? (
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    const clientId = location.pathname.split('/cliente/')[1];
-                    navigate(`/agency/client/${clientId}`);
-                  }} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/cliente/${clientId}`)}
+                    className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                  >
                     <FileText className="h-5 w-5" />
                     <span className="text-xs">Conteúdos</span>
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/clientes')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
-                    <Users className="h-5 w-5" />
-                    <span className="text-xs">Clientes</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowClientSelector(true)}
+                    className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                  >
+                    <FileText className="h-5 w-5" />
+                    <span className="text-xs">Conteúdos</span>
                   </Button>
                 )}
-                
-                <Button variant="ghost" size="sm" onClick={() => navigate('/creative-requests')} className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2">
-                  <FileText className="h-5 w-5" />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/minhas-solicitacoes')} 
+                  className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
+                >
+                  <Plus className="h-5 w-5" />
                   <span className="text-xs">Solicitações</span>
                 </Button>
-              </>}
+              </>
+            )}
           </div>
         </div>
 
+        <ClientSelectorDialog 
+          open={showClientSelector} 
+          onOpenChange={setShowClientSelector} 
+        />
+
         <AppFooter />
-      </div>;
+      </div>
+    );
   }
-  return <SidebarProvider defaultOpen={false}>
+
+  if (!showSidebar) {
+    return (
+      <div className="flex min-h-screen w-full flex-col">
+        <AppHeader 
+          userName={profile?.name} 
+          userRole={role ? getRoleLabel(role) : undefined} 
+          onSignOut={handleSignOut} 
+          showSidebarTrigger={false} 
+        />
+        <main className="flex-1">{children}</main>
+        <AppFooter />
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full">
         {SidebarComponent && <SidebarComponent onSignOut={handleSignOut} />}
-
-        <div className="flex-1 flex flex-col">
-          <AppHeader userName={profile?.name} userRole={role ? getRoleLabel(role) : undefined} onSignOut={handleSignOut} showSidebarTrigger={showSidebar} />
-
-          <main className="flex-1">{children}</main>
-
+        <div className="flex flex-1 flex-col">
+          <AppHeader 
+            userName={profile?.name} 
+            userRole={role ? getRoleLabel(role) : undefined} 
+            onSignOut={handleSignOut} 
+          />
+          <main className="flex-1 p-6">{children}</main>
           <AppFooter />
         </div>
       </div>
-    </SidebarProvider>;
+    </SidebarProvider>
+  );
 }

@@ -3,11 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Mail, Phone, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Shield, Mail, Phone, Edit, Trash2, CheckCircle, XCircle, MoreVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AddApproverDialog } from "./AddApproverDialog";
 import { EditApproverDialog } from "./EditApproverDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +44,7 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
   const [editingApprover, setEditingApprover] = useState<Approver | null>(null);
   const [deletingApprover, setDeletingApprover] = useState<Approver | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const loadApprovers = async () => {
     try {
@@ -75,7 +78,6 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
     if (!deletingApprover) return;
 
     try {
-      // Verificar se é o único aprovador primário ativo
       if (deletingApprover.is_primary) {
         const activePrimaryCount = approvers.filter(
           (a) => a.is_active && a.is_primary && a.id !== deletingApprover.id
@@ -84,7 +86,7 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
         if (activePrimaryCount === 0) {
           toast({
             title: "Não é possível desativar",
-            description: "Deve haver pelo menos um aprovador primário ativo. Promova outro aprovador a primário antes de desativar este.",
+            description: "Deve haver pelo menos um aprovador primário ativo.",
             variant: "destructive",
           });
           setDeletingApprover(null);
@@ -92,7 +94,6 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
         }
       }
 
-      // Soft delete - apenas desativar
       const { error } = await supabase
         .from("client_approvers")
         .update({ is_active: false })
@@ -129,7 +130,7 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
 
       toast({
         title: "Aprovador reativado",
-        description: "Aprovador reativado com sucesso.",
+        description: "O aprovador foi reativado com sucesso.",
       });
 
       loadApprovers();
@@ -144,87 +145,83 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
   };
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Aprovadores de Conteúdo
-              </CardTitle>
-              <CardDescription>
-                Gerenciar aprovadores para {clientName}
-              </CardDescription>
-            </div>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Aprovador
-            </Button>
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Aprovadores de Conteúdo
+            </CardTitle>
+            <CardDescription className="mt-2">
+              Gerenciar aprovadores para {clientName}
+            </CardDescription>
           </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Carregando aprovadores...
-            </div>
-          ) : approvers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum aprovador cadastrado. Clique em "Adicionar Aprovador" para começar.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {approvers.map((approver) => (
-                  <TableRow key={approver.id}>
-                    <TableCell className="font-medium">{approver.name}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">{approver.email}</span>
-                        </div>
-                        {approver.whatsapp && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">{approver.whatsapp}</span>
+          <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Aprovador
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {approvers.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Nenhum aprovador cadastrado.</p>
+          </div>
+        ) : (
+          <>
+            {!isMobile && (
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Contato</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvers.map((approver) => (
+                      <TableRow key={approver.id}>
+                        <TableCell className="font-medium">{approver.name}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center">
+                              <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                              {approver.email}
+                            </div>
+                            {approver.whatsapp && (
+                              <div className="flex items-center">
+                                <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
+                                {approver.whatsapp}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {approver.is_primary ? (
-                        <Badge variant="default">Primário</Badge>
-                      ) : (
-                        <Badge variant="outline">Secundário</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {approver.is_active ? (
-                        <Badge variant="success" className="flex items-center gap-1 w-fit">
-                          <CheckCircle className="h-3 w-3" />
-                          Ativo
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Inativo
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {approver.is_active ? (
-                          <>
+                        </TableCell>
+                        <TableCell>
+                          {approver.is_primary ? (
+                            <Badge variant="default">Principal</Badge>
+                          ) : (
+                            <Badge variant="outline">Secundário</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {approver.is_active ? (
+                            <Badge variant="default" className="bg-green-500">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Ativo
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Inativo
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -232,32 +229,110 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeletingApprover(approver)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                            {approver.is_active ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingApprover(approver)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleReactivate(approver.id)}
+                              >
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {isMobile && (
+              <div className="space-y-4">
+                {approvers.map((approver) => (
+                  <Card key={approver.id}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <CardTitle className="text-base truncate">{approver.name}</CardTitle>
+                          <div className="flex gap-2 flex-wrap">
+                            {approver.is_primary ? (
+                              <Badge variant="default" className="text-xs">Principal</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">Secundário</Badge>
+                            )}
+                            {approver.is_active ? (
+                              <Badge variant="default" className="bg-green-500 text-xs">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Ativo
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Inativo
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="ml-2 flex-shrink-0">
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReactivate(approver.id)}
-                          >
-                            Reativar
-                          </Button>
-                        )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => setEditingApprover(approver)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            {approver.is_active ? (
+                              <DropdownMenuItem 
+                                onClick={() => setDeletingApprover(approver)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Desativar
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem 
+                                onClick={() => handleReactivate(approver.id)}
+                                className="text-green-600"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Reativar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex items-center break-all">
+                        <Mail className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                        <span>{approver.email}</span>
+                      </div>
+                      {approver.whatsapp && (
+                        <div className="flex items-center">
+                          <Phone className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                          <span>{approver.whatsapp}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
 
       <AddApproverDialog
         open={showAddDialog}
@@ -278,18 +353,19 @@ export function ApproversManager({ clientId, clientName }: ApproversManagerProps
       <AlertDialog open={!!deletingApprover} onOpenChange={(open) => !open && setDeletingApprover(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desativar aprovador?</AlertDialogTitle>
+            <AlertDialogTitle>Desativar aprovador</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja desativar {deletingApprover?.name}? Ele não poderá mais fazer login
-              via 2FA, mas poderá ser reativado posteriormente.
+              Tem certeza que deseja desativar {deletingApprover?.name}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Desativar</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+              Desativar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </Card>
   );
 }
