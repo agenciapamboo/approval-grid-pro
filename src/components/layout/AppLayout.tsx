@@ -63,14 +63,16 @@ export function AppLayout({
         
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r-0 overflow-y-auto">
-            <div className="flex flex-col h-full">
-              <div className="p-4 border-b border-sidebar-border">
-                <h2 className="text-lg font-semibold text-sidebar-foreground">Menu Principal</h2>
+            <SidebarProvider defaultOpen={true}>
+              <div className="flex flex-col h-full">
+                <div className="p-4 border-b border-sidebar-border">
+                  <h2 className="text-lg font-semibold text-sidebar-foreground">Menu Principal</h2>
+                </div>
+                <div className="flex-1">
+                  <SidebarComponent onSignOut={handleSignOut} />
+                </div>
               </div>
-              <div className="flex-1">
-                <SidebarComponent onSignOut={handleSignOut} />
-              </div>
-            </div>
+            </SidebarProvider>
           </SheetContent>
         </Sheet>
 
