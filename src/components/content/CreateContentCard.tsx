@@ -222,8 +222,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           return;
         }
 
-        // Calcular dimensões mantendo proporção (150px de largura)
-        const targetWidth = 150;
+        // Calcular dimensões mantendo proporção (320px de largura para melhor qualidade)
+        const targetWidth = 320;
         const scaleFactor = targetWidth / img.width;
         const targetHeight = Math.round(img.height * scaleFactor);
 
@@ -270,8 +270,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           return;
         }
 
-        // Calcular dimensões mantendo proporção (150px de largura)
-        const targetWidth = 150;
+        // Calcular dimensões mantendo proporção (320px de largura para melhor qualidade)
+        const targetWidth = 320;
         const scaleFactor = targetWidth / video.videoWidth;
         const targetHeight = Math.round(video.videoHeight * scaleFactor);
 
@@ -491,26 +491,46 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
         const mediaKind = file.type.startsWith('video/') ? 'video' : 'image';
 
-        // Gerar thumbnail automático para todas as mídias
+        // Gerar thumbnail automático para todas as mídias com retry logic
         let autoThumbUrl: string | null = null;
-        try {
-          const thumbnailBlob = mediaKind === 'video' 
-            ? await generateVideoThumbnail(file)
-            : await generateImageThumbnail(file);
+        let retries = 2;
 
-          const autoThumbFileName = `${content.id}/auto-thumb-${Date.now()}-${i}.jpg`;
-          const { error: autoThumbUploadError } = await supabase.storage
-            .from('content-media')
-            .upload(autoThumbFileName, thumbnailBlob);
+        while (retries >= 0) {
+          try {
+            console.log(`🖼️ Gerando thumbnail para ${file.name} (tentativa ${3 - retries}/3)...`);
+            
+            const thumbnailBlob = mediaKind === 'video' 
+              ? await generateVideoThumbnail(file)
+              : await generateImageThumbnail(file);
 
-          if (!autoThumbUploadError) {
-            // Armazenar apenas o caminho (não URL pública)
-            autoThumbUrl = autoThumbFileName;
+            const autoThumbFileName = `${content.id}/auto-thumb-${Date.now()}-${i}.jpg`;
+            const { error: autoThumbUploadError } = await supabase.storage
+              .from('content-media')
+              .upload(autoThumbFileName, thumbnailBlob);
+
+            if (!autoThumbUploadError) {
+              autoThumbUrl = autoThumbFileName;
+              console.log(`✅ Thumbnail gerado com sucesso: ${autoThumbFileName}`);
+              break; // Success - exit retry loop
+            }
+            
+            throw autoThumbUploadError;
+          } catch (thumbError) {
+            retries--;
+            console.warn(`⚠️ Erro ao gerar/enviar thumbnail (tentativas restantes: ${retries}):`, thumbError);
+            
+            if (retries < 0) {
+              console.error(`❌ Falha ao gerar thumbnail após 3 tentativas para ${file.name}`);
+              // Continue sem thumbnail (não bloqueia criação de conteúdo)
+            } else {
+              // Wait 500ms before retry
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
           }
-        } catch (thumbError) {
-          console.error('Erro ao gerar thumbnail automático:', thumbError);
-          // Continua sem thumbnail se houver erro
         }
+
+        // Determine if this is the primary thumbnail (first media item)
+        const isPrimaryThumb = i === 0;
 
         const mediaData: any = {
           content_id: content.id,
@@ -519,6 +539,7 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           order_index: i,
           size_bytes: file.size,
           thumb_url: autoThumbUrl, // Thumbnail gerado automaticamente
+          is_primary_thumbnail: isPrimaryThumb, // Mark first media as primary
         };
 
         // Se for vídeo de reels E tiver um thumbnail manual, sobrescrever
