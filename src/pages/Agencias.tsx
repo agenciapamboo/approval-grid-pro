@@ -123,18 +123,19 @@ const Agencias = () => {
   return (
     <AccessGate allow={['super_admin']}>
       <AppLayout>
-        <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="container mx-auto px-4 md:px-6 py-4 md:py-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 md:gap-4 mb-6 md:mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Agências</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold">Agências</h1>
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
               Gerencie todas as agências do sistema
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => navigate('/admin/blocked-ips')}
+              className="w-full sm:w-auto"
             >
               <Shield className="w-4 h-4 mr-2" />
               IPs Bloqueados
@@ -143,7 +144,7 @@ const Agencias = () => {
           </div>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
@@ -155,43 +156,43 @@ const Agencias = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredAgencies.map((agency) => (
             <Card key={agency.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     {agency.logo_url ? (
                       <img
                         src={agency.logo_url}
                         alt={agency.name}
-                        className="w-12 h-12 rounded-full object-cover"
+                        className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-primary" />
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                       </div>
                     )}
-                    <div>
-                      <CardTitle className="text-lg">{agency.name}</CardTitle>
-                      <CardDescription>@{agency.slug}</CardDescription>
+                    <div className="min-w-0">
+                      <CardTitle className="text-base md:text-lg truncate">{agency.name}</CardTitle>
+                      <CardDescription className="text-xs md:text-sm truncate">@{agency.slug}</CardDescription>
                     </div>
                   </div>
-                  <Badge variant={getPlanBadgeVariant(agency.plan)}>
+                  <Badge variant={getPlanBadgeVariant(agency.plan)} className="flex-shrink-0 text-xs">
                     {agency.plan || "free"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-xs md:text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{clientCounts[agency.id] || 0} clientes</span>
+                    <Users className="h-3 w-3 md:h-4 md:w-4" />
+                    <span>{clientCounts[agency.id] || 0} {clientCounts[agency.id] === 1 ? 'cliente' : 'clientes'}</span>
                   </div>
                   {agency.plan_renewal_date && (
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className="truncate">
                         Renovação: {format(new Date(agency.plan_renewal_date), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
                     </div>
@@ -199,7 +200,7 @@ const Agencias = () => {
                 </div>
                 <Button
                   variant="outline"
-                  className="w-full mt-4"
+                  className="w-full mt-3 md:mt-4"
                   onClick={() => navigate(`/agencias/${agency.id}`)}
                 >
                   <Eye className="mr-2 h-4 w-4" />
@@ -212,8 +213,8 @@ const Agencias = () => {
 
         {filteredAgencies.length === 0 && (
           <div className="text-center py-12">
-            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
+            <Building2 className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground mx-auto mb-3 md:mb-4" />
+            <p className="text-sm md:text-base text-muted-foreground">
               {searchQuery ? "Nenhuma agência encontrada" : "Nenhuma agência cadastrada"}
             </p>
           </div>

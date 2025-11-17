@@ -49,21 +49,22 @@ export default function CreativeRequests() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center gap-4">
+      <div className="container mx-auto px-4 md:px-6 py-4 md:py-8">
+        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigate(-1)}
+            className="w-full sm:w-auto"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
               Solicitações de Criativos
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
               Gerencie todas as solicitações recebidas de clientes
             </p>
           </div>
