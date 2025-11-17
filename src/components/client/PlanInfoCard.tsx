@@ -73,7 +73,9 @@ export function PlanInfoCard({ clientId }: PlanInfoCardProps) {
         console.error('Erro ao carregar histórico:', historyError);
         setMonthlyHistory([]);
       } else {
-        setMonthlyHistory(history || []);
+        console.log('Histórico mensal retornado:', history);
+        // Apenas exibir se há dados
+        setMonthlyHistory(history && history.length > 0 ? history : []);
       }
     } catch (error) {
       console.error('Erro ao carregar dados do plano:', error);
