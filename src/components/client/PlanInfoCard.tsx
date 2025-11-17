@@ -2,8 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Calendar, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -87,6 +89,17 @@ export function PlanInfoCard({ clientId }: PlanInfoCardProps) {
   const excedente = currentMonthCount - contracted;
   const hasOverage = excedente > 0;
 
+  // Calcular percentual de utilização
+  const usagePercentage = contracted > 0 
+    ? Math.round((currentMonthCount / contracted) * 10000) / 100 
+    : 0;
+
+  // Formatar percentual para exibição em pt-BR
+  const formattedPercentage = usagePercentage.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
   const getContactType = () => {
     // Se tem agency_id, falar com agência, senão com creator
     return clientData?.agency_id ? 'agência' : 'creator';
@@ -120,16 +133,43 @@ export function PlanInfoCard({ clientId }: PlanInfoCardProps) {
         <CardDescription>Acompanhe seu consumo mensal de criativos</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Criativos Contratados */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4">
+          {/* Criativos Contratados */}
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Criativos contratados</p>
-            <p className="text-2xl font-bold">{contracted}</p>
+            <p className="text-sm font-medium">
+              Criativos contratados: <span className="text-lg font-bold">{contracted}</span>
+            </p>
             <p className="text-xs text-muted-foreground">Configurado pela agência</p>
           </div>
+
+          {/* Criativos do Mês (formato X de Y) */}
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Criados em {format(new Date(), 'MMMM', { locale: ptBR })}</p>
-            <p className="text-2xl font-bold">{currentMonthCount}</p>
+            <p className="text-sm font-medium">
+              Criativos de {format(new Date(), 'MMMM', { locale: ptBR })}: 
+              <span className="text-lg font-bold ml-1">
+                {currentMonthCount} de {contracted}
+              </span>
+            </p>
+          </div>
+
+          {/* Barra de Progresso */}
+          <div className="space-y-2">
+            <Progress 
+              value={Math.min(usagePercentage, 100)} 
+              className={cn(
+                "h-3",
+                usagePercentage > 100 && "[&>div]:bg-destructive"
+              )}
+            />
+            <p className="text-sm text-center">
+              <span className={cn(
+                "font-bold text-base",
+                usagePercentage > 100 ? "text-destructive" : "text-primary"
+              )}>
+                {formattedPercentage}%
+              </span>
+              {" da cota utilizada"}
+            </p>
           </div>
         </div>
 
