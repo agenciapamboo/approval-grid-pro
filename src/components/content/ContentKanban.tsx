@@ -1300,14 +1300,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         ) : (
           <div 
             ref={kanbanContainerRef}
-            className="overflow-x-auto cursor-grab active:cursor-grabbing scroll-smooth"
+            className="overflow-x-auto cursor-grab active:cursor-grabbing scroll-smooth snap-x snap-mandatory md:snap-none pb-4 px-2 md:px-0"
             onMouseDown={handleMouseDownScroll}
             onMouseMove={handleMouseMoveScroll}
             onMouseUp={handleMouseUpScroll}
             onMouseLeave={handleMouseLeaveScroll}
           >
-            <div className="min-w-max pb-4">
-              <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+            <div className="flex flex-nowrap gap-3 md:gap-4 min-w-max">
+              <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart} className="contents">
               {columns.map((column) => {
                 // Mapear column_id para status do banco
                 let statusFilter = column.column_id;
@@ -1321,7 +1321,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                     <KanbanBoard 
                       key={column.column_id} 
                       id={column.column_id}
-                      className="w-80"
+                      className="w-full sm:w-80 min-w-[280px] sm:min-w-[320px] snap-start snap-always flex-shrink-0"
                     >
                       <KanbanHeader 
                         name={column.column_name} 
@@ -1692,7 +1692,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                   <KanbanBoard 
                     key={column.column_id} 
                     id={column.column_id}
-                    className="w-80"
+                    className="w-full sm:w-80 min-w-[280px] sm:min-w-[320px] snap-start snap-always flex-shrink-0"
                   >
                     <KanbanHeader 
                       name={column.column_name} 
