@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowUpDown, Eye } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Eye, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ContentMedia } from "@/components/content/ContentMedia";
@@ -39,19 +39,22 @@ interface ContentLog {
 export default function ClientHistory() {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [logs, setLogs] = useState<ContentLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientName, setClientName] = useState<string>("");
   const [sortAscending, setSortAscending] = useState(true);
   const [selectedContent, setSelectedContent] = useState<ContentLog | null>(null);
   const [showContentDialog, setShowContentDialog] = useState(false);
+  
+  const monthFilter = searchParams.get('month');
 
   useEffect(() => {
     if (clientId) {
       loadClientData();
       loadLogs();
     }
-  }, [clientId]);
+  }, [clientId, monthFilter]);
 
   const loadClientData = async () => {
     const { data } = await supabase
@@ -76,8 +79,8 @@ export default function ClientHistory() {
 
     const availableContentIds = new Set(allContentIds?.map(c => c.id) || []);
     
-    // Fetch contents for logs with their first media thumbnail
-    const { data: contents, error: contentsError } = await supabase
+    // Build query for contents with optional month filter
+    let contentsQuery = supabase
       .from("contents")
       .select(`
         id, 
@@ -90,7 +93,20 @@ export default function ClientHistory() {
         published_at,
         content_media!inner(thumb_url)
       `)
-      .eq("client_id", clientId)
+      .eq("client_id", clientId);
+
+    // Apply month filter if provided
+    if (monthFilter) {
+      const [year, month] = monthFilter.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1);
+      
+      contentsQuery = contentsQuery
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endDate.toISOString());
+    }
+
+    const { data: contents, error: contentsError } = await contentsQuery
       .order("created_at", { ascending: sortAscending });
 
     if (contentsError) {
@@ -262,6 +278,10 @@ export default function ClientHistory() {
     setShowContentDialog(true);
   };
 
+  const clearMonthFilter = () => {
+    setSearchParams({});
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -273,7 +293,8 @@ export default function ClientHistory() {
         </div>
 
         <Card>
-          <CardHeader>
+        <CardHeader>
+          <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <CardTitle>Histórico de Aprovação - {clientName}</CardTitle>
               <Button variant="outline" size="sm" onClick={toggleSort}>
@@ -281,7 +302,20 @@ export default function ClientHistory() {
                 {sortAscending ? "Mais antigos primeiro" : "Mais recentes primeiro"}
               </Button>
             </div>
-          </CardHeader>
+            
+            {monthFilter && (
+              <Badge variant="outline" className="w-fit gap-2">
+                Exibindo conteúdos de {format(new Date(monthFilter + '-01'), 'MMMM yyyy', { locale: ptBR })}
+                <button
+                  onClick={clearMonthFilter}
+                  className="ml-1 rounded-full hover:bg-muted"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
           <CardContent>
             {loading ? (
               <div className="flex items-center justify-center p-8">
