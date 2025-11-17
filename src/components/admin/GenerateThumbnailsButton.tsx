@@ -57,7 +57,7 @@ export function GenerateThumbnailsButton() {
       ) : (
         <>
           <ImagePlus className="w-4 h-4 mr-2" />
-          Gerar Miniaturas Antigas
+          Gerar Miniaturas
         </>
       )}
     </Button>
