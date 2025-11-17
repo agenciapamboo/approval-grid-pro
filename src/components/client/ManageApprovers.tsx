@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit, Trash2 } from "lucide-react";
+import { UserPlus, Mail, Phone, CheckCircle, XCircle, Edit, Trash2, MoreVertical } from "lucide-react";
 import { AddApproverDialog } from "@/components/admin/AddApproverDialog";
 import { EditApproverDialog } from "@/components/admin/EditApproverDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface ClientApprover {
   id: string;
@@ -319,51 +320,49 @@ export function ManageApprovers() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditApprover(approver)}
-                            title="Editar aprovador"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          
-                          {approver.is_active ? (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setApproverToDelete(approver);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                title="Desativar aprovador"
-                                className="text-orange-600 hover:text-orange-700"
-                              >
-                                <XCircle className="h-4 w-4" />
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteApprover(approver.id)}
-                                title="Deletar aprovador"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReactivateApprover(approver.id)}
-                              title="Reativar aprovador"
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          )}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => handleEditApprover(approver)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              {approver.is_active ? (
+                                <>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setApproverToDelete(approver);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                    className="text-orange-600"
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Desativar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteApprover(approver.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Deletar
+                                  </DropdownMenuItem>
+                                </>
+                              ) : (
+                                <DropdownMenuItem 
+                                  onClick={() => handleReactivateApprover(approver.id)}
+                                  className="text-green-600"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Reativar
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     ))}
@@ -378,7 +377,7 @@ export function ManageApprovers() {
                     <Card key={approver.id}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
-                          <div className="space-y-1">
+                          <div className="space-y-1 flex-1">
                             <CardTitle className="text-base">{approver.name}</CardTitle>
                             <div className="flex gap-2 flex-wrap">
                               {approver.is_primary ? (
@@ -399,6 +398,48 @@ export function ManageApprovers() {
                               )}
                             </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => handleEditApprover(approver)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              {approver.is_active ? (
+                                <>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setApproverToDelete(approver);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                    className="text-orange-600"
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Desativar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteApprover(approver.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Deletar
+                                  </DropdownMenuItem>
+                                </>
+                              ) : (
+                                <DropdownMenuItem 
+                                  onClick={() => handleReactivateApprover(approver.id)}
+                                  className="text-green-600"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Reativar
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -414,54 +455,6 @@ export function ManageApprovers() {
                             </div>
                           )}
                         </div>
-                        
-                        <div className="flex gap-2 pt-2 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditApprover(approver)}
-                            className="flex-1"
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </Button>
-                          
-                          {approver.is_active ? (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setApproverToDelete(approver);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                className="flex-1 text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white"
-                              >
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Desativar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteApprover(approver.id)}
-                                className="flex-1 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Deletar
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReactivateApprover(approver.id)}
-                              className="flex-1 text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Reativar
-                            </Button>
-                          )}
-                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -471,17 +464,6 @@ export function ManageApprovers() {
           )}
         </CardContent>
       </Card>
-
-      {/* Botão flutuante mobile para adicionar */}
-      {isMobile && (
-        <Button
-          onClick={() => setAddDialogOpen(true)}
-          size="lg"
-          className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 md:hidden"
-        >
-          <UserPlus className="h-6 w-6" />
-        </Button>
-      )}
 
       <AddApproverDialog
         open={addDialogOpen}
