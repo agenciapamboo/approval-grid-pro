@@ -69,7 +69,7 @@ export function AppLayout({
                   <h2 className="text-lg font-semibold text-sidebar-foreground">Menu Principal</h2>
                 </div>
                 <div className="flex-1">
-                  <SidebarComponent onSignOut={handleSignOut} />
+                  <SidebarComponent onSignOut={handleSignOut} isMobile={true} />
                 </div>
               </div>
             </SidebarProvider>

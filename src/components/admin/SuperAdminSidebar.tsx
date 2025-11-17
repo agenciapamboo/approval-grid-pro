@@ -119,10 +119,50 @@ const categories = [
   { id: "sistema", label: "Sistema" }
 ];
 
-export function SuperAdminSidebar() {
+export function SuperAdminSidebar({ isMobile = false }: { isMobile?: boolean }) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
+  // Renderização mobile simplificada (sem componente Sidebar shadcn)
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-full bg-sidebar">
+        <nav className="flex-1 px-3 py-4">
+          {categories.map((category) => {
+            const items = menuItems.filter(item => item.category === category.id);
+            if (items.length === 0) return null;
+            
+            return (
+              <div key={category.id} className="mb-4">
+                <h3 className="px-3 mb-2 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">
+                  {category.label}
+                </h3>
+                <ul className="space-y-1">
+                  {items.map((item) => (
+                    <li key={item.url}>
+                      <NavLink
+                        to={item.url}
+                        className={({ isActive }) =>
+                          isActive 
+                            ? "flex items-center gap-3 bg-sidebar-primary text-sidebar-primary-foreground font-medium rounded-md px-3 py-2.5 transition-colors" 
+                            : "flex items-center gap-3 hover:bg-sidebar-accent rounded-md px-3 py-2.5 text-sidebar-foreground transition-colors"
+                        }
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="text-sm">{item.title}</span>
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </nav>
+      </div>
+    );
+  }
+
+  // Renderização desktop (usando Sidebar shadcn)
   return (
     <Sidebar collapsible="icon" className="border-r bg-sidebar text-sidebar-foreground">
       <SidebarContent className="bg-sidebar">
