@@ -115,7 +115,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => navigate('/solicitacoes')} 
+                  onClick={() => navigate('/solicitar-criativo')} 
                   className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
                 >
                   <Plus className="h-5 w-5" />

@@ -3,11 +3,13 @@ import { useUserData } from "@/hooks/useUserData";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Calendar, FileText } from "lucide-react";
+import { Loader2, Calendar, FileText, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -19,6 +21,7 @@ interface Notification {
 
 export default function MinhasSolicitacoes() {
   const { profile, loading: userLoading } = useUserData();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<Notification[]>([]);
 
@@ -73,13 +76,19 @@ export default function MinhasSolicitacoes() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            Minhas Solicitações
-          </h1>
-          <p className="text-muted-foreground">
-            Acompanhe o status das suas solicitações de criativos
-          </p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              Minhas Solicitações
+            </h1>
+            <p className="text-muted-foreground">
+              Acompanhe o status das suas solicitações de criativos
+            </p>
+          </div>
+          <Button onClick={() => navigate('/solicitar-criativo')} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Solicitar Criativo
+          </Button>
         </div>
 
         {requests.length === 0 ? (

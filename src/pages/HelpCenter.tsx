@@ -117,9 +117,9 @@ const HelpCenter = () => {
                   onClick={() => handleOpenTicket('agencia')}
                 >
                   <MessageSquare className="h-6 w-6 mb-2 flex-shrink-0" />
-                  <span className="font-semibold w-full break-words">Comunicação</span>
+                  <span className="font-semibold w-full break-words">{agencyLabel}</span>
                   <span className="text-xs text-muted-foreground mt-1 w-full break-words">
-                    Comunicações com a {agencyLabel.toLowerCase()}
+                    Fale com sua {agencyLabel.toLowerCase()}
                   </span>
                 </Button>
               </div>

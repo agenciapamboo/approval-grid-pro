@@ -48,7 +48,7 @@ export function CreateTicketDialog({
     'suporte': 'Suporte Técnico',
     'duvidas': 'Dúvidas',
     'financeiro': 'Financeiro',
-    'agencia': `Comunicação com ${agencyLabel}`,
+    'agencia': agencyLabel,
   };
 
   useEffect(() => {
