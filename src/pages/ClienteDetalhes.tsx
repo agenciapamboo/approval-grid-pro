@@ -15,7 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { ApproversManager } from "@/components/admin/ApproversManager";
 import { SocialAccountsDialog } from "@/components/admin/SocialAccountsDialog";
 import { ClientCreativeRequestsTable } from "@/components/admin/ClientCreativeRequestsTable";
-import { ClientContentLogsTable } from "@/components/admin/ClientContentLogsTable";
+import { ClientContentLogsCards } from "@/components/admin/ClientContentLogsCards";
+import { ClientDetailsAccordion } from "@/components/admin/ClientDetailsAccordion";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Building2, Edit, Calendar, FileText, Users, Shield,
@@ -263,9 +264,22 @@ const ClienteDetalhes = () => {
           </Button>
         </div>
 
-        {/* Header do Cliente */}
+        {/* Header do Cliente - Mobile First */}
         <Card className="mb-6">
           <CardHeader>
+            {/* Botões no topo para mobile */}
+            <div className="flex gap-2 justify-end mb-4 md:hidden">
+              <Button variant="outline" size="sm" onClick={() => setSocialDialogOpen(true)}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Redes Sociais
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/agency/client/${clientId}`)}>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Aprovar
+              </Button>
+            </div>
+
+            {/* Informações do Cliente */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 {client.logo_url ? (
@@ -277,22 +291,19 @@ const ClienteDetalhes = () => {
                 )}
                 <div>
                   <CardTitle className="text-2xl">{client.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground font-mono">{client.slug}</p>
                   {client.agencies && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      Agência: {client.agencies.name}
+                      {client.agencies.name}
                     </p>
                   )}
                 </div>
               </div>
-              <div className="flex gap-2">
+              
+              {/* Botões para desktop */}
+              <div className="hidden md:flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setSocialDialogOpen(true)}>
                   <Share2 className="h-4 w-4 mr-2" />
                   Redes Sociais
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate(`/agency/client/${clientId}`)}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Conteúdos
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate(`/agency/client/${clientId}`)}>
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -303,8 +314,270 @@ const ClienteDetalhes = () => {
           </CardHeader>
         </Card>
 
-        {/* Tabs de Informações */}
-        <Tabs defaultValue="overview" className="space-y-6">
+        {/* Accordions para Mobile */}
+        <ClientDetailsAccordion
+          overviewContent={
+            <>
+              <div className="grid grid-cols-1 gap-4 mb-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Rascunhos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{contentStats.draft}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Em Revisão</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{contentStats.in_review}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Aprovados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{contentStats.approved}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Publicados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{contentStats.published}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações do Plano</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Criativos do Mês</span>
+                      <span className="text-sm font-medium">{monthlyCreatives.used} / {monthlyCreatives.limit}</span>
+                    </div>
+                    <Progress value={monthlyCreatives.percentage} />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {monthlyCreatives.percentage.toFixed(1)}% da cota utilizada
+                    </p>
+                  </div>
+                  <Separator />
+                  {client.plan_renewal_date && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        Renovação: {format(new Date(client.plan_renewal_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          }
+          cadastralContent={
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados Cadastrais</CardTitle>
+                <CardDescription>Edite as informações do cliente</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Informações Básicas - 1 COLUNA NO MOBILE */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <Label htmlFor="name">Nome *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Input
+                      id="cnpj"
+                      value={formData.cnpj}
+                      onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                    <Input
+                      id="whatsapp"
+                      value={formData.whatsapp}
+                      onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      placeholder="https://exemplo.com.br"
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Limites do Plano - 1 COLUNA NO MOBILE */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Limites do Plano</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="monthly_creatives">Criativos Mensais</Label>
+                      <Input
+                        id="monthly_creatives"
+                        type="number"
+                        value={formData.monthly_creatives}
+                        onChange={(e) => setFormData({ ...formData, monthly_creatives: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="plan_renewal_date">Data de Renovação do Plano</Label>
+                      <Input
+                        id="plan_renewal_date"
+                        type="date"
+                        value={formData.plan_renewal_date}
+                        onChange={(e) => setFormData({ ...formData, plan_renewal_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Endereço - 1 COLUNA NO MOBILE */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Endereço</h3>
+                  <div>
+                    <Label htmlFor="address">Endereço Completo</Label>
+                    <Textarea
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Notificações - 1 COLUNA NO MOBILE */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Preferências de Notificação</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="notify_email">Notificar por Email</Label>
+                      <Switch
+                        id="notify_email"
+                        checked={formData.notify_email}
+                        onCheckedChange={(checked) => setFormData({ ...formData, notify_email: checked })}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="notify_whatsapp">Notificar por WhatsApp</Label>
+                      <Switch
+                        id="notify_whatsapp"
+                        checked={formData.notify_whatsapp}
+                        onCheckedChange={(checked) => setFormData({ ...formData, notify_whatsapp: checked })}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="notify_webhook">Notificar por Webhook</Label>
+                      <Switch
+                        id="notify_webhook"
+                        checked={formData.notify_webhook}
+                        onCheckedChange={(checked) => setFormData({ ...formData, notify_webhook: checked })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Resetar Senha - 1 COLUNA NO MOBILE */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Resetar Senha do Cliente</h3>
+                  <div>
+                    <Label htmlFor="new_password">Nova Senha</Label>
+                    <Input
+                      id="new_password"
+                      type="password"
+                      value={formData.new_password}
+                      onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
+                      placeholder="Deixe em branco para não alterar"
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Adicionar Nota - 1 COLUNA NO MOBILE */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Adicionar Nota</h3>
+                  <div>
+                    <Label htmlFor="new_note">Nova Nota</Label>
+                    <Textarea
+                      id="new_note"
+                      value={formData.new_note}
+                      onChange={(e) => setFormData({ ...formData, new_note: e.target.value })}
+                      placeholder="Adicione observações sobre o cliente..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => navigate("/clientes")}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleUpdateClient} disabled={saving}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Salvar Alterações
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          }
+          approversContent={
+            <ApproversManager clientId={clientId || ""} clientName={client.name} />
+          }
+          requestsContent={
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Solicitações</CardTitle>
+                <CardDescription>Solicitações de criativos feitas por este cliente</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ClientCreativeRequestsTable clientId={clientId || ""} />
+              </CardContent>
+            </Card>
+          }
+          logsContent={
+            <ClientContentLogsCards clientId={clientId || ""} />
+          }
+        />
+
+        {/* Tabs para Desktop */}
+        <Tabs defaultValue="overview" className="hidden md:block space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="cadastral">Dados Cadastrais</TabsTrigger>
@@ -378,146 +651,182 @@ const ClienteDetalhes = () => {
             </Card>
           </TabsContent>
 
-          {/* Tab: Dados Cadastrais - EDITÁVEL */}
+          {/* Tab: Dados Cadastrais - EDITÁVEL COM 2 COLUNAS NO DESKTOP */}
           <TabsContent value="cadastral">
             <Card>
               <CardHeader>
                 <CardTitle>Dados Cadastrais</CardTitle>
-                <CardDescription>Edite os dados do cliente</CardDescription>
+                <CardDescription>Edite as informações do cliente</CardDescription>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleUpdateClient} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-6">
+                {/* Informações Básicas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Nome *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Input
+                      id="cnpj"
+                      value={formData.cnpj}
+                      onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                    <Input
+                      id="whatsapp"
+                      value={formData.whatsapp}
+                      onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      placeholder="https://exemplo.com.br"
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Limites do Plano */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Limites do Plano</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Nome *</Label>
-                      <Input 
-                        value={formData.name} 
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required 
-                      />
-                    </div>
-                    <div>
-                      <Label>Email (Login 2FA) *</Label>
-                      <Input 
-                        type="email" 
-                        value={formData.email} 
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        required 
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Alterar este email altera o login do cliente
-                      </p>
-                    </div>
-                    <div>
-                      <Label>CNPJ</Label>
-                      <Input 
-                        value={formData.cnpj} 
-                        onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>WhatsApp (Login 2FA)</Label>
-                      <Input 
-                        value={formData.whatsapp} 
-                        onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Nova Senha</Label>
-                      <Input 
-                        type="password" 
-                        placeholder="Deixe em branco para manter"
-                        value={formData.new_password}
-                        onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Data de Vencimento (Contrato)</Label>
-                      <Input 
-                        type="date" 
-                        value={formData.plan_renewal_date}
-                        onChange={(e) => setFormData({ ...formData, plan_renewal_date: e.target.value })}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Apenas para controle interno da agência
-                      </p>
-                    </div>
-                    <div>
-                      <Label>Site</Label>
-                      <Input 
-                        type="url" 
-                        value={formData.website}
-                        onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Criativos por Mês</Label>
-                      <Input 
-                        type="number" 
+                      <Label htmlFor="monthly_creatives">Criativos Mensais</Label>
+                      <Input
+                        id="monthly_creatives"
+                        type="number"
                         value={formData.monthly_creatives}
                         onChange={(e) => setFormData({ ...formData, monthly_creatives: parseInt(e.target.value) || 0 })}
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="plan_renewal_date">Data de Renovação do Plano</Label>
+                      <Input
+                        id="plan_renewal_date"
+                        type="date"
+                        value={formData.plan_renewal_date}
+                        onChange={(e) => setFormData({ ...formData, plan_renewal_date: e.target.value })}
+                      />
+                    </div>
                   </div>
+                </div>
 
-                  <Separator />
+                <Separator />
 
+                {/* Endereço */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Endereço</h3>
                   <div>
-                    <Label>Endereço Completo</Label>
+                    <Label htmlFor="address">Endereço Completo</Label>
                     <Textarea
-                      placeholder="Rua, Número, Complemento - Bairro, Cidade - Estado, CEP"
+                      id="address"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       rows={3}
                     />
                   </div>
+                </div>
 
-                  <Separator />
+                <Separator />
 
-                  <div>
-                    <Label>Nova Observação</Label>
-                    <Textarea 
-                      placeholder="Adicione uma nota sobre o cliente..."
-                      value={formData.new_note}
-                      onChange={(e) => setFormData({ ...formData, new_note: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Preferências de Notificação</h4>
+                {/* Notificações */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Preferências de Notificação</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-center justify-between">
-                      <Label>Notificações por Email</Label>
-                      <Switch 
+                      <Label htmlFor="notify_email">Notificar por Email</Label>
+                      <Switch
+                        id="notify_email"
                         checked={formData.notify_email}
                         onCheckedChange={(checked) => setFormData({ ...formData, notify_email: checked })}
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label>Notificações por WhatsApp</Label>
-                      <Switch 
+                      <Label htmlFor="notify_whatsapp">Notificar por WhatsApp</Label>
+                      <Switch
+                        id="notify_whatsapp"
                         checked={formData.notify_whatsapp}
                         onCheckedChange={(checked) => setFormData({ ...formData, notify_whatsapp: checked })}
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label>Webhook</Label>
-                      <Badge>Sempre Ativo</Badge>
+                      <Label htmlFor="notify_webhook">Notificar por Webhook</Label>
+                      <Switch
+                        id="notify_webhook"
+                        checked={formData.notify_webhook}
+                        onCheckedChange={(checked) => setFormData({ ...formData, notify_webhook: checked })}
+                      />
                     </div>
                   </div>
+                </div>
 
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => loadClient()}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={saving}>
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Salvar Alterações
-                    </Button>
+                <Separator />
+
+                {/* Resetar Senha */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Resetar Senha do Cliente</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="new_password">Nova Senha</Label>
+                      <Input
+                        id="new_password"
+                        type="password"
+                        value={formData.new_password}
+                        onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
+                        placeholder="Deixe em branco para não alterar"
+                      />
+                    </div>
                   </div>
-                </form>
+                </div>
+
+                <Separator />
+
+                {/* Adicionar Nota */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Adicionar Nota</h3>
+                  <div>
+                    <Label htmlFor="new_note">Nova Nota</Label>
+                    <Textarea
+                      id="new_note"
+                      value={formData.new_note}
+                      onChange={(e) => setFormData({ ...formData, new_note: e.target.value })}
+                      placeholder="Adicione observações sobre o cliente..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => navigate("/clientes")}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleUpdateClient} disabled={saving}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Salvar Alterações
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -528,33 +837,30 @@ const ClienteDetalhes = () => {
           </TabsContent>
 
           {/* Tab: Histórico de Solicitações */}
-            <TabsContent value="solicitacoes">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Histórico de Solicitações</CardTitle>
-                  <CardDescription>Todas as solicitações de criação de conteúdo deste cliente</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ClientCreativeRequestsTable 
-                    clientId={clientId || ""} 
-                    showClientColumn={false} 
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <TabsContent value="solicitacoes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Solicitações</CardTitle>
+                <CardDescription>Solicitações de criativos feitas por este cliente</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ClientCreativeRequestsTable clientId={clientId || ""} />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Tab: Histórico de Aprovação */}
-            <TabsContent value="aprovacoes">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Histórico de Aprovação</CardTitle>
-                  <CardDescription>Histórico completo de aprovações, comentários e ajustes solicitados</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ClientContentLogsTable clientId={clientId || ""} />
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <TabsContent value="aprovacoes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Aprovação</CardTitle>
+                <CardDescription>Histórico completo de aprovações, comentários e ajustes solicitados</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ClientContentLogsCards clientId={clientId || ""} />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 

@@ -355,7 +355,7 @@ export const UsersManager = () => {
                             )}
                             {user.agency_name && (
                               <span className="text-muted-foreground">
-                                🏭 Agência: <span className="font-medium">{user.agency_name}</span>
+                                🏭 <span className="font-medium">{user.agency_name}</span>
                               </span>
                             )}
                           </div>
