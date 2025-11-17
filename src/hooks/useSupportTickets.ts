@@ -96,38 +96,6 @@ export function useSupportTickets() {
 
       if (error) throw error;
 
-      // Enviar notificação interna
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('id', user.id)
-        .single();
-
-      if (data && 'id' in data && typeof data.id === 'string') {
-        await sendInternalNotification({
-          type: 'info',
-          subject: `Novo Ticket de Suporte #${(data.id as string).substring(0, 8)}`,
-          message: `Um novo ticket foi criado na categoria ${category}`,
-          details: {
-            ticket_id: data.id,
-            subject,
-            description,
-            category,
-            priority,
-            status: 'open',
-            created_by: {
-              user_id: user.id,
-              user_name: profile?.name || currentUser?.email || 'Desconhecido',
-              user_email: currentUser?.email || ''
-            },
-            created_at: 'created_at' in data ? (data.created_at as string) : new Date().toISOString()
-          },
-          source: 'support-tickets-system',
-          priority: priority === 'urgent' ? 'critical' : priority === 'high' ? 'high' : 'normal'
-        });
-      }
-
       toast({
         title: "Ticket criado com sucesso",
         description: `Seu ticket foi criado.`,

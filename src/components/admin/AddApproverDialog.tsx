@@ -86,6 +86,10 @@ export function AddApproverDialog({
     try {
       setLoading(true);
 
+      // Obter usuário atual e seu profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       // Buscar agency_id do cliente
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
@@ -139,6 +143,7 @@ export function AddApproverDialog({
         whatsapp: data.whatsapp || null,
         is_primary: data.is_primary,
         is_active: true,
+        created_by: user.id,
       }]);
 
       if (error) throw error;

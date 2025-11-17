@@ -83,14 +83,16 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
         .eq("id", contentId)
         .single();
 
-        const { error } = await supabase
+        const { data: insertedComment, error } = await supabase
           .from("comments")
           .insert({
             content_id: contentId,
             body: newComment,
             author_user_id: currentUserId,
             version: contentData?.version || 1,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
@@ -111,7 +113,7 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
         }
 
         setNewComment("");
-        loadComments();
+        await loadComments(); // Re-carregar comentários para garantir visibilidade
         onUpdate();
         
       toast({
