@@ -12,6 +12,7 @@ interface CreateTicketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultCategory?: TicketCategory;
+  agencyLabel?: string;
 }
 
 const CATEGORY_LABELS: Record<TicketCategory, string> = {
@@ -28,7 +29,12 @@ const PRIORITY_LABELS: Record<TicketPriority, string> = {
   'urgent': 'Urgente',
 };
 
-export function CreateTicketDialog({ open, onOpenChange, defaultCategory }: CreateTicketDialogProps) {
+export function CreateTicketDialog({ 
+  open, 
+  onOpenChange, 
+  defaultCategory,
+  agencyLabel = 'Agência'
+}: CreateTicketDialogProps) {
   const [category, setCategory] = useState<TicketCategory>(defaultCategory || 'suporte');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -36,6 +42,14 @@ export function CreateTicketDialog({ open, onOpenChange, defaultCategory }: Crea
   const [availableCategories, setAvailableCategories] = useState<TicketCategory[]>([]);
   
   const { createTicket, loading, getAvailableCategories } = useSupportTickets();
+
+  // Labels dinâmicos de categoria
+  const categoryLabels: Record<TicketCategory, string> = {
+    'suporte': 'Suporte Técnico',
+    'duvidas': 'Dúvidas',
+    'financeiro': 'Financeiro',
+    'agencia': `Comunicação com ${agencyLabel}`,
+  };
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -93,7 +107,7 @@ export function CreateTicketDialog({ open, onOpenChange, defaultCategory }: Crea
               <SelectContent>
                 {availableCategories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
+                    {categoryLabels[cat]}
                   </SelectItem>
                 ))}
               </SelectContent>
