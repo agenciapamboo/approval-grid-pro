@@ -300,7 +300,10 @@ serve(async (req) => {
       currentPeriodEnd: subscription.current_period_end,
     });
 
-    const nextBillingDate = new Date(subscription.current_period_end * 1000).toISOString();
+    // Handle incomplete subscriptions that don't have current_period_end yet
+    const nextBillingDate = subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : new Date(Date.now() + (billing_cycle === "annual" ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
 
     // Atualizar perfil (se existir)
     if (adminProfile.id) {
