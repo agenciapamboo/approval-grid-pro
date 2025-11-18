@@ -41,6 +41,10 @@ async function fetchApproverClients(userId: string) {
   return clientsResponse.data || [];
 }
 
+/**
+ * Dashboard - Página principal do painel
+ * Exibe informações personalizadas baseadas no role do usuário
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
