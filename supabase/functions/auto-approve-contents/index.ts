@@ -146,58 +146,20 @@ serve(async (req) => {
       }
     }
 
-    // 3. Publicar conteúdos agendados pela data/hora (apenas conteúdos recentes - últimas 2 horas)
-    console.log('Buscando conteúdos com data/hora vencida para publicar...');
+    // 3. Publicar conteúdos agendados (auto_publish=true) pela data/hora (apenas conteúdos recentes - últimas 2 horas)
+    console.log('Buscando conteúdos agendados para publicação automática...');
     const now = new Date().toISOString();
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 horas atrás
     
-    const { data: scheduledContents, error: scheduledError } = await supabaseClient
-      .from('contents')
-      .select('*')
-      .lte('date', now)
-      .gte('date', twoHoursAgo) // Não publicar conteúdos com mais de 2 horas de atraso
-      .is('published_at', null);
-
-    if (scheduledError) {
-      console.error('Erro ao buscar conteúdos agendados:', scheduledError);
-    } else if (scheduledContents && scheduledContents.length > 0) {
-      console.log(`Encontrados ${scheduledContents.length} conteúdos para publicar automaticamente`);
-      
-      for (const content of scheduledContents) {
-        try {
-          // Chamar função de publicação
-          const publishResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/publish-to-social`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-            },
-            body: JSON.stringify({ contentId: content.id }),
-          });
-
-          const publishResult = await publishResponse.json();
-          
-          if (publishResult.success) {
-            console.log(`Conteúdo ${content.id} publicado automaticamente na data agendada`);
-          } else {
-            console.error(`Erro ao publicar conteúdo ${content.id}:`, publishResult.error);
-          }
-        } catch (error) {
-          console.error(`Erro ao publicar conteúdo ${content.id}:`, error);
-        }
-      }
-    }
-
-    // 4. Publicar conteúdos com auto_publish=true e data vencida (apenas conteúdos recentes - últimas 2 horas)
-    console.log('Buscando conteúdos com auto_publish ativado...');
-    
     const { data: autoPublishContents, error: autoPublishError } = await supabaseClient
       .from('contents')
-      .select('*')
+      .select('*, content_media(*)')
       .eq('auto_publish', true)
       .lte('date', now)
       .gte('date', twoHoursAgo) // Não publicar conteúdos com mais de 2 horas de atraso
-      .is('published_at', null);
+      .is('published_at', null)
+      .or('is_content_plan.is.null,is_content_plan.eq.false') // NUNCA publicar planos de conteúdo
+      .in('status', ['approved', 'scheduled']); // Só publicar se aprovado ou agendado
 
     if (autoPublishError) {
       console.error('Erro ao buscar conteúdos auto_publish:', autoPublishError);
@@ -205,6 +167,22 @@ serve(async (req) => {
       console.log(`Encontrados ${autoPublishContents.length} conteúdos agendados para publicar`);
       
       for (const content of autoPublishContents) {
+        // VALIDAÇÃO CRÍTICA: Verificar se é plano de conteúdo
+        if (content.is_content_plan === true) {
+          console.log(`⚠️ Pulando publicação do conteúdo ${content.id}: é um plano de conteúdo (is_content_plan=true)`);
+          continue;
+        }
+
+        // VALIDAÇÃO CRÍTICA: Verificar se tem mídia (necessário para carrosséis, reels, etc)
+        const hasMedia = content.content_media && content.content_media.length > 0;
+        const contentType = content.type || '';
+        const requiresMedia = ['carousel', 'reels', 'story', 'image', 'video'].includes(contentType);
+
+        if (requiresMedia && !hasMedia) {
+          console.log(`⚠️ Pulando publicação do conteúdo ${content.id}: tipo ${contentType} requer mídia mas não possui`);
+          continue;
+        }
+
         try {
           // Chamar função de publicação
           const publishResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/publish-to-social`, {
@@ -219,12 +197,12 @@ serve(async (req) => {
           const publishResult = await publishResponse.json();
           
           if (publishResult.success) {
-            console.log(`Conteúdo ${content.id} publicado via agendamento (auto_publish)`);
+            console.log(`✅ Conteúdo ${content.id} publicado via agendamento (auto_publish)`);
           } else {
-            console.error(`Erro ao publicar conteúdo ${content.id}:`, publishResult.error);
+            console.error(`❌ Erro ao publicar conteúdo ${content.id}:`, publishResult.error);
           }
         } catch (error) {
-          console.error(`Erro ao publicar conteúdo ${content.id}:`, error);
+          console.error(`❌ Erro ao publicar conteúdo ${content.id}:`, error);
         }
       }
     }
@@ -235,7 +213,7 @@ serve(async (req) => {
         reminders_sent: todayContents?.length || 0,
         approved: approvedCount,
         total_expired: expiredContents?.length || 0,
-        auto_published: (scheduledContents?.length || 0) + (autoPublishContents?.length || 0),
+        auto_published: autoPublishContents?.length || 0,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
