@@ -52,6 +52,7 @@ const ClienteDetalhes = () => {
     notify_email: true,
     notify_whatsapp: false,
     notify_webhook: true,
+    require_approval_to_publish: false,
   });
 
   useEffect(() => {
@@ -113,6 +114,7 @@ const ClienteDetalhes = () => {
         notify_email: clientData.notify_email ?? true,
         notify_whatsapp: clientData.notify_whatsapp ?? false,
         notify_webhook: clientData.notify_webhook ?? true,
+        require_approval_to_publish: clientData.require_approval_to_publish ?? false,
       });
 
       // Carregar conteúdos do cliente
@@ -165,6 +167,7 @@ const ClienteDetalhes = () => {
           notify_email: formData.notify_email,
           notify_whatsapp: formData.notify_whatsapp,
           notify_webhook: formData.notify_webhook,
+          require_approval_to_publish: formData.require_approval_to_publish,
         })
         .eq('id', clientId);
 
@@ -506,6 +509,33 @@ const ClienteDetalhes = () => {
                         id="notify_webhook"
                         checked={formData.notify_webhook}
                         onCheckedChange={(checked) => setFormData({ ...formData, notify_webhook: checked })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Configurações de Publicação */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Configurações de Publicação</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="require_approval_to_publish">
+                          Exigir Aprovação para Publicar
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Quando ativado, apenas conteúdos com status "Aprovado" ou "Agendado" 
+                          serão publicados automaticamente. Conteúdos em "Rascunho" não serão publicados.
+                        </p>
+                      </div>
+                      <Switch
+                        id="require_approval_to_publish"
+                        checked={formData.require_approval_to_publish}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, require_approval_to_publish: checked })
+                        }
                       />
                     </div>
                   </div>
