@@ -153,13 +153,20 @@ serve(async (req) => {
     
     const { data: autoPublishContents, error: autoPublishError } = await supabaseClient
       .from('contents')
-      .select('*, content_media(*)')
+      .select(`
+        *,
+        content_media(*),
+        clients!inner(
+          id,
+          name,
+          require_approval_to_publish
+        )
+      `)
       .eq('auto_publish', true)
       .lte('date', now)
-      .gte('date', twoHoursAgo) // Não publicar conteúdos com mais de 2 horas de atraso
+      .gte('date', twoHoursAgo)
       .is('published_at', null)
-      .or('is_content_plan.is.null,is_content_plan.eq.false') // NUNCA publicar planos de conteúdo
-      .in('status', ['approved', 'scheduled']); // Só publicar se aprovado ou agendado
+      .or('is_content_plan.is.null,is_content_plan.eq.false');
 
     if (autoPublishError) {
       console.error('Erro ao buscar conteúdos auto_publish:', autoPublishError);
@@ -171,6 +178,16 @@ serve(async (req) => {
         if (content.is_content_plan === true) {
           console.log(`⚠️ Pulando publicação do conteúdo ${content.id}: é um plano de conteúdo (is_content_plan=true)`);
           continue;
+        }
+
+        // VALIDAÇÃO CRÍTICA: Verificar configuração de aprovação do cliente
+        const client = content.clients as any;
+        if (client?.require_approval_to_publish === true) {
+          // Se o cliente exige aprovação, só publica conteúdos aprovados ou agendados
+          if (content.status !== 'approved' && content.status !== 'scheduled') {
+            console.log(`⚠️ Pulando publicação do conteúdo ${content.id}: cliente exige aprovação e status é ${content.status}`);
+            continue;
+          }
         }
 
         // VALIDAÇÃO CRÍTICA: Verificar se tem mídia (necessário para carrosséis, reels, etc)
