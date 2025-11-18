@@ -293,6 +293,7 @@ export type Database = {
           notify_whatsapp: boolean | null
           overage_message_template: string | null
           plan_renewal_date: string | null
+          require_approval_to_publish: boolean | null
           responsible_user_id: string | null
           show_overage_message: boolean | null
           slug: string
@@ -320,6 +321,7 @@ export type Database = {
           notify_whatsapp?: boolean | null
           overage_message_template?: string | null
           plan_renewal_date?: string | null
+          require_approval_to_publish?: boolean | null
           responsible_user_id?: string | null
           show_overage_message?: boolean | null
           slug: string
@@ -347,6 +349,7 @@ export type Database = {
           notify_whatsapp?: boolean | null
           overage_message_template?: string | null
           plan_renewal_date?: string | null
+          require_approval_to_publish?: boolean | null
           responsible_user_id?: string | null
           show_overage_message?: boolean | null
           slug?: string

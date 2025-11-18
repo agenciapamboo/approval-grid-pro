@@ -50,6 +50,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
     monthly_creatives: 0,
     show_overage_message: true,
     overage_message_template: "",
+    require_approval_to_publish: false,
     note: "",
     password: "",
   });
@@ -75,6 +76,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
         monthly_creatives: (client as any).monthly_creatives || 0,
         show_overage_message: (client as any).show_overage_message ?? true,
         overage_message_template: (client as any).overage_message_template || 'Fale com sua {contact_type} para regularizar sua situação.',
+        require_approval_to_publish: (client as any).require_approval_to_publish ?? false,
         note: "",
         password: "",
       });
@@ -110,6 +112,7 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
           monthly_creatives: formData.monthly_creatives,
           show_overage_message: formData.show_overage_message,
           overage_message_template: formData.overage_message_template,
+          require_approval_to_publish: formData.require_approval_to_publish,
           notify_email: notificationPreferences.notify_email,
           notify_whatsapp: notificationPreferences.notify_whatsapp,
           notify_webhook: notificationPreferences.notify_webhook,
@@ -364,6 +367,28 @@ export function EditClientDialog({ client, open, onOpenChange, onSuccess }: Edit
               </div>
             )}
           </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Exigir Aprovação para Publicar</Label>
+                <p className="text-xs text-muted-foreground">
+                  Quando ativado, apenas conteúdos aprovados ou agendados serão publicados automaticamente
+                </p>
+              </div>
+              <Switch
+                checked={formData.require_approval_to_publish}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, require_approval_to_publish: checked })
+                }
+              />
+            </div>
+          </div>
+
+          <Separator />
+
 
           <div className="space-y-2">
             <Label htmlFor="note">Nova Observação</Label>
