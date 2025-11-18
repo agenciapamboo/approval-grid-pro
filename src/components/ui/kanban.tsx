@@ -32,18 +32,20 @@ export type KanbanBoardProps = {
   id: Status['id'];
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 };
 
-export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
+export const KanbanBoard = ({ id, children, className, style }: KanbanBoardProps) => {
   const { isOver, setNodeRef } = useDroppable({ id });
 
   return (
     <div
       className={cn(
-        'flex h-full min-h-40 flex-col gap-2 rounded-md border bg-secondary p-2 text-xs shadow-sm outline outline-2 transition-all',
-        isOver ? 'outline-primary' : 'outline-transparent',
+        'flex h-full min-h-40 flex-col gap-2 rounded-md border p-2 text-xs shadow-sm outline outline-2 transition-all',
+        isOver ? 'outline-primary bg-secondary/80' : 'outline-transparent bg-secondary/40',
         className
       )}
+      style={style}
       ref={setNodeRef}
     >
       {children}

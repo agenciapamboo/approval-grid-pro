@@ -21,12 +21,12 @@ import {
 } from "@/components/ui/kanban";
 import { DragOverlay, defaultDropAnimationSideEffects } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent, DropAnimation } from "@dnd-kit/core";
-import { format, differenceInDays } from "date-fns";
+import { format as formatDate, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users, GripVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
@@ -200,6 +200,9 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   
   // Estados para histórico de dias e filtros
   const [historyDays, setHistoryDays] = useState<number>(30);
+  const [planName, setPlanName] = useState<string>('');
+  const [selectedMonthOffset, setSelectedMonthOffset] = useState<number>(0);
+  const [availableMonths, setAvailableMonths] = useState<Array<{ label: string; value: number }>>([]);
   const [hideApproved, setHideApproved] = useState(false);
   const [hideScheduled, setHideScheduled] = useState(false);
   const [hidePublished, setHidePublished] = useState(false);
@@ -414,7 +417,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(commentsChannel);
     };
-  }, [agencyId, dateRange]);
+  }, [agencyId, dateRange, selectedMonthOffset]);
 
   const loadAgencyEntitlements = async () => {
     try {
@@ -435,9 +438,26 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       if (entitlementsError) throw entitlementsError;
 
       setHistoryDays(entitlements.history_days || 30);
+      setPlanName(agency.plan || '');
+      
+      // Calcular meses disponíveis
+      const monthsCount = Math.ceil((entitlements.history_days || 30) / 30);
+      const months = [];
+      
+      for (let i = 0; i < monthsCount; i++) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        months.push({
+          label: formatDate(date, "MMMM 'de' yyyy", { locale: ptBR }),
+          value: i,
+        });
+      }
+      
+      setAvailableMonths(months);
     } catch (error) {
       console.error("Erro ao carregar entitlements:", error);
       setHistoryDays(30);
+      setPlanName('');
     }
   };
 
@@ -482,10 +502,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       const clientIds = clients.map((c) => c.id);
 
-      // Calcular data de início baseado em historyDays
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - historyDays);
-      const endDate = new Date();
+      // Calcular range baseado no mês selecionado
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth() - selectedMonthOffset, 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() - selectedMonthOffset + 1, 0);
+      
+      // Garantir que não exceda o limite do plano
+      const cutoffDate = new Date(now.getTime() - historyDays * 24 * 60 * 60 * 1000);
+      const effectiveStartDate = startOfMonth < cutoffDate ? cutoffDate : startOfMonth;
 
       const { data, error } = await supabase
         .from("contents")
@@ -502,8 +526,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           clients (name)
         `)
         .in("client_id", clientIds)
-        .gte("date", startDate.toISOString())
-        .lte("date", endDate.toISOString())
+        .gte("date", effectiveStartDate.toISOString())
+        .lte("date", endOfMonth.toISOString())
         .order("date", { ascending: true });
 
       if (error) throw error;
@@ -1099,80 +1123,102 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   return (
     <Card>
       <CardHeader>
-         <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="space-y-4">
+          {/* Título */}
           <div>
-            <CardTitle>Kanban de Conteúdos</CardTitle>
-            <CardDescription>
-              Gerencie o workflow dos conteúdos
-            </CardDescription>
+            <CardTitle className="text-xl md:text-2xl">Kanban de Conteúdos</CardTitle>
+            <CardDescription>Gerencie o workflow dos conteúdos</CardDescription>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setShowClientSelector(true)}
-              className="gap-2"
-              size="sm"
-            >
-              <Plus className="h-4 w-4" />
-              Novo Conteúdo
-            </Button>
-            {/* Indicadores de atalhos */}
+          {/* Botão Novo Conteúdo - Full width em mobile */}
+          <Button
+            onClick={() => setShowClientSelector(true)}
+            className="w-full md:w-auto gap-2"
+            size="sm"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Conteúdo
+          </Button>
+          
+          {/* Atalhos - Grid 2 colunas em mobile */}
+          <div className="grid grid-cols-2 md:flex md:flex-row gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                    <Keyboard className="h-3.5 w-3.5" />
-                    <span>Atalhos</span>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 w-full md:w-auto"
+                  >
+                    <Keyboard className="h-4 w-4" />
+                    <span className="text-xs">Atalhos</span>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
-                  <div className="space-y-1 text-xs">
-                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">←→</kbd> Navegar colunas</p>
-                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">↑↓</kbd> Navegar cards</p>
-                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Enter</kbd> Abrir detalhes</p>
-                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Del</kbd> Arquivar</p>
-                    <p><kbd className="px-1.5 py-0.5 rounded bg-muted">Esc</kbd> Sair</p>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <kbd className="px-2 py-1 bg-muted rounded">←</kbd>
+                      <kbd className="px-2 py-1 bg-muted rounded">→</kbd>
+                      <span>Navegar colunas</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <kbd className="px-2 py-1 bg-muted rounded">↑</kbd>
+                      <kbd className="px-2 py-1 bg-muted rounded">↓</kbd>
+                      <span>Navegar cards</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <kbd className="px-2 py-1 bg-muted rounded">Enter</kbd>
+                      <span>Abrir card</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <kbd className="px-2 py-1 bg-muted rounded">Esc</kbd>
+                      <span>Cancelar seleção</span>
+                    </div>
                   </div>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
 
-            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                    <Hand className="h-3.5 w-3.5" />
-                    <span>Arraste</span>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 w-full md:w-auto"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                    <span className="text-xs">Arraste</span>
+                  </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  <p>Clique e arraste para rolar horizontalmente</p>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Arraste cards entre colunas ou use scroll horizontal</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-
-            {/* Filtros de visualização */}
-            <div className="flex flex-wrap gap-2 px-3 py-2 bg-muted/30 rounded-lg">
-              <span className="text-xs font-semibold text-muted-foreground self-center">Ocultar:</span>
-              
+          </div>
+          
+          {/* Ocultar - Vertical em mobile, horizontal em desktop */}
+          <div className="flex flex-col md:flex-row gap-3 md:gap-2 p-3 bg-muted/30 rounded-lg">
+            <span className="text-xs font-semibold text-muted-foreground">Ocultar:</span>
+            
+            <div className="flex flex-col md:flex-row gap-2 md:gap-3">
               <div className="flex items-center space-x-1.5">
                 <Checkbox
                   id="hide-approved"
                   checked={hideApproved}
-                  onCheckedChange={(checked) => setHideApproved(checked as boolean)}
+                  onCheckedChange={(checked) => setHideApproved(checked === true)}
                 />
-                <Label htmlFor="hide-approved" className="cursor-pointer text-xs font-normal">
+                <Label htmlFor="hide-approved" className="text-xs cursor-pointer">
                   Aprovados
                 </Label>
               </div>
-
+              
               <div className="flex items-center space-x-1.5">
                 <Checkbox
                   id="hide-scheduled"
                   checked={hideScheduled}
-                  onCheckedChange={(checked) => setHideScheduled(checked as boolean)}
+                  onCheckedChange={(checked) => setHideScheduled(checked === true)}
                 />
-                <Label htmlFor="hide-scheduled" className="cursor-pointer text-xs font-normal">
+                <Label htmlFor="hide-scheduled" className="text-xs cursor-pointer">
                   Agendados
                 </Label>
               </div>
@@ -1181,96 +1227,38 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                 <Checkbox
                   id="hide-published"
                   checked={hidePublished}
-                  onCheckedChange={(checked) => setHidePublished(checked as boolean)}
+                  onCheckedChange={(checked) => setHidePublished(checked === true)}
                 />
-                <Label htmlFor="hide-published" className="cursor-pointer text-xs font-normal">
+                <Label htmlFor="hide-published" className="text-xs cursor-pointer">
                   Publicados
                 </Label>
               </div>
-
-              <div className="ml-auto text-xs text-muted-foreground self-center">
-                Últimos {historyDays} dias
-              </div>
             </div>
-
-            {/* Filtro de data */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "gap-2 text-xs h-9",
-                    !dateRange.from && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "dd/MM/yy", { locale: ptBR })} -{" "}
-                        {format(dateRange.to, "dd/MM/yy", { locale: ptBR })}
-                      </>
-                    ) : (
-                      format(dateRange.from, "dd/MM/yy", { locale: ptBR })
-                    )
-                  ) : (
-                    <span>Selecionar período</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <div className="p-3 space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Data Inicial</Label>
-                    <CalendarComponent
-                      mode="single"
-                      selected={dateRange.from}
-                      onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Data Final</Label>
-                    <CalendarComponent
-                      mode="single"
-                      selected={dateRange.to}
-                      onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-                      disabled={(date) => dateRange.from ? date < dateRange.from : false}
-                      className="pointer-events-auto"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-xs"
-                      onClick={() => {
-                        const from = new Date();
-                        from.setDate(from.getDate() - 30);
-                        setDateRange({ from, to: new Date() });
-                      }}
-                    >
-                      Últimos 30 dias
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-xs"
-                      onClick={() => {
-                        const from = new Date();
-                        from.setDate(from.getDate() - 90);
-                        setDateRange({ from, to: new Date() });
-                      }}
-                    >
-                      Últimos 90 dias
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
+            
+            {/* Período do Plano */}
+            <div className="text-xs text-muted-foreground md:ml-auto">
+              Período: {historyDays} dias ({planName || 'N/A'})
+            </div>
+          </div>
+          
+          {/* Seletor de Mês + Atualizar - Full width em mobile */}
+          <div className="flex flex-col md:flex-row gap-2">
+            <Select
+              value={selectedMonthOffset.toString()}
+              onValueChange={(value) => setSelectedMonthOffset(parseInt(value))}
+            >
+              <SelectTrigger className="w-full md:w-[200px] h-9 text-xs">
+                <SelectValue placeholder="Selecione o mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMonths.map((month) => (
+                  <SelectItem key={month.value} value={month.value.toString()}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
             <Button
               variant="ghost"
               size="sm"
@@ -1278,7 +1266,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                 loadColumns();
                 loadContents();
               }}
-              className="gap-2"
+              className="w-full md:w-auto gap-2"
             >
               <RefreshCw className="h-4 w-4" />
               Atualizar
@@ -1300,13 +1288,21 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         ) : (
           <div 
             ref={kanbanContainerRef}
-            className="overflow-x-auto cursor-grab active:cursor-grabbing scroll-smooth snap-x snap-mandatory md:snap-none pb-4 px-2 md:px-0"
-            onMouseDown={handleMouseDownScroll}
-            onMouseMove={handleMouseMoveScroll}
-            onMouseUp={handleMouseUpScroll}
-            onMouseLeave={handleMouseLeaveScroll}
+            className="md:overflow-x-auto md:cursor-grab md:active:cursor-grabbing md:scroll-smooth md:snap-x md:snap-mandatory pb-4 px-2 md:px-0"
+            onMouseDown={(e) => {
+              if (window.innerWidth >= 768) handleMouseDownScroll(e);
+            }}
+            onMouseMove={(e) => {
+              if (window.innerWidth >= 768) handleMouseMoveScroll(e);
+            }}
+            onMouseUp={() => {
+              if (window.innerWidth >= 768) handleMouseUpScroll();
+            }}
+            onMouseLeave={() => {
+              if (window.innerWidth >= 768) handleMouseLeaveScroll();
+            }}
           >
-            <div className="flex flex-nowrap gap-3 md:gap-4 min-w-max">
+            <div className="flex flex-col md:flex-nowrap md:flex-row gap-4 md:gap-4 md:min-w-max">
               <KanbanProvider onDragEnd={handleDragEnd} onDragStart={handleDragStart} className="contents">
               {columns.map((column) => {
                 // Mapear column_id para status do banco
@@ -1321,7 +1317,10 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                     <KanbanBoard 
                       key={column.column_id} 
                       id={column.column_id}
-                      className="w-full sm:w-80 min-w-[280px] sm:min-w-[320px] snap-start snap-always flex-shrink-0"
+                      className="w-full md:w-64 md:min-w-[256px] md:snap-start md:snap-always md:flex-shrink-0"
+                      style={{ 
+                        backgroundColor: `${column.column_color}10`
+                      }}
                     >
                       <KanbanHeader 
                         name={column.column_name} 
@@ -1692,7 +1691,10 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                   <KanbanBoard 
                     key={column.column_id} 
                     id={column.column_id}
-                    className="w-full sm:w-80 min-w-[280px] sm:min-w-[320px] snap-start snap-always flex-shrink-0"
+                    className="w-full md:w-64 md:min-w-[256px] md:snap-start md:snap-always md:flex-shrink-0"
+                    style={{ 
+                      backgroundColor: `${column.column_color}10`
+                    }}
                   >
                     <KanbanHeader 
                       name={column.column_name} 
@@ -1753,13 +1755,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                           <AlertCircle className="h-3 w-3" />
                                         )}
                                         <Calendar className="h-3 w-3" />
-                                        {format(new Date(content.date), "dd/MM", { locale: ptBR })}
+                                        {formatDate(new Date(content.date), "dd/MM", { locale: ptBR })}
                                       </Badge>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="text-xs">
                                       <div className="space-y-1">
                                         <p className="font-semibold">{deadlineStatus.label}</p>
-                                        <p>{format(new Date(content.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                                        <p>{formatDate(new Date(content.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
                                         {deadlineStatus.status !== 'normal' && (
                                           <p className="text-muted-foreground">
                                             {differenceInDays(new Date(content.date), new Date())} dias restantes
@@ -1863,7 +1865,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(activeContent.date), "dd/MM", { locale: ptBR })}
+                            {formatDate(new Date(activeContent.date), "dd/MM", { locale: ptBR })}
                           </div>
                           
                           {/* Indicadores de comentários e anexos no overlay */}
