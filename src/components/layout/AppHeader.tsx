@@ -71,17 +71,37 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
                 { title: "Sair", icon: LogOut },
               ]}
               onChange={(index) => {
-                const baseIndex = shouldShowSubscription ? 0 : -1;
+                // Calcular índices dinamicamente
+                let currentIndex = 0;
                 
-                if (index === 0) {
+                // 0: Minha Conta
+                if (index === currentIndex++) {
                   navigate("/minha-conta");
-                } else if (shouldShowSubscription && index === 1) {
-                  navigate("/minha-assinatura");
-                } else if (index === (shouldShowSubscription ? 2 : 1)) {
+                  return;
+                }
+                
+                // 1: Minha Assinatura (se aplicável)
+                if (shouldShowSubscription) {
+                  if (index === currentIndex++) {
+                    navigate("/minha-assinatura");
+                    return;
+                  }
+                }
+                
+                // Próximo: Tema
+                if (index === currentIndex++) {
                   setTheme(resolvedTheme === "dark" ? "light" : "dark");
-                } else if (index === (shouldShowSubscription ? 3 : 2)) {
+                  return;
+                }
+                
+                // Próximo: Notificações
+                if (index === currentIndex++) {
                   setNotificationsOpen(true);
-                } else if (index === (shouldShowSubscription ? 4 : 3) && onSignOut) {
+                  return;
+                }
+                
+                // Último: Sair
+                if (index === currentIndex && onSignOut) {
                   onSignOut();
                 }
               }}

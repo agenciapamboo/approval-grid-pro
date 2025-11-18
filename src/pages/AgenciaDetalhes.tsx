@@ -160,55 +160,73 @@ const AgenciaDetalhes = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       
-      <main className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/agencias")}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar para Agências
-        </Button>
+      <main className="container mx-auto px-4 md:px-6 py-4 md:py-8">
+        <div className="mb-4 md:mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/agencias")}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para Agências
+          </Button>
 
-        <div className="grid gap-6">
           <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
+            <CardHeader className="pb-4 md:pb-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start gap-3 md:gap-4">
                   {agency.logo_url ? (
                     <img
                       src={agency.logo_url}
                       alt={agency.name}
-                      className="w-20 h-20 rounded-full object-cover"
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Building2 className="h-10 w-10 text-primary" />
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-8 w-8 md:h-10 md:w-10 text-primary" />
                     </div>
                   )}
-                  <div>
-                    <CardTitle className="text-2xl">{agency.name}</CardTitle>
-                    <CardDescription>@{agency.slug}</CardDescription>
-                    <Badge variant="default" className="mt-2">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-xl md:text-2xl truncate">{agency.name}</CardTitle>
+                    <CardDescription className="text-sm md:text-base">@{agency.slug}</CardDescription>
+                    <Badge variant="default" className="mt-2 text-xs md:text-sm">
                       {getPlanDisplayName(agency.plan)}
                       {agency.plan_type && ` (${agency.plan_type === 'monthly' ? 'Mensal' : 'Anual'})`}
                     </Badge>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setChangePlanOpen(true)}>
+                
+                {/* Botões - empilhados em mobile */}
+                <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setChangePlanOpen(true)}
+                    className="w-full md:w-auto justify-start md:justify-center"
+                  >
                     <Calendar className="mr-2 h-4 w-4" />
                     Alterar Plano
                   </Button>
-                  <Button variant="outline" onClick={() => setChangePasswordOpen(true)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setChangePasswordOpen(true)}
+                    className="w-full md:w-auto justify-start md:justify-center"
+                  >
                     <Lock className="mr-2 h-4 w-4" />
                     Alterar Senha
                   </Button>
-                  <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditDialogOpen(true)}
+                    className="w-full md:w-auto justify-start md:justify-center"
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
                   </Button>
-                  <Button variant="destructive" onClick={handleDelete}>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDelete}
+                    className="w-full md:w-auto justify-start md:justify-center"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Excluir
                   </Button>
@@ -216,7 +234,7 @@ const AgenciaDetalhes = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                 <div className="space-y-2">
                   <h3 className="font-semibold">Informações de Contato</h3>
                   {agency.email && (
@@ -255,43 +273,51 @@ const AgenciaDetalhes = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+          <Card className="mt-4 md:mt-6">
+            <CardHeader className="pb-3 md:pb-4">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Users className="h-4 w-4 md:h-5 md:w-5" />
                 Clientes ({clients.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               {clients.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {clients.map((client) => (
-                    <Card key={client.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                          {client.logo_url ? (
-                            <img
-                              src={client.logo_url}
-                              alt={client.name}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                              <Users className="h-5 w-5 text-secondary-foreground" />
+                <div className="overflow-x-auto -mx-4 md:mx-0">
+                  <div className="min-w-full inline-block align-middle px-4 md:px-0">
+                    <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:grid-cols-3">
+                      {clients.map((client) => (
+                        <Card 
+                          key={client.id} 
+                          className="hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => navigate(`/cliente/${client.id}`)}
+                        >
+                          <CardContent className="p-4 md:pt-6">
+                            <div className="flex items-center gap-3">
+                              {client.logo_url ? (
+                                <img
+                                  src={client.logo_url}
+                                  alt={client.name}
+                                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                                  <Users className="h-5 w-5 text-secondary-foreground" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm md:text-base truncate">{client.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">@{client.slug}</p>
+                              </div>
                             </div>
-                          )}
-                          <div>
-                            <p className="font-medium">{client.name}</p>
-                            <p className="text-xs text-muted-foreground">@{client.slug}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-8">
-                  Nenhum cliente cadastrado
+                <p className="text-sm md:text-base text-muted-foreground text-center py-4">
+                  Nenhum cliente cadastrado para esta agência
                 </p>
               )}
             </CardContent>

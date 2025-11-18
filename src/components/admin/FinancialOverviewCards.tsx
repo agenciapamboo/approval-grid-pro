@@ -10,10 +10,10 @@ export function FinancialOverviewCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i}>
-            <CardHeader>
+            <CardHeader className="pb-2 md:pb-3">
               <Skeleton className="h-4 w-24" />
             </CardHeader>
             <CardContent>
@@ -33,7 +33,7 @@ export function FinancialOverviewCards() {
   const growthIsPositive = metrics.growthRate >= 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       {/* Card 1: Ticket Médio */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
