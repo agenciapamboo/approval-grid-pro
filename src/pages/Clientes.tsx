@@ -5,7 +5,7 @@ import { useUserData } from "@/hooks/useUserData";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
@@ -114,67 +114,63 @@ const Clientes = () => {
   return (
     <AccessGate allow={['super_admin', 'agency_admin']}>
       <AppLayout>
-        <div className="container mx-auto px-4 py-6">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+        <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">
               Clientes
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Gerencie seus clientes e acompanhe suas métricas
             </p>
 
             {role === 'super_admin' && (
-              <div className="mt-4">
-                <Button
-                  onClick={() => setNotificationDialogOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  Enviar Notificação
-                </Button>
-              </div>
+              <SendPlatformNotificationDialog
+                open={notificationDialogOpen}
+                onOpenChange={setNotificationDialogOpen}
+              />
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <Card className="bg-card/50 backdrop-blur border-border/50 shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total de Clientes
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">
-                  {loading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    clients.length
-                  )}
+          <Card className="mb-4 md:mb-6 bg-card/50 backdrop-blur border-border/50 shadow-lg">
+            <CardHeader className="pb-3 md:pb-4">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg text-foreground">
+                    <Users className="h-4 w-4 md:h-5 md:w-5" />
+                    Total de Clientes
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm mt-1">
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin inline" />
+                    ) : (
+                      `${clients.length} clientes ativos`
+                    )}
+                  </CardDescription>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  clientes ativos
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-card/50 backdrop-blur border-border/50 shadow-lg mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Search className="h-5 w-5" />
-                Buscar Clientes
-              </CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+          </Card>
+
+          <div className="mb-4 md:mb-6 flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Digite o nome ou slug do cliente..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-background/50 border-border/50"
+                className="pl-10 bg-background/50 border-border/50"
               />
-            </CardContent>
-          </Card>
+            </div>
+            {role === 'super_admin' && (
+              <Button
+                onClick={() => setNotificationDialogOpen(true)}
+                className="w-full md:w-auto flex items-center justify-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                Enviar Notificação
+              </Button>
+            )}
+          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">

@@ -129,28 +129,29 @@ export function CostPerClientTable() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Custo e Receita por Tipo de Cliente</CardTitle>
-        <CardDescription>
+      <CardHeader className="pb-3 md:pb-6">
+        <CardTitle className="text-base md:text-lg">Custo e Receita por Tipo de Cliente</CardTitle>
+        <CardDescription className="text-xs md:text-sm">
           Distribuição proporcional baseada na participação na receita (MRR)
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plano</TableHead>
-                <TableHead className="text-right">Clientes</TableHead>
-                <TableHead className="text-right">MRR Total</TableHead>
-                <TableHead className="text-right">% Receita</TableHead>
-                <TableHead className="text-right">Custo Alocado</TableHead>
-                <TableHead className="text-right">Custo/Cliente</TableHead>
-                <TableHead className="text-right">Lucro</TableHead>
-                <TableHead className="text-right">Margem</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <div className="overflow-x-auto -mx-4 md:mx-0 rounded-md border">
+          <div className="min-w-full inline-block align-middle px-4 md:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Plano</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Clientes</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">MRR Total</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">% Receita</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Custo Alocado</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Custo/Cliente</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Lucro</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Margem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {costData.map((row) => (
                 <TableRow key={row.planType}>
                   <TableCell>
@@ -200,8 +201,9 @@ export function CostPerClientTable() {
                   {overallMargin.toFixed(1)}%
                 </TableCell>
               </TableRow>
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </CardContent>
     </Card>
