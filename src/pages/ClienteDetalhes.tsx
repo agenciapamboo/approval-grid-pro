@@ -312,6 +312,10 @@ const ClienteDetalhes = () => {
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Aprovar Criativos
                 </Button>
+                <Button variant="default" size="sm" onClick={() => navigate(`/agency/client/${clientId}/conteudos`)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Conteúdos
+                </Button>
               </div>
             </div>
           </CardHeader>

@@ -70,7 +70,7 @@ export function ClientSelectorDialog({ open, onOpenChange }: ClientSelectorDialo
   };
 
   const handleClientSelect = (clientId: string) => {
-    navigate(`/cliente/${clientId}`);
+    navigate(`/agency/client/${clientId}/conteudos`);
     onOpenChange(false);
   };
 

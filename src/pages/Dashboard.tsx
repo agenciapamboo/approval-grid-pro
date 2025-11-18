@@ -3,17 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserData } from "@/hooks/useUserData";
+import { useAgencyMetrics } from "@/hooks/useAgencyMetrics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Loader2, FileText, Settings, Plus } from "lucide-react";
+import { Building2, Users, Loader2, FileText, Settings, Plus, FileImage, HardDrive, CheckCircle, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
 import { NotificationSender } from "@/components/admin/NotificationSender";
 import { ResourceUsagePanel } from "@/components/admin/ResourceUsagePanel";
 import { AgencyStats } from "@/components/dashboard/AgencyStats";
+import { AgencyMetricCard } from "@/components/admin/AgencyMetricCard";
+import { ClientSelectorDialog } from "@/components/admin/ClientSelectorDialog";
 import { PlanInfoCard } from "@/components/client/PlanInfoCard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,8 +52,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, role, agency, client, loading: userDataLoading } = useUserData();
+  const { metrics: agencyMetrics, loading: metricsLoading } = useAgencyMetrics(profile?.agency_id || null);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -283,77 +288,95 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Dashboard</h1>
 
-        {(role === 'agency_admin' || role === 'team_member') && dashboardData?.agency && (
-          <div className="grid gap-6">
-            {/* Agency Statistics */}
-            {profile?.agency_id && <AgencyStats agencyId={profile.agency_id} />}
-            
-            {/* Quick Navigation Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
-                onClick={() => navigate('/clientes')}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Gerenciar Clientes
-                  </CardTitle>
-                  <CardDescription>Ver e editar clientes da agência</CardDescription>
-                </CardHeader>
-              </Card>
-              
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
-                onClick={() => navigate('/creative-requests')}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Solicitações de Criativos
-                  </CardTitle>
-                  <CardDescription>Ver solicitações pendentes</CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card 
-                className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]" 
-                onClick={() => navigate('/configuracoes')}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    Configurações
-                  </CardTitle>
-                  <CardDescription>Ajustar preferências do sistema</CardDescription>
-                </CardHeader>
-              </Card>
+        {(role === 'agency_admin' || role === 'team_member') && profile?.agency_id && (
+          <div className="space-y-6">
+            {/* BLOCO 01: Botão Cadastrar Novo Cliente */}
+            <div className="flex justify-end">
+              <Button onClick={() => navigate('/clientes/novo')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Cadastrar Novo Cliente
+              </Button>
             </div>
 
-            {/* Clients List */}
+            {/* BLOCO 02: Cards de Métricas - 2 colunas mobile, 4 desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <AgencyMetricCard
+                title="Criativos do Mês"
+                icon={FileImage}
+                value={agencyMetrics.creativesThisMonth.used}
+                limit={agencyMetrics.creativesThisMonth.limit}
+                percentage={agencyMetrics.creativesThisMonth.percentage}
+                metric="usage"
+                onClick={() => setClientSelectorOpen(true)}
+              />
+              
+              <AgencyMetricCard
+                title="Armazenamento"
+                icon={HardDrive}
+                value={agencyMetrics.creativesStorage.used}
+                limit={agencyMetrics.creativesStorage.limit}
+                percentage={agencyMetrics.creativesStorage.percentage}
+                metric="usage"
+              />
+              
+              <AgencyMetricCard
+                title="Equipe"
+                icon={Users}
+                value={agencyMetrics.teamMembers.used}
+                limit={agencyMetrics.teamMembers.limit}
+                percentage={agencyMetrics.teamMembers.percentage}
+                metric="usage"
+              />
+              
+              <AgencyMetricCard
+                title="Criativos Aprovados"
+                icon={CheckCircle}
+                value={agencyMetrics.approvalRate.approved}
+                limit={agencyMetrics.approvalRate.total}
+                percentage={agencyMetrics.approvalRate.percentage}
+                metric="approval"
+              />
+              
+              <AgencyMetricCard
+                title="Solicitações de Ajuste"
+                icon={RefreshCw}
+                value={agencyMetrics.reworkRate.adjustments}
+                limit={agencyMetrics.reworkRate.total}
+                percentage={agencyMetrics.reworkRate.percentage}
+                metric="rework"
+              />
+              
+              <AgencyMetricCard
+                title="Reprovados"
+                icon={XCircle}
+                value={agencyMetrics.rejectionRate.rejected}
+                limit={agencyMetrics.rejectionRate.total}
+                percentage={agencyMetrics.rejectionRate.percentage}
+                metric="rejection"
+              />
+            </div>
+
+            {/* BLOCO 03: Lista de Clientes com botão de acesso */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Clientes ({dashboardData.agency.clients?.length || 0})
-                </CardTitle>
+                <CardTitle>Clientes ({dashboardData?.agency?.clients?.length || 0})</CardTitle>
               </CardHeader>
               <CardContent>
-                {dashboardData.agency.clients && dashboardData.agency.clients.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {dashboardData?.agency?.clients && dashboardData.agency.clients.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {dashboardData.agency.clients.map((client: any) => (
                       <Card
                         key={client.id}
                         className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => navigate(`/cliente/${client.id}`)}
+                        onClick={() => navigate(`/cliente/${client.id}`)}
                       >
                         <CardHeader>
-                          <CardTitle>{client.name}</CardTitle>
+                          <CardTitle className="text-base">{client.name}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-sm text-muted-foreground">
-                            Clique para ver o conteúdo
-                          </p>
+                          <Button variant="outline" size="sm" className="w-full">
+                            Acessar Cliente
+                          </Button>
                         </CardContent>
                       </Card>
                     ))}
@@ -365,6 +388,15 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* BLOCO 04: Envio de Notificações */}
+            <NotificationSender />
+
+            {/* Diálogo de seleção de cliente */}
+            <ClientSelectorDialog 
+              open={clientSelectorOpen}
+              onOpenChange={setClientSelectorOpen}
+            />
           </div>
         )}
 
