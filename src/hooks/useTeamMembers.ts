@@ -23,14 +23,24 @@ export function useTeamMembers(agencyId: string | null) {
   async function loadMembers() {
     try {
       setLoading(true);
+      console.log('[TEAM_MEMBERS] Iniciando busca para agencyId:', agencyId);
 
       // Buscar profiles da agência
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, name')
         .eq('agency_id', agencyId);
 
+      console.log('[TEAM_MEMBERS] Profiles encontrados:', profiles?.length, profiles);
+      
+      if (profilesError) {
+        console.error('[TEAM_MEMBERS] Erro ao buscar profiles:', profilesError);
+        setMembers([]);
+        return;
+      }
+
       if (!profiles || profiles.length === 0) {
+        console.log('[TEAM_MEMBERS] Nenhum profile encontrado');
         setMembers([]);
         return;
       }
@@ -38,26 +48,37 @@ export function useTeamMembers(agencyId: string | null) {
       const profileIds = profiles.map(p => p.id);
 
       // Filtrar apenas team_members
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
         .in('user_id', profileIds)
         .eq('role', 'team_member');
 
+      console.log('[TEAM_MEMBERS] Roles encontradas:', roles?.length, roles);
+      
+      if (rolesError) {
+        console.error('[TEAM_MEMBERS] Erro ao buscar roles:', rolesError);
+      }
+
       const teamMemberIds = roles?.map(r => r.user_id) || [];
+      console.log('[TEAM_MEMBERS] IDs de team_members:', teamMemberIds);
 
       if (teamMemberIds.length === 0) {
+        console.log('[TEAM_MEMBERS] Nenhum team_member encontrado');
         setMembers([]);
         return;
       }
 
       // Buscar emails via edge function
+      console.log('[TEAM_MEMBERS] Buscando emails para:', teamMemberIds);
       const { data: emailData, error: emailError } = await supabase.functions.invoke('get-user-emails', {
         body: { userIds: teamMemberIds },
       });
 
+      console.log('[TEAM_MEMBERS] Resposta de emails:', emailData, emailError);
+
       if (emailError) {
-        console.error('Erro ao buscar emails:', emailError);
+        console.error('[TEAM_MEMBERS] Erro ao buscar emails:', emailError);
         setMembers([]);
         return;
       }
