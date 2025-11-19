@@ -109,11 +109,11 @@ export function useAgencyMetrics(agencyId: string | null) {
         .select('*', { count: 'exact', head: true })
         .eq('agency_id', agencyId);
 
-      const teamMembersLimit = entitlements?.team_members_limit || 0;
+      const teamMembersLimit = entitlements?.team_members_limit || null;
       const teamMembers = {
         used: teamMembersCount || 0,
         limit: teamMembersLimit,
-        percentage: teamMembersLimit > 0 ? ((teamMembersCount || 0) / teamMembersLimit) * 100 : 0,
+        percentage: teamMembersLimit ? ((teamMembersCount || 0) / teamMembersLimit) * 100 : 0,
       };
 
       // Card 04: Índice de Aprovação

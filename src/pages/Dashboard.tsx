@@ -298,8 +298,8 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            {/* BLOCO 02: Cards de Métricas - 2 colunas mobile, 4 desktop */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* BLOCO 02: Cards de Métricas - 1 coluna mobile, 2 desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <AgencyMetricCard
                 title="Criativos do Mês"
                 icon={FileImage}
@@ -347,7 +347,7 @@ const Dashboard = () => {
               />
               
               <AgencyMetricCard
-                title="Reprovados"
+                title="Criativos Reprovados"
                 icon={XCircle}
                 value={agencyMetrics.rejectionRate.rejected}
                 limit={agencyMetrics.rejectionRate.total}
