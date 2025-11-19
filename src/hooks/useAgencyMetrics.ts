@@ -15,7 +15,7 @@ export interface AgencyMetrics {
   };
   teamMembers: {
     used: number;
-    limit: number;
+    limit: number | null;
     percentage: number;
   };
   approvalRate: {
@@ -39,7 +39,7 @@ export function useAgencyMetrics(agencyId: string | null) {
   const [metrics, setMetrics] = useState<AgencyMetrics>({
     creativesThisMonth: { used: 0, limit: 0, percentage: 0 },
     creativesStorage: { used: 0, limit: 0, percentage: 0 },
-    teamMembers: { used: 0, limit: 0, percentage: 0 },
+    teamMembers: { used: 0, limit: null, percentage: 0 },
     approvalRate: { approved: 0, total: 0, percentage: 0 },
     reworkRate: { adjustments: 0, total: 0, percentage: 0 },
     rejectionRate: { rejected: 0, total: 0, percentage: 0 },
@@ -103,11 +103,20 @@ export function useAgencyMetrics(agencyId: string | null) {
         percentage: creativesLimit > 0 ? ((totalContents || 0) / creativesLimit) * 100 : 0,
       };
 
-      // Card 03: Equipe
-      const { count: teamMembersCount } = await supabase
+      // Card 03: Equipe - APENAS team_members
+      const { data: teamMemberProfiles } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('agency_id', agencyId);
+
+      const profileIds = teamMemberProfiles?.map(p => p.id) || [];
+
+      // Buscar apenas usuários com role team_member
+      const { count: teamMembersCount } = await supabase
+        .from('user_roles')
+        .select('*', { count: 'exact', head: true })
+        .in('user_id', profileIds)
+        .eq('role', 'team_member');
 
       const teamMembersLimit = entitlements?.team_members_limit || null;
       const teamMembers = {

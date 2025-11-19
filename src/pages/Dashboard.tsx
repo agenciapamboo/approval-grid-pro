@@ -18,6 +18,7 @@ import { AgencyStats } from "@/components/dashboard/AgencyStats";
 import { AgencyMetricCard } from "@/components/admin/AgencyMetricCard";
 import { ClientSelectorDialog } from "@/components/admin/ClientSelectorDialog";
 import { PlanInfoCard } from "@/components/client/PlanInfoCard";
+import { TeamMembersList } from "@/components/admin/TeamMembersList";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -326,6 +327,7 @@ const Dashboard = () => {
                 limit={agencyMetrics.teamMembers.limit}
                 percentage={agencyMetrics.teamMembers.percentage}
                 metric="usage"
+                onClick={() => navigate('/admin/membros-equipe')}
               />
               
               <AgencyMetricCard
@@ -355,6 +357,11 @@ const Dashboard = () => {
                 metric="rejection"
               />
             </div>
+
+            {/* NOVO: Lista de Membros da Equipe */}
+            {profile?.agency_id && (
+              <TeamMembersList agencyId={profile.agency_id} />
+            )}
 
             {/* BLOCO 03: Lista de Clientes com botão de acesso */}
             <Card>
