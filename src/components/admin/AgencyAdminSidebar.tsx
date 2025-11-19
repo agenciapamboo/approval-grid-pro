@@ -26,18 +26,17 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Equipe", url: "/admin/membros-equipe", icon: UsersRound },
-  { title: "Calendário", url: "/agenda", icon: Calendar },
-  { title: "Kanban", url: "/kanban", icon: KanbanSquare },
-  { title: "Solicitações de Criativos", url: "/creative-requests", icon: Paintbrush },
-  { title: "Tickets da Agência", url: "/agencia/tickets", icon: Ticket },
-  { title: "Meus Tickets", url: "/meus-tickets", icon: MessageSquare },
-  { title: "Notificações", url: "/notificacoes", icon: Bell },
-  { title: "Configurações", url: "/agencia/configuracoes", icon: Settings },
-];
+  const menuItems = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Clientes", url: "/clientes", icon: Users },
+    { title: "Equipe", url: "/admin/membros-equipe", icon: UsersRound },
+    { title: "Calendário", url: "/agenda", icon: Calendar },
+    { title: "Kanban", url: "/kanban", icon: KanbanSquare },
+    { title: "Solicitações de Criativos", url: "/creative-requests", icon: Paintbrush },
+    { title: "Tickets da Agência", url: "/agencia/tickets", icon: Ticket },
+    { title: "Meus Tickets", url: "/meus-tickets", icon: MessageSquare },
+    { title: "Notificações", url: "/notificacoes", icon: Bell },
+  ];
 
 export function AgencyAdminSidebar({ isMobile = false }: { isMobile?: boolean }) {
   const { state } = useSidebar();
