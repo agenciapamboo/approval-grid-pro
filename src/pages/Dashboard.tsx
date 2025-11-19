@@ -299,9 +299,8 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            {/* BLOCO 02: Cards de Métricas - 1 coluna mobile, 2 desktop */}
-        {/* Métricas da Agência - Linha 1: 2 colunas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Métricas da Agência - Linha 1: 2 colunas (Criativos do Mês + Armazenamento) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AgencyMetricCard
             title="Criativos do Mês"
             icon={FileImage}
@@ -322,8 +321,8 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Métricas da Agência - Linha 2: 3 colunas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Métricas da Agência - Linha 2: 3 colunas (Aprovados + Ajustes + Reprovados) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <AgencyMetricCard
             title="Criativos Aprovados"
             icon={CheckCircle}
@@ -350,9 +349,9 @@ const Dashboard = () => {
             percentage={agencyMetrics.rejectionRate.percentage}
             metric="rejection"
           />
-        </div>
+            </div>
 
-            {/* NOVO: Lista de Membros da Equipe */}
+            {/* Lista de Membros da Equipe */}
             {profile?.agency_id && (
               <TeamMembersList agencyId={profile.agency_id} />
             )}
