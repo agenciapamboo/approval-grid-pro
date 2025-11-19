@@ -48,17 +48,34 @@ export function AddTeamMemberDialog({
 
     try {
       // Call edge function to create team member
-      const { data, error } = await supabase.functions.invoke('create-team-member', {
+      const { data, error: functionError } = await supabase.functions.invoke('create-team-member', {
         body: {
           name: formData.name,
           email: formData.email,
         },
       });
 
-      if (error) throw error;
+      // Check for function invocation errors
+      if (functionError) {
+        // Extract error message from function error
+        const errorMessage = functionError.message || 'Erro ao chamar função de cadastro';
+        
+        if (errorMessage.includes('already been registered')) {
+          throw new Error('Este email já está cadastrado no sistema');
+        }
+        
+        throw new Error(errorMessage);
+      }
       
+      // Check for application-level errors in response
       if (!data?.success) {
-        throw new Error(data?.message || 'Falha ao criar membro da equipe');
+        const errorMessage = data?.message || 'Falha ao criar membro da equipe';
+        
+        if (errorMessage.includes('already been registered')) {
+          throw new Error('Este email já está cadastrado no sistema');
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -76,14 +93,7 @@ export function AddTeamMemberDialog({
     } catch (error: any) {
       console.error('[ADD_TEAM_MEMBER] Erro:', error);
       
-      let errorMsg = "Erro ao adicionar membro da equipe";
-      
-      // Handle specific error cases
-      if (error.message?.includes('already been registered')) {
-        errorMsg = "Este email já está cadastrado no sistema";
-      } else if (error.message) {
-        errorMsg = error.message;
-      }
+      let errorMsg = error.message || "Erro ao adicionar membro da equipe";
       
       toast({
         variant: "destructive",
