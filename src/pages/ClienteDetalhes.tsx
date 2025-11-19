@@ -17,10 +17,12 @@ import { SocialAccountsDialog } from "@/components/admin/SocialAccountsDialog";
 import { ClientCreativeRequestsTable } from "@/components/admin/ClientCreativeRequestsTable";
 import { ClientContentLogsCards } from "@/components/admin/ClientContentLogsCards";
 import { ClientDetailsAccordion } from "@/components/admin/ClientDetailsAccordion";
+import { ClientMetricCard } from "@/components/admin/ClientMetricCard";
+import { useClientMetrics } from "@/hooks/useClientMetrics";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Building2, Edit, Calendar, FileText, Users, Shield,
-  Loader2, Globe, MapPin, Share2, Eye, CheckCircle
+  Loader2, Globe, MapPin, Share2, Eye, CheckCircle, RefreshCw, XCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -36,6 +38,7 @@ const ClienteDetalhes = () => {
   const [contents, setContents] = useState<any[]>([]);
   const [socialDialogOpen, setSocialDialogOpen] = useState(false);
   const [monthlyCreatives, setMonthlyCreatives] = useState({ used: 0, limit: 0, percentage: 0 });
+  const { metrics: clientMetrics, loading: metricsLoading } = useClientMetrics(clientId || null);
   
   // Form data
   const [formData, setFormData] = useState({
@@ -320,6 +323,41 @@ const ClienteDetalhes = () => {
             </div>
           </CardHeader>
         </Card>
+
+        {/* Cards de Performance do Cliente */}
+        {!loading && client && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Performance dos Criativos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ClientMetricCard
+                title="Criativos Aprovados"
+                icon={CheckCircle}
+                value={clientMetrics.approvalRate.approved}
+                total={clientMetrics.approvalRate.total}
+                percentage={clientMetrics.approvalRate.percentage}
+                metric="approval"
+              />
+              
+              <ClientMetricCard
+                title="Solicitações de Ajuste"
+                icon={RefreshCw}
+                value={clientMetrics.reworkRate.adjustments}
+                total={clientMetrics.reworkRate.total}
+                percentage={clientMetrics.reworkRate.percentage}
+                metric="rework"
+              />
+              
+              <ClientMetricCard
+                title="Criativos Reprovados"
+                icon={XCircle}
+                value={clientMetrics.rejectionRate.rejected}
+                total={clientMetrics.rejectionRate.total}
+                percentage={clientMetrics.rejectionRate.percentage}
+                metric="rejection"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Accordions para Mobile */}
         <ClientDetailsAccordion

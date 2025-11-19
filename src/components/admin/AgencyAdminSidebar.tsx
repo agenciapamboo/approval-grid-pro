@@ -7,7 +7,8 @@ import {
   Ticket, 
   MessageSquare, 
   Bell, 
-  Settings 
+  Settings,
+  UsersRound
 } from "lucide-react";
 import { NavLink } from "@/components/ui/nav-link";
 import { useUserData } from "@/hooks/useUserData";
@@ -28,6 +29,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Equipe", url: "/admin/membros-equipe", icon: UsersRound },
   { title: "Calendário", url: "/agenda", icon: Calendar },
   { title: "Kanban", url: "/kanban", icon: KanbanSquare },
   { title: "Solicitações de Criativos", url: "/creative-requests", icon: Paintbrush },
