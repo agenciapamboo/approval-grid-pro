@@ -51,22 +51,30 @@ export function useTeamMembers(agencyId: string | null) {
       }
 
       // Buscar emails via edge function
-      const { data: emailData } = await supabase.functions.invoke('get-user-emails', {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('get-user-emails', {
         body: { userIds: teamMemberIds },
       });
 
-      const emailMap = new Map(
-        emailData?.emails?.map((e: any) => [e.id, e.email]) || []
+      if (emailError) {
+        console.error('Erro ao buscar emails:', emailError);
+        setMembers([]);
+        return;
+      }
+
+      const emailMap = new Map<string, string>(
+        emailData?.emails?.map((e: { id: string; email: string }) => [e.id, e.email]) || []
       );
 
-      const teamMembersData = profiles
+      const teamMembersData: TeamMemberInfo[] = profiles
         .filter(p => teamMemberIds.includes(p.id))
         .map(p => ({
           id: p.id,
           name: p.name,
-          email: emailMap.get(p.id) as string || '',
-        }));
+          email: emailMap.get(p.id) || '',
+        }))
+        .filter(m => m.email !== ''); // Remove membros sem email
 
+      console.log('[TEAM_MEMBERS] Dados finais:', teamMembersData);
       setMembers(teamMembersData);
     } catch (error) {
       console.error('Erro ao carregar membros:', error);
