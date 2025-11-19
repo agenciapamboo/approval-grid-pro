@@ -47,43 +47,19 @@ export function AddTeamMemberDialog({
     setLoading(true);
 
     try {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            accountType: 'agency',
-          },
-          emailRedirectTo: `${window.location.origin}/`,
+      // Call edge function to create team member
+      const { data, error } = await supabase.functions.invoke('create-team-member', {
+        body: {
+          name: formData.name,
+          email: formData.email,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Falha ao criar usuário");
-
-      // Update profile with agency_id
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          agency_id: agencyId,
-          agency_name: formData.name,
-        })
-        .eq("id", authData.user.id);
-
-      if (profileError) throw profileError;
-
-      // Insert role (sempre team_member)
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: 'team_member',
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-        });
-
-      if (roleError) throw roleError;
+      if (error) throw error;
+      
+      if (!data?.success) {
+        throw new Error(data?.message || 'Falha ao criar membro da equipe');
+      }
 
       toast({
         title: "Membro adicionado",
@@ -99,7 +75,15 @@ export function AddTeamMemberDialog({
       onOpenChange(false);
     } catch (error: any) {
       console.error('[ADD_TEAM_MEMBER] Erro:', error);
-      const errorMsg = getErrorMessage(error);
+      
+      let errorMsg = "Erro ao adicionar membro da equipe";
+      
+      // Handle specific error cases
+      if (error.message?.includes('already been registered')) {
+        errorMsg = "Este email já está cadastrado no sistema";
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
       
       toast({
         variant: "destructive",
@@ -118,7 +102,7 @@ export function AddTeamMemberDialog({
           <DialogHeader>
             <DialogTitle>Adicionar Membro da Equipe</DialogTitle>
             <DialogDescription>
-              Adicione um novo membro à equipe da agência.
+              Adicione um novo membro à equipe da agência. Um email de confirmação será enviado automaticamente.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -143,20 +127,6 @@ export function AddTeamMemberDialog({
                   setFormData({ ...formData, email: e.target.value })
                 }
                 required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Senha inicial</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                placeholder="Mínimo 6 caracteres"
-                required
-                minLength={6}
               />
             </div>
           </div>
