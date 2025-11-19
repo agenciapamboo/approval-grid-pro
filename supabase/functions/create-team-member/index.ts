@@ -82,7 +82,7 @@ serve(async (req) => {
       email_confirm: true, // Auto-confirm email
       user_metadata: {
         name,
-        accountType: "team_member",
+        accountType: "agency", // Use "agency" for account_type (legacy field)
         agencyId: profile.agency_id,
       },
     });
@@ -103,7 +103,7 @@ serve(async (req) => {
       .from("profiles")
       .update({
         agency_id: profile.agency_id,
-        account_type: "team_member",
+        account_type: "agency", // Use "agency" for account_type (legacy field, real role is in user_roles)
       })
       .eq("id", newUser.user.id);
 
