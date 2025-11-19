@@ -5,6 +5,7 @@ export interface TeamMemberInfo {
   id: string;
   name: string;
   email: string;
+  functions: string[];
 }
 
 export function useTeamMembers(agencyId: string | null) {
@@ -65,12 +66,26 @@ export function useTeamMembers(agencyId: string | null) {
         emailData?.emails?.map((e: { id: string; email: string }) => [e.id, e.email]) || []
       );
 
+      // Buscar funções dos membros
+      const { data: functionsData } = await supabase
+        .from('team_member_functions')
+        .select('user_id, function')
+        .in('user_id', teamMemberIds);
+
+      // Criar mapa de funções por usuário
+      const functionsMap = new Map<string, string[]>();
+      functionsData?.forEach((f) => {
+        const existing = functionsMap.get(f.user_id) || [];
+        functionsMap.set(f.user_id, [...existing, f.function]);
+      });
+
       const teamMembersData: TeamMemberInfo[] = profiles
         .filter(p => teamMemberIds.includes(p.id))
         .map(p => ({
           id: p.id,
           name: p.name,
           email: emailMap.get(p.id) || '',
+          functions: functionsMap.get(p.id) || [],
         }))
         .filter(m => m.email !== ''); // Remove membros sem email
 

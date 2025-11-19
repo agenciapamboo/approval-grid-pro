@@ -4,12 +4,27 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Users, Mail, Loader2, Plus } from 'lucide-react';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { AddTeamMemberDialog } from './AddTeamMemberDialog';
 
 interface TeamMembersListProps {
   agencyId: string;
 }
+
+const getFunctionLabel = (func: string): string => {
+  const labels: Record<string, string> = {
+    atendimento: 'Atendimento',
+    planejamento: 'Planejamento',
+    redacao: 'Redação',
+    design: 'Design',
+    audiovisual: 'Audiovisual',
+    revisao: 'Revisão',
+    publicacao: 'Publicação',
+    trafego: 'Tráfego',
+  };
+  return labels[func] || func;
+};
 
 export function TeamMembersList({ agencyId }: TeamMembersListProps) {
   const { members, loading, refresh } = useTeamMembers(agencyId);
@@ -83,10 +98,19 @@ export function TeamMembersList({ agencyId }: TeamMembersListProps) {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{member.name}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                     <Mail className="h-3 w-3" />
                     <span className="truncate">{member.email}</span>
                   </div>
+                  {member.functions.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {member.functions.map((func) => (
+                        <Badge key={func} variant="outline" className="text-xs py-0">
+                          {getFunctionLabel(func)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

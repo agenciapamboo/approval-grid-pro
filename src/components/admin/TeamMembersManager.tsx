@@ -18,7 +18,23 @@ interface TeamMember {
   created_at: string;
   blocked_by_parent: boolean;
   is_active: boolean;
+  functions: string[];
 }
+
+const getFunctionLabel = (func: string): string => {
+  const labels: Record<string, string> = {
+    atendimento: 'Atendimento',
+    planejamento: 'Planejamento',
+    redacao: 'Redação',
+    design: 'Design',
+    audiovisual: 'Audiovisual',
+    revisao: 'Revisão',
+    publicacao: 'Publicação',
+    trafego: 'Tráfego',
+  };
+  return labels[func] || func;
+};
+
 
 export function TeamMembersManager() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -87,6 +103,18 @@ export function TeamMembersManager() {
 
       const emailMap = new Map(emailData?.emails?.map((e: any) => [e.id, e.email]) || []);
 
+      // Buscar funções dos membros
+      const { data: functionsData } = await supabase
+        .from('team_member_functions')
+        .select('user_id, function')
+        .in('user_id', Array.from(teamMemberIds));
+
+      const functionsMap = new Map<string, string[]>();
+      functionsData?.forEach((f) => {
+        const existing = functionsMap.get(f.user_id) || [];
+        functionsMap.set(f.user_id, [...existing, f.function]);
+      });
+
       const teamMembersData: TeamMember[] = members
         ?.filter(m => teamMemberIds.has(m.id))
         .map(member => ({
@@ -96,6 +124,7 @@ export function TeamMembersManager() {
           created_at: member.created_at,
           blocked_by_parent: member.blocked_by_parent,
           is_active: member.is_active,
+          functions: functionsMap.get(member.id) || [],
         })) || [];
 
       setTeamMembers(teamMembersData);
@@ -235,6 +264,7 @@ export function TeamMembersManager() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Funções</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Adicionado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -245,6 +275,19 @@ export function TeamMembersManager() {
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.name}</TableCell>
                     <TableCell>{member.email}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {member.functions.length > 0 ? (
+                          member.functions.map((func) => (
+                            <Badge key={func} variant="outline" className="text-xs">
+                              {getFunctionLabel(func)}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Nenhuma</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {member.blocked_by_parent ? (
                         <Badge variant="destructive">
