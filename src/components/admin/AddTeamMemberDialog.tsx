@@ -40,7 +40,6 @@ export function AddTeamMemberDialog({
     name: "",
     email: "",
     password: "",
-    role: "agency_admin" as "agency_admin" | "client_user",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,12 +74,12 @@ export function AddTeamMemberDialog({
 
       if (profileError) throw profileError;
 
-      // Insert role
+      // Insert role (sempre team_member)
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
           user_id: authData.user.id,
-          role: formData.role,
+          role: 'team_member',
           created_by: (await supabase.auth.getUser()).data.user?.id,
         });
 
@@ -95,7 +94,6 @@ export function AddTeamMemberDialog({
         name: "",
         email: "",
         password: "",
-        role: "agency_admin",
       });
       onSuccess();
       onOpenChange(false);
@@ -160,23 +158,6 @@ export function AddTeamMemberDialog({
                 required
                 minLength={6}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="role">Função</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value: any) =>
-                  setFormData({ ...formData, role: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="agency_admin">Administrador da Agência</SelectItem>
-                  <SelectItem value="client_user">Membro da Equipe</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>

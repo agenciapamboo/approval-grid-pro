@@ -1,17 +1,25 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Mail, Loader2 } from 'lucide-react';
+import { Users, Mail, Loader2, Plus } from 'lucide-react';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { AddTeamMemberDialog } from './AddTeamMemberDialog';
 
 interface TeamMembersListProps {
   agencyId: string;
 }
 
 export function TeamMembersList({ agencyId }: TeamMembersListProps) {
-  const { members, loading } = useTeamMembers(agencyId);
+  const { members, loading, refresh } = useTeamMembers(agencyId);
   const navigate = useNavigate();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+
+  const handleSuccess = () => {
+    refresh();
+    setShowAddDialog(false);
+  };
 
   if (loading) {
     return (
@@ -24,20 +32,31 @@ export function TeamMembersList({ agencyId }: TeamMembersListProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          <CardTitle>Membros da Equipe</CardTitle>
-        </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => navigate('/admin/membros-equipe')}
-        >
-          Gerenciar
-        </Button>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <CardTitle>Membros da Equipe ({members.length})</CardTitle>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => setShowAddDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/admin/membros-equipe')}
+            >
+              Gerenciar
+            </Button>
+          </div>
+        </CardHeader>
       <CardContent>
         {members.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
@@ -45,7 +64,7 @@ export function TeamMembersList({ agencyId }: TeamMembersListProps) {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => navigate('/admin/membros-equipe')}
+              onClick={() => setShowAddDialog(true)}
             >
               Adicionar Primeiro Membro
             </Button>
@@ -75,5 +94,13 @@ export function TeamMembersList({ agencyId }: TeamMembersListProps) {
         )}
       </CardContent>
     </Card>
+
+    <AddTeamMemberDialog 
+      open={showAddDialog}
+      onOpenChange={setShowAddDialog}
+      agencyId={agencyId}
+      onSuccess={handleSuccess}
+    />
+  </>
   );
 }
