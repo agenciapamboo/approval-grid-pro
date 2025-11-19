@@ -70,7 +70,7 @@ export function AgencyAdminSidebar({ isMobile = false }: { isMobile?: boolean })
 
   // Renderização desktop (usando Sidebar shadcn)
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="offcanvas">
+    <Sidebar collapsible="offcanvas">
       <SidebarContent className="bg-sidebar">
         <SidebarGroup>
           {!collapsed && <SidebarGroupLabel className="text-sidebar-foreground/70">Menu Principal</SidebarGroupLabel>}
