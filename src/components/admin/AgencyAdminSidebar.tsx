@@ -36,7 +36,7 @@ const menuItems = [
   { title: "Tickets da Agência", url: "/agencia/tickets", icon: Ticket },
   { title: "Meus Tickets", url: "/meus-tickets", icon: MessageSquare },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Configurações", url: "/agencia/configuracoes", icon: Settings },
 ];
 
 export function AgencyAdminSidebar({ isMobile = false }: { isMobile?: boolean }) {
