@@ -50,11 +50,18 @@ export function AgencyStats({ agencyId }: AgencyStatsProps) {
         .select('*', { count: 'exact', head: true })
         .in('content_id', contentIds.length > 0 ? contentIds : ['']);
 
-      // Contar membros
-      const { count: membersCount } = await supabase
+      // Contar membros (apenas team_members via user_roles)
+      const profileIds = (await supabase
         .from('profiles')
+        .select('id')
+        .eq('agency_id', agencyId)
+      ).data?.map(p => p.id) || [];
+
+      const { count: membersCount } = await supabase
+        .from('user_roles')
         .select('*', { count: 'exact', head: true })
-        .eq('agency_id', agencyId);
+        .in('user_id', profileIds.length > 0 ? profileIds : [''])
+        .eq('role', 'team_member');
 
       setStats({
         clients_count: clientsCount || 0,
