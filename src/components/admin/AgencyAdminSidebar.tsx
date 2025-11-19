@@ -68,9 +68,9 @@ export function AgencyAdminSidebar({ isMobile = false }: { isMobile?: boolean })
     );
   }
 
-  // Renderização desktop (usando Sidebar shadcn)
+  // Renderização desktop (usando Sidebar shadcn com hover)
   return (
-    <Sidebar collapsible="offcanvas">
+    <Sidebar collapsible="icon">
       <SidebarContent className="bg-sidebar">
         <SidebarGroup>
           {!collapsed && <SidebarGroupLabel className="text-sidebar-foreground/70">Menu Principal</SidebarGroupLabel>}
