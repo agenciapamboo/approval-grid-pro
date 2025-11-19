@@ -50,6 +50,7 @@ const TrustedIPs = lazy(() => import("./pages/admin/TrustedIPs"));
 const ActiveSessions = lazy(() => import("./pages/admin/ActiveSessions"));
 const TeamMembersManager = lazy(() => import("./pages/admin/TeamMembersManager"));
 const ManageApprovers = lazy(() => import("./pages/ManageApprovers"));
+const AgencySettings = lazy(() => import("./pages/AgencySettings"));
 const CheckoutLoading = lazy(() => import("./pages/CheckoutLoading"));
 const AgencyAgenda = lazy(() => import("./pages/AgencyAgenda"));
 const AgencyKanban = lazy(() => import("./pages/AgencyKanban"));
@@ -117,6 +118,7 @@ const App = () => (
                 <Route path="/minhas-solicitacoes" element={<RoleProtectedRoute allow={['client_user']}><MinhasSolicitacoes /></RoleProtectedRoute>} />
                 <Route path="/gerenciar-aprovadores" element={<RoleProtectedRoute allow={['client_user', 'agency_admin']}><ManageApprovers /></RoleProtectedRoute>} />
                 <Route path="/configuracoes" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><Configuracoes /></RoleProtectedRoute>} />
+                <Route path="/agencia/configuracoes" element={<RoleProtectedRoute allow={['agency_admin']}><AgencySettings /></RoleProtectedRoute>} />
                 <Route path="/financeiro" element={<RoleProtectedRoute allow={['super_admin']}><Financeiro /></RoleProtectedRoute>} />
                 <Route path="/agencias" element={<RoleProtectedRoute allow={['super_admin']}><Agencias /></RoleProtectedRoute>} />
                 <Route path="/agencias/:id" element={<RoleProtectedRoute allow={['super_admin']}><AgenciaDetalhes /></RoleProtectedRoute>} />
@@ -139,7 +141,7 @@ const App = () => (
                 <Route path="/admin/dashboard-seguranca" element={<RoleProtectedRoute allow={['super_admin']}><SecurityDashboard /></RoleProtectedRoute>} />
                 <Route path="/admin/ips-confiaveis" element={<RoleProtectedRoute allow={['super_admin']}><TrustedIPs /></RoleProtectedRoute>} />
                 <Route path="/admin/sessoes-ativas" element={<RoleProtectedRoute allow={['super_admin']}><ActiveSessions /></RoleProtectedRoute>} />
-                <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
+                <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />
                 <Route path="/content-grid" element={<ProtectedRoute><ContentGrid /></ProtectedRoute>} />
                 

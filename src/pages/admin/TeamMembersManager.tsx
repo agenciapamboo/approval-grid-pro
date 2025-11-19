@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 
 export default function TeamMembersManager() {
   return (
-    <AccessGate allow={['super_admin']}>
+    <AccessGate allow={['super_admin', 'agency_admin']}>
       <AppLayout>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-6">
