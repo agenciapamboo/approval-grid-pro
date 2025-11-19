@@ -190,15 +190,16 @@ export function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full">
         {SidebarComponent && <SidebarComponent onSignOut={handleSignOut} />}
-        <div className="flex flex-1 flex-col">
-          <AppHeader 
-            userName={profile?.name} 
-            userRole={role ? getRoleLabel(role) : undefined} 
-            onSignOut={handleSignOut} 
-          />
-          <main className="flex-1 p-6">{children}</main>
-          <AppFooter />
-        </div>
+      <div className="flex flex-1 flex-col">
+        <AppHeader 
+          userName={profile?.name} 
+          userRole={role ? getRoleLabel(role) : undefined} 
+          onSignOut={handleSignOut}
+          showSidebarTrigger={true}
+        />
+        <main className="flex-1 p-6">{children}</main>
+        <AppFooter />
+      </div>
       </div>
     </SidebarProvider>
   );

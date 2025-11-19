@@ -239,106 +239,110 @@ export function TeamMembersManager() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle>Membros da Equipe</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg md:text-xl">Membros da Equipe</CardTitle>
+              <CardDescription className="text-sm">
                 Gerencie os membros da sua equipe (team_members)
               </CardDescription>
             </div>
-            <Button onClick={() => setShowAddDialog(true)}>
+            <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
               <UserPlus className="mr-2 h-4 w-4" />
               Adicionar Membro
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 md:p-6">
           {teamMembers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground px-4">
               <p>Nenhum membro da equipe cadastrado</p>
               <p className="text-sm mt-2">Adicione membros para colaborar com você</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Funções</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Adicionado em</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {member.functions.length > 0 ? (
-                          member.functions.map((func) => (
-                            <Badge key={func} variant="outline" className="text-xs">
-                              {getFunctionLabel(func)}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Nenhuma</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {member.blocked_by_parent ? (
-                        <Badge variant="destructive">
-                          <Ban className="mr-1 h-3 w-3" />
-                          Bloqueado
-                        </Badge>
-                      ) : member.is_active ? (
-                        <Badge variant="success">
-                          <CheckCircle className="mr-1 h-3 w-3" />
-                          Ativo
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Inativo</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(member.created_at).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleBlock(member.id, member.blocked_by_parent)}
-                        >
-                          {member.blocked_by_parent ? (
-                            <>
-                              <Unlock className="mr-2 h-4 w-4" />
-                              Desbloquear
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="mr-2 h-4 w-4" />
-                              Bloquear
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setMemberToRemove(member.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Remover
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Nome</TableHead>
+                    <TableHead className="min-w-[200px]">Email</TableHead>
+                    <TableHead className="min-w-[150px]">Funções</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[120px] hidden md:table-cell">Adicionado em</TableHead>
+                    <TableHead className="min-w-[200px] text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {teamMembers.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell className="font-medium">{member.name}</TableCell>
+                      <TableCell className="text-sm">{member.email}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {member.functions.length > 0 ? (
+                            member.functions.map((func) => (
+                              <Badge key={func} variant="outline" className="text-xs">
+                                {getFunctionLabel(func)}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Nenhuma</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {member.blocked_by_parent ? (
+                          <Badge variant="destructive" className="text-xs">
+                            <Ban className="mr-1 h-3 w-3" />
+                            Bloqueado
+                          </Badge>
+                        ) : member.is_active ? (
+                          <Badge variant="success" className="text-xs">
+                            <CheckCircle className="mr-1 h-3 w-3" />
+                            Ativo
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Inativo</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {new Date(member.created_at).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleBlock(member.id, member.blocked_by_parent)}
+                            className="w-full sm:w-auto text-xs"
+                          >
+                            {member.blocked_by_parent ? (
+                              <>
+                                <Unlock className="mr-1 h-3 w-3" />
+                                Desbloquear
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="mr-1 h-3 w-3" />
+                                Bloquear
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setMemberToRemove(member.id)}
+                            className="w-full sm:w-auto text-xs"
+                          >
+                            <Trash2 className="mr-1 h-3 w-3" />
+                            Remover
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

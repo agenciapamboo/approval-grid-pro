@@ -300,59 +300,57 @@ const Dashboard = () => {
             </div>
 
             {/* BLOCO 02: Cards de Métricas - 1 coluna mobile, 2 desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* LINHA 1: Criativos do Mês + Armazenamento (2 colunas) */}
-            <div className="grid grid-cols-2 gap-4">
-              <AgencyMetricCard
-                title="Criativos do Mês"
-                icon={FileImage}
-                value={agencyMetrics.creativesThisMonth.used}
-                limit={agencyMetrics.creativesThisMonth.limit}
-                percentage={agencyMetrics.creativesThisMonth.percentage}
-                metric="usage"
-                onClick={() => setClientSelectorOpen(true)}
-              />
-              
-              <AgencyMetricCard
-                title="Armazenamento"
-                icon={HardDrive}
-                value={agencyMetrics.creativesStorage.used}
-                limit={agencyMetrics.creativesStorage.limit}
-                percentage={agencyMetrics.creativesStorage.percentage}
-                metric="usage"
-              />
-            </div>
+        {/* Métricas da Agência - Linha 1: 2 colunas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AgencyMetricCard
+            title="Criativos do Mês"
+            icon={FileImage}
+            value={agencyMetrics.creativesThisMonth.used}
+            limit={agencyMetrics.creativesThisMonth.limit}
+            percentage={agencyMetrics.creativesThisMonth.percentage}
+            metric="usage"
+            onClick={() => setClientSelectorOpen(true)}
+          />
+          
+          <AgencyMetricCard
+            title="Armazenamento"
+            icon={HardDrive}
+            value={agencyMetrics.creativesStorage.used}
+            limit={agencyMetrics.creativesStorage.limit}
+            percentage={agencyMetrics.creativesStorage.percentage}
+            metric="usage"
+          />
+        </div>
 
-            {/* LINHA 2: Aprovados + Ajustes + Reprovados (3 colunas) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <AgencyMetricCard
-                title="Criativos Aprovados"
-                icon={CheckCircle}
-                value={agencyMetrics.approvalRate.approved}
-                limit={agencyMetrics.approvalRate.total}
-                percentage={agencyMetrics.approvalRate.percentage}
-                metric="approval"
-              />
-              
-              <AgencyMetricCard
-                title="Solicitações de Ajuste"
-                icon={RefreshCw}
-                value={agencyMetrics.reworkRate.adjustments}
-                limit={agencyMetrics.reworkRate.total}
-                percentage={agencyMetrics.reworkRate.percentage}
-                metric="rework"
-              />
-              
-              <AgencyMetricCard
-                title="Criativos Reprovados"
-                icon={XCircle}
-                value={agencyMetrics.rejectionRate.rejected}
-                limit={agencyMetrics.rejectionRate.total}
-                percentage={agencyMetrics.rejectionRate.percentage}
-                metric="rejection"
-              />
-            </div>
-            </div>
+        {/* Métricas da Agência - Linha 2: 3 colunas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AgencyMetricCard
+            title="Criativos Aprovados"
+            icon={CheckCircle}
+            value={agencyMetrics.approvalRate.approved}
+            limit={agencyMetrics.approvalRate.total}
+            percentage={agencyMetrics.approvalRate.percentage}
+            metric="approval"
+          />
+          
+          <AgencyMetricCard
+            title="Solicitações de Ajuste"
+            icon={RefreshCw}
+            value={agencyMetrics.reworkRate.adjustments}
+            limit={agencyMetrics.reworkRate.total}
+            percentage={agencyMetrics.reworkRate.percentage}
+            metric="rework"
+          />
+          
+          <AgencyMetricCard
+            title="Criativos Reprovados"
+            icon={XCircle}
+            value={agencyMetrics.rejectionRate.rejected}
+            limit={agencyMetrics.rejectionRate.total}
+            percentage={agencyMetrics.rejectionRate.percentage}
+            metric="rejection"
+          />
+        </div>
 
             {/* NOVO: Lista de Membros da Equipe */}
             {profile?.agency_id && (
