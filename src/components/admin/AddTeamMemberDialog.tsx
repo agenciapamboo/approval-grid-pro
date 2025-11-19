@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getErrorMessage } from "@/lib/error-messages";
 
 interface AddTeamMemberDialogProps {
@@ -40,6 +41,7 @@ export function AddTeamMemberDialog({
     name: "",
     email: "",
     password: "",
+    functions: [] as string[],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,6 +54,7 @@ export function AddTeamMemberDialog({
         body: {
           name: formData.name,
           email: formData.email,
+          functions: formData.functions,
         },
       });
 
@@ -87,6 +90,7 @@ export function AddTeamMemberDialog({
         name: "",
         email: "",
         password: "",
+        functions: [],
       });
       onSuccess();
       onOpenChange(false);
@@ -138,6 +142,46 @@ export function AddTeamMemberDialog({
                 }
                 required
               />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Funções / Departamentos</Label>
+              <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg">
+                {[
+                  { id: 'atendimento', label: 'Atendimento' },
+                  { id: 'planejamento', label: 'Planejamento' },
+                  { id: 'redacao', label: 'Redação' },
+                  { id: 'design', label: 'Design' },
+                  { id: 'audiovisual', label: 'Audiovisual' },
+                  { id: 'revisao', label: 'Revisão' },
+                  { id: 'publicacao', label: 'Publicação' },
+                  { id: 'trafego', label: 'Tráfego' },
+                ].map((func) => (
+                  <div key={func.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={func.id}
+                      checked={formData.functions.includes(func.id)}
+                      onCheckedChange={(checked) => {
+                        setFormData({
+                          ...formData,
+                          functions: checked
+                            ? [...formData.functions, func.id]
+                            : formData.functions.filter((f) => f !== func.id),
+                        });
+                      }}
+                    />
+                    <label
+                      htmlFor={func.id}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {func.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Selecione uma ou mais funções para este membro
+              </p>
             </div>
           </div>
           <DialogFooter>

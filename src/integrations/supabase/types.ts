@@ -1559,6 +1559,30 @@ export type Database = {
         }
         Relationships: []
       }
+      team_member_functions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          function: Database["public"]["Enums"]["team_member_function"]
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          function: Database["public"]["Enums"]["team_member_function"]
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          function?: Database["public"]["Enums"]["team_member_function"]
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_runs: {
         Row: {
           created_at: string | null
@@ -2014,6 +2038,15 @@ export type Database = {
       content_type: "image" | "carousel" | "reels" | "story" | "feed"
       legal_basis: "contract" | "legitimate_interest"
       media_kind: "image" | "video"
+      team_member_function:
+        | "atendimento"
+        | "planejamento"
+        | "redacao"
+        | "design"
+        | "audiovisual"
+        | "revisao"
+        | "publicacao"
+        | "trafego"
       ticket_category: "atendimento" | "suporte" | "duvidas" | "financeiro"
       ticket_priority: "low" | "normal" | "high" | "urgent"
       ticket_status:
@@ -2169,6 +2202,16 @@ export const Constants = {
       content_type: ["image", "carousel", "reels", "story", "feed"],
       legal_basis: ["contract", "legitimate_interest"],
       media_kind: ["image", "video"],
+      team_member_function: [
+        "atendimento",
+        "planejamento",
+        "redacao",
+        "design",
+        "audiovisual",
+        "revisao",
+        "publicacao",
+        "trafego",
+      ],
       ticket_category: ["atendimento", "suporte", "duvidas", "financeiro"],
       ticket_priority: ["low", "normal", "high", "urgent"],
       ticket_status: [

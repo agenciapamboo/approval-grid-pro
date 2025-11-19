@@ -68,7 +68,7 @@ serve(async (req) => {
 
     // Parse request body
     const body = await req.json();
-    const { name, email } = body;
+    const { name, email, functions } = body;
 
     if (!name || !email) {
       throw new Error("Name and email are required");
@@ -126,10 +126,32 @@ serve(async (req) => {
       throw new Error(`Failed to assign team_member role: ${roleError.message}`);
     }
 
+    // Assign functions if provided
+    const memberFunctions = functions || [];
+    if (memberFunctions.length > 0) {
+      const functionInserts = memberFunctions.map((func: string) => ({
+        user_id: newUser.user.id,
+        function: func,
+        created_by: requestingUser.id,
+      }));
+
+      const { error: functionsError } = await supabaseClient
+        .from("team_member_functions")
+        .insert(functionInserts);
+
+      if (functionsError) {
+        logStep("Warning: Error inserting functions", { error: functionsError.message });
+        // Don't fail if functions aren't inserted
+      } else {
+        logStep("Functions assigned", { functions: memberFunctions });
+      }
+    }
+
     logStep("Team member created successfully", { 
       userId: newUser.user.id,
       email,
       agencyId: profile.agency_id,
+      functions: memberFunctions,
     });
 
     return new Response(
