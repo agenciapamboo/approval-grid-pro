@@ -181,10 +181,47 @@ export function TeamMembersManager() {
     if (!memberToRemove) return;
     setRemovingMember(true);
     try {
-      const {
-        error
-      } = await supabase.from("user_roles").delete().eq("user_id", memberToRemove).eq("role", "team_member");
-      if (error) throw error;
+      // 1. Deletar funções primeiro (garantir que não haja dependências)
+      const { error: functionsError } = await supabase
+        .from("team_member_functions")
+        .delete()
+        .eq("user_id", memberToRemove);
+      
+      if (functionsError) {
+        console.error("Error deleting functions:", functionsError);
+        // Continua mesmo se não houver funções para deletar
+      }
+
+      // 2. Deletar role
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", memberToRemove)
+        .eq("role", "team_member");
+      
+      if (roleError) throw roleError;
+
+      // 3. Log de auditoria
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("agency_id")
+          .eq("id", user.id)
+          .single();
+          
+        await supabase.from("activity_log").insert({
+          entity: "team_member",
+          action: "removed",
+          entity_id: memberToRemove,
+          actor_user_id: user.id,
+          metadata: {
+            removed_at: new Date().toISOString(),
+            agency_id: profile?.agency_id,
+          },
+        });
+      }
+
       toast.success("Membro removido da equipe");
       setMemberToRemove(null);
       loadTeamMembers();
