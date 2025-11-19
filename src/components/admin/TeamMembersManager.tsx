@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserPlus, Ban, Trash2, CheckCircle, Loader2, Lock, Unlock } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
 interface TeamMember {
   id: string;
   name: string;
@@ -20,7 +19,6 @@ interface TeamMember {
   is_active: boolean;
   functions: string[];
 }
-
 const getFunctionLabel = (func: string): string => {
   const labels: Record<string, string> = {
     atendimento: 'Atendimento',
@@ -30,12 +28,10 @@ const getFunctionLabel = (func: string): string => {
     audiovisual: 'Audiovisual',
     revisao: 'Revisão',
     publicacao: 'Publicação',
-    trafego: 'Tráfego',
+    trafego: 'Tráfego'
   };
   return labels[func] || func;
 };
-
-
 export function TeamMembersManager() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,90 +39,82 @@ export function TeamMembersManager() {
   const [addingMember, setAddingMember] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
   const [removingMember, setRemovingMember] = useState(false);
-  
+
   // Form state
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
-
   useEffect(() => {
     loadTeamMembers();
   }, []);
-
   const loadTeamMembers = async () => {
     try {
       setLoading(true);
-      
+
       // Buscar agency_id do usuário atual
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("agency_id")
-        .eq("id", user.id)
-        .single();
-
+      const {
+        data: profile
+      } = await supabase.from("profiles").select("agency_id").eq("id", user.id).single();
       if (!profile?.agency_id) {
         toast.error("Você não está associado a uma agência");
         return;
       }
 
       // Buscar todos os profiles da agência com role team_member
-      const { data: members, error } = await supabase
-        .from("profiles")
-        .select(`
+      const {
+        data: members,
+        error
+      } = await supabase.from("profiles").select(`
           id,
           name,
           blocked_by_parent,
           is_active,
           created_at
-        `)
-        .eq("agency_id", profile.agency_id)
-        .order("created_at", { ascending: false });
-
+        `).eq("agency_id", profile.agency_id).order("created_at", {
+        ascending: false
+      });
       if (error) throw error;
 
       // Filtrar apenas team_members verificando a tabela user_roles
       const memberIds = members?.map(m => m.id) || [];
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("user_id", memberIds)
-        .eq("role", "team_member");
-
+      const {
+        data: roles
+      } = await supabase.from("user_roles").select("user_id").in("user_id", memberIds).eq("role", "team_member");
       const teamMemberIds = new Set(roles?.map(r => r.user_id) || []);
 
       // Buscar emails via edge function
-      const { data: emailData } = await supabase.functions.invoke("get-user-emails", {
-        body: { userIds: Array.from(teamMemberIds) },
+      const {
+        data: emailData
+      } = await supabase.functions.invoke("get-user-emails", {
+        body: {
+          userIds: Array.from(teamMemberIds)
+        }
       });
-
       const emailMap = new Map(emailData?.emails?.map((e: any) => [e.id, e.email]) || []);
 
       // Buscar funções dos membros
-      const { data: functionsData } = await supabase
-        .from('team_member_functions')
-        .select('user_id, function')
-        .in('user_id', Array.from(teamMemberIds));
-
+      const {
+        data: functionsData
+      } = await supabase.from('team_member_functions').select('user_id, function').in('user_id', Array.from(teamMemberIds));
       const functionsMap = new Map<string, string[]>();
-      functionsData?.forEach((f) => {
+      functionsData?.forEach(f => {
         const existing = functionsMap.get(f.user_id) || [];
         functionsMap.set(f.user_id, [...existing, f.function]);
       });
-
-      const teamMembersData: TeamMember[] = members
-        ?.filter(m => teamMemberIds.has(m.id))
-        .map(member => ({
-          id: member.id,
-          name: member.name,
-          email: (emailMap.get(member.id) as string) || "",
-          created_at: member.created_at,
-          blocked_by_parent: member.blocked_by_parent,
-          is_active: member.is_active,
-          functions: functionsMap.get(member.id) || [],
-        })) || [];
-
+      const teamMembersData: TeamMember[] = members?.filter(m => teamMemberIds.has(m.id)).map(member => ({
+        id: member.id,
+        name: member.name,
+        email: emailMap.get(member.id) as string || "",
+        created_at: member.created_at,
+        blocked_by_parent: member.blocked_by_parent,
+        is_active: member.is_active,
+        functions: functionsMap.get(member.id) || []
+      })) || [];
       setTeamMembers(teamMembersData);
     } catch (error) {
       console.error("Error loading team members:", error);
@@ -135,27 +123,26 @@ export function TeamMembersManager() {
       setLoading(false);
     }
   };
-
   const handleAddMember = async () => {
     if (!newMemberName || !newMemberEmail) {
       toast.error("Preencha todos os campos");
       return;
     }
-
     setAddingMember(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-team-member", {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke("create-team-member", {
         body: {
           name: newMemberName,
-          email: newMemberEmail,
-        },
+          email: newMemberEmail
+        }
       });
-
       if (error) throw error;
-
       if (data?.success) {
         toast.success("Membro adicionado com sucesso", {
-          description: "Um email de convite foi enviado ao novo membro",
+          description: "Um email de convite foi enviado ao novo membro"
         });
         setShowAddDialog(false);
         setNewMemberName("");
@@ -167,50 +154,37 @@ export function TeamMembersManager() {
     } catch (error: any) {
       console.error("Error adding team member:", error);
       toast.error("Erro ao adicionar membro", {
-        description: error.message || "Tente novamente mais tarde",
+        description: error.message || "Tente novamente mais tarde"
       });
     } finally {
       setAddingMember(false);
     }
   };
-
   const handleToggleBlock = async (memberId: string, currentlyBlocked: boolean) => {
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ blocked_by_parent: !currentlyBlocked })
-        .eq("id", memberId);
-
+      const {
+        error
+      } = await supabase.from("profiles").update({
+        blocked_by_parent: !currentlyBlocked
+      }).eq("id", memberId);
       if (error) throw error;
-
-      toast.success(
-        currentlyBlocked ? "Membro desbloqueado" : "Membro bloqueado",
-        {
-          description: currentlyBlocked
-            ? "O membro pode acessar o sistema novamente"
-            : "O membro não poderá acessar o sistema",
-        }
-      );
+      toast.success(currentlyBlocked ? "Membro desbloqueado" : "Membro bloqueado", {
+        description: currentlyBlocked ? "O membro pode acessar o sistema novamente" : "O membro não poderá acessar o sistema"
+      });
       loadTeamMembers();
     } catch (error) {
       console.error("Error toggling block:", error);
       toast.error("Erro ao atualizar status do membro");
     }
   };
-
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
-
     setRemovingMember(true);
     try {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", memberToRemove)
-        .eq("role", "team_member");
-
+      const {
+        error
+      } = await supabase.from("user_roles").delete().eq("user_id", memberToRemove).eq("role", "team_member");
       if (error) throw error;
-
       toast.success("Membro removido da equipe");
       setMemberToRemove(null);
       loadTeamMembers();
@@ -221,29 +195,24 @@ export function TeamMembersManager() {
       setRemovingMember(false);
     }
   };
-
   if (loading) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader>
           <CardTitle>Membros da Equipe</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <>
+  return <>
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="text-lg md:text-xl">Membros da Equipe</CardTitle>
               <CardDescription className="text-sm">
-                Gerencie os membros da sua equipe (team_members)
+                Gerencie os membros da sua equipe  
               </CardDescription>
             </div>
             <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
@@ -253,13 +222,10 @@ export function TeamMembersManager() {
           </div>
         </CardHeader>
         <CardContent className="p-0 md:p-6">
-          {teamMembers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground px-4">
+          {teamMembers.length === 0 ? <div className="text-center py-8 text-muted-foreground px-4">
               <p>Nenhum membro da equipe cadastrado</p>
               <p className="text-sm mt-2">Adicione membros para colaborar com você</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+            </div> : <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -272,78 +238,49 @@ export function TeamMembersManager() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teamMembers.map((member) => (
-                    <TableRow key={member.id}>
+                  {teamMembers.map(member => <TableRow key={member.id}>
                       <TableCell className="font-medium">{member.name}</TableCell>
                       <TableCell className="text-sm">{member.email}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {member.functions.length > 0 ? (
-                            member.functions.map((func) => (
-                              <Badge key={func} variant="outline" className="text-xs">
+                          {member.functions.length > 0 ? member.functions.map(func => <Badge key={func} variant="outline" className="text-xs">
                                 {getFunctionLabel(func)}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Nenhuma</span>
-                          )}
+                              </Badge>) : <span className="text-xs text-muted-foreground">Nenhuma</span>}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {member.blocked_by_parent ? (
-                          <Badge variant="destructive" className="text-xs">
+                        {member.blocked_by_parent ? <Badge variant="destructive" className="text-xs">
                             <Ban className="mr-1 h-3 w-3" />
                             Bloqueado
-                          </Badge>
-                        ) : member.is_active ? (
-                          <Badge variant="success" className="text-xs">
+                          </Badge> : member.is_active ? <Badge variant="success" className="text-xs">
                             <CheckCircle className="mr-1 h-3 w-3" />
                             Ativo
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">Inativo</Badge>
-                        )}
+                          </Badge> : <Badge variant="outline" className="text-xs">Inativo</Badge>}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm">
                         {new Date(member.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleBlock(member.id, member.blocked_by_parent)}
-                            className="w-full sm:w-auto text-xs"
-                          >
-                            {member.blocked_by_parent ? (
-                              <>
+                          <Button variant="outline" size="sm" onClick={() => handleToggleBlock(member.id, member.blocked_by_parent)} className="w-full sm:w-auto text-xs">
+                            {member.blocked_by_parent ? <>
                                 <Unlock className="mr-1 h-3 w-3" />
                                 Desbloquear
-                              </>
-                            ) : (
-                              <>
+                              </> : <>
                                 <Lock className="mr-1 h-3 w-3" />
                                 Bloquear
-                              </>
-                            )}
+                              </>}
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setMemberToRemove(member.id)}
-                            className="w-full sm:w-auto text-xs"
-                          >
+                          <Button variant="destructive" size="sm" onClick={() => setMemberToRemove(member.id)} className="w-full sm:w-auto text-xs">
                             <Trash2 className="mr-1 h-3 w-3" />
                             Remover
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
-                  ))}
+                    </TableRow>)}
                 </TableBody>
               </Table>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
@@ -359,45 +296,26 @@ export function TeamMembersManager() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                placeholder="João Silva"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-              />
+              <Input id="name" placeholder="João Silva" value={newMemberName} onChange={e => setNewMemberName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="joao@exemplo.com"
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-              />
+              <Input id="email" type="email" placeholder="joao@exemplo.com" value={newMemberEmail} onChange={e => setNewMemberEmail(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAddDialog(false);
-                setNewMemberName("");
-                setNewMemberEmail("");
-              }}
-              disabled={addingMember}
-            >
+            <Button variant="outline" onClick={() => {
+            setShowAddDialog(false);
+            setNewMemberName("");
+            setNewMemberEmail("");
+          }} disabled={addingMember}>
               Cancelar
             </Button>
             <Button onClick={handleAddMember} disabled={addingMember}>
-              {addingMember ? (
-                <>
+              {addingMember ? <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Adicionando...
-                </>
-              ) : (
-                "Adicionar Membro"
-              )}
+                </> : "Adicionar Membro"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -415,23 +333,14 @@ export function TeamMembersManager() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={removingMember}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRemoveMember}
-              disabled={removingMember}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {removingMember ? (
-                <>
+            <AlertDialogAction onClick={handleRemoveMember} disabled={removingMember} className="bg-destructive hover:bg-destructive/90">
+              {removingMember ? <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Removendo...
-                </>
-              ) : (
-                "Remover"
-              )}
+                </> : "Remover"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
+    </>;
 }
