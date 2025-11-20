@@ -388,8 +388,8 @@ export default function ContentGrid() {
           )}
         </div>
 
-          {/* Stories Highlights - Mobile only e SEM filtro */}
-          {isMobile && !filterParam && contents.length > 0 && (
+          {/* Stories Highlights - SEM filtro */}
+          {!filterParam && contents.length > 0 && (
             <StoriesHighlights 
               contents={contents}
               onUpdate={() => loadContents(userClient!.id)}
@@ -406,8 +406,8 @@ export default function ContentGrid() {
               <p className="text-muted-foreground">Nenhum conteúdo encontrado</p>
             </div>
           </Card>
-        ) : isMobile ? (
-          // Instagram-style grid for mobile - Apenas imagem + badge (sem bordas)
+        ) : (
+          // Instagram-style grid para TODAS as versões - 3 colunas
           <div className="grid grid-cols-3 gap-0.5 pb-20">
             {filterContentsByStatus(contents).map((content) => (
               <div
@@ -506,22 +506,10 @@ export default function ContentGrid() {
               </div>
             ))}
           </div>
-        ) : (
-          // Traditional grid for desktop
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filterContentsByStatus(contents).map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                isResponsible={content.owner_user_id === userProfile.id}
-                onUpdate={() => loadContents(userClient.id)}
-              />
-            ))}
-          </div>
         )}
 
-        {/* Feed Fullscreen com Scroll Infinito (Mobile) */}
-        {isMobile && selectedContent && (
+        {/* Dialog Fullscreen - Todas as versões */}
+        {selectedContent && (
           <Dialog open={!!selectedContent} onOpenChange={() => setSelectedContent(null)}>
             <DialogContent className="max-w-full h-full p-0 gap-0 overflow-hidden">
               {/* Header fixo com seta voltar e X */}
