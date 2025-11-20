@@ -31,6 +31,11 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const BlockedIPs = lazy(() => import("./pages/BlockedIPs"));
 const ClientHistory = lazy(() => import("./pages/ClientHistory"));
+
+// Documentation pages
+const SecretsRecovery = lazy(() => import("./pages/docs/SecretsRecovery"));
+const BackupGuide = lazy(() => import("./pages/docs/BackupGuide"));
+const MigrationGuide = lazy(() => import("./pages/docs/MigrationGuide"));
 const Clientes = lazy(() => import("./pages/Clientes"));
 const ClienteDetalhes = lazy(() => import("./pages/ClienteDetalhes"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
@@ -144,6 +149,12 @@ const App = () => (
                 <Route path="/admin/sessoes-ativas" element={<RoleProtectedRoute allow={['super_admin']}><ActiveSessions /></RoleProtectedRoute>} />
                 <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
                 <Route path="/admin/backups" element={<RoleProtectedRoute allow={['super_admin']}><DatabaseBackups /></RoleProtectedRoute>} />
+                
+                {/* Documentation Routes */}
+                <Route path="/docs/secrets-recovery" element={<RoleProtectedRoute allow={['super_admin']}><SecretsRecovery /></RoleProtectedRoute>} />
+                <Route path="/docs/backup-guide" element={<RoleProtectedRoute allow={['super_admin']}><BackupGuide /></RoleProtectedRoute>} />
+                <Route path="/docs/migration-guide" element={<RoleProtectedRoute allow={['super_admin']}><MigrationGuide /></RoleProtectedRoute>} />
+                
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />
                 <Route path="/content-grid" element={<ProtectedRoute><ContentGrid /></ProtectedRoute>} />
                 
