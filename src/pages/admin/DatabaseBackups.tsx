@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import {
 import { toast } from "sonner";
 
 export default function DatabaseBackups() {
+  const navigate = useNavigate();
   const [isValidating, setIsValidating] = useState(false);
 
   // Query para validar secrets
@@ -382,7 +384,7 @@ export default function DatabaseBackups() {
                       <Button 
                         variant="link" 
                         className="p-0 h-auto mt-2"
-                        onClick={() => window.open('/docs/SECRETS_RECOVERY_GUIDE.md', '_blank')}
+                        onClick={() => navigate('/docs/secrets-recovery')}
                       >
                         Abrir Guia →
                       </Button>
@@ -399,7 +401,7 @@ export default function DatabaseBackups() {
                       <Button 
                         variant="link" 
                         className="p-0 h-auto mt-2"
-                        onClick={() => window.open('/docs/BACKUP_DATABASE.md', '_blank')}
+                        onClick={() => navigate('/docs/backup-guide')}
                       >
                         Abrir Documentação →
                       </Button>
@@ -416,7 +418,7 @@ export default function DatabaseBackups() {
                       <Button 
                         variant="link" 
                         className="p-0 h-auto mt-2"
-                        onClick={() => window.open('/docs/MIGRACAO_INSTRUCOES.md', '_blank')}
+                        onClick={() => navigate('/docs/migration-guide')}
                       >
                         Abrir Instruções →
                       </Button>
