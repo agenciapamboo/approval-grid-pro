@@ -54,13 +54,13 @@ export function AppLayout({ children }: AppLayoutProps) {
     return null;
   }
 
-  const showSidebar = role === "super_admin" || role === "agency_admin" || role === "team_member" || role === "client_user";
+  const showSidebar = role === "super_admin" || role === "agency_admin" || role === "team_member" || role === "client_user" || role === "approver";
   let SidebarComponent = null;
   if (role === "super_admin") {
     SidebarComponent = SuperAdminSidebar;
   } else if (role === "agency_admin" || role === "team_member") {
     SidebarComponent = AgencyAdminSidebar;
-  } else if (role === "client_user") {
+  } else if (role === "client_user" || role === "approver") {
     SidebarComponent = ClientUserSidebar;
   }
 
@@ -92,7 +92,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <main className="flex-1">{children}</main>
 
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border shadow-lg">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border shadow-lg">
           <div className="flex items-center justify-around h-16 px-4">
             <Button 
               variant="ghost" 

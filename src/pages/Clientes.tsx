@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
+import { AddClientDialog } from "@/components/admin/AddClientDialog";
 import { ArrowLeft, Search, Users, Building2, Eye, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
@@ -161,6 +162,9 @@ const Clientes = () => {
                 className="pl-10 bg-background/50 border-border/50"
               />
             </div>
+            
+            <AddClientDialog agencyId={profile?.agency_id || ''} onClientAdded={loadData} />
+            
             {role === 'super_admin' && (
               <Button
                 onClick={() => setNotificationDialogOpen(true)}
@@ -232,6 +236,11 @@ const Clientes = () => {
             </div>
           )}
 
+          <SendPlatformNotificationDialog
+            open={notificationDialogOpen}
+            onOpenChange={setNotificationDialogOpen}
+          />
+          
           <SendPlatformNotificationDialog
             open={notificationDialogOpen}
             onOpenChange={setNotificationDialogOpen}

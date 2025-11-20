@@ -1,7 +1,8 @@
 import { useUserData } from "@/hooks/useUserData";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
-import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, Info, Lightbulb, CalendarPlus } from "lucide-react";
 
 export default function AgencyAgenda() {
   const { profile, agency, loading } = useUserData();
@@ -37,6 +38,21 @@ export default function AgencyAgenda() {
             Visualize e gerencie todo o calendário de conteúdos
           </p>
         </div>
+        
+        <Alert className="mb-4">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Como usar a Agenda</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <div className="flex items-start gap-2">
+              <CalendarPlus className="h-4 w-4 mt-0.5 text-primary" />
+              <span><strong>Criar conteúdo:</strong> Clique em uma data no calendário para criar um novo conteúdo agendado para aquele dia.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Lightbulb className="h-4 w-4 mt-0.5 text-yellow-600" />
+              <span><strong>Ícone de Lâmpada:</strong> Indica que há <strong>sugestões de conteúdo</strong> disponíveis para aquele dia. Clique para ver ideias e criar conteúdo automaticamente.</span>
+            </div>
+          </AlertDescription>
+        </Alert>
         
         <AgencyCalendar agencyId={profile.agency_id} />
       </div>
