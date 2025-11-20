@@ -113,7 +113,7 @@ const Index = () => {
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
               <Zap className="w-4 h-4" />
-              Aprovação de conteúdos em tempo real!
+              Aprovação de conteúdos em tempo real
             </div>
             
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
@@ -143,11 +143,11 @@ const Index = () => {
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map(i => <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 border-2 border-background" />)}
                 </div>
-                <span>Usado por 500+ agências</span>
+                <span>Meta de 500 agências este ano.</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                <span>Sem cartão de crédito</span>
+                <span>Ative sua assinatura em minutos.</span>
               </div>
             </div>
           </div>
