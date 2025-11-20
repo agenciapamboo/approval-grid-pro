@@ -49,29 +49,31 @@ export function TeamMembersList({ agencyId }: TeamMembersListProps) {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            <CardTitle>Membros da Equipe ({members.length})</CardTitle>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={() => setShowAddDialog(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate('/admin/membros-equipe')}
-            >
-              Gerenciar
-            </Button>
-          </div>
-        </CardHeader>
+      <CardHeader className="space-y-3 pb-4">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          <CardTitle>Membros da Equipe ({members.length})</CardTitle>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={() => setShowAddDialog(true)}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/admin/membros-equipe')}
+            className="w-full"
+          >
+            Gerenciar
+          </Button>
+        </div>
+      </CardHeader>
       <CardContent>
         {members.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">

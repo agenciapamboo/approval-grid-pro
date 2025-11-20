@@ -133,7 +133,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/cliente/${clientId}`)}
+                    onClick={() => navigate(`/agency/client/${clientId}`)}
                     className="flex flex-col items-center gap-1 text-sidebar-foreground hover:bg-sidebar-accent h-auto py-2"
                   >
                     <FileText className="h-5 w-5" />
