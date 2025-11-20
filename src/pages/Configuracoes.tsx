@@ -216,7 +216,34 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* 4. Suporte & Tickets */}
+            {/* 4. Banco de Dados & Backups */}
+            <AccordionItem value="database-backups" className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="px-6 hover:no-underline">
+                  <CardHeader className="p-0">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-5 w-5 text-blue-600" />
+                      <div className="text-left">
+                        <CardTitle>Banco de Dados</CardTitle>
+                        <CardDescription className="mt-1">
+                          Backups, restauração e auditoria completa
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="pt-0 space-y-2">
+                    <Button onClick={() => navigate("/admin/backups")} variant="outline" className="w-full justify-start">
+                      <Database className="h-4 w-4 mr-2" />
+                      Gerenciar Backups
+                    </Button>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+
+            {/* 5. Suporte & Tickets */}
             <AccordionItem value="support-tickets" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">
@@ -243,7 +270,7 @@ const Configuracoes = () => {
               </Card>
             </AccordionItem>
 
-            {/* 5. Webhooks */}
+            {/* 6. Webhooks */}
             <AccordionItem value="webhooks" className="border rounded-lg">
               <Card className="border-0">
                 <AccordionTrigger className="px-6 hover:no-underline">

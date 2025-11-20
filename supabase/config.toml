@@ -63,5 +63,11 @@ verify_jwt = false
 [functions.get-media-url]
 verify_jwt = true
 
+[functions.validate-secrets]
+verify_jwt = true
+
+[functions.export-database-backup]
+verify_jwt = true
+
 [storage]
 file_size_limit = "100MiB"

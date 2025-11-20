@@ -129,31 +129,84 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Exportar usuários do auth.users (apenas metadados)
+    // Exportar usuários do auth.users (apenas metadados, SEM SENHAS)
     sqlBackup += `-- ========================================\n`;
     sqlBackup += `-- USUÁRIOS (auth.users)\n`;
     sqlBackup += `-- ========================================\n`;
-    sqlBackup += `-- ⚠️  ATENÇÃO: A tabela auth.users NÃO pode ser exportada diretamente\n`;
-    sqlBackup += `-- Os usuários precisarão:\n`;
-    sqlBackup += `-- 1. Se re-cadastrar no novo sistema OU\n`;
-    sqlBackup += `-- 2. Você precisará criar manualmente via Supabase Dashboard\n\n`;
+    sqlBackup += `-- ⚠️  SEGURANÇA: Senhas NÃO são exportadas\n`;
+    sqlBackup += `-- Todos os usuários precisarão REDEFINIR suas senhas após restauração\n`;
+    sqlBackup += `-- Procedimento recomendado:\n`;
+    sqlBackup += `-- 1. Restaurar usuários via SQL abaixo (sem senhas)\n`;
+    sqlBackup += `-- 2. Enviar link de "esqueci minha senha" para todos os usuários\n`;
+    sqlBackup += `-- 3. Ou usar Supabase Dashboard para resetar senhas manualmente\n\n`;
 
     try {
       const { data: authData } = await supabase.auth.admin.listUsers();
       
       if (authData?.users) {
-        sqlBackup += `-- Total de usuários encontrados: ${authData.users.length}\n`;
-        sqlBackup += `-- Lista de emails para referência:\n`;
-        authData.users.forEach(user => {
-          sqlBackup += `-- - ${user.email} (ID: ${user.id})\n`;
-        });
+        sqlBackup += `-- Total de usuários: ${authData.users.length}\n\n`;
+        
+        // Exportar metadados de usuários SEM senhas
+        for (const user of authData.users) {
+          sqlBackup += `-- Usuário: ${user.email}\n`;
+          sqlBackup += `INSERT INTO auth.users (id, email, email_confirmed_at, created_at, updated_at, raw_user_meta_data, aud, role)\n`;
+          sqlBackup += `VALUES (\n`;
+          sqlBackup += `  '${user.id}',\n`;
+          sqlBackup += `  '${user.email}',\n`;
+          sqlBackup += `  ${user.email_confirmed_at ? `'${user.email_confirmed_at}'` : 'NULL'},\n`;
+          sqlBackup += `  '${user.created_at}',\n`;
+          sqlBackup += `  '${user.updated_at}',\n`;
+          sqlBackup += `  '${JSON.stringify(user.user_metadata || {}).replace(/'/g, "''")}'::jsonb,\n`;
+          sqlBackup += `  'authenticated',\n`;
+          sqlBackup += `  'authenticated'\n`;
+          sqlBackup += `) ON CONFLICT (id) DO NOTHING;\n`;
+          sqlBackup += `-- ⚠️ Senha removida por segurança - usuário deve redefinir\n\n`;
+        }
       }
     } catch (err) {
       const error = err as Error;
       sqlBackup += `-- Erro ao listar usuários: ${error.message}\n`;
     }
 
-    sqlBackup += `\n\n`;
+    sqlBackup += `\n`;
+    
+    // Adicionar seção sobre SECRETS não incluídas
+    sqlBackup += `-- ========================================\n`;
+    sqlBackup += `-- ⚠️  SECRETS NÃO INCLUÍDAS NESTE BACKUP\n`;
+    sqlBackup += `-- ========================================\n`;
+    sqlBackup += `-- As seguintes secrets do Supabase Vault NÃO estão incluídas por segurança.\n`;
+    sqlBackup += `-- Você DEVE reconfigurá-las manualmente após a restauração.\n\n`;
+    
+    sqlBackup += `-- 🔴 CRÍTICAS (sistema não funciona sem estas):\n`;
+    sqlBackup += `--   1. SUPABASE_SERVICE_ROLE_KEY - Service role do projeto Supabase\n`;
+    sqlBackup += `--   2. STRIPE_SECRET_KEY - Secret key do Stripe (test ou prod)\n`;
+    sqlBackup += `--   3. STRIPE_WEBHOOK_SECRET - Webhook signing secret do Stripe\n`;
+    sqlBackup += `--   4. FACEBOOK_APP_SECRET - App secret do Facebook Developers\n`;
+    sqlBackup += `--   5. ADMIN_TASK_TOKEN - Token interno para cron jobs\n\n`;
+    
+    sqlBackup += `-- 🟡 IMPORTANTES (funcionalidades específicas podem falhar):\n`;
+    sqlBackup += `--   6. N8N_WEBHOOK_URL - URL do webhook de notificações internas\n`;
+    sqlBackup += `--   7. N8N_WEBHOOK_TOKEN - Token de autenticação do N8N\n`;
+    sqlBackup += `--   8. APROVA_API_KEY - API key do sistema Aprova (opcional)\n\n`;
+    
+    sqlBackup += `-- 🟢 AUTO-GERADAS (Supabase recria automaticamente):\n`;
+    sqlBackup += `--   9. SUPABASE_URL\n`;
+    sqlBackup += `--   10. SUPABASE_ANON_KEY\n`;
+    sqlBackup += `--   11. SUPABASE_PUBLISHABLE_KEY\n`;
+    sqlBackup += `--   12. SUPABASE_DB_URL\n\n`;
+    
+    sqlBackup += `-- 📚 GUIA COMPLETO DE RECUPERAÇÃO:\n`;
+    sqlBackup += `-- Consulte: docs/SECRETS_RECOVERY_GUIDE.md\n`;
+    sqlBackup += `-- Validação automática: /admin/backups?tab=secrets\n`;
+    sqlBackup += `-- ========================================\n\n`;
+    
+    // Adicionar nota sobre webhooks do system_settings
+    sqlBackup += `-- ⚠️  WEBHOOKS EXPORTADOS (system_settings)\n`;
+    sqlBackup += `-- Os webhooks em system_settings FORAM exportados.\n`;
+    sqlBackup += `-- Valide se as URLs ainda estão corretas após restauração:\n`;
+    sqlBackup += `--   - internal_webhook_url\n`;
+    sqlBackup += `--   - n8n_webhook_url (se configurado)\n`;
+    sqlBackup += `-- ========================================\n\n`;
 
     // Reabilitar triggers
     sqlBackup += `-- REABILITAR TRIGGERS\n`;

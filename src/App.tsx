@@ -49,6 +49,7 @@ const SecurityDashboard = lazy(() => import("./pages/admin/SecurityDashboard"));
 const TrustedIPs = lazy(() => import("./pages/admin/TrustedIPs"));
 const ActiveSessions = lazy(() => import("./pages/admin/ActiveSessions"));
 const TeamMembersManager = lazy(() => import("./pages/admin/TeamMembersManager"));
+const DatabaseBackups = lazy(() => import("./pages/admin/DatabaseBackups"));
 const ManageApprovers = lazy(() => import("./pages/ManageApprovers"));
 const AgencySettings = lazy(() => import("./pages/AgencySettings"));
 const CheckoutLoading = lazy(() => import("./pages/CheckoutLoading"));
@@ -142,6 +143,7 @@ const App = () => (
                 <Route path="/admin/ips-confiaveis" element={<RoleProtectedRoute allow={['super_admin']}><TrustedIPs /></RoleProtectedRoute>} />
                 <Route path="/admin/sessoes-ativas" element={<RoleProtectedRoute allow={['super_admin']}><ActiveSessions /></RoleProtectedRoute>} />
                 <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
+                <Route path="/admin/backups" element={<RoleProtectedRoute allow={['super_admin']}><DatabaseBackups /></RoleProtectedRoute>} />
                 <Route path="/meus-aprovadores" element={<ProtectedRoute><ManageApprovers /></ProtectedRoute>} />
                 <Route path="/content-grid" element={<ProtectedRoute><ContentGrid /></ProtectedRoute>} />
                 
