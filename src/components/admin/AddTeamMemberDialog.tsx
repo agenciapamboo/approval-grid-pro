@@ -12,15 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getErrorMessage } from "@/lib/error-messages";
+import { Loader2 } from "lucide-react";
 
 interface AddTeamMemberDialogProps {
   open: boolean;
@@ -40,7 +33,6 @@ export function AddTeamMemberDialog({
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     functions: [] as string[],
   });
 
@@ -83,26 +75,24 @@ export function AddTeamMemberDialog({
 
       toast({
         title: "Membro adicionado",
-        description: `${formData.name} foi adicionado à equipe com sucesso.`,
+        description: `${formData.name} foi adicionado à equipe com sucesso. Um email foi enviado com instruções.`,
       });
 
       setFormData({
         name: "",
         email: "",
-        password: "",
         functions: [],
       });
-      onSuccess();
       onOpenChange(false);
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
-      console.error('[ADD_TEAM_MEMBER] Erro:', error);
-      
-      let errorMsg = error.message || "Erro ao adicionar membro da equipe";
-      
+      console.error('Error adding team member:', error);
       toast({
+        title: "Erro",
+        description: error.message || "Falha ao adicionar membro da equipe. Tente novamente.",
         variant: "destructive",
-        title: "Erro ao adicionar membro",
-        description: errorMsg,
       });
     } finally {
       setLoading(false);
@@ -112,88 +102,79 @@ export function AddTeamMemberDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Adicionar Membro da Equipe</DialogTitle>
-            <DialogDescription>
-              Adicione um novo membro à equipe da agência. Um email de confirmação será enviado automaticamente.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label>Funções / Departamentos</Label>
-              <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg">
-                {[
-                  { id: 'atendimento', label: 'Atendimento' },
-                  { id: 'planejamento', label: 'Planejamento' },
-                  { id: 'redacao', label: 'Redação' },
-                  { id: 'design', label: 'Design' },
-                  { id: 'audiovisual', label: 'Audiovisual' },
-                  { id: 'revisao', label: 'Revisão' },
-                  { id: 'publicacao', label: 'Publicação' },
-                  { id: 'trafego', label: 'Tráfego' },
-                ].map((func) => (
-                  <div key={func.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={func.id}
-                      checked={formData.functions.includes(func.id)}
-                      onCheckedChange={(checked) => {
+        <DialogHeader>
+          <DialogTitle>Adicionar Membro da Equipe</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do novo membro. Um email será enviado com instruções para definir a senha.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome completo</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="João Silva"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="joao@exemplo.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Funções</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['designer', 'copywriter', 'estrategista', 'editor'] as const).map((func) => (
+                <div key={func} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={func}
+                    checked={formData.functions.includes(func)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
                         setFormData({
                           ...formData,
-                          functions: checked
-                            ? [...formData.functions, func.id]
-                            : formData.functions.filter((f) => f !== func.id),
+                          functions: [...formData.functions, func],
                         });
-                      }}
-                    />
-                    <label
-                      htmlFor={func.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {func.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Selecione uma ou mais funções para este membro
-              </p>
+                      } else {
+                        setFormData({
+                          ...formData,
+                          functions: formData.functions.filter((f) => f !== func),
+                        });
+                      }
+                    }}
+                  />
+                  <Label htmlFor={func} className="text-sm font-normal capitalize cursor-pointer">
+                    {func}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
+
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={loading}
             >
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Adicionando..." : "Adicionar"}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Adicionar
             </Button>
           </DialogFooter>
         </form>

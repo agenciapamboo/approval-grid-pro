@@ -328,7 +328,7 @@ const ClienteDetalhes = () => {
         {!loading && client && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-4">Performance dos Criativos</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <ClientMetricCard
                 title="Criativos Aprovados"
                 icon={CheckCircle}

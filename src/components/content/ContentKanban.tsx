@@ -247,20 +247,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         const column = columns[colIndex];
         if (!column) return [];
         
-        let statusFilter = column.column_id;
-        if (column.column_id === 'scheduled') {
-          statusFilter = 'approved';
-        }
-        
-        if (column.column_id === 'requests') {
+        if (column.column_id === 'solicitacoes') {
           return [];
         }
         
         return contents.filter((content) => {
-          if (column.column_id === 'scheduled') {
-            return content.status === 'approved' && new Date(content.date) > new Date();
-          }
-          return content.status === statusFilter;
+          const contentColumn = getColumnForContent(content, false);
+          return contentColumn === column.column_id;
         });
       };
 
@@ -1665,25 +1658,27 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
                 // Aplicar filtros
                 let filteredContents = contents.filter((content) => {
-                  // Filtro de status
-                  if (column.column_id === 'scheduled') {
-                    const isScheduled = content.status === 'approved' && new Date(content.date) > new Date();
-                    if (!isScheduled) return false;
-                    if (hideScheduled) return false;
-                  } else {
-                    if (content.status !== statusFilter) return false;
-                  }
-
-                  // Filtro de aprovados
-                  if (hideApproved && content.status === 'approved' && new Date(content.date) <= new Date()) {
+                  // Verificar se o content pertence a esta coluna usando getColumnForContent
+                  const contentColumn = getColumnForContent(content, false);
+                  
+                  // Se não pertence a esta coluna, filtrar fora
+                  if (contentColumn !== column.column_id) {
                     return false;
                   }
-
-                  // Filtro de publicados (conteúdos que foram publicados)
-                  if (hidePublished && content.status === 'approved' && new Date(content.date) < new Date()) {
+                  
+                  // Aplicar filtros de ocultação
+                  if (column.column_id === 'agendados' && hideScheduled) {
                     return false;
                   }
-
+                  
+                  if (column.column_id === 'aprovados' && hideApproved) {
+                    return false;
+                  }
+                  
+                  if (column.column_id === 'publicados' && hidePublished) {
+                    return false;
+                  }
+                  
                   return true;
                 });
 
