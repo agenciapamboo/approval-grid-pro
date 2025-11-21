@@ -1106,8 +1106,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               );
             }
             
-            // Para conteúdos normais (não stories) E com mídia+legenda quando aprovado
-            if (content.status === 'approved' && hasMediaAndCaption(content)) {
+            // Para conteúdos normais (não stories) E com mídia+legenda
+            if (hasMediaAndCaption(content)) {
               return (
                 <div className="p-4 border-t">
                   <div className="flex flex-wrap gap-2">
