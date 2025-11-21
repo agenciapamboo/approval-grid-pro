@@ -532,12 +532,16 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           id,
           title,
           date,
+          deadline,
           status,
           type,
           client_id,
           owner_user_id,
+          auto_publish,
+          published_at,
           is_content_plan,
           plan_description,
+          supplier_link,
           clients (name)
         `)
         .in("client_id", clientIds)

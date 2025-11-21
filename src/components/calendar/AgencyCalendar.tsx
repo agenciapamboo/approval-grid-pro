@@ -574,6 +574,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           open={showDetailsDialog}
           onOpenChange={setShowDetailsDialog}
           contentId={selectedContentId}
+          isAgencyView={true}
           onUpdate={loadContents}
         />
       )}
