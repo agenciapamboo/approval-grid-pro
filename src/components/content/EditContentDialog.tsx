@@ -205,6 +205,21 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
           });
 
         if (mediaError) throw mediaError;
+        
+        // Verificar se deve fazer transição automática para revisão
+        const { data: updatedContent } = await supabase
+          .from('contents')
+          .select('is_content_plan, status')
+          .eq('id', contentId)
+          .single();
+
+        if (updatedContent?.is_content_plan === false && updatedContent?.status === 'in_review') {
+          toast({
+            title: "✅ Conteúdo em revisão",
+            description: "Como você adicionou mídia e legenda, o conteúdo foi movido para 'Em Revisão'",
+            duration: 5000,
+          });
+        }
       }
 
       toast({

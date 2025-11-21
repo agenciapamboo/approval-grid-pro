@@ -117,6 +117,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           client_id,
           clients (name)
         `)
+        .eq('is_content_plan', false)
         .order('date', { ascending: true });
 
       if (selectedClient) {

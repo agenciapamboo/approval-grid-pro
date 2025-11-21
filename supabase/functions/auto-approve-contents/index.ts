@@ -174,11 +174,6 @@ serve(async (req) => {
       console.log(`Encontrados ${autoPublishContents.length} conteúdos agendados para publicar`);
       
       for (const content of autoPublishContents) {
-        // VALIDAÇÃO CRÍTICA: Verificar se é plano de conteúdo
-        if (content.is_content_plan === true) {
-          console.log(`⚠️ Pulando publicação do conteúdo ${content.id}: é um plano de conteúdo (is_content_plan=true)`);
-          continue;
-        }
 
         // VALIDAÇÃO CRÍTICA: Verificar configuração de aprovação do cliente
         const client = content.clients as any;
