@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { CreateContentWrapper } from "@/components/content/CreateContentWrapper"
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
 import { RequestDetailsDialog } from "@/components/calendar/RequestDetailsDialog";
 import { HistoricalEventsDialog } from "@/components/calendar/HistoricalEventsDialog";
+import { DayContentsDialog } from "@/components/calendar/DayContentsDialog";
+import { CreateContentClientSelector } from "@/components/calendar/CreateContentClientSelector";
 import type { HistoricalEvent } from "@/hooks/useHistoricalEvents";
 import { loadEventsCache, hasEventsForDate } from "@/hooks/useHistoricalEvents";
 import { useClientLocations } from "@/hooks/useClientLocations";
@@ -62,6 +64,10 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [eventsCacheLoaded, setEventsCacheLoaded] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<Content | null>(null);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
+  const [showDayContents, setShowDayContents] = useState(false);
+  const [selectedDayForView, setSelectedDayForView] = useState<Date | null>(null);
+  const [showClientSelector, setShowClientSelector] = useState(false);
+  const [creationClientId, setCreationClientId] = useState<string | null>(null);
 
   // Hook de localizações dos clientes
   const { cities, states, regions, loading: locationsLoading } = useClientLocations(agencyId);
@@ -270,7 +276,22 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
 
   const handleDayClick = (date: Date) => {
     setSelectedDateForCreation(date);
-    setShowCreateContent(true);
+    
+    if (selectedClient) {
+      setCreationClientId(selectedClient);
+      setShowCreateContent(true);
+    } else if (clients.length === 1) {
+      setCreationClientId(clients[0].id);
+      setShowCreateContent(true);
+    } else if (clients.length > 1) {
+      setShowClientSelector(true);
+    } else {
+      toast({
+        title: "Nenhum cliente encontrado",
+        description: "Cadastre um cliente antes de criar conteúdos.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleContentClick = (contentId: string) => {
@@ -283,6 +304,17 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       setSelectedContentId(contentId);
       setShowDetailsDialog(true);
     }
+  };
+
+  const handleViewAllContents = (date: Date) => {
+    setSelectedDayForView(date);
+    setShowDayContents(true);
+  };
+
+  const handleClientSelected = (clientId: string) => {
+    setCreationClientId(clientId);
+    setShowClientSelector(false);
+    setShowCreateContent(true);
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -362,8 +394,24 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             <Button
               variant="outline"
               onClick={() => {
-                setSelectedDateForCreation(new Date());
-                setShowCreateContent(true);
+                const today = new Date();
+                setSelectedDateForCreation(today);
+                
+                if (selectedClient) {
+                  setCreationClientId(selectedClient);
+                  setShowCreateContent(true);
+                } else if (clients.length === 1) {
+                  setCreationClientId(clients[0].id);
+                  setShowCreateContent(true);
+                } else if (clients.length > 1) {
+                  setShowClientSelector(true);
+                } else {
+                  toast({
+                    title: "Nenhum cliente encontrado",
+                    description: "Cadastre um cliente antes de criar conteúdos.",
+                    variant: "destructive"
+                  });
+                }
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -468,6 +516,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             onContentReschedule={handleContentReschedule}
             onViewDayIdeas={handleViewDayIdeas}
             hasEventsForDate={dayHasEvents}
+            onViewAllContents={handleViewAllContents}
           />
         )}
         {viewMode === 'week' && (
@@ -480,6 +529,7 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
             onContentReschedule={handleContentReschedule}
             onViewDayIdeas={handleViewDayIdeas}
             hasEventsForDate={dayHasEvents}
+            onViewAllContents={handleViewAllContents}
           />
         )}
         {viewMode === 'day' && (
@@ -495,12 +545,21 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
         )}
       </Card>
 
+      {/* Dialog de Seleção de Cliente */}
+      <CreateContentClientSelector
+        open={showClientSelector}
+        onOpenChange={setShowClientSelector}
+        clients={clients}
+        onClientSelected={handleClientSelected}
+      />
+
       {/* Dialog de Criar Conteúdo */}
-      {showCreateContent && (selectedClient || clients[0]) && selectedDateForCreation && (
+      {showCreateContent && creationClientId && selectedDateForCreation && (
         <CreateContentWrapper
-          clientId={selectedClient || clients[0]?.id || ""}
+          clientId={creationClientId}
           onContentCreated={() => {
             setShowCreateContent(false);
+            setCreationClientId(null);
             setSelectedEventTitle("");
             loadContents();
           }}
@@ -524,6 +583,18 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
         open={showRequestDetails}
         onOpenChange={setShowRequestDetails}
         request={selectedRequest}
+      />
+
+      {/* Dialog de Visualização Completa do Dia */}
+      <DayContentsDialog
+        open={showDayContents}
+        onOpenChange={setShowDayContents}
+        date={selectedDayForView || new Date()}
+        contents={selectedDayForView ? contents.filter(c => 
+          isSameDay(new Date(c.date), selectedDayForView)
+        ) : []}
+        clientColors={clientColors}
+        onContentClick={handleContentClick}
       />
 
       {/* Dialog de Dicas de Conteúdo */}

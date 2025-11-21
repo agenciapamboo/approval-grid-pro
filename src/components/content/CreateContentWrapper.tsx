@@ -15,6 +15,11 @@ export function CreateContentWrapper({ clientId, onContentCreated, initialDate, 
   const [selectedCategory, setSelectedCategory] = useState<'social' | 'avulso' | null>(null);
   const [open, setOpen] = useState(true);
 
+  if (!clientId) {
+    console.error('CreateContentWrapper: clientId é obrigatório');
+    return null;
+  }
+
   const handleCategorySelect = (category: 'social' | 'avulso') => {
     setSelectedCategory(category);
   };
