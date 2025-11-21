@@ -416,6 +416,12 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const loadAgencyEntitlements = async () => {
     try {
+      // Proteção: verificar se agencyId existe
+      if (!agencyId) {
+        console.warn('[loadAgencyEntitlements] agencyId não definido');
+        return;
+      }
+
       const { data: agency, error: agencyError } = await supabase
         .from("agencies")
         .select("plan")
@@ -458,6 +464,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const loadColumns = async () => {
     try {
+      // Proteção: verificar se agencyId existe
+      if (!agencyId) {
+        console.warn('[loadColumns] agencyId não definido');
+        setColumns([]);
+        return;
+      }
+
       // Buscar colunas do sistema (agency_id = NULL) + colunas customizadas da agência
       const { data, error } = await supabase
         .from("kanban_columns")
@@ -479,6 +492,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const loadContents = async () => {
     try {
+      // Proteção: verificar se agencyId existe
+      if (!agencyId) {
+        console.warn('[loadContents] agencyId não definido');
+        setContents([]);
+        return;
+      }
+
       setLoading(true);
       
       // Buscar clientes da agência
@@ -590,23 +610,14 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const loadRequests = async () => {
     try {
-      // Buscar clientes da agência
-      const { data: clients, error: clientsError } = await supabase
-        .from("clients")
-        .select("id, name, email, whatsapp")
-        .eq("agency_id", agencyId);
-
-      if (clientsError) throw clientsError;
-
-      if (!clients || clients.length === 0) {
+      // Proteção: verificar se agencyId existe
+      if (!agencyId) {
+        console.warn('[loadRequests] agencyId não definido');
         setRequests([]);
         return;
       }
 
-      const clientIds = clients.map((c) => c.id);
-      const clientMap = new Map(clients.map((c) => [c.id, c]));
-
-      // Buscar creative requests usando JOIN SQL (mesma estratégia de /creative-requests)
+      // 1. Buscar creative requests (sempre, independente de clientes)
       const { data: creativeNotifications, error: creativeError } = await supabase
         .from("notifications")
         .select(`
@@ -624,26 +635,41 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       if (creativeError) throw creativeError;
 
-      const creativeRequests: CreativeRequestData[] = (creativeNotifications || []).map((notif: any) => {
-        return {
-          id: notif.id,
-          type: 'creative_request' as const,
-          title: notif.payload?.title || 'Sem título',
-          clientName: notif.clients?.name || 'Cliente',
-          clientEmail: notif.clients?.email,
-          clientWhatsapp: notif.clients?.whatsapp,
-          deadline: notif.payload?.deadline,
-          createdAt: notif.created_at,
-          status: notif.payload?.job_status || 'pending',
-          requestType: notif.payload?.type,
-          text: notif.payload?.text,
-          caption: notif.payload?.caption,
-          observations: notif.payload?.observations,
-          referenceFiles: notif.payload?.reference_files || [],
-        };
-      });
+      const creativeRequests: CreativeRequestData[] = (creativeNotifications || []).map((notif: any) => ({
+        id: notif.id,
+        type: 'creative_request' as const,
+        title: notif.payload?.title || 'Sem título',
+        clientName: notif.clients?.name || 'Cliente',
+        clientEmail: notif.clients?.email,
+        clientWhatsapp: notif.clients?.whatsapp,
+        deadline: notif.payload?.deadline,
+        createdAt: notif.created_at,
+        status: notif.payload?.job_status || 'pending',
+        requestType: notif.payload?.type,
+        text: notif.payload?.text,
+        caption: notif.payload?.caption,
+        observations: notif.payload?.observations,
+        referenceFiles: notif.payload?.reference_files || [],
+      }));
 
-      // Buscar adjustment requests (comments com is_adjustment_request=true nos últimos 30 dias)
+      // 2. Buscar clientes da agência (para adjustment requests)
+      const { data: clients, error: clientsError } = await supabase
+        .from("clients")
+        .select("id, name, email, whatsapp")
+        .eq("agency_id", agencyId);
+
+      if (clientsError) throw clientsError;
+
+      // Se não houver clientes, retornar apenas creative requests
+      if (!clients || clients.length === 0) {
+        setRequests(creativeRequests);
+        return;
+      }
+
+      const clientIds = clients.map((c) => c.id);
+      const clientMap = new Map(clients.map((c) => [c.id, c]));
+
+      // 3. Buscar adjustment requests (apenas se houver clientes)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -690,11 +716,19 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       }
     } catch (error) {
       console.error("Erro ao carregar solicitações:", error);
+      setRequests([]);
     }
   };
 
   const loadClients = async () => {
     try {
+      // Proteção: verificar se agencyId existe
+      if (!agencyId) {
+        console.warn('[loadClients] agencyId não definido');
+        setClients([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("clients")
         .select("id, name")
@@ -1312,8 +1346,8 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                   statusFilter = 'approved'; // "Agendado" mostra conteúdos aprovados
                 }
                 
-                // Coluna de solicitações
-                if (column.column_id === 'requests') {
+                // Coluna de solicitações (aceitar ambos IDs para compatibilidade)
+                if (column.column_id === 'solicitacoes' || column.column_id === 'requests') {
                   return (
                     <KanbanBoard 
                       key={column.column_id} 
