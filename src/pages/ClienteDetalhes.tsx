@@ -56,6 +56,7 @@ const ClienteDetalhes = () => {
     notify_whatsapp: false,
     notify_webhook: true,
     require_approval_to_publish: false,
+    enable_auto_publish: true,
   });
 
   useEffect(() => {
@@ -118,6 +119,7 @@ const ClienteDetalhes = () => {
         notify_whatsapp: clientData.notify_whatsapp ?? false,
         notify_webhook: clientData.notify_webhook ?? true,
         require_approval_to_publish: clientData.require_approval_to_publish ?? false,
+        enable_auto_publish: clientData.enable_auto_publish ?? true,
       });
 
       // Carregar conteúdos do cliente
@@ -171,6 +173,7 @@ const ClienteDetalhes = () => {
           notify_whatsapp: formData.notify_whatsapp,
           notify_webhook: formData.notify_webhook,
           require_approval_to_publish: formData.require_approval_to_publish,
+          enable_auto_publish: formData.enable_auto_publish,
         })
         .eq('id', clientId);
 
@@ -577,6 +580,25 @@ const ClienteDetalhes = () => {
                         checked={formData.require_approval_to_publish}
                         onCheckedChange={(checked) => 
                           setFormData({ ...formData, require_approval_to_publish: checked })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="enable_auto_publish">
+                          Habilitar Publicações Automáticas
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Quando ativado, conteúdos agendados serão publicados automaticamente 
+                          nas redes sociais na data/hora programada
+                        </p>
+                      </div>
+                      <Switch
+                        id="enable_auto_publish"
+                        checked={formData.enable_auto_publish}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, enable_auto_publish: checked })
                         }
                       />
                     </div>

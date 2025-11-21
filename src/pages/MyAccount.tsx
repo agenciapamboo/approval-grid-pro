@@ -22,6 +22,8 @@ const MyAccount = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [agencyDetails, setAgencyDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [managingBilling, setManagingBilling] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,6 +68,8 @@ const MyAccount = () => {
       const { data: roleData } = await supabase
         .rpc('get_user_role', { _user_id: user.id });
 
+      setUserRole(roleData);
+
       if (profileData) {
         const enrichedProfile = { ...profileData, role: roleData || 'client_user' };
         setProfile(enrichedProfile);
@@ -100,6 +104,20 @@ const MyAccount = () => {
             if (agencyData) {
               setAgency(agencyData);
             }
+          }
+        }
+
+        // Se for agency_admin, buscar dados da agência
+        if (roleData === 'agency_admin' && profileData.agency_id) {
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select('*')
+            .eq('id', profileData.agency_id)
+            .single();
+
+          if (agencyData) {
+            setAgencyDetails(agencyData);
+            console.log('[MyAccount] Agency details loaded:', agencyData);
           }
         }
       }
@@ -305,7 +323,7 @@ const MyAccount = () => {
 
           <Tabs defaultValue={isClientUser ? "profile" : (isSuperAdmin ? "profile" : "subscription")} className="space-y-6">
             <TabsList className="grid w-full" style={{ 
-              gridTemplateColumns: (isSuperAdmin || isClientUser) ? "1fr 1fr" : "1fr 1fr 1fr" 
+              gridTemplateColumns: userRole === 'agency_admin' ? '1fr 1fr 1fr 1fr' : ((isSuperAdmin || isClientUser) ? "1fr 1fr" : "1fr 1fr 1fr")
             }}>
               {!isSuperAdmin && !isClientUser && (
                 <TabsTrigger value="subscription">Minha Assinatura</TabsTrigger>
@@ -314,6 +332,9 @@ const MyAccount = () => {
                 <User className="h-4 w-4 mr-2" />
                 Meu Perfil
               </TabsTrigger>
+              {userRole === 'agency_admin' && (
+                <TabsTrigger value="agency">Dados da Agência</TabsTrigger>
+              )}
               <TabsTrigger value="security">
                 <Shield className="h-4 w-4 mr-2" />
                 Segurança
@@ -676,6 +697,143 @@ const MyAccount = () => {
                 </>
               )}
             </TabsContent>
+
+            {/* Agency Data Tab - Only for agency_admin */}
+            {userRole === 'agency_admin' && agencyDetails && (
+              <TabsContent value="agency" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informações Cadastrais</CardTitle>
+                    <CardDescription>
+                      Dados da sua agência. Para editar, acesse a página de gerenciamento.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Nome da Agência</Label>
+                        <Input value={agencyDetails.name || ''} disabled className="mt-1" />
+                      </div>
+                      <div>
+                        <Label>Slug (URL)</Label>
+                        <Input value={agencyDetails.slug || ''} disabled className="mt-1" />
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        <Input value={agencyDetails.email || 'Não informado'} disabled className="mt-1" />
+                      </div>
+                      <div>
+                        <Label>WhatsApp</Label>
+                        <Input value={agencyDetails.whatsapp || 'Não informado'} disabled className="mt-1" />
+                      </div>
+                    </div>
+                    {agencyDetails.logo_url && (
+                      <div>
+                        <Label>Logo</Label>
+                        <div className="mt-2">
+                          <img 
+                            src={agencyDetails.logo_url} 
+                            alt="Logo da agência" 
+                            className="h-16 w-auto object-contain"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dados Fiscais e Plano</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Plano Atual</Label>
+                        <div className="mt-1">
+                          <Badge variant="outline">
+                            {agencyDetails.plan || 'Não definido'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Tipo de Plano</Label>
+                        <Input 
+                          value={agencyDetails.plan_type === 'monthly' ? 'Mensal' : agencyDetails.plan_type === 'annual' ? 'Anual' : 'Não definido'} 
+                          disabled 
+                          className="mt-1" 
+                        />
+                      </div>
+                      {agencyDetails.plan_renewal_date && (
+                        <div>
+                          <Label>Data de Renovação</Label>
+                          <Input 
+                            value={new Date(agencyDetails.plan_renewal_date).toLocaleDateString('pt-BR')} 
+                            disabled 
+                            className="mt-1" 
+                          />
+                        </div>
+                      )}
+                      {agencyDetails.last_payment_date && (
+                        <div>
+                          <Label>Último Pagamento</Label>
+                          <Input 
+                            value={new Date(agencyDetails.last_payment_date).toLocaleDateString('pt-BR')} 
+                            disabled 
+                            className="mt-1" 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Branding e Integração</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {agencyDetails.brand_primary && (
+                        <div>
+                          <Label>Cor Primária</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div 
+                              className="w-10 h-10 rounded border" 
+                              style={{ backgroundColor: agencyDetails.brand_primary }}
+                            />
+                            <Input value={agencyDetails.brand_primary} disabled />
+                          </div>
+                        </div>
+                      )}
+                      {agencyDetails.brand_secondary && (
+                        <div>
+                          <Label>Cor Secundária</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div 
+                              className="w-10 h-10 rounded border" 
+                              style={{ backgroundColor: agencyDetails.brand_secondary }}
+                            />
+                            <Input value={agencyDetails.brand_secondary} disabled />
+                          </div>
+                        </div>
+                      )}
+                      {agencyDetails.webhook_url && (
+                        <div className="md:col-span-2">
+                          <Label>Webhook URL</Label>
+                          <Input 
+                            type="password" 
+                            value={agencyDetails.webhook_url} 
+                            disabled 
+                            className="mt-1" 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
 
             <TabsContent value="security" className="space-y-6">
               <Card>

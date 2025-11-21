@@ -284,6 +284,7 @@ export type Database = {
           created_at: string
           email: string | null
           email_encrypted: string | null
+          enable_auto_publish: boolean
           id: string
           logo_url: string | null
           monthly_creatives: number | null
@@ -312,6 +313,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           email_encrypted?: string | null
+          enable_auto_publish?: boolean
           id?: string
           logo_url?: string | null
           monthly_creatives?: number | null
@@ -340,6 +342,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           email_encrypted?: string | null
+          enable_auto_publish?: boolean
           id?: string
           logo_url?: string | null
           monthly_creatives?: number | null

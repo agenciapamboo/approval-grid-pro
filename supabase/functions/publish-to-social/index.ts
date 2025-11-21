@@ -112,6 +112,31 @@ serve(async (req) => {
     
     console.log('Verificação de ajustes: OK (status:', content.status, ')');
 
+    // Validar se cliente permite publicações automáticas
+    const { data: clientData, error: clientError } = await supabaseClient
+      .from('clients')
+      .select('enable_auto_publish')
+      .eq('id', content.client_id)
+      .single();
+
+    if (clientError) {
+      console.error('Erro ao buscar configurações do cliente:', clientError);
+    }
+
+    if (clientData && clientData.enable_auto_publish === false) {
+      console.log(`Cliente ${content.client_id} não permite publicações automáticas`);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Publicações automáticas desabilitadas para este cliente',
+          auto_publish_disabled: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    console.log('Validação de auto-publish: OK (habilitado para cliente)');
+
     console.log('Buscando contas sociais do cliente:', content.client_id);
     
     // 2. Buscar contas sociais ativas do cliente com tokens descriptografados
