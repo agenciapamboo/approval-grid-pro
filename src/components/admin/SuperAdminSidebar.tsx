@@ -50,6 +50,12 @@ const menuItems = [
     category: "principal"
   },
   {
+    title: "Solicitações",
+    url: "/creative-requests",
+    icon: FileText,
+    category: "principal"
+  },
+  {
     title: "Financeiro",
     url: "/financeiro",
     icon: DollarSign,

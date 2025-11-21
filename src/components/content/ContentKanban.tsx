@@ -134,9 +134,9 @@ const getColumnForContent = (content: Content, isRequest: boolean = false): stri
     return 'solicitacoes';
   }
   
-  // Plano de conteúdo vai para "em_producao"
+  // Planos de conteúdo (is_content_plan = true) vão para "solicitacoes"
   if (content.is_content_plan) {
-    return 'em_producao';
+    return 'solicitacoes';
   }
   
   // Mapeamento por status
