@@ -117,6 +117,15 @@ export function ContentDetailsDialog({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const hasMediaAndCaption = (content: any) => {
+    const hasMedia = content.content_media && content.content_media.length > 0;
+    const hasCaption = content.content_texts && 
+      content.content_texts.length > 0 && 
+      content.content_texts.some((t: any) => t.caption && t.caption.trim() !== '');
+    
+    return hasMedia && hasCaption;
+  };
+
   const loadContentDetails = async () => {
     try {
       setLoading(true);
@@ -354,24 +363,36 @@ export function ContentDetailsDialog({
     }
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleUpdateField = async (field: string, value: any) => {
     if (!content) return;
-
+    
     try {
+      const updateData: any = { [field]: value };
+      
       const { error } = await supabase
-        .from("contents")
-        .update({ status: newStatus as any })
-        .eq("id", content.id);
-
+        .from('contents')
+        .update(updateData)
+        .eq('id', content.id);
+      
       if (error) throw error;
-
-      toast.success("Status atualizado!");
-      loadContentDetails();
+      
+      const fieldLabels: Record<string, string> = {
+        title: 'Título',
+        date: 'Data',
+        status: 'Status'
+      };
+      
+      toast.success(`${fieldLabels[field] || 'Campo'} atualizado com sucesso!`);
+      await loadContentDetails();
       onUpdate();
     } catch (error: any) {
-      console.error("Error updating status:", error);
-      toast.error("Erro ao atualizar status: " + error.message);
+      console.error('Erro ao atualizar campo:', error);
+      toast.error(`Erro ao atualizar: ${error.message}`);
     }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    handleUpdateField('status', newStatus);
   };
 
   const handlePublishNow = async () => {
@@ -463,33 +484,98 @@ export function ContentDetailsDialog({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                <span className="text-lg font-semibold">{content?.title || "Carregando..."}</span>
+                {isAgencyView && content ? (
+                  <input
+                    type="text"
+                    value={content.title}
+                    onChange={(e) => handleUpdateField('title', e.target.value)}
+                    className="text-lg font-semibold bg-transparent border-b border-transparent hover:border-muted-foreground focus:border-primary outline-none px-1 -ml-1 transition-colors"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold">{content?.title || "Carregando..."}</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                {content && getStatusBadge(content.status)}
-                {isAgencyView && content && (
-                  <Select value={content.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[160px] h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      <SelectItem value="draft">Rascunho</SelectItem>
-                      <SelectItem value="in_review">Em Revisão</SelectItem>
-                      <SelectItem value="approved">Aprovado</SelectItem>
-                      <SelectItem value="scheduled">Agendado</SelectItem>
-                      <SelectItem value="published">Publicado</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {content && (
+                  isAgencyView ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="outline-none focus:ring-2 focus:ring-ring rounded-full">
+                          {getStatusBadge(content.status)}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-2 bg-background border shadow-lg z-50" align="start">
+                        <div className="space-y-1">
+                          <div className="text-xs font-semibold text-muted-foreground px-2 py-1">
+                            Alterar Status
+                          </div>
+                          <Separator />
+                          <button
+                            onClick={() => handleStatusChange('draft')}
+                            className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+                          >
+                            <Badge variant="outline" className="bg-gray-500/20 text-gray-600">Rascunho</Badge>
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange('in_review')}
+                            className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+                          >
+                            <Badge variant="pending">Em Revisão</Badge>
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange('approved')}
+                            className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+                          >
+                            <Badge variant="success">Aprovado</Badge>
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange('scheduled')}
+                            className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+                          >
+                            <Badge variant="default">Agendado</Badge>
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange('published')}
+                            className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+                          >
+                            <Badge variant="success" className="bg-purple-500/20 text-purple-600">Publicado</Badge>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    getStatusBadge(content.status)
+                  )
                 )}
               </div>
             </div>
             {content && (
               <>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal">
-                  <div className="flex items-center gap-1">
-                    <CalendarIcon className="h-4 w-4" />
-                    {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
-                  </div>
+                  {isAgencyView ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="gap-1 text-sm text-muted-foreground h-auto py-0 px-1 hover:text-foreground">
+                          <CalendarIcon className="h-4 w-4" />
+                          {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={new Date(content.date)}
+                          onSelect={(date) => date && handleUpdateField('date', date.toISOString())}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <CalendarIcon className="h-4 w-4" />
+                      {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                    </div>
+                  )}
                   <Badge variant="outline" className="text-xs">
                     {getTypeLabel(content.type)}
                   </Badge>
@@ -501,12 +587,12 @@ export function ContentDetailsDialog({
                     </div>
                   )}
                 </div>
-                {isAgencyView && content.status === 'approved' && (
-                  <div className="flex gap-2 mt-3">
+                {isAgencyView && content && content.status === 'approved' && hasMediaAndCaption(content) && (
+                  <div className="flex flex-wrap gap-2 mt-3">
                     <Button 
                       onClick={handlePublishNow}
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <Zap className="mr-2 h-4 w-4" />
                       Publicar Agora
@@ -516,6 +602,7 @@ export function ContentDetailsDialog({
                       onClick={() => setShowDatePicker(true)}
                       size="sm"
                       variant="outline"
+                      className="border-primary text-primary hover:bg-primary/10"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       Agendar Publicação

@@ -24,13 +24,20 @@ export function CreateContentClientSelector({
 }: CreateContentClientSelectorProps) {
   const [searchValue, setSearchValue] = useState("");
 
-  // Busca case-insensitive em qualquer ordem
+  // Normalizar string removendo acentos, espaços e convertendo para minúsculas
+  const normalizeString = (str: string) => {
+    return str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "");
+  };
+
   const filteredClients = clients.filter((client) => {
-    const searchLower = searchValue.toLowerCase();
-    const nameLower = client.name.toLowerCase();
+    const normalizedSearch = normalizeString(searchValue);
+    const normalizedName = normalizeString(client.name);
     
-    // Permite buscar "real" para encontrar "Ótica Real"
-    return nameLower.includes(searchLower);
+    return normalizedName.includes(normalizedSearch);
   });
 
   return (
@@ -43,7 +50,7 @@ export function CreateContentClientSelector({
           </DialogDescription>
         </DialogHeader>
 
-        <Command className="rounded-lg border">
+        <Command className="rounded-lg border" shouldFilter={false}>
           <CommandInput 
             placeholder="Digite para buscar cliente..." 
             value={searchValue}
