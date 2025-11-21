@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageSquare, User } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar, MessageSquare, User, Clock, AlertCircle } from "lucide-react";
+import { format, differenceInDays, isPast, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface RequestCardProps {
   request: {
@@ -10,6 +11,7 @@ interface RequestCardProps {
     title: string;
     clientName: string;
     createdAt: string;
+    deadline?: string;
     status?: string;
     assigneeName?: string;
   };
@@ -29,6 +31,48 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
       return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>;
     }
     return <Badge variant="destructive" className="text-xs">Ajuste</Badge>;
+  };
+
+  const getDeadlineBadge = () => {
+    if (!request.deadline) return null;
+
+    const deadlineDate = new Date(request.deadline);
+    const now = new Date();
+    const diffInDays = differenceInDays(deadlineDate, now);
+
+    if (isPast(deadlineDate) && !isToday(deadlineDate)) {
+      return (
+        <Badge variant="destructive" className="text-xs flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Atrasado
+        </Badge>
+      );
+    }
+
+    if (isToday(deadlineDate)) {
+      return (
+        <Badge variant="destructive" className="text-xs flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Hoje
+        </Badge>
+      );
+    }
+
+    if (diffInDays <= 2) {
+      return (
+        <Badge className="text-xs flex items-center gap-1 bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/50">
+          <Clock className="h-3 w-3" />
+          Urgente
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="outline" className="text-xs flex items-center gap-1">
+        <Clock className="h-3 w-3" />
+        {format(deadlineDate, "dd/MM", { locale: ptBR })}
+      </Badge>
+    );
   };
 
   return (
@@ -56,10 +100,13 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
           )}
           <span>{request.type === 'creative_request' ? 'Criativo' : 'Ajuste'}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Calendar className="h-3 w-3" />
-          {format(new Date(request.createdAt), "dd/MM", { locale: ptBR })}
-        </div>
+        {request.deadline && getDeadlineBadge()}
+        {!request.deadline && (
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {format(new Date(request.createdAt), "dd/MM", { locale: ptBR })}
+          </div>
+        )}
         {request.assigneeName && (
           <div className="flex items-center gap-1">
             <User className="h-3 w-3" />
