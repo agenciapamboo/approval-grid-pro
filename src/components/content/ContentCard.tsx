@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { TimeInput } from "@/components/ui/time-input";
-import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save, XCircle, FileText, ImageIcon, Images, Video, Smartphone, CheckCircle2 } from "lucide-react";
+import { MessageSquare, CheckCircle, AlertCircle, MoreVertical, Trash2, ImagePlus, Calendar, Instagram, Facebook, Youtube, Linkedin, Twitter, AlertTriangle, Edit, Download, Link2, Save, XCircle, FileText, ImageIcon, Images, Video, Smartphone, CheckCircle2, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -24,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toast as sonnerToast } from "sonner";
 
 interface ContentCardProps {
   content: {
@@ -81,6 +83,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const hasMediaAndCaption = (content: ContentCardProps['content']) => {
+    const hasMedia = content.media_path;
+    const hasCaption = content.caption || content.legend;
+    return hasMedia && hasCaption;
+  };
+
   // Função para converter status do banco em status para client users
   const getClientStatus = (content: ContentCardProps['content']): 'pending' | 'producing' | 'scheduled' | 'published' | null => {
     const now = new Date();
@@ -116,41 +124,79 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
     // Não exibir badge se status não for um dos 4 principais
     if (!clientStatus) return null;
     
-    const statusConfig: Record<string, { label: string; classes: string }> = {
+    const statusConfig: Record<string, { label: string; variant: "default" | "destructive" | "outline" | "pending" | "success" | "warning" }> = {
       pending: { 
         label: "Pendente", 
-        classes: "bg-orange-500 text-white" 
+        variant: "warning"
       },
       producing: { 
         label: "Produzindo", 
-        classes: "bg-blue-500 text-white" 
+        variant: "pending"
       },
       scheduled: { 
         label: "Agendado", 
-        classes: "bg-purple-500 text-white" 
+        variant: "default"
       },
       published: { 
         label: "Publicado", 
-        classes: "bg-green-500 text-white" 
+        variant: "success"
       }
     };
     
     const cfg = statusConfig[clientStatus];
     
-    // Apenas clicável na visão da agência
+    // Badge clicável na visão da agência
     if (isAgencyView) {
       return (
-        <span 
-          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.classes} cursor-pointer hover:opacity-80 transition-opacity`}
-          onClick={() => setShowStatusDialog(true)}
-          title="Clique para alterar o status"
-        >
-          {cfg.label}
-        </span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="outline-none focus:ring-2 focus:ring-ring rounded-full">
+              <Badge variant={cfg.variant}>{cfg.label}</Badge>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-2 bg-background border shadow-lg z-50" align="start">
+            <div className="space-y-1">
+              <div className="text-xs font-semibold text-muted-foreground px-2 py-1">
+                Alterar Status
+              </div>
+              <Separator />
+              <button
+                onClick={() => handleStatusChange('draft')}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Badge variant="outline">Rascunho</Badge>
+              </button>
+              <button
+                onClick={() => handleStatusChange('in_review')}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Badge variant="pending">Em Revisão</Badge>
+              </button>
+              <button
+                onClick={() => handleStatusChange('approved')}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Badge variant="success">Aprovado</Badge>
+              </button>
+              <button
+                onClick={() => handleStatusChange('scheduled')}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Badge variant="default">Agendado</Badge>
+              </button>
+              <button
+                onClick={() => handleStatusChange('published')}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Badge variant="success" className="bg-purple-500/20 text-purple-600">Publicado</Badge>
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
       );
     }
     
-    return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.classes}`}>{cfg.label}</span>;
+    return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
   };
 
   const getTypeLabel = (type: string) => {
@@ -488,20 +534,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
       if (error) throw error;
 
-      toast({
-        title: "Status atualizado",
-        description: "O status do conteúdo foi atualizado com sucesso",
-      });
-
-      setShowStatusDialog(false);
+      sonnerToast.success("Status atualizado com sucesso!");
       onUpdate();
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar o status",
-        variant: "destructive",
-      });
+      sonnerToast.error("Erro ao atualizar status");
     }
   };
 
@@ -1069,40 +1106,46 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               );
             }
             
-            // Para conteúdos normais (não stories), mostra os botões normalmente
-            return (
-              <div className="p-4 border-t">
-                <div className="flex flex-col gap-2">
-                  <Button 
-                    size="sm"
-                    onClick={handlePublishNow}
-                    disabled={publishing}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {publishing ? 'Publicando...' : 'Publicar Agora'}
-                  </Button>
-                  {!content.auto_publish ? (
+            // Para conteúdos normais (não stories) E com mídia+legenda quando aprovado
+            if (content.status === 'approved' && hasMediaAndCaption(content)) {
+              return (
+                <div className="p-4 border-t">
+                  <div className="flex flex-wrap gap-2">
                     <Button 
                       size="sm"
-                      variant="outline"
-                      onClick={handleSchedule}
-                      className="w-full"
+                      onClick={handlePublishNow}
+                      disabled={publishing}
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                      Agendar Publicação
+                      <Zap className="mr-2 h-4 w-4" />
+                      {publishing ? 'Publicando...' : 'Publicar Agora'}
                     </Button>
-                  ) : (
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCancelSchedule}
-                      className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      Cancelar Agendamento
-                    </Button>
-                  )}
+                    {!content.auto_publish ? (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSchedule}
+                        className="border-primary text-primary hover:bg-primary/10"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Agendar Publicação
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelSchedule}
+                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        Cancelar Agendamento
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
+              );
+            }
+            
+            return null;
           })()}
 
           {/* Comentários expandidos */}
