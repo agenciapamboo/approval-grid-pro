@@ -134,9 +134,10 @@ const getColumnForContent = (content: Content, isRequest: boolean = false): stri
     return 'solicitacoes';
   }
   
-  // Planos de conteúdo (is_content_plan = true) vão para "solicitacoes"
+  // Planos de conteúdo (is_content_plan = true) vão para "em_producao"
+  // Quando receberem mídia + legenda, o trigger muda para is_content_plan=false e status=in_review
   if (content.is_content_plan) {
-    return 'solicitacoes';
+    return 'em_producao';
   }
   
   // Mapeamento por status
