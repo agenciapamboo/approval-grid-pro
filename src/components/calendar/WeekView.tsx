@@ -37,6 +37,7 @@ interface WeekViewProps {
   onContentReschedule: (contentId: string, newDate: Date) => Promise<void>;
   onViewDayIdeas: (date: Date) => void;
   hasEventsForDate: (date: Date) => boolean;
+  onViewAllContents: (date: Date) => void;
 }
 
 const MAX_VISIBLE_CONTENTS = 8;
@@ -49,7 +50,8 @@ export function WeekView({
   onDayClick,
   onContentReschedule,
   onViewDayIdeas,
-  hasEventsForDate
+  hasEventsForDate,
+  onViewAllContents
 }: WeekViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<Content | null>(null);
@@ -138,6 +140,7 @@ export function WeekView({
               onDayClick={onDayClick}
               onViewDayIdeas={onViewDayIdeas}
               hasEventsForDate={hasEventsForDate}
+              onViewAllContents={onViewAllContents}
               activeId={activeId}
             />
           );
@@ -175,6 +178,7 @@ function WeekDayCell({
   onDayClick,
   onViewDayIdeas,
   hasEventsForDate,
+  onViewAllContents,
   activeId 
 }: {
   day: Date;
@@ -185,6 +189,7 @@ function WeekDayCell({
   onDayClick: (date: Date) => void;
   onViewDayIdeas: (date: Date) => void;
   hasEventsForDate: (date: Date) => boolean;
+  onViewAllContents: (date: Date) => void;
   activeId: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -252,7 +257,13 @@ function WeekDayCell({
       
       {/* Indicador de mais conteúdos */}
       {hiddenCount > 0 && (
-        <div className="flex items-center justify-center gap-1 text-xs text-primary hover:underline mt-2 py-1">
+        <div 
+          className="flex items-center justify-center gap-1 text-xs text-primary hover:underline mt-2 py-1 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewAllContents(day);
+          }}
+        >
           <span>+{hiddenCount} mais</span>
           <ChevronDown className="h-3 w-3" />
         </div>
