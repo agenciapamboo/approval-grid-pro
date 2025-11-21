@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { CreativeRequestsGrid } from "@/components/admin/CreativeRequestsGrid";
+import { ClientCreativeRequestsTable } from "@/components/admin/ClientCreativeRequestsTable";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function CreativeRequests() {
@@ -70,7 +70,7 @@ export default function CreativeRequests() {
           </div>
         </div>
 
-        <CreativeRequestsGrid 
+        <ClientCreativeRequestsTable 
           clientId={clientId} 
           showClientColumn={!clientId} 
         />
