@@ -10,6 +10,7 @@ interface ContentPillProps {
     status: string;
     type: string;
     client_id: string;
+    itemType?: 'content' | 'creative_request' | 'adjustment_request';
   };
   clientColor: string;
   onClick: (contentId: string) => void;
@@ -26,6 +27,8 @@ export function ContentPill({ content, clientColor, onClick, isDragging = false 
     opacity: isCurrentlyDragging ? 0.5 : 1,
   } : undefined;
 
+  const isRequest = content.itemType === 'creative_request' || content.itemType === 'adjustment_request';
+
   return (
     <div
       ref={setNodeRef}
@@ -37,7 +40,8 @@ export function ContentPill({ content, clientColor, onClick, isDragging = false 
       }}
       className={cn(
         "text-xs px-2 py-1 rounded cursor-move truncate hover:opacity-80 transition-opacity touch-none",
-        isCurrentlyDragging && "opacity-50"
+        isCurrentlyDragging && "opacity-50",
+        isRequest && "ring-2 ring-offset-1 ring-yellow-500"
       )}
       onClick={(e) => {
         if (!isCurrentlyDragging) {
@@ -45,11 +49,15 @@ export function ContentPill({ content, clientColor, onClick, isDragging = false 
           onClick(content.id);
         }
       }}
-      title={`${format(new Date(content.date), 'HH:mm')} - ${content.title}`}
+      title={content.title}
       {...attributes}
       {...listeners}
     >
-      <span className="font-medium">{format(new Date(content.date), 'HH:mm')}</span>
+      {content.itemType === 'creative_request' && '📋 '}
+      {content.itemType === 'adjustment_request' && '🔧 '}
+      {content.itemType === 'content' && (
+        <span className="font-medium">{format(new Date(content.date), 'HH:mm')}</span>
+      )}
       {' '}
       {content.title}
     </div>

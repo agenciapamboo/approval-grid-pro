@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
+import { RequestDetailsDialog } from "@/components/calendar/RequestDetailsDialog";
 import { HistoricalEventsDialog } from "@/components/calendar/HistoricalEventsDialog";
 import type { HistoricalEvent } from "@/hooks/useHistoricalEvents";
 import { loadEventsCache, hasEventsForDate } from "@/hooks/useHistoricalEvents";
@@ -28,6 +29,9 @@ interface Content {
   clients?: {
     name: string;
   };
+  itemType?: 'content' | 'creative_request' | 'adjustment_request';
+  requestType?: string;
+  reason?: string;
 }
 
 interface AgencyCalendarProps {
@@ -56,6 +60,8 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [selectedDateForIdeas, setSelectedDateForIdeas] = useState<Date | null>(null);
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
   const [eventsCacheLoaded, setEventsCacheLoaded] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<Content | null>(null);
+  const [showRequestDetails, setShowRequestDetails] = useState(false);
 
   // Hook de localizações dos clientes
   const { cities, states, regions, loading: locationsLoading } = useClientLocations(agencyId);
@@ -102,6 +108,111 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
     }
   };
 
+  const loadRequests = async () => {
+    try {
+      if (!agencyId) {
+        console.warn('[loadRequests] agencyId não definido');
+        return [];
+      }
+
+      const { data: creativeNotifications, error: creativeError } = await supabase
+        .from("notifications")
+        .select(`
+          *,
+          clients (
+            id,
+            name
+          )
+        `)
+        .eq("event", "novojob")
+        .eq("agency_id", agencyId)
+        .order("created_at", { ascending: false });
+
+      if (creativeError) throw creativeError;
+
+      const creativeRequests: Content[] = (creativeNotifications || []).map((notif: any) => {
+        const requestDate = notif.payload?.deadline 
+          ? new Date(notif.payload.deadline).toISOString()
+          : notif.created_at;
+
+        return {
+          id: notif.id,
+          title: notif.payload?.title || 'Nova Solicitação',
+          date: requestDate,
+          status: notif.payload?.job_status || 'pending',
+          type: 'creative_request',
+          itemType: 'creative_request',
+          client_id: notif.client_id,
+          clients: notif.clients ? { name: notif.clients.name } : undefined,
+          requestType: notif.payload?.type,
+        };
+      });
+
+      const { data: clientsList, error: clientsError } = await supabase
+        .from("clients")
+        .select("id, name")
+        .eq("agency_id", agencyId);
+
+      if (clientsError) throw clientsError;
+
+      if (!clientsList || clientsList.length === 0) {
+        return creativeRequests;
+      }
+
+      const clientIds = clientsList.map((c) => c.id);
+      const clientMap = new Map(clientsList.map((c) => [c.id, c]));
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: contentsList } = await supabase
+        .from("contents")
+        .select("id, title, client_id, date")
+        .in("client_id", clientIds)
+        .gte("created_at", thirtyDaysAgo.toISOString());
+
+      if (!contentsList || contentsList.length === 0) {
+        return creativeRequests;
+      }
+
+      const contentIds = contentsList.map((c) => c.id);
+      const contentMap = new Map(contentsList.map((c) => [c.id, c]));
+
+      const { data: adjustmentComments, error: adjustmentError } = await supabase
+        .from("comments")
+        .select("*")
+        .in("content_id", contentIds)
+        .eq("is_adjustment_request", true)
+        .order("created_at", { ascending: false });
+
+      if (adjustmentError) throw adjustmentError;
+
+      const adjustmentRequests: Content[] = (adjustmentComments || []).map((comment: any) => {
+        const content = contentMap.get(comment.content_id);
+        const client = clientMap.get(content?.client_id);
+
+        const requestDate = content?.date || comment.created_at;
+
+        return {
+          id: comment.id,
+          title: `Ajuste: ${content?.title || 'Conteúdo'}`,
+          date: requestDate,
+          status: 'adjustment_pending',
+          type: 'adjustment_request',
+          itemType: 'adjustment_request',
+          client_id: content?.client_id || '',
+          clients: client ? { name: client.name } : undefined,
+          reason: comment.adjustment_reason || 'Não especificado',
+        };
+      });
+
+      return [...creativeRequests, ...adjustmentRequests];
+    } catch (error) {
+      console.error("Erro ao carregar solicitações:", error);
+      return [];
+    }
+  };
+
   const loadContents = async () => {
     try {
       let query = supabase
@@ -134,9 +245,26 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
       const { data, error } = await query;
 
       if (error) throw error;
-      setContents(data || []);
+
+      const contentsWithType = (data || []).map(content => ({
+        ...content,
+        itemType: 'content' as const
+      }));
+
+      const requests = await loadRequests();
+
+      const filteredRequests = selectedClient
+        ? requests.filter(req => req.client_id === selectedClient)
+        : requests;
+
+      const combined = [...contentsWithType, ...filteredRequests];
+
+      combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      setContents(combined);
     } catch (error) {
       console.error('Erro ao carregar conteúdos:', error);
+      setContents([]);
     }
   };
 
@@ -146,8 +274,15 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   };
 
   const handleContentClick = (contentId: string) => {
-    setSelectedContentId(contentId);
-    setShowDetailsDialog(true);
+    const item = contents.find(c => c.id === contentId);
+    
+    if (item?.itemType === 'creative_request' || item?.itemType === 'adjustment_request') {
+      setSelectedRequest(item);
+      setShowRequestDetails(true);
+    } else {
+      setSelectedContentId(contentId);
+      setShowDetailsDialog(true);
+    }
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -383,6 +518,13 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           onUpdate={loadContents}
         />
       )}
+
+      {/* Dialog de Detalhes de Solicitação */}
+      <RequestDetailsDialog
+        open={showRequestDetails}
+        onOpenChange={setShowRequestDetails}
+        request={selectedRequest}
+      />
 
       {/* Dialog de Dicas de Conteúdo */}
       <HistoricalEventsDialog
