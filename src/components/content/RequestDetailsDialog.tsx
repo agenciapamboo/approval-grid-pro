@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
+import { useStorageUrl } from "@/hooks/useStorageUrl";
 
 interface CreativeRequest {
   id: string;
@@ -62,13 +63,30 @@ export function RequestDetailsDialog({ open, onOpenChange, request, agencyId }: 
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const creativeFileInputRef = useRef<HTMLInputElement>(null);
+  const [referenceImageUrls, setReferenceImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
-    if (open && request?.type === 'creative_request' && agencyId) {
-      loadTeamMembers();
-      loadCurrentAssignee();
+    if (open && request?.type === 'creative_request') {
       const data = request.data as CreativeRequest;
       setCurrentStatus(data.status || "pending");
+      
+      if (agencyId) {
+        loadTeamMembers();
+        loadCurrentAssignee();
+      }
+      
+      // Carregar URLs das imagens de referência
+      if (data.referenceFiles && data.referenceFiles.length > 0) {
+        const urls = data.referenceFiles.map(path => {
+          const { data: urlData } = supabase.storage
+            .from('content-media')
+            .getPublicUrl(path);
+          return urlData.publicUrl;
+        });
+        setReferenceImageUrls(urls);
+      } else {
+        setReferenceImageUrls([]);
+      }
     }
   }, [open, request, agencyId]);
 
@@ -567,23 +585,22 @@ export function RequestDetailsDialog({ open, onOpenChange, request, agencyId }: 
             </div>
           )}
 
-          {data.referenceFiles && data.referenceFiles.length > 0 && (
-            <div>
-              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+          {referenceImageUrls.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
-                Arquivos de Referência ({data.referenceFiles.length})
+                Referências ({referenceImageUrls.length})
               </h4>
               <div className="grid grid-cols-2 gap-2">
-                {data.referenceFiles.map((file, index) => (
-                  <div key={index} className="border rounded-lg p-2 bg-muted/50">
-                    {file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                      <img src={file} alt={`Referência ${index + 1}`} className="w-full h-32 object-cover rounded" />
-                    ) : (
-                      <a href={file} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Ver arquivo {index + 1}
-                      </a>
-                    )}
+                {referenceImageUrls.map((url, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={url}
+                      alt={`Referência ${idx + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-border hover:border-primary transition-colors cursor-pointer"
+                      onClick={() => window.open(url, '_blank')}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-lg transition-colors" />
                   </div>
                 ))}
               </div>
