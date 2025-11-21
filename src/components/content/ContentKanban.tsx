@@ -606,26 +606,32 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       const clientIds = clients.map((c) => c.id);
       const clientMap = new Map(clients.map((c) => [c.id, c]));
 
-      // Buscar creative requests (notifications com event=novojob)
+      // Buscar creative requests usando JOIN SQL (mesma estratégia de /creative-requests)
       const { data: creativeNotifications, error: creativeError } = await supabase
         .from("notifications")
-        .select("*")
+        .select(`
+          *,
+          clients (
+            id,
+            name,
+            email,
+            whatsapp
+          )
+        `)
         .eq("event", "novojob")
         .eq("agency_id", agencyId)
-        .in("client_id", clientIds)
         .order("created_at", { ascending: false });
 
       if (creativeError) throw creativeError;
 
       const creativeRequests: CreativeRequestData[] = (creativeNotifications || []).map((notif: any) => {
-        const client = clientMap.get(notif.client_id);
         return {
           id: notif.id,
           type: 'creative_request' as const,
           title: notif.payload?.title || 'Sem título',
-          clientName: client?.name || 'Cliente',
-          clientEmail: client?.email,
-          clientWhatsapp: client?.whatsapp,
+          clientName: notif.clients?.name || 'Cliente',
+          clientEmail: notif.clients?.email,
+          clientWhatsapp: notif.clients?.whatsapp,
           deadline: notif.payload?.deadline,
           createdAt: notif.created_at,
           status: notif.payload?.job_status || 'pending',
