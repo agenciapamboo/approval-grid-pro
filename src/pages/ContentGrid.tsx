@@ -179,15 +179,20 @@ export default function ContentGrid() {
           id,
           title,
           date,
+          deadline,
           status,
           type,
           category,
           channels,
           client_id,
+          agency_id,
           version,
           owner_user_id,
           created_at,
           updated_at,
+          auto_publish,
+          published_at,
+          supplier_link,
           is_content_plan,
           plan_description
         `)
@@ -543,6 +548,7 @@ export default function ContentGrid() {
                     <ContentCard
                       content={content}
                       isResponsible={content.owner_user_id === userProfile.id}
+                      isAgencyView={role === 'agency_admin' || role === 'team_member'}
                       onUpdate={() => {
                         loadContents(userClient.id);
                       }}
