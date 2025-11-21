@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
-import { RequestCreativeDialog } from "@/components/admin/RequestCreativeDialog";
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
 import { HistoricalEventsDialog } from "@/components/calendar/HistoricalEventsDialog";
 import type { HistoricalEvent } from "@/hooks/useHistoricalEvents";
@@ -50,7 +49,6 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   const [selectedClient, setSelectedClient] = useState<string | null>(clientId);
   const [clientColors, setClientColors] = useState<Record<string, string>>({});
   const [showCreateContent, setShowCreateContent] = useState(false);
-  const [showCreateRequest, setShowCreateRequest] = useState(false);
   const [selectedDateForCreation, setSelectedDateForCreation] = useState<Date | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -236,16 +234,6 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
               <Plus className="h-4 w-4 mr-2" />
               Criar Conteúdo
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedDateForCreation(new Date());
-                setShowCreateRequest(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Solicitar Criativo
-            </Button>
           </div>
         </div>
 
@@ -385,22 +373,6 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
           initialTitle={selectedEventTitle}
         />
       )}
-
-      {/* Dialog de Nova Solicitação */}
-      <RequestCreativeDialog
-        open={showCreateRequest}
-        onOpenChange={setShowCreateRequest}
-        clientId={selectedClient || clients[0]?.id || ""}
-        agencyId={agencyId}
-        onSuccess={() => {
-          loadContents();
-          toast({
-            title: "Solicitação criada",
-            description: "A solicitação de criativo foi registrada com sucesso.",
-          });
-        }}
-        initialDate={selectedDateForCreation}
-      />
 
       {/* Dialog de Detalhes do Conteúdo */}
       {selectedContentId && (

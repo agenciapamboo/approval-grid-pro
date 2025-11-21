@@ -613,7 +613,6 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         .eq("event", "novojob")
         .eq("agency_id", agencyId)
         .in("client_id", clientIds)
-        .eq("status", "pending")
         .order("created_at", { ascending: false });
 
       if (creativeError) throw creativeError;
