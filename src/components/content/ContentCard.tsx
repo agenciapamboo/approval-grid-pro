@@ -84,8 +84,11 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasMediaAndCaption = (content: ContentCardProps['content']) => {
-    const hasMedia = content.media_path;
-    const hasCaption = content.caption || content.legend;
+    const hasMedia = Boolean(content.media_path && content.media_path.trim() !== '');
+    const hasCaption = Boolean(
+      (content.caption && content.caption.trim() !== '') || 
+      (content.legend && content.legend.trim() !== '')
+    );
     return hasMedia && hasCaption;
   };
 
@@ -527,9 +530,19 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
 
   const handleStatusChange = async (newStatus: string) => {
     try {
+      const updateData: any = { 
+        status: newStatus as "draft" | "in_review" | "approved" | "changes_requested",
+        auto_publish: false  // Sempre resetar ao mudar status manualmente
+      };
+      
+      // Resetar scheduled_at se mudando de 'scheduled' para outro status
+      if (newStatus !== 'scheduled') {
+        updateData.scheduled_at = null;
+      }
+      
       const { error } = await supabase
         .from("contents")
-        .update({ status: newStatus as "draft" | "in_review" | "approved" | "changes_requested" })
+        .update(updateData)
         .eq("id", content.id);
 
       if (error) throw error;

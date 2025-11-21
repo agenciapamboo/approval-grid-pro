@@ -118,10 +118,16 @@ export function ContentDetailsDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasMediaAndCaption = (content: any) => {
-    const hasMedia = content.content_media && content.content_media.length > 0;
-    const hasCaption = content.content_texts && 
+    const hasMedia = Boolean(
+      content.content_media && 
+      content.content_media.length > 0 && 
+      content.content_media.some((m: any) => m.src_url && m.src_url.trim() !== '')
+    );
+    const hasCaption = Boolean(
+      content.content_texts && 
       content.content_texts.length > 0 && 
-      content.content_texts.some((t: any) => t.caption && t.caption.trim() !== '');
+      content.content_texts.some((t: any) => t.caption && t.caption.trim() !== '')
+    );
     
     return hasMedia && hasCaption;
   };
@@ -392,7 +398,33 @@ export function ContentDetailsDialog({
   };
 
   const handleStatusChange = async (newStatus: string) => {
-    handleUpdateField('status', newStatus);
+    if (!content) return;
+    
+    try {
+      const updateData: any = { 
+        status: newStatus,
+        auto_publish: false  // Sempre resetar ao mudar status manualmente
+      };
+      
+      // Resetar scheduled_at se mudando de 'scheduled' para outro status
+      if (newStatus !== 'scheduled') {
+        updateData.scheduled_at = null;
+      }
+      
+      const { error } = await supabase
+        .from('contents')
+        .update(updateData)
+        .eq('id', content.id);
+      
+      if (error) throw error;
+      
+      toast.success('Status atualizado com sucesso!');
+      await loadContentDetails();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error(`Erro ao atualizar: ${error.message}`);
+    }
   };
 
   const handlePublishNow = async () => {
@@ -587,7 +619,7 @@ export function ContentDetailsDialog({
                     </div>
                   )}
                 </div>
-                {isAgencyView && content && content.status === 'approved' && hasMediaAndCaption(content) && (
+                {isAgencyView && content && hasMediaAndCaption(content) && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Button 
                       onClick={handlePublishNow}
@@ -598,15 +630,45 @@ export function ContentDetailsDialog({
                       Publicar Agora
                     </Button>
                     
-                    <Button 
-                      onClick={() => setShowDatePicker(true)}
-                      size="sm"
-                      variant="outline"
-                      className="border-primary text-primary hover:bg-primary/10"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      Agendar Publicação
-                    </Button>
+                    {!content.auto_publish ? (
+                      <Button 
+                        onClick={() => setShowDatePicker(true)}
+                        size="sm"
+                        variant="outline"
+                        className="border-primary text-primary hover:bg-primary/10"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        Agendar Publicação
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from("contents")
+                              .update({ 
+                                auto_publish: false,
+                                scheduled_at: null,
+                                status: 'approved'
+                              })
+                              .eq("id", content.id);
+
+                            if (error) throw error;
+                            toast.success("Agendamento cancelado!");
+                            loadContentDetails();
+                            onUpdate();
+                          } catch (error: any) {
+                            console.error("Error:", error);
+                            toast.error("Erro ao cancelar: " + error.message);
+                          }
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        Cancelar Agendamento
+                      </Button>
+                    )}
                   </div>
                 )}
               </>
