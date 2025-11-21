@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Facebook, Instagram, Linkedin, Calendar as CalendarIcon, MoreVertical, Edit, ImagePlus, Download, Link2, CheckCircle, Trash2, Save, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Facebook, Instagram, Linkedin, Calendar as CalendarIcon, MoreVertical, Edit, ImagePlus, Download, Link2, CheckCircle, Trash2, Save, AlertCircle, Zap } from "lucide-react";
 import { ContentMedia } from "./ContentMedia";
 import { ContentCaption } from "./ContentCaption";
 import { ContentComments } from "./ContentComments";
@@ -353,6 +354,49 @@ export function ContentDetailsDialog({
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!content) return;
+
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ status: newStatus as any })
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast.success("Status atualizado!");
+      loadContentDetails();
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error updating status:", error);
+      toast.error("Erro ao atualizar status: " + error.message);
+    }
+  };
+
+  const handlePublishNow = async () => {
+    if (!content) return;
+
+    try {
+      const { error } = await supabase
+        .from("contents")
+        .update({ 
+          status: "published" as any,
+          published_at: new Date().toISOString() 
+        } as any)
+        .eq("id", content.id);
+
+      if (error) throw error;
+
+      toast.success("Conteúdo publicado!");
+      loadContentDetails();
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error publishing content:", error);
+      toast.error("Erro ao publicar: " + error.message);
+    }
+  };
+
   useEffect(() => {
     if (open && contentId) {
       loadContentDetails();
@@ -421,25 +465,64 @@ export function ContentDetailsDialog({
                 )}
                 <span className="text-lg font-semibold">{content?.title || "Carregando..."}</span>
               </div>
-              {content && getStatusBadge(content.status)}
-            </div>
-            {content && (
-              <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal">
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="h-4 w-4" />
-                  {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {getTypeLabel(content.type)}
-                </Badge>
-                {content.channels && content.channels.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {content.channels.map((channel, idx) => (
-                      <span key={idx}>{getSocialIcon(channel)}</span>
-                    ))}
-                  </div>
+              <div className="flex items-center gap-2">
+                {content && getStatusBadge(content.status)}
+                {isAgencyView && content && (
+                  <Select value={content.status} onValueChange={handleStatusChange}>
+                    <SelectTrigger className="w-[160px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="draft">Rascunho</SelectItem>
+                      <SelectItem value="in_review">Em Revisão</SelectItem>
+                      <SelectItem value="approved">Aprovado</SelectItem>
+                      <SelectItem value="scheduled">Agendado</SelectItem>
+                      <SelectItem value="published">Publicado</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
+            </div>
+            {content && (
+              <>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal">
+                  <div className="flex items-center gap-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {getTypeLabel(content.type)}
+                  </Badge>
+                  {content.channels && content.channels.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      {content.channels.map((channel, idx) => (
+                        <span key={idx}>{getSocialIcon(channel)}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {isAgencyView && content.status === 'approved' && (
+                  <div className="flex gap-2 mt-3">
+                    <Button 
+                      onClick={handlePublishNow}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Zap className="mr-2 h-4 w-4" />
+                      Publicar Agora
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => setShowDatePicker(true)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      Agendar Publicação
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </DialogTitle>
         </DialogHeader>
