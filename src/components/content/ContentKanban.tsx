@@ -71,6 +71,7 @@ interface CreativeRequestData {
   clientEmail?: string;
   clientWhatsapp?: string;
   createdAt: string;
+  deadline?: string;
   status?: string;
   requestType?: string;
   text?: string;
@@ -626,6 +627,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           clientName: client?.name || 'Cliente',
           clientEmail: client?.email,
           clientWhatsapp: client?.whatsapp,
+          deadline: notif.payload?.deadline,
           createdAt: notif.created_at,
           status: notif.payload?.job_status || 'pending',
           requestType: notif.payload?.type,
@@ -1617,6 +1619,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                 title: request.title,
                                 clientName: request.clientName,
                                 createdAt: request.createdAt,
+                                deadline: request.type === 'creative_request' ? (request as CreativeRequestData).deadline : undefined,
                                 status: request.type === 'creative_request' ? (request as CreativeRequestData).status : undefined,
                               }}
                               onClick={() => {
