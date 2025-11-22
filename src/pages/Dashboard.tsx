@@ -367,14 +367,33 @@ const Dashboard = () => {
                     {dashboardData.agency.clients.map((client: any) => (
                       <Card
                         key={client.id}
-                        className="cursor-pointer hover:shadow-lg transition-shadow"
-                        onClick={() => navigate(`/cliente/${client.id}`)}
+                        className="hover:shadow-lg transition-shadow"
                       >
                         <CardHeader>
                           <CardTitle className="text-base">{client.name}</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                          <Button variant="outline" size="sm" className="w-full">
+                        <CardContent className="space-y-2">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="w-full gap-2 bg-primary hover:bg-primary/90"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/agency/client/${client.id}/conteudos`);
+                            }}
+                          >
+                            <FileText className="h-4 w-4" />
+                            Conteúdos
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/cliente/${client.id}`);
+                            }}
+                          >
                             Acessar Cliente
                           </Button>
                         </CardContent>

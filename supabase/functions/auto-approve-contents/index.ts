@@ -59,12 +59,17 @@ serve(async (req) => {
     }
 
     // 2. Auto-aprovar conteúdos com deadline vencido
+    // NOTA: Esta regra pode entrar em conflito com publicação automática se:
+    // - O conteúdo tiver auto_publish=true e a data já passou
+    // - O cliente tiver require_approval_to_publish=false
+    // Nesse caso, o conteúdo será aprovado E publicado automaticamente
     console.log(`Buscando conteúdos com deadline vencido (< ${today})...`);
     const { data: expiredContents, error: expiredError } = await supabaseClient
       .from('contents')
       .select('*, clients(*)')
       .lt('deadline', today)
-      .neq('status', 'approved');
+      .neq('status', 'approved')
+      .is('published_at', null); // Não aprovar conteúdos já publicados
 
     if (expiredError) {
       console.error('Erro ao buscar conteúdos vencidos:', expiredError);
@@ -78,6 +83,13 @@ serve(async (req) => {
 
       for (const content of expiredContents) {
         try {
+          // Verificar se o conteúdo tem auto_publish=true e data já passou
+          // Se sim, será publicado automaticamente na próxima execução (seção 3)
+          const contentDate = new Date(content.date);
+          const now = new Date();
+          const hasAutoPublish = content.auto_publish === true;
+          const datePassed = contentDate <= now;
+          
           // Atualizar status para aprovado
           const { error: updateError } = await supabaseClient
             .from('contents')

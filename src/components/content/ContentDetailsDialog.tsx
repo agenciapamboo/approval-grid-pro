@@ -118,15 +118,31 @@ export function ContentDetailsDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasMediaAndCaption = (content: any) => {
+    if (!content) return false;
+    
+    // Verificar mídia - verificar em content_media (array de relacionamento)
     const hasMedia = Boolean(
       content.content_media && 
+      Array.isArray(content.content_media) &&
       content.content_media.length > 0 && 
-      content.content_media.some((m: any) => m.src_url && m.src_url.trim() !== '')
+      content.content_media.some((m: any) => {
+        const srcUrl = m.src_url || m.thumb_url;
+        return srcUrl && String(srcUrl).trim() !== '';
+      })
     );
+    
+    // Verificar legenda - verificar em content_texts (array de relacionamento) ou campo direto
     const hasCaption = Boolean(
-      content.content_texts && 
-      content.content_texts.length > 0 && 
-      content.content_texts.some((t: any) => t.caption && t.caption.trim() !== '')
+      (content.content_texts && 
+       Array.isArray(content.content_texts) &&
+       content.content_texts.length > 0 && 
+       content.content_texts.some((t: any) => {
+         const caption = t.caption;
+         return caption && String(caption).trim() !== '';
+       })) ||
+      // Fallback: verificar caption direto se disponível
+      (content.caption && String(content.caption).trim() !== '') ||
+      (content.legend && String(content.legend).trim() !== '')
     );
     
     return hasMedia && hasCaption;
@@ -136,10 +152,14 @@ export function ContentDetailsDialog({
     try {
       setLoading(true);
 
-      // Buscar conteúdo principal
+      // Buscar conteúdo principal com relacionamentos necessários
       const { data: contentData, error: contentError } = await supabase
         .from("contents")
-        .select("*")
+        .select(`
+          *,
+          content_media (*),
+          content_texts (*)
+        `)
         .eq("id", contentId)
         .single();
 
@@ -619,56 +639,68 @@ export function ContentDetailsDialog({
                     </div>
                   )}
                 </div>
-                {isAgencyView && content && hasMediaAndCaption(content) && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <Button 
-                      onClick={handlePublishNow}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Zap className="mr-2 h-4 w-4" />
-                      Publicar Agora
-                    </Button>
-                    
-                    {!content.auto_publish ? (
-                      <Button 
-                        onClick={() => setShowDatePicker(true)}
-                        size="sm"
-                        variant="outline"
-                        className="border-primary text-primary hover:bg-primary/10"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        Agendar Publicação
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={async () => {
-                          try {
-                            const { error } = await supabase
-                              .from("contents")
-                              .update({ 
-                                auto_publish: false,
-                                scheduled_at: null,
-                                status: 'approved'
-                              })
-                              .eq("id", content.id);
-
-                            if (error) throw error;
-                            toast.success("Agendamento cancelado!");
-                            loadContentDetails();
-                            onUpdate();
-                          } catch (error: any) {
-                            console.error("Error:", error);
-                            toast.error("Erro ao cancelar: " + error.message);
-                          }
-                        }}
-                        size="sm"
-                        variant="outline"
-                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        Cancelar Agendamento
-                      </Button>
+                {isAgencyView && content && content.status === 'approved' && !content.published_at && (
+                  <div className="flex flex-col gap-2 mt-3">
+                    {!hasMediaAndCaption(content) && (
+                      <div className="rounded-lg border border-warning/50 bg-warning/10 p-2">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground">
+                            <strong className="text-foreground">Atenção:</strong> Este conteúdo não possui mídia ou legenda. Adicione antes de publicar.
+                          </p>
+                        </div>
+                      </div>
                     )}
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        onClick={handlePublishNow}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Publicar Agora
+                      </Button>
+                      
+                      {!content.auto_publish ? (
+                        <Button 
+                          onClick={() => setShowDatePicker(true)}
+                          size="sm"
+                          variant="outline"
+                          className="border-primary text-primary hover:bg-primary/10"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          Agendar Publicação
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={async () => {
+                            try {
+                              const { error } = await supabase
+                                .from("contents")
+                                .update({ 
+                                  auto_publish: false,
+                                  scheduled_at: null,
+                                  status: 'approved'
+                                })
+                                .eq("id", content.id);
+
+                              if (error) throw error;
+                              toast.success("Agendamento cancelado!");
+                              loadContentDetails();
+                              onUpdate();
+                            } catch (error: any) {
+                              console.error("Error:", error);
+                              toast.error("Erro ao cancelar: " + error.message);
+                            }
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          Cancelar Agendamento
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </>

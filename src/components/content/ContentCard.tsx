@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createNotification } from "@/lib/notifications";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast as sonnerToast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface ContentCardProps {
   content: {
@@ -82,14 +83,50 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
   const [showSupplierDialog, setShowSupplierDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [hasMedia, setHasMedia] = useState<boolean | null>(null);
+  const [hasCaption, setHasCaption] = useState<boolean | null>(null);
+
+  // Verificar mídia e legenda no banco de dados
+  useEffect(() => {
+    const checkMediaAndCaption = async () => {
+      // Verificar mídia
+      const { data: mediaData } = await supabase
+        .from('content_media')
+        .select('id')
+        .eq('content_id', content.id)
+        .limit(1)
+        .maybeSingle();
+      
+      setHasMedia(Boolean(mediaData));
+
+      // Verificar legenda
+      const { data: textData } = await supabase
+        .from('content_texts')
+        .select('caption')
+        .eq('content_id', content.id)
+        .eq('version', content.version)
+        .maybeSingle();
+      
+      const captionText = textData?.caption || content.caption || content.legend || '';
+      setHasCaption(Boolean(captionText && captionText.trim() !== ''));
+    };
+
+    checkMediaAndCaption();
+  }, [content.id, content.version, content.caption, content.legend]);
 
   const hasMediaAndCaption = (content: ContentCardProps['content']) => {
-    const hasMedia = Boolean(content.media_path && content.media_path.trim() !== '');
-    const hasCaption = Boolean(
+    // Se já verificamos no banco, usar esses valores
+    if (hasMedia !== null && hasCaption !== null) {
+      return hasMedia && hasCaption;
+    }
+    
+    // Fallback: verificar campos diretos (para compatibilidade)
+    const hasMediaDirect = Boolean(content.media_path && content.media_path.trim() !== '');
+    const hasCaptionDirect = Boolean(
       (content.caption && content.caption.trim() !== '') || 
       (content.legend && content.legend.trim() !== '')
     );
-    return hasMedia && hasCaption;
+    return hasMediaDirect && hasCaptionDirect;
   };
 
   // Função para converter status do banco em status para client users
@@ -966,11 +1003,18 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               )}
             </>
           ) : (
-        <div className="w-full overflow-hidden bg-muted">
+        <div className={cn(
+          "w-full overflow-hidden bg-muted",
+          // Proporção 4:5 para feed (padrão)
+          content.type !== 'reels' && content.type !== 'video' && "aspect-[4/5]",
+          // Para reels, manter proporção mas cortar verticalmente
+          (content.type === 'reels' || content.type === 'video') && "aspect-[4/5]"
+        )}>
           <ContentMedia 
             contentId={content.id} 
             type={content.type}
             mediaPath={content.media_path}
+            isCardView={true}
           />
         </div>
           )}
@@ -1036,11 +1080,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           )}
 
           {/* Ações de Publicação - Apenas para Agência */}
-          {isAgencyView && (() => {
+          {isAgencyView && content.status === 'approved' && !content.published_at && (() => {
             const isStory = content.type === 'story';
             const channels = content.channels || [];
             const hasFacebook = channels.some(ch => ch.toLowerCase().includes('facebook'));
             const hasInstagram = channels.some(ch => ch.toLowerCase().includes('instagram'));
+            const hasMediaCaption = hasMediaAndCaption(content);
             
             // Se for story com apenas Instagram ou sem Facebook, mostra aviso completo
             if (isStory && (!hasFacebook || (hasInstagram && !hasFacebook))) {
@@ -1085,6 +1130,16 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                         </div>
                       </div>
                     )}
+                    {!hasMediaCaption && (
+                      <div className="rounded-lg border border-warning/50 bg-warning/10 p-2">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground">
+                            <strong className="text-foreground">Atenção:</strong> Este conteúdo não possui mídia ou legenda. Adicione antes de publicar.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex flex-col gap-2">
                       <Button 
                         size="sm"
@@ -1119,10 +1174,20 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
               );
             }
             
-            // Para conteúdos normais (não stories) E com mídia+legenda
-            if (hasMediaAndCaption(content)) {
-              return (
-                <div className="p-4 border-t">
+            // Para conteúdos normais (não stories) - SEMPRE mostrar botões para agency_admin
+            return (
+              <div className="p-4 border-t">
+                <div className="flex flex-col gap-2">
+                  {!hasMediaCaption && (
+                    <div className="rounded-lg border border-warning/50 bg-warning/10 p-2">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-muted-foreground">
+                          <strong className="text-foreground">Atenção:</strong> Este conteúdo não possui mídia ou legenda. Adicione antes de publicar.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     <Button 
                       size="sm"
@@ -1155,10 +1220,8 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
                     )}
                   </div>
                 </div>
-              );
-            }
-            
-            return null;
+              </div>
+            );
           })()}
 
           {/* Comentários expandidos */}

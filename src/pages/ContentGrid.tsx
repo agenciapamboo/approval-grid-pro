@@ -411,153 +411,170 @@ export default function ContentGrid() {
               <p className="text-muted-foreground">Nenhum conteúdo encontrado</p>
             </div>
           </Card>
-        ) : (
-          // Instagram-style grid para TODAS as versões - 3 colunas
-          <div className="grid grid-cols-3 gap-0.5 pb-20">
-            {filterContentsByStatus(contents).map((content) => (
-              <div
-                key={content.id}
-                onClick={() => setSelectedContent(content)}
-                className="relative aspect-square cursor-pointer group overflow-hidden"
-              >
-                {/* Renderizar baseado no tipo de conteúdo */}
-                {content.is_content_plan ? (
-                  // Ícones diferenciados por tipo de plano
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-primary/5">
-                    {content.type === 'reels' ? (
-                      <>
-                        <Video className="h-8 w-8 text-primary/40" />
-                        <span className="text-[8px] text-primary/60 font-medium uppercase">Vídeo</span>
-                      </>
-                    ) : content.type === 'carousel' ? (
-                      <>
-                        <Images className="h-8 w-8 text-primary/40" />
-                        <span className="text-[8px] text-primary/60 font-medium uppercase">Galeria</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="h-8 w-8 text-primary/40" />
-                        <span className="text-[8px] text-primary/60 font-medium uppercase">Feed</span>
-                      </>
-                    )}
-                  </div>
-                ) : content.media_path ? (
-                  // Imagem principal do conteúdo
-                  <img 
-                    key={`media-${content.id}`}
-                    src={content.media_path}
-                    alt={content.title}
-                    className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        const fallback = document.createElement('div');
-                        fallback.className = 'w-full h-full flex items-center justify-center bg-muted/50';
-                        fallback.innerHTML = '<div class="text-muted-foreground/30">⚠</div>';
-                        parent.appendChild(fallback);
-                      }
-                    }}
-                  />
-                ) : (
-                  // Placeholder apenas para conteúdos sem mídia
-                  <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                    <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
-                  </div>
-                )}
-                
-                {/* Ícone de tipo - Canto inferior esquerdo */}
-                {!content.is_content_plan && content.media_path && (
-                  <div className="absolute bottom-1 left-1">
-                    {content.type === 'reels' || content.type === 'video' ? (
-                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
-                        <Video className="h-3 w-3 text-white" />
-                      </div>
-                    ) : content.type === 'carousel' ? (
-                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
-                        <Images className="h-3 w-3 text-white" />
-                      </div>
-                    ) : (
-                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
-                        <ImageIcon className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Badge de Status - Canto superior direito */}
-                {(() => {
-                  const clientStatus = getClientStatus(content);
-                  if (!clientStatus) return null;
-                  
-                  const badgeColors: Record<string, string> = {
-                    pending: 'bg-orange-500',
-                    producing: 'bg-blue-500',
-                    scheduled: 'bg-purple-500',
-                    published: 'bg-green-500'
-                  };
-                  
-                  return (
-                    <span 
-                      className={`absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded shadow-sm font-semibold text-white ${badgeColors[clientStatus]}`}
-                    >
-                      {getStatusLabel(clientStatus)}
-                    </span>
-                  );
-                })()}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Dialog Fullscreen - Todas as versões */}
-        {selectedContent && (
-          <Dialog open={!!selectedContent} onOpenChange={() => setSelectedContent(null)}>
-            <DialogContent className="max-w-full h-full p-0 gap-0 overflow-hidden">
-              {/* Header fixo com seta voltar e X */}
-              <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 p-3 flex items-center justify-between">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setSelectedContent(null)}
-                  className="h-9 w-9"
+        ) : isMobile ? (
+          // MOBILE: Instagram-style grid (3 colunas) que ao clicar abre Dialog fullscreen
+          <>
+            <div className="grid grid-cols-3 gap-0.5 pb-20">
+              {filterContentsByStatus(contents).map((content) => (
+                <div
+                  key={content.id}
+                  onClick={() => setSelectedContent(content)}
+                  className="relative aspect-square cursor-pointer group overflow-hidden"
                 >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                
-                <span className="text-sm font-medium">Conteúdos</span>
-                
-                <DialogClose className="rounded-sm opacity-70 hover:opacity-100 ring-offset-background transition-opacity hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                  <X className="h-5 w-5" />
-                  <span className="sr-only">Fechar</span>
-                </DialogClose>
-              </div>
-              
-              {/* Feed com scroll vertical */}
-              <ScrollArea className="h-full snap-y snap-mandatory overflow-y-auto">
-                {contents.map((content) => (
-                  <div 
-                    key={content.id} 
-                    id={`content-${content.id}`}
-                    className="min-h-screen snap-start snap-always flex items-start p-4 border-b border-border/10"
-                    style={{ scrollSnapStop: 'always' }}
-                  >
-                    <ContentCard
-                      content={content}
-                      isResponsible={content.owner_user_id === userProfile.id}
-                      isAgencyView={role === 'agency_admin' || role === 'team_member'}
-                      onUpdate={() => {
-                        loadContents(userClient.id);
+                  {/* Renderizar baseado no tipo de conteúdo */}
+                  {content.is_content_plan ? (
+                    // Ícones diferenciados por tipo de plano
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-primary/5">
+                      {content.type === 'reels' ? (
+                        <>
+                          <Video className="h-8 w-8 text-primary/40" />
+                          <span className="text-[8px] text-primary/60 font-medium uppercase">Vídeo</span>
+                        </>
+                      ) : content.type === 'carousel' ? (
+                        <>
+                          <Images className="h-8 w-8 text-primary/40" />
+                          <span className="text-[8px] text-primary/60 font-medium uppercase">Galeria</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-8 w-8 text-primary/40" />
+                          <span className="text-[8px] text-primary/60 font-medium uppercase">Feed</span>
+                        </>
+                      )}
+                    </div>
+                  ) : content.media_path ? (
+                    // Imagem principal do conteúdo
+                    <img 
+                      key={`media-${content.id}`}
+                      src={content.media_path}
+                      alt={content.title}
+                      className="object-cover w-full h-full group-hover:opacity-90 transition-opacity"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-full h-full flex items-center justify-center bg-muted/50';
+                          fallback.innerHTML = '<div class="text-muted-foreground/30">⚠</div>';
+                          parent.appendChild(fallback);
+                        }
                       }}
                     />
+                  ) : (
+                    // Placeholder apenas para conteúdos sem mídia
+                    <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                      <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                    </div>
+                  )}
+                  
+                  {/* Ícone de tipo - Canto inferior esquerdo */}
+                  {!content.is_content_plan && content.media_path && (
+                    <div className="absolute bottom-1 left-1">
+                      {content.type === 'reels' || content.type === 'video' ? (
+                        <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
+                          <Video className="h-3 w-3 text-white" />
+                        </div>
+                      ) : content.type === 'carousel' ? (
+                        <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
+                          <Images className="h-3 w-3 text-white" />
+                        </div>
+                      ) : (
+                        <div className="bg-black/70 backdrop-blur-sm rounded-full p-1">
+                          <ImageIcon className="h-3 w-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Badge de Status - Canto superior direito */}
+                  {(() => {
+                    const clientStatus = getClientStatus(content);
+                    if (!clientStatus) return null;
+                    
+                    const badgeColors: Record<string, string> = {
+                      pending: 'bg-orange-500',
+                      producing: 'bg-blue-500',
+                      scheduled: 'bg-purple-500',
+                      published: 'bg-green-500'
+                    };
+                    
+                    return (
+                      <span 
+                        className={`absolute top-1 right-1 text-[9px] px-1.5 py-0.5 rounded shadow-sm font-semibold text-white ${badgeColors[clientStatus]}`}
+                      >
+                        {getStatusLabel(clientStatus)}
+                      </span>
+                    );
+                  })()}
+                </div>
+              ))}
+            </div>
+
+            {/* Dialog Fullscreen - Apenas Mobile */}
+            {selectedContent && (
+              <Dialog open={!!selectedContent} onOpenChange={() => setSelectedContent(null)}>
+                <DialogContent className="max-w-full h-full p-0 gap-0 overflow-hidden">
+                  {/* Header fixo com seta voltar e X */}
+                  <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 p-3 flex items-center justify-between">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setSelectedContent(null)}
+                      className="h-9 w-9"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    
+                    <span className="text-sm font-medium">Conteúdos</span>
+                    
+                    <DialogClose className="rounded-sm opacity-70 hover:opacity-100 ring-offset-background transition-opacity hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                      <X className="h-5 w-5" />
+                      <span className="sr-only">Fechar</span>
+                    </DialogClose>
                   </div>
-                ))}
-              </ScrollArea>
-            </DialogContent>
-          </Dialog>
+                  
+                  {/* Feed com scroll vertical */}
+                  <ScrollArea className="h-full snap-y snap-mandatory overflow-y-auto">
+                    {filterContentsByStatus(contents).map((content) => (
+                      <div 
+                        key={content.id} 
+                        id={`content-${content.id}`}
+                        className="min-h-screen snap-start snap-always flex items-start p-4 border-b border-border/10"
+                        style={{ scrollSnapStop: 'always' }}
+                      >
+                        <ContentCard
+                          content={content}
+                          isResponsible={content.owner_user_id === userProfile.id}
+                          isAgencyView={role === 'agency_admin' || role === 'team_member'}
+                          onUpdate={() => {
+                            loadContents(userClient.id);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
+            )}
+          </>
+        ) : (
+          // DESKTOP/TABLET: Grid de 3 colunas com ContentCard completo
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filterContentsByStatus(contents).map((content) => (
+              <ContentCard
+                key={content.id}
+                content={content}
+                isResponsible={content.owner_user_id === userProfile.id}
+                isAgencyView={role === 'agency_admin' || role === 'team_member'}
+                onUpdate={() => {
+                  loadContents(userClient.id);
+                }}
+              />
+            ))}
+          </div>
         )}
 
         {showCreateDialog && (
