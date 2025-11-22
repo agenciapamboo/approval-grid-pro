@@ -14,10 +14,24 @@ export function PlatformNotificationsBell() {
   const navigate = useNavigate();
 
   const loadNotifications = async () => {
-    const result = await getMyPlatformNotifications('pending');
-    if (result.success) {
-      setNotifications(result.notifications);
-      setUnreadCount(result.notifications.length);
+    try {
+      const result = await getMyPlatformNotifications('pending');
+      if (result.success) {
+        // Filtrar apenas notificações não lidas (status != 'read' e read_at IS NULL)
+        const unreadNotifications = (result.notifications || []).filter(
+          (n: any) => n.status !== 'read' && !n.read_at
+        );
+        setNotifications(unreadNotifications);
+        setUnreadCount(unreadNotifications.length);
+      } else {
+        console.error('Erro ao carregar notificações:', result.error);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar notificações:', error);
+      setNotifications([]);
+      setUnreadCount(0);
     }
   };
 
@@ -63,8 +77,7 @@ export function PlatformNotificationsBell() {
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-green-500 hover:bg-green-600 text-white border-0"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
