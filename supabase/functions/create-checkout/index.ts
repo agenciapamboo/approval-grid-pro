@@ -14,19 +14,19 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Lookup keys mapping based on plan and billing cycle
-const LOOKUP_KEYS: Record<string, Record<string, string>> = {
+// Price IDs mapping based on plan and billing cycle (LIVE MODE)
+const PRICE_IDS: Record<string, Record<string, string>> = {
   eugencia: {
-    monthly: "plano_eugencia_mensal",
-    annual: "plano_eugencia_anual",
+    monthly: "price_1SWNYOH3HtGAQtCFj91Hl1Z6",
+    annual: "price_1SWNYQH3HtGAQtCF8FI0ott6",
   },
   socialmidia: {
-    monthly: "plano_socialmidia_mensal",
-    annual: "plano_socialmidia_anual",
+    monthly: "price_1SWNYSH3HtGAQtCFYg6SSdCO",
+    annual: "price_1SWNYUH3HtGAQtCFTHvBvgN1",
   },
   fullservice: {
-    monthly: "plano_agencia_mensal",
-    annual: "plano_agencia_anual",
+    monthly: "price_1SWNYXH3HtGAQtCFrh2uxRkD",
+    annual: "price_1SWNYZH3HtGAQtCFmzJV3oKw",
   },
 };
 
@@ -122,31 +122,29 @@ serve(async (req) => {
     const { plan, billingCycle } = validation.data!;
     logStep("Request validated", { plan, billingCycle });
 
-    // Get lookup key for the plan and billing cycle
-    const lookupKey = LOOKUP_KEYS[plan]?.[billingCycle];
-    if (!lookupKey) {
+    // Get price ID for the plan and billing cycle
+    const priceId = PRICE_IDS[plan]?.[billingCycle];
+    if (!priceId) {
       logStep("Invalid plan/cycle combination", { plan, billingCycle });
       throw new Error("Invalid plan and billing cycle combination");
     }
-    logStep("Lookup key found", { lookupKey });
+    logStep("Price ID found", { priceId });
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Get price using lookup key - Stripe is the single source of truth
-    const prices = await stripe.prices.list({ lookup_keys: [lookupKey], limit: 1 });
-    
-    if (!prices.data || prices.data.length === 0) {
-      logStep("ERROR: Price not found in Stripe", { lookupKey, plan, billingCycle });
+    // Verify price exists in Stripe
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      logStep("Price verified in Stripe", { priceId, amount: price.unit_amount });
+    } catch (error) {
+      logStep("ERROR: Price not found in Stripe", { priceId, plan, billingCycle, error: error instanceof Error ? error.message : String(error) });
       throw new Error(
         `Preço não encontrado no Stripe. ` +
-        `Certifique-se de que existe um preço com lookup_key "${lookupKey}". ` +
-        `Configure em: https://dashboard.stripe.com/prices`
+        `Verifique se o preço ${priceId} existe e está ativo. ` +
+        `Configure em: https://dashboard.stripe.com/prices/${priceId}`
       );
     }
-
-    const priceId = prices.data[0].id;
-    logStep("Price found via lookup_key", { priceId, amount: prices.data[0].unit_amount });
 
     // Get user profile to check for existing Stripe customer ID
     // Use admin client to bypass RLS

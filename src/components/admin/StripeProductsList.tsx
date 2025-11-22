@@ -17,14 +17,14 @@ export function StripeProductsList({ products, prices }: StripeProductsListProps
     toast.success(`${label} copiado para a área de transferência`);
   };
 
-  const isPriceConfigured = (lookupKey: string) => {
+  const isPriceConfigured = (priceId: string) => {
     const plans = ["eugencia", "socialmidia", "fullservice"] as const;
     return plans.some(plan => {
       const config = STRIPE_PRODUCTS[plan];
       if (!('prices' in config)) return false;
       return (
-        config.prices?.monthly?.lookup_key === lookupKey ||
-        config.prices?.annual?.lookup_key === lookupKey
+        config.prices?.monthly?.price_id === priceId ||
+        config.prices?.annual?.price_id === priceId
       );
     });
   };
@@ -104,7 +104,7 @@ export function StripeProductsList({ products, prices }: StripeProductsListProps
                         </TableHeader>
                         <TableBody>
                           {productPrices.map((price) => {
-                            const isConfigured = isPriceConfigured(price.lookup_key);
+                            const isConfigured = isPriceConfigured(price.id);
                             
                             return (
                               <TableRow key={price.id}>
@@ -120,7 +120,7 @@ export function StripeProductsList({ products, prices }: StripeProductsListProps
                                       {price.lookup_key}
                                     </code>
                                   ) : (
-                                    <span className="text-muted-foreground text-xs">-</span>
+                                    <span className="text-muted-foreground text-xs">Sem lookup_key</span>
                                   )}
                                 </TableCell>
                                 <TableCell>

@@ -17,31 +17,31 @@ const logError = (error: string, details?: any) => {
   console.error(`[ADMIN-CHANGE-PLAN ERROR] ${error}${detailsStr}`);
 };
 
-// Stripe product configuration
+// Stripe product configuration (LIVE MODE)
 const STRIPE_PRODUCTS = {
   creator: {
     id: "prod_TLU5r2YFEPikQ7",
     free: true,
   },
   eugencia: {
-    id: "prod_TLUHBx7ZnfIvX7",
+    id: "prod_TTKCJxFk6gkYzZ", // ✅ LIVE MODE
     prices: {
-      monthly: { lookup_key: "plano_eugencia_mensal", amount: 2970 },
-      annual: { lookup_key: "plano_eugencia_anual", amount: 27000 },
+      monthly: { price_id: "price_1SWNYOH3HtGAQtCFj91Hl1Z6", amount: 2970 },
+      annual: { price_id: "price_1SWNYQH3HtGAQtCF8FI0ott6", amount: 27000 },
     },
   },
   socialmidia: {
-    id: "prod_TLUSSunwc1e3z3",
+    id: "prod_TTKC8IEUJaLz0Y", // ✅ LIVE MODE
     prices: {
-      monthly: { lookup_key: "plano_mensal_socialmidia", amount: 4950 },
-      annual: { lookup_key: "plano_anual_socialmidia", amount: 49500 },
+      monthly: { price_id: "price_1SWNYSH3HtGAQtCFYg6SSdCO", amount: 4950 },
+      annual: { price_id: "price_1SWNYUH3HtGAQtCFTHvBvgN1", amount: 49500 },
     },
   },
   fullservice: {
-    id: "prod_TLXZljt4VYKjyA",
+    id: "prod_TTKCbFG1vbhxlB", // ✅ LIVE MODE
     prices: {
-      monthly: { lookup_key: "plano_agencia_mensal", amount: 9720 },
-      annual: { lookup_key: "plano_agencia_anual", amount: 97200 },
+      monthly: { price_id: "price_1SWNYXH3HtGAQtCFrh2uxRkD", amount: 9720 },
+      annual: { price_id: "price_1SWNYZH3HtGAQtCFmzJV3oKw", amount: 97200 },
     },
   },
   unlimited: {
@@ -251,29 +251,28 @@ serve(async (req) => {
       throw new Error(`Price not found for plan ${new_plan} and cycle ${billing_cycle}`);
     }
 
-    logStep("Price config found", { lookup_key: priceConfig.lookup_key, amount: priceConfig.amount });
+    logStep("Price config found", { price_id: priceConfig.price_id, amount: priceConfig.amount });
 
-    // Get price using lookup_key - Stripe is the single source of truth
-    const prices = await stripe.prices.list({
-      lookup_keys: [priceConfig.lookup_key],
-      limit: 1,
-    });
+    // Usar price_id diretamente
+    const priceId = priceConfig.price_id;
 
-    if (!prices.data || prices.data.length === 0) {
+    // Verify price exists in Stripe
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      logStep("Stripe price verified", { priceId, amount: price.unit_amount });
+    } catch (error) {
       logStep("ERROR: Price not found in Stripe", { 
-        lookupKey: priceConfig.lookup_key, 
+        priceId: priceId, 
         plan: new_plan, 
-        billingCycle: billing_cycle 
+        billingCycle: billing_cycle,
+        error: error instanceof Error ? error.message : String(error)
       });
       throw new Error(
         `Preço não encontrado no Stripe. ` +
-        `Certifique-se de que existe um preço com lookup_key "${priceConfig.lookup_key}". ` +
-        `Configure em: https://dashboard.stripe.com/prices`
+        `Verifique se o preço ${priceId} existe e está ativo. ` +
+        `Configure em: https://dashboard.stripe.com/prices/${priceId}`
       );
     }
-
-    const priceId = prices.data[0].id;
-    logStep("Stripe price found via lookup_key", { priceId });
 
     // Cancelar subscription antiga se existir
     if (adminProfile.stripe_subscription_id) {

@@ -74,8 +74,8 @@ export default function StripeConfig() {
       const config = STRIPE_PRODUCTS[rp as keyof typeof STRIPE_PRODUCTS];
       if (!('prices' in config)) return false;
       return (
-        config.prices?.monthly?.lookup_key === price.lookup_key ||
-        config.prices?.annual?.lookup_key === price.lookup_key
+        config.prices?.monthly?.price_id === price.id ||
+        config.prices?.annual?.price_id === price.id
       );
     });
   });
