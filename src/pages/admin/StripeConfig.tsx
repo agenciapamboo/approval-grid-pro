@@ -7,6 +7,7 @@ import { CheckCircle, XCircle, AlertTriangle, CreditCard, Loader2, RefreshCw } f
 import { StripeProductsList } from "@/components/admin/StripeProductsList";
 import { StripeProductCreator } from "@/components/admin/StripeProductCreator";
 import { StripeConfigGuide } from "@/components/admin/StripeConfigGuide";
+import { StripeKeysConfig } from "@/components/admin/StripeKeysConfig";
 import { STRIPE_PRODUCTS } from "@/lib/stripe-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +20,7 @@ export default function StripeConfig() {
   const queryClient = useQueryClient();
 
   // Fetch products from Stripe using edge function
-  const { data: productsData, isLoading: loadingProducts, refetch: refetchProducts } = useQuery({
+  const { data: productsResponse, isLoading: loadingProducts, refetch: refetchProducts } = useQuery({
     queryKey: ["stripe-products"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('list-stripe-products', {
@@ -27,14 +28,14 @@ export default function StripeConfig() {
       });
       
       if (error) throw error;
-      return data?.products || [];
+      return data || { products: [], mode: 'live', totalCount: 0, filteredCount: 0 };
     },
     staleTime: 1000 * 60, // 1 minute
     refetchOnWindowFocus: true,
   });
 
   // Fetch prices from Stripe using edge function
-  const { data: pricesData, isLoading: loadingPrices, refetch: refetchPrices } = useQuery({
+  const { data: pricesResponse, isLoading: loadingPrices, refetch: refetchPrices } = useQuery({
     queryKey: ["stripe-prices"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('list-stripe-prices', {
@@ -42,7 +43,7 @@ export default function StripeConfig() {
       });
       
       if (error) throw error;
-      return data?.prices || [];
+      return data || { prices: [], mode: 'live', totalCount: 0, filteredCount: 0 };
     },
     staleTime: 1000 * 60, // 1 minute
     refetchOnWindowFocus: true,
@@ -54,8 +55,9 @@ export default function StripeConfig() {
     toast.success("Dados atualizados com sucesso!");
   };
 
-  const stripeProducts = productsData || [];
-  const stripePrices = pricesData || [];
+  const stripeProducts = productsResponse?.products || [];
+  const stripePrices = pricesResponse?.prices || [];
+  const stripeMode = productsResponse?.mode || pricesResponse?.mode || 'live';
 
   // Calculate configuration status
   const requiredProducts = ["eugencia", "socialmidia", "fullservice"];
@@ -96,6 +98,20 @@ export default function StripeConfig() {
           <p className="text-muted-foreground mt-2">
             Gerencie produtos, preços e validações da integração com Stripe
           </p>
+          {!loading && (
+            <div className="mt-2">
+              <Alert>
+                <AlertDescription className="flex items-center gap-2">
+                  Modo Stripe ativo: <strong className={stripeMode === 'live' ? 'text-green-600' : 'text-orange-600'}>
+                    {stripeMode === 'live' ? 'LIVE MODE (Produção)' : 'TEST MODE (Teste)'}
+                  </strong>
+                  {stripeMode === 'test' && (
+                    <span className="text-orange-600 ml-2">⚠️ Configure a chave de produção no Lovable</span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </div>
         <Button 
           onClick={handleRefresh} 
@@ -196,9 +212,10 @@ export default function StripeConfig() {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="products">Produtos</TabsTrigger>
+              <TabsTrigger value="keys">Chaves e Webhooks</TabsTrigger>
               <TabsTrigger value="guide">Guia de Configuração</TabsTrigger>
             </TabsList>
 
@@ -277,6 +294,10 @@ export default function StripeConfig() {
                   <StripeProductsList products={stripeProducts} prices={stripePrices} />
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="keys" className="mt-6">
+              <StripeKeysConfig />
             </TabsContent>
 
             <TabsContent value="guide" className="mt-6">

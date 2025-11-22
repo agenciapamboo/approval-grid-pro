@@ -60,8 +60,9 @@ export default function StripeDiagnostic() {
       const products: StripeProduct[] = productsData?.products || [];
       const prices: StripePrice[] = pricesData?.prices || [];
 
-      // Determine Stripe mode (test vs live) from first product ID
-      const stripeMode: 'test' | 'live' = products.some(p => p.id.includes('_test_')) ? 'test' : 'live';
+      // Get Stripe mode from edge function response (determined by API key)
+      const stripeMode: 'test' | 'live' = productsData?.mode || pricesData?.mode || 
+        (products.some(p => p.id.includes('_test_')) ? 'test' : 'live');
 
       // Build expected lookup keys from stripe-config.ts
       const expectedLookupKeys = new Set<string>();

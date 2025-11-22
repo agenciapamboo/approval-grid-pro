@@ -1,5 +1,9 @@
 // Stripe Products and Prices Configuration
 // Currency: BRL (Brazilian Real)
+// 
+// IMPORTANT: These are LIVE MODE (Production) product IDs
+// Ensure STRIPE_SECRET_KEY environment variable is set to a live mode key (sk_live_...)
+// Test mode products will not match these IDs
 
 export const STRIPE_PRODUCTS = {
   creator: {

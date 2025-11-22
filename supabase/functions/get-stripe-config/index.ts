@@ -35,49 +35,56 @@ serve(async (req) => {
       _user_id: userData.user.id
     });
 
-    console.log("User role check:", { userRole, roleError });
-
     if (roleError || userRole !== "super_admin") {
-      throw new Error("Only super admins can list products");
+      throw new Error("Only super admins can view Stripe configuration");
     }
 
-    // Get limit from query params (default 10)
-    const url = new URL(req.url);
-    const limit = parseInt(url.searchParams.get("limit") || "10", 10);
+    // Get Stripe keys from environment
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+    const stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: "2025-08-27.basil",
-    });
+    // Determine mode from secret key
+    let mode: "live" | "test" | "unknown" = "unknown";
+    if (stripeSecretKey) {
+      if (stripeSecretKey.startsWith("sk_live_")) {
+        mode = "live";
+      } else if (stripeSecretKey.startsWith("sk_test_")) {
+        mode = "test";
+      }
+    }
 
-    // Determine Stripe mode from API key
-    const isLiveMode = stripeKey.startsWith("sk_live_");
-    const mode = isLiveMode ? "live" : "test";
-    
-    console.log(`Stripe mode: ${mode} (key starts with ${stripeKey.substring(0, 7)})`);
+    // Verify keys by attempting to list products (for secret key)
+    let hasSecretKey = false;
+    let secretKeyValid = false;
+    if (stripeSecretKey) {
+      hasSecretKey = true;
+      try {
+        const stripe = new Stripe(stripeSecretKey, {
+          apiVersion: "2025-08-27.basil",
+        });
+        // Just try to access the API to verify the key is valid
+        await stripe.products.list({ limit: 1 });
+        secretKeyValid = true;
+      } catch (error) {
+        // Key might be invalid or API error
+        secretKeyValid = false;
+      }
+    }
 
-    const products = await stripe.products.list({ limit, active: true });
-    
-    // Stripe API automatically returns only products from the mode of the API key
-    // (live products when using sk_live_*, test products when using sk_test_*)
-    // We'll filter out any test products as an extra safety measure
-    const filteredProducts = isLiveMode 
-      ? products.data.filter(p => !p.id.includes("_test_"))
-      : products.data;
-    
-    console.log(`Stripe products fetched: ${products.data.length} total, ${filteredProducts.length} in ${mode} mode`);
+    const hasWebhookSecret = Boolean(stripeWebhookSecret);
 
     return new Response(
-      JSON.stringify({ 
-        products: filteredProducts,
+      JSON.stringify({
         mode,
-        totalCount: products.data.length,
-        filteredCount: filteredProducts.length
+        hasSecretKey,
+        secretKeyValid,
+        hasWebhookSecret,
+        // Don't expose actual keys for security
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error listing products:", error);
+    console.error("Error getting Stripe config:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: errorMessage }),
@@ -85,3 +92,4 @@ serve(async (req) => {
     );
   }
 });
+

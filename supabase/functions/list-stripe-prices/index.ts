@@ -52,16 +52,35 @@ serve(async (req) => {
       limit = parseInt(url.searchParams.get("limit") || "20", 10);
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
-    const prices = await stripe.prices.list({ limit, expand: ["data.product"] });
+    // Determine Stripe mode from API key
+    const isLiveMode = stripeKey.startsWith("sk_live_");
+    const mode = isLiveMode ? "live" : "test";
     
-    console.log("Stripe prices fetched:", prices.data.length);
+    console.log(`Stripe mode: ${mode} (key starts with ${stripeKey.substring(0, 7)})`);
+
+    const prices = await stripe.prices.list({ limit, expand: ["data.product"], active: true });
+    
+    // Stripe API automatically returns only prices from the mode of the API key
+    // (live prices when using sk_live_*, test prices when using sk_test_*)
+    // We'll filter out any test prices as an extra safety measure
+    const filteredPrices = isLiveMode 
+      ? prices.data.filter(p => !p.id.includes("_test_"))
+      : prices.data;
+    
+    console.log(`Stripe prices fetched: ${prices.data.length} total, ${filteredPrices.length} in ${mode} mode`);
 
     return new Response(
-      JSON.stringify({ prices: prices.data }),
+      JSON.stringify({ 
+        prices: filteredPrices,
+        mode,
+        totalCount: prices.data.length,
+        filteredCount: filteredPrices.length
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
