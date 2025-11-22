@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface Media {
   id: string;
@@ -16,6 +17,7 @@ interface ContentMediaProps {
   contentId: string;
   type: string;
   mediaPath?: string | null;
+  isCardView?: boolean; // Se true, aplica crop para reels no card
 }
 
 const STORAGE_PREFIX = 'content-media/';
@@ -123,7 +125,7 @@ function useSignedUrl(path: string | null | undefined) {
   return { url, loading };
 }
 
-export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) {
+export function ContentMedia({ contentId, type, mediaPath, isCardView = false }: ContentMediaProps) {
   const [media, setMedia] = useState<Media[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -266,32 +268,39 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
 
   const displayUrl = srcUrl || thumbUrl;
 
+  // Determinar classes de objeto baseado no tipo e contexto
+  const isReels = type === 'reels' || type === 'video';
+  const objectClass = isCardView && isReels 
+    ? "w-full h-full object-cover object-center" // Crop para reels no card
+    : "w-full h-full object-contain"; // Mostrar completo no modal ou feed normal
+
   return (
     <>
       <div 
-        className="relative w-full"
+        className="relative w-full h-full"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div className="relative overflow-hidden bg-muted">
+        <div className="relative w-full h-full overflow-hidden bg-muted">
           {displayUrl ? (
             currentMedia.kind === "video" ? (
               <video
                 src={displayUrl}
-                controls
-                className="w-full h-auto max-h-96 object-contain"
+                controls={!isCardView}
+                className={objectClass}
+                onClick={() => isCardView && setShowModal(true)}
               />
             ) : (
               <img
                 src={displayUrl}
                 alt={`Mídia ${currentIndex + 1}`}
-                className="w-full h-auto max-h-96 object-contain cursor-pointer"
+                className={cn(objectClass, "cursor-pointer")}
                 onClick={() => setShowModal(true)}
               />
             )
           ) : (
-            <div className="w-full h-64 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center">
               <p className="text-sm text-muted-foreground">Erro ao carregar mídia</p>
             </div>
           )}
@@ -379,12 +388,20 @@ export function ContentMedia({ contentId, type, mediaPath }: ContentMediaProps) 
             </Button>
 
             {srcUrl && (
-              <img
-                src={srcUrl}
-                alt={`Mídia ${currentIndex + 1}`}
-                className="max-w-full max-h-full object-contain"
-                onLoad={handleImageLoad}
-              />
+              currentMedia.kind === "video" ? (
+                <video
+                  src={srcUrl}
+                  controls
+                  className="max-w-full max-h-[90vh] object-contain"
+                />
+              ) : (
+                <img
+                  src={srcUrl}
+                  alt={`Mídia ${currentIndex + 1}`}
+                  className="max-w-full max-h-[90vh] object-contain"
+                  onLoad={handleImageLoad}
+                />
+              )
             )}
 
             {media.length > 1 && (
