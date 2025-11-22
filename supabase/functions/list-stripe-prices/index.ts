@@ -69,7 +69,7 @@ serve(async (req) => {
     // (live prices when using sk_live_*, test prices when using sk_test_*)
     // We'll filter out any test prices as an extra safety measure
     const filteredPrices = isLiveMode 
-      ? prices.data.filter(p => !p.id.includes("_test_"))
+      ? prices.data.filter((p: any) => !p.id.includes("_test_"))
       : prices.data;
     
     console.log(`Stripe prices fetched: ${prices.data.length} total, ${filteredPrices.length} in ${mode} mode`);

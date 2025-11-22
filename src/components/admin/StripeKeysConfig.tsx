@@ -183,7 +183,7 @@ IMPORTANTE:
                 LIVE MODE (Produção)
               </Badge>
             ) : mode === "test" ? (
-              <Badge variant="secondary" className="bg-orange-500">
+              <Badge variant="warning" className="bg-orange-500">
                 TEST MODE (Teste)
               </Badge>
             ) : (
