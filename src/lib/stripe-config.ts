@@ -13,51 +13,51 @@ export const STRIPE_PRODUCTS = {
     free: true,
   },
   eugencia: {
-    id: "prod_TOmNQqnBSOTgC6",
+    id: "prod_TTKCJxFk6gkYzZ", // ✅ LIVE MODE
     name: "Eugência",
     description: "Plano Eugência",
     prices: {
       monthly: {
-        lookup_key: "plano_eugencia_mensal",
+        price_id: "price_1SWNYOH3HtGAQtCFj91Hl1Z6",
         amount: 2970, // R$ 29,70
         interval: "month",
       },
       annual: {
-        lookup_key: "plano_eugencia_anual",
+        price_id: "price_1SWNYQH3HtGAQtCF8FI0ott6",
         amount: 27000, // R$ 270,00
         interval: "year",
       },
     },
   },
   socialmidia: {
-    id: "prod_TOmOccSkOPId3E",
+    id: "prod_TTKC8IEUJaLz0Y", // ✅ LIVE MODE
     name: "Agência Social Mídia",
     description: "Plano para agências de Social Mídia",
     prices: {
       monthly: {
-        lookup_key: "plano_socialmidia_mensal",
+        price_id: "price_1SWNYSH3HtGAQtCFYg6SSdCO",
         amount: 4950, // R$ 49,50
         interval: "month",
       },
       annual: {
-        lookup_key: "plano_socialmidia_anual",
+        price_id: "price_1SWNYUH3HtGAQtCFTHvBvgN1",
         amount: 49500, // R$ 495,00
         interval: "year",
       },
     },
   },
   fullservice: {
-    id: "prod_TOmS1DcVAM4lUE",
+    id: "prod_TTKCbFG1vbhxlB", // ✅ LIVE MODE
     name: "Agência Full Service",
     description: "Plano completo para agências",
     prices: {
       monthly: {
-        lookup_key: "plano_agencia_mensal",
+        price_id: "price_1SWNYXH3HtGAQtCFrh2uxRkD",
         amount: 9720, // R$ 97,20
         interval: "month",
       },
       annual: {
-        lookup_key: "plano_agencia_anual",
+        price_id: "price_1SWNYZH3HtGAQtCFmzJV3oKw",
         amount: 97200, // R$ 972,00
         interval: "year",
       },
@@ -91,13 +91,13 @@ export const PLAN_DISPLAY_NAMES: Record<StripePlan, string> = {
 } as const;
 
 /**
- * Get lookup_key for a specific plan and interval
+ * Get price_id for a specific plan and interval
  */
-export const getPriceLookupKey = (plan: StripePlan, interval: StripePriceInterval): string | null => {
+export const getPriceId = (plan: StripePlan, interval: StripePriceInterval): string | null => {
   const product = STRIPE_PRODUCTS[plan];
   if ("free" in product && product.free) return null;
   if (!("prices" in product)) return null;
-  return product.prices?.[interval]?.lookup_key || null;
+  return product.prices?.[interval]?.price_id || null;
 };
 
 /**
