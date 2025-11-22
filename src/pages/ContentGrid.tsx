@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle, Loader2, Plus, FileText, ArrowLeft, X, ImageIcon, Video, Images } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
+import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
 import { LGPDConsent } from "@/components/lgpd/LGPDConsent";
 import { CreateContentWrapper } from "@/components/content/CreateContentWrapper";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -54,6 +55,7 @@ export default function ContentGrid() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
 
   // Função para converter status do banco em status para client users
   const getClientStatus = (content: Content): 'pending' | 'producing' | 'scheduled' | 'published' | null => {
@@ -562,19 +564,55 @@ export default function ContentGrid() {
           </>
         ) : (
           // DESKTOP/TABLET: Grid de 3 colunas com ContentCard completo
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filterContentsByStatus(contents).map((content) => (
-              <ContentCard
-                key={content.id}
-                content={content}
-                isResponsible={content.owner_user_id === userProfile.id}
-                isAgencyView={role === 'agency_admin' || role === 'team_member'}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6">
+              {filterContentsByStatus(contents).map((content) => (
+                <div
+                  key={content.id}
+                  onClick={(e) => {
+                    // Não abrir modal se clicar em botões ou elementos interativos
+                    const target = e.target as HTMLElement;
+                    if (
+                      target.closest('button') ||
+                      target.closest('a') ||
+                      target.closest('[role="button"]') ||
+                      target.closest('input') ||
+                      target.closest('textarea') ||
+                      target.closest('select')
+                    ) {
+                      return;
+                    }
+                    setSelectedContentId(content.id);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <ContentCard
+                    content={content}
+                    isResponsible={content.owner_user_id === userProfile.id}
+                    isAgencyView={role === 'agency_admin' || role === 'team_member'}
+                    onUpdate={() => {
+                      loadContents(userClient.id);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Modal individual para desktop/tablet */}
+            {selectedContentId && (
+              <ContentDetailsDialog
+                open={!!selectedContentId}
+                onOpenChange={(open) => {
+                  if (!open) setSelectedContentId(null);
+                }}
+                contentId={selectedContentId}
                 onUpdate={() => {
                   loadContents(userClient.id);
                 }}
+                isAgencyView={role === 'agency_admin' || role === 'team_member'}
               />
-            ))}
-          </div>
+            )}
+          </>
         )}
 
         {showCreateDialog && (
