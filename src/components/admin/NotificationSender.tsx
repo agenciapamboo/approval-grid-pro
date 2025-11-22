@@ -833,7 +833,7 @@ export const NotificationSender = () => {
                     {selectedRecipients.map((recipient) => (
                       <Badge
                         key={`${recipient.type}-${recipient.id}`}
-                        variant="secondary"
+                        variant="outline"
                         className="flex items-center gap-1"
                       >
                         <span>
@@ -1134,7 +1134,7 @@ export const NotificationSender = () => {
                     {selectedRecipients.map((recipient) => (
                       <Badge
                         key={`${recipient.type}-${recipient.id}`}
-                        variant="secondary"
+                        variant="outline"
                         className="flex items-center gap-1"
                       >
                         <span>

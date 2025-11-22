@@ -62,7 +62,7 @@ serve(async (req) => {
     // (live products when using sk_live_*, test products when using sk_test_*)
     // We'll filter out any test products as an extra safety measure
     const filteredProducts = isLiveMode 
-      ? products.data.filter(p => !p.id.includes("_test_"))
+      ? products.data.filter((p: any) => !p.id.includes("_test_"))
       : products.data;
     
     console.log(`Stripe products fetched: ${products.data.length} total, ${filteredProducts.length} in ${mode} mode`);
