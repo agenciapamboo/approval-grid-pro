@@ -17,14 +17,20 @@ export function StripeProductsList({ products, prices }: StripeProductsListProps
     toast.success(`${label} copiado para a área de transferência`);
   };
 
-  const isPriceConfigured = (priceId: string) => {
+  const isPriceConfigured = (priceId: string, lookupKey?: string | null) => {
     const plans = ["eugencia", "socialmidia", "fullservice"] as const;
     return plans.some(plan => {
       const config = STRIPE_PRODUCTS[plan];
       if (!('prices' in config)) return false;
+      // Check by price_id (LIVE MODE) or lookup_key (TEST MODE fallback)
+      const monthlyPriceId = ('price_id' in config.prices?.monthly ? config.prices?.monthly?.price_id : null) ||
+                            ('lookup_key' in config.prices?.monthly ? config.prices?.monthly?.lookup_key : null);
+      const annualPriceId = ('price_id' in config.prices?.annual ? config.prices?.annual?.price_id : null) ||
+                           ('lookup_key' in config.prices?.annual ? config.prices?.annual?.lookup_key : null);
       return (
-        config.prices?.monthly?.price_id === priceId ||
-        config.prices?.annual?.price_id === priceId
+        priceId === monthlyPriceId ||
+        priceId === annualPriceId ||
+        (lookupKey && (lookupKey === monthlyPriceId || lookupKey === annualPriceId))
       );
     });
   };
@@ -104,7 +110,7 @@ export function StripeProductsList({ products, prices }: StripeProductsListProps
                         </TableHeader>
                         <TableBody>
                           {productPrices.map((price) => {
-                            const isConfigured = isPriceConfigured(price.id);
+                            const isConfigured = isPriceConfigured(price.id, price.lookup_key);
                             
                             return (
                               <TableRow key={price.id}>

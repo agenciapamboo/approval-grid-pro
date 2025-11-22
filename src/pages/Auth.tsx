@@ -127,11 +127,93 @@ const Auth = () => {
   const [addressCity, setAddressCity] = useState("");
   const [addressState, setAddressState] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
+  const [loadingCep, setLoadingCep] = useState(false);
 
   // Step 3: Plan selection
   const [selectedPlan, setSelectedPlan] = useState<StripePlan>('creator');
   const [billingCycle, setBillingCycle] = useState<StripePriceInterval>('monthly');
   const [creatingUsers, setCreatingUsers] = useState(false);
+  
+  // Função para buscar endereço pelo CEP usando ViaCEP
+  const fetchAddressByCep = async (cep: string) => {
+    // Remove caracteres não numéricos
+    const cleanCep = cep.replace(/\D/g, '');
+    
+    // Verifica se tem 8 dígitos
+    if (cleanCep.length !== 8) {
+      return;
+    }
+    
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast({
+          variant: "destructive",
+          title: "CEP não encontrado",
+          description: "O CEP informado não foi encontrado. Verifique e tente novamente."
+        });
+        return;
+      }
+      
+      // Preenche os campos automaticamente
+      if (data.logradouro) {
+        setAddressStreet(data.logradouro);
+      }
+      if (data.bairro) {
+        setAddressNeighborhood(data.bairro);
+      }
+      if (data.localidade) {
+        setAddressCity(data.localidade);
+      }
+      if (data.uf) {
+        setAddressState(data.uf);
+      }
+      
+      // Se encontrou o endereço, mostra mensagem de sucesso
+      if (data.logradouro || data.bairro || data.localidade) {
+        toast({
+          title: "Endereço encontrado",
+          description: "Os dados do endereço foram preenchidos automaticamente."
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao buscar CEP",
+        description: "Não foi possível buscar o endereço. Por favor, preencha manualmente."
+      });
+    } finally {
+      setLoadingCep(false);
+    }
+  };
+  
+  // Handler para o campo CEP com formatação e busca automática
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    
+    // Limita a 8 dígitos
+    if (value.length > 8) {
+      value = value.slice(0, 8);
+    }
+    
+    // Formata como CEP (00000-000)
+    if (value.length > 5) {
+      value = value.slice(0, 5) + '-' + value.slice(5);
+    }
+    
+    setAddressZip(value);
+    
+    // Busca automaticamente quando tem 8 dígitos
+    const cleanCep = value.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      fetchAddressByCep(cleanCep);
+    }
+  };
+  
   const handleCreateUsers = async () => {
     setCreatingUsers(true);
     try {
@@ -675,7 +757,27 @@ const Auth = () => {
                       </div>}
                     <div className="space-y-2">
                       <Label htmlFor="addressZip">CEP</Label>
-                      <Input id="addressZip" value={addressZip} onChange={e => setAddressZip(e.target.value)} placeholder="00000-000" required disabled={loading} />
+                      <div className="relative">
+                        <Input 
+                          id="addressZip" 
+                          value={addressZip} 
+                          onChange={handleCepChange}
+                          placeholder="00000-000" 
+                          required 
+                          disabled={loading || loadingCep}
+                          maxLength={9}
+                        />
+                        {loadingCep && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      {addressZip && addressZip.replace(/\D/g, '').length === 8 && !loadingCep && (
+                        <p className="text-xs text-muted-foreground">
+                          Digite o CEP para buscar o endereço automaticamente
+                        </p>
+                      )}
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="col-span-2 space-y-2">

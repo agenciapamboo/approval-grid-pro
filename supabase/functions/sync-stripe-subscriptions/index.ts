@@ -83,11 +83,17 @@ serve(async (req) => {
           const subscription = subscriptions.data[0];
           const productId = subscription.items.data[0].price.product;
 
-          // Map product ID to plan
+          // Map product ID to plan (LIVE MODE - prod_TTKC...)
+          // Supports both LIVE MODE and TEST MODE for backward compatibility
           const productToPlan: Record<string, string> = {
-            'prod_TOmNQqnBSOTgC6': 'eugencia',
-            'prod_TOmOccSkOPId3E': 'socialmidia',
-            'prod_TOmS1DcVAM4lUE': 'fullservice',
+            // LIVE MODE (Production)
+            'prod_TTKCJxFk6gkYzZ': 'eugencia',      // ✅ LIVE MODE
+            'prod_TTKC8IEUJaLz0Y': 'socialmidia',   // ✅ LIVE MODE
+            'prod_TTKCbFG1vbhxlB': 'fullservice',   // ✅ LIVE MODE
+            // TEST MODE (for backward compatibility)
+            'prod_TOmNQqnBSOTgC6': 'eugencia',      // TEST MODE (legacy)
+            'prod_TOmOccSkOPId3E': 'socialmidia',   // TEST MODE (legacy)
+            'prod_TOmS1DcVAM4lUE': 'fullservice',   // TEST MODE (legacy)
           };
 
           const plan = productToPlan[productId as string] || 'creator';

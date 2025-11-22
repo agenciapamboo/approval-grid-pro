@@ -73,9 +73,16 @@ export default function StripeConfig() {
     return requiredProducts.some(rp => {
       const config = STRIPE_PRODUCTS[rp as keyof typeof STRIPE_PRODUCTS];
       if (!('prices' in config)) return false;
+      // Check both price_id (LIVE MODE) and lookup_key (TEST MODE fallback)
+      const monthlyPriceId = ('price_id' in config.prices?.monthly ? config.prices?.monthly?.price_id : null) ||
+                            ('lookup_key' in config.prices?.monthly ? config.prices?.monthly?.lookup_key : null);
+      const annualPriceId = ('price_id' in config.prices?.annual ? config.prices?.annual?.price_id : null) ||
+                           ('lookup_key' in config.prices?.annual ? config.prices?.annual?.lookup_key : null);
       return (
-        config.prices?.monthly?.price_id === price.id ||
-        config.prices?.annual?.price_id === price.id
+        price.id === monthlyPriceId ||
+        price.id === annualPriceId ||
+        price.lookup_key === monthlyPriceId ||
+        price.lookup_key === annualPriceId
       );
     });
   });
