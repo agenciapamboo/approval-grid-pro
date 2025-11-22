@@ -60,14 +60,14 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
             </div>
           )}
           
-          {/* Desktop: ExpandableTabs */}
-          <div className="hidden md:block">
+          {/* Desktop: ExpandableTabs + Notifications Bell */}
+          <div className="hidden md:flex items-center gap-2">
+            <PlatformNotificationsBell />
             <ExpandableTabs
               tabs={[
                 { title: "Minha Conta", icon: User },
                 ...(shouldShowSubscription ? [{ title: "Minha Assinatura", icon: CreditCard }] : []),
                 { title: (resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"), icon: resolvedTheme === "dark" ? Sun : Moon },
-                { title: "Notificações", icon: Bell },
                 { title: "Sair", icon: LogOut },
               ]}
               onChange={(index) => {
@@ -94,12 +94,6 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
                   return;
                 }
                 
-                // Próximo: Notificações
-                if (index === currentIndex++) {
-                  setNotificationsOpen(true);
-                  return;
-                }
-                
                 // Último: Sair
                 if (index === currentIndex && onSignOut) {
                   onSignOut();
@@ -109,8 +103,9 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
             />
           </div>
 
-          {/* Mobile: Dropdown compacto */}
-          <div className="md:hidden">
+          {/* Mobile/Tablet: Notifications Bell + Dropdown compacto */}
+          <div className="md:hidden flex items-center gap-2">
+            <PlatformNotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -131,10 +126,6 @@ export function AppHeader({ userName, userRole, onProfileClick, onSignOut, showS
                 <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
                   {resolvedTheme === "dark" ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
                   {resolvedTheme === "dark" ? "Modo Claro" : "Modo Escuro"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setNotificationsOpen(true)}>
-                  <Bell className="h-4 w-4 mr-2" />
-                  Notificações
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />

@@ -67,9 +67,17 @@ export async function getMyPlatformNotifications(status?: string) {
     .select('*')
     .order('created_at', { ascending: false });
   
-  if (status) {
+  if (status === 'pending') {
+    // Para notificações não lidas, buscar onde status != 'read' ou read_at IS NULL
+    // Usar neq para status != 'read' e is('read_at', null) para read_at IS NULL
+    query = query.neq('status', 'read');
+    // Nota: filtro de read_at IS NULL será feito no cliente
+  } else if (status === 'read') {
+    query = query.eq('status', 'read');
+  } else if (status) {
     query = query.eq('status', status);
   }
+  // Se status não for especificado, retorna todas (filtrado por RLS)
 
   const { data, error } = await query.limit(50);
 
@@ -78,7 +86,14 @@ export async function getMyPlatformNotifications(status?: string) {
     return { success: false, error, notifications: [] };
   }
 
-  return { success: true, notifications: data };
+  // Filtrar apenas notificações não lidas se status for 'pending'
+  // (status 'pending' significa "não lida" do ponto de vista do usuário)
+  let notifications = data || [];
+  if (status === 'pending') {
+    notifications = notifications.filter(n => n.status !== 'read' && !n.read_at);
+  }
+
+  return { success: true, notifications };
 }
 
 export async function markPlatformNotificationAsRead(notificationId: string) {
