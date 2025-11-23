@@ -26,7 +26,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users, GripVertical } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users, GripVertical, ImageIcon, Video, Images, Smartphone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
@@ -126,6 +126,40 @@ const getDeadlineStatus = (contentDate: string) => {
     return { status: 'soon', color: 'hsl(45 100% 50%)', label: 'Próximo', variant: 'outline' as const };
   }
   return { status: 'normal', color: 'hsl(var(--muted-foreground))', label: 'Normal', variant: 'outline' as const };
+};
+
+// Função para obter o ícone do tipo de conteúdo
+const getContentTypeIcon = (type: string) => {
+  const normalizedType = type.toLowerCase();
+  
+  if (normalizedType === 'feed' || normalizedType === 'image') {
+    return ImageIcon;
+  }
+  if (normalizedType === 'reels' || normalizedType === 'video') {
+    return Video;
+  }
+  if (normalizedType === 'carousel') {
+    return Images;
+  }
+  if (normalizedType === 'story') {
+    return Smartphone;
+  }
+  
+  // Fallback para ImageIcon
+  return ImageIcon;
+};
+
+// Função para obter o rótulo do tipo
+const getContentTypeLabel = (type: string): string => {
+  const typeMap: Record<string, string> = {
+    feed: "Feed",
+    reels: "Reels",
+    carousel: "Carrossel",
+    story: "Story",
+    image: "Feed",
+    video: "Reels",
+  };
+  return typeMap[type.toLowerCase()] || type;
 };
 
 // Função para mapear conteúdo para a coluna correta
@@ -1852,8 +1886,17 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
                                   )}
                                 </div>
                               </div>
-                              <Badge variant="outline" className="text-xs">
-                                {content.type}
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                {(() => {
+                                  const TypeIcon = getContentTypeIcon(content.type);
+                                  const typeLabel = getContentTypeLabel(content.type);
+                                  return (
+                                    <>
+                                      <TypeIcon className="h-3 w-3" />
+                                      {typeLabel}
+                                    </>
+                                  );
+                                })()}
                               </Badge>
                             </div>
                             

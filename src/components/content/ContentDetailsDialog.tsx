@@ -114,6 +114,7 @@ export function ContentDetailsDialog({
   const [supplierLink, setSupplierLink] = useState("");
   const [newDate, setNewDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("12:00");
+  const [showDatePickerInDialog, setShowDatePickerInDialog] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -605,21 +606,77 @@ export function ContentDetailsDialog({
               <>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground font-normal">
                   {isAgencyView ? (
-                    <Popover>
+                    <Popover open={showDatePickerInDialog} onOpenChange={setShowDatePickerInDialog}>
                       <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="gap-1 text-sm text-muted-foreground h-auto py-0 px-1 hover:text-foreground">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="gap-1 text-sm text-muted-foreground h-auto py-0 px-1 hover:text-foreground"
+                          onClick={() => {
+                            if (content) {
+                              setNewDate(new Date(content.date));
+                              const dateParts = String(content.date || "").includes("T") 
+                                ? content.date.split("T")[1] 
+                                : content.date.split(" ")[1] || "12:00:00";
+                              const [hh = "12", mm = "00"] = dateParts.split(":");
+                              setSelectedTime(`${hh}:${mm}`);
+                            }
+                          }}
+                        >
                           <CalendarIcon className="h-4 w-4" />
-                          {format(new Date(content.date), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(new Date(content.date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={new Date(content.date)}
-                          onSelect={(date) => date && handleUpdateField('date', date.toISOString())}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
+                      <PopoverContent className="w-auto p-4" align="start">
+                        <div className="space-y-4">
+                          <Calendar
+                            mode="single"
+                            selected={newDate}
+                            onSelect={(date) => {
+                              if (date) {
+                                setNewDate(date);
+                              }
+                            }}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                          <div className="flex flex-col items-center gap-2">
+                            <label className="text-sm font-medium">Hora</label>
+                            <TimeInput
+                              value={selectedTime}
+                              onChange={(value) => setSelectedTime(value)}
+                            />
+                          </div>
+                          <Button 
+                            onClick={async () => {
+                              if (!content) return;
+                              
+                              try {
+                                const [hours, minutes] = selectedTime.split(":");
+                                const updatedDate = new Date(newDate);
+                                updatedDate.setHours(parseInt(hours), parseInt(minutes), 0);
+
+                                const { error } = await supabase
+                                  .from("contents")
+                                  .update({ date: updatedDate.toISOString() })
+                                  .eq("id", content.id);
+
+                                if (error) throw error;
+
+                                toast.success("Data e hora atualizadas!");
+                                loadContentDetails();
+                                onUpdate();
+                                setShowDatePickerInDialog(false);
+                              } catch (error: any) {
+                                console.error("Error updating date:", error);
+                                toast.error("Erro ao atualizar data: " + error.message);
+                              }
+                            }} 
+                            className="w-full"
+                          >
+                            Confirmar
+                          </Button>
+                        </div>
                       </PopoverContent>
                     </Popover>
                   ) : (

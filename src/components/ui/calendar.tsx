@@ -16,7 +16,11 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
       showOutsideDays={showOutsideDays}
       className={cn("p-3 pointer-events-auto", className)}
       formatters={{
-        formatWeekdayName: (date) => format(date, 'EEE', { locale: ptBR })
+        formatWeekdayName: (date) => {
+          // Retorna apenas a inicial do dia da semana
+          const dayNames = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']; // Dom, Seg, Ter, Qua, Qui, Sex, Sáb
+          return dayNames[date.getDay()];
+        }
       }}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",

@@ -1041,27 +1041,6 @@ const Auth = () => {
                                         <div className="space-y-4">
                                           <h4 className="font-semibold text-base mb-4">{displayName}</h4>
                                           
-                                          {/* Métricas de Performance */}
-                                          {planDetails.metrics && (
-                                            <div className="p-4 bg-muted/50 rounded-lg space-y-2 mb-4">
-                                              <h5 className="font-medium text-sm mb-3">Métricas de Performance</h5>
-                                              <div className="space-y-2">
-                                                <div className="flex items-center justify-between text-sm">
-                                                  <span className="text-muted-foreground">Performance de Aprovação:</span>
-                                                  <span className="font-semibold text-primary">{planDetails.metrics.performance}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between text-sm">
-                                                  <span className="text-muted-foreground">Nível de Retrabalho:</span>
-                                                  <span className="font-semibold text-orange-600">{planDetails.metrics.retrabalho}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between text-sm">
-                                                  <span className="text-muted-foreground">Índice de Rejeição:</span>
-                                                  <span className="font-semibold text-red-600">{planDetails.metrics.rejeicao}</span>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-                                          
                                           <div>
                                             <h5 className="font-medium text-sm mb-4">Informações do plano:</h5>
                                             <div className="grid grid-cols-1 gap-3 text-sm">
@@ -1071,6 +1050,41 @@ const Auth = () => {
                                                   <span className="text-muted-foreground">{feature}</span>
                                                 </div>
                                               ))}
+                                              
+                                              {/* Métricas de Performance no final */}
+                                              {planDetails.metrics && (
+                                                <div className="mt-4 pt-4 border-t">
+                                                  <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                                                    <h5 className="text-sm font-semibold mb-3">Métricas de Performance</h5>
+                                                    <div className="space-y-3">
+                                                      <div className="space-y-1">
+                                                        <div className="text-sm">
+                                                          <span className="font-medium">Performance de Aprovação:</span>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                          Saiba quando seus criativos estão indo bem
+                                                        </p>
+                                                      </div>
+                                                      <div className="space-y-1">
+                                                        <div className="text-sm">
+                                                          <span className="font-medium">Nível de Retrabalho:</span>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                          Entenda quando há mais trabalho do que o necessário
+                                                        </p>
+                                                      </div>
+                                                      <div className="space-y-1">
+                                                        <div className="text-sm">
+                                                          <span className="font-medium">Índice de Rejeição:</span>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                          Entenda quando há alinhamentos e reposicionamentos a fazer
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         </div>

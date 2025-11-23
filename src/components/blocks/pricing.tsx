@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Check, Star } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Check, Star, Info, ArrowRight } from "lucide-react";
 import { STRIPE_PRODUCTS, StripePlan, StripePriceInterval, PLAN_ORDER } from "@/lib/stripe-config";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +25,9 @@ export function Pricing({
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<StripePriceInterval>("monthly");
 
-  // Dados dos planos baseados em STRIPE_PRODUCTS
+  // Dados dos planos baseados em STRIPE_PRODUCTS (sem Creator e unlimited)
   const plans = PLAN_ORDER
-    .filter(plan => plan !== 'unlimited') // Remove plano interno
+    .filter(plan => plan !== 'unlimited' && plan !== 'creator') // Remove plano interno e creator
     .map(plan => {
       const product = STRIPE_PRODUCTS[plan];
       const isFree = 'free' in product && product.free;
@@ -168,9 +170,23 @@ export function Pricing({
       const isPopular = plan === 'socialmidia';
       const metrics = getMetrics(plan);
 
+      // Ajustar nomes dos planos
+      const getDisplayName = (planKey: StripePlan): string => {
+        switch (planKey) {
+          case 'eugencia':
+            return 'Eugência';
+          case 'socialmidia':
+            return 'Social Mídia';
+          case 'fullservice':
+            return 'Full Service';
+          default:
+            return product.name;
+        }
+      };
+
       return {
         id: plan,
-        name: product.name,
+        name: getDisplayName(plan),
         price: monthlyPrice.toFixed(2).replace('.', ','),
         yearlyPrice: annualPrice.toFixed(2).replace('.', ','),
         monthlyEquivalent: getMonthlyEquivalent(),
@@ -184,6 +200,40 @@ export function Pricing({
         metrics
       };
     });
+
+  // Dados do plano Creator separadamente
+  const creatorPlan = (() => {
+    const product = STRIPE_PRODUCTS.creator;
+    const planKey: StripePlan = 'creator';
+    const metrics = {
+      performance: "70%",
+      retrabalho: "30%",
+      rejeicao: "20%"
+    };
+    const features = [
+      "Clientes ilimitados",
+      "Aprovadores ilimitados",
+      "Até 80 criativos/mês",
+      "80 criativos ou 30 dias de histórico",
+      "Controle do consumo do contrato dos clientes",
+      "Usuário por cliente para aprovação",
+      "1 membro na equipe",
+      "Aprovação de criativos direto na plataforma",
+      "Agendamento de postagens",
+      "Download de mídia pela janela de aprovação",
+      "Histórico de criativos publicados",
+      "Logs e histórico de aprovações",
+      "Notificações por e-mail",
+      "Agenda por cliente"
+    ];
+    return {
+      id: 'creator',
+      name: 'Creator',
+      description: "Ideal para influencers e criadores independentes que desejam centralizar aprovações e agendamentos básicos sem custo.",
+      features,
+      metrics
+    };
+  })();
 
   const handleSelectPlan = (planId: string) => {
     navigate(`/auth?signup=true&plan=${planId}&billing=${billingCycle}`);
@@ -231,7 +281,7 @@ export function Pricing({
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {plans.map((plan) => {
             const displayPrice = getDisplayPrice(plan);
             const isAnnual = billingCycle === "annual";
@@ -299,25 +349,6 @@ export function Pricing({
                     )}
                   </div>
 
-                  {/* Métricas de Performance */}
-                  <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
-                    <h4 className="text-sm font-semibold mb-3">Métricas de Performance</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Performance de Aprovação:</span>
-                        <span className="font-semibold text-primary">{plan.metrics.performance}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Nível de Retrabalho:</span>
-                        <span className="font-semibold text-orange-600">{plan.metrics.retrabalho}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Índice de Rejeição:</span>
-                        <span className="font-semibold text-red-600">{plan.metrics.rejeicao}</span>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Features List */}
                   <ul className="space-y-2 mt-6">
                     {plan.features.map((feature, index) => (
@@ -326,6 +357,39 @@ export function Pricing({
                         <span className="text-muted-foreground">{feature}</span>
                       </li>
                     ))}
+                    
+                    {/* Métricas de Performance no final */}
+                    <li className="mt-4 pt-4 border-t">
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                        <h4 className="text-sm font-semibold mb-3">Métricas de Performance</h4>
+                        <div className="space-y-3">
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Performance de Aprovação:</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Saiba quando seus criativos estão indo bem
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Nível de Retrabalho:</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Entenda quando há mais trabalho do que o necessário
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Índice de Rejeição:</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Entenda quando há alinhamentos e reposicionamentos a fazer
+                              </p>
+                            </div>
+                        </div>
+                      </div>
+                    </li>
                   </ul>
                 </CardContent>
 
@@ -348,6 +412,185 @@ export function Pricing({
               </Card>
             );
           })}
+        </div>
+
+        {/* Bloco Creator - Discreto */}
+        <div className="mt-6">
+          {/* Descrição com fundo verde */}
+          <div className="p-4 rounded-lg bg-[#00B878] text-white mb-3">
+            <p className="text-sm font-medium">
+              Ideal para influencers e criadores independentes que desejam centralizar aprovações e agendamentos sem custo.
+            </p>
+          </div>
+          
+          <div className="p-3 border border-border/50 rounded-lg bg-muted/30">
+            <Dialog>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                {/* Texto, link com ícone info e seta */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>É criador de conteúdo?</span>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 text-sm font-normal text-primary hover:text-primary/80 hover:bg-transparent"
+                    >
+                      Conheça o plano Creator
+                    </Button>
+                  </DialogTrigger>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 rounded-full hover:bg-muted"
+                        aria-label="Informações do plano Creator"
+                      >
+                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-[calc(100vw-2rem)] md:w-[500px] p-6" 
+                      align="start" 
+                      side="bottom"
+                      sideOffset={8}
+                    >
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-base mb-4">Creator</h4>
+                        
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {creatorPlan.description}
+                          </p>
+                          <h5 className="font-medium text-sm mb-3">Informações do plano:</h5>
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            {creatorPlan.features.map((feature, idx) => (
+                              <div key={idx} className="flex items-start gap-2">
+                                <span className="text-primary mt-1 flex-shrink-0">•</span>
+                                <span className="text-muted-foreground">{feature}</span>
+                              </div>
+                            ))}
+                            
+                            {/* Métricas de Performance no final */}
+                            <div className="mt-4 pt-4 border-t">
+                              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                                <h5 className="text-sm font-semibold mb-3">Métricas de Performance</h5>
+                                <div className="space-y-3">
+                                  <div className="space-y-1">
+                                    <div className="text-sm">
+                                      <span className="font-medium">Performance de Aprovação:</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      Saiba quando seus criativos estão indo bem
+                                    </p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="text-sm">
+                                      <span className="font-medium">Nível de Retrabalho:</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      Entenda quando há mais trabalho do que o necessário
+                                    </p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="text-sm">
+                                      <span className="font-medium">Índice de Rejeição:</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      Entenda quando há alinhamentos e reposicionamentos a fazer
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                </div>
+
+                {/* Botão que abre popup */}
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                  >
+                    Saiba mais
+                  </Button>
+                </DialogTrigger>
+              </div>
+
+              {/* Dialog compartilhado */}
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-xl mb-4">Creator</h4>
+                  
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {creatorPlan.description}
+                    </p>
+                    <h5 className="font-medium text-sm mb-3">Informações do plano:</h5>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      {creatorPlan.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <span className="text-primary mt-1 flex-shrink-0">•</span>
+                          <span className="text-muted-foreground">{feature}</span>
+                        </div>
+                      ))}
+                      
+                      {/* Métricas de Performance no final */}
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                          <h5 className="text-sm font-semibold mb-3">Métricas de Performance</h5>
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Performance de Aprovação:</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Saiba quando seus criativos estão indo bem
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Nível de Retrabalho:</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Entenda quando há mais trabalho do que o necessário
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="font-medium">Índice de Rejeição:</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Entenda quando há alinhamentos e reposicionamentos a fazer
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        handleSelectPlan('creator');
+                      }}
+                    >
+                      Assine Agora
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
     </div>

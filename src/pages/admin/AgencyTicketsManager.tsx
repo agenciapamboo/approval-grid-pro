@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { AppHeader } from "@/components/layout/AppHeader";
-import { AppFooter } from "@/components/layout/AppFooter";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +14,6 @@ import { CreateTicketDialog } from "@/components/support/CreateTicketDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import AccessGate from "@/components/auth/AccessGate";
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
   open: "Aberto",
@@ -35,7 +33,6 @@ const STATUS_COLORS: Record<TicketStatus, string> = {
 
 const AgencyTicketsManager = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -64,28 +61,18 @@ const AgencyTicketsManager = () => {
         return;
       }
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
       const { data: roleData } = await supabase
         .rpc('get_user_role', { _user_id: user.id });
-
-      if (profileData) {
-        const userProfile = { ...profileData, role: roleData || 'client_user' };
-        setProfile(userProfile);
         
-        if (roleData === 'agency_admin') {
-          // Carregar tickets do agency admin
-          await loadTickets();
-        } else {
-          navigate("/dashboard");
-        }
+      // Carregar tickets se for agency_admin ou super_admin
+      if (roleData === 'agency_admin' || roleData === 'super_admin') {
+        await loadTickets();
+      } else {
+        navigate("/dashboard");
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error("Error checking auth:", error);
+      toast.error("Erro ao verificar autenticação");
     } finally {
       setLoading(false);
     }
@@ -140,14 +127,8 @@ const AgencyTicketsManager = () => {
   const clientTickets = tickets.filter(t => t.category === 'agencia');
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <AppHeader 
-        userName={profile?.name} 
-        userRole={profile?.role} 
-        onSignOut={() => navigate("/auth")} 
-      />
-
-      <main className="flex-1 container mx-auto px-4 py-6">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-6">
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -379,15 +360,13 @@ const AgencyTicketsManager = () => {
             )}
           </TabsContent>
         </Tabs>
-      </main>
 
-      <AppFooter />
-
-      <CreateTicketDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-      />
-    </div>
+        <CreateTicketDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+        />
+      </div>
+    </AppLayout>
   );
 };
 

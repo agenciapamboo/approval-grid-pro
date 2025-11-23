@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
-import { ArrowLeft, Search, Users, Building2, Eye, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Users, Eye, Send, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -203,15 +203,6 @@ const Clientes = () => {
                         <CardTitle className="text-lg mb-2 text-foreground group-hover:text-primary transition-colors">
                           {client.name}
                         </CardTitle>
-                        <Badge variant="outline" className="mb-2">
-                          @{client.slug}
-                        </Badge>
-                        {client.agencies && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                            <Building2 className="h-4 w-4" />
-                            <span>{client.agencies.name}</span>
-                          </div>
-                        )}
                       </div>
                       {client.logo_url && (
                         <img
@@ -222,13 +213,28 @@ const Clientes = () => {
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-2">
                     <Button
                       variant="outline"
                       className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/cliente/${client.id}`);
+                      }}
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       Ver Detalhes
+                    </Button>
+                    <Button
+                      variant="default"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/agency/client/${client.id}/conteudos`);
+                      }}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Conteúdos
                     </Button>
                   </CardContent>
                 </Card>
