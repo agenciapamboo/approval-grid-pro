@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Sparkles } from "lucide-react";
-import { triggerWebhook } from "@/lib/webhooks";
+// triggerWebhook removido - webhooks agora são automáticos via triggers
 
 interface RequestCreativeDialogProps {
   open: boolean;
@@ -123,12 +123,7 @@ export function RequestCreativeDialog({ open, onOpenChange, clientId, agencyId, 
 
       if (notificationError) console.warn("Failed to create notification:", notificationError);
 
-      // Trigger webhook
-      try {
-        await triggerWebhook('novojob', contentData.id, clientId, agencyId);
-      } catch (webhookError) {
-        console.warn("Webhook trigger failed:", webhookError);
-      }
+      // Webhook agora é disparado automaticamente via trigger do banco
 
       toast({
         title: "✅ Solicitação enviada com sucesso!",

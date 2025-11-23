@@ -66,7 +66,7 @@ export function WebhookTester() {
     {
       id: "agency",
       name: "Webhook de Notificações de Agências",
-      description: "Notificações de status de criativos, solicitações de ajuste e solicitações de criativo",
+      description: "Notificações de status de criativos, solicitações de ajuste e solicitações de criativo (sistema automatizado)",
       key: "agency_notifications_webhook_url",
       event: "test.agency",
       payload: {
@@ -76,17 +76,22 @@ export function WebhookTester() {
         agency_id: "test-agency-" + Date.now(),
         content: {
           id: "test-content-" + Date.now(),
-          title: "Teste de Webhook",
+          title: "Teste de Webhook - Conteúdo Aprovado",
           type: "feed",
           status: "approved",
+          date: new Date().toISOString(),
+          channels: ["instagram", "facebook"],
+          category: "social"
         },
         client: {
           id: "test-client-" + Date.now(),
           name: "Cliente Teste",
+          slug: "cliente-teste"
         },
         agency: {
           id: "test-agency-" + Date.now(),
           name: "Agência Teste",
+          slug: "agencia-teste"
         },
         timestamp: new Date().toISOString(),
       },

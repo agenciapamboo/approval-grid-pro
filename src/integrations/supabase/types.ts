@@ -2000,7 +2000,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      queue_agency_webhook_event: {
+        Args: {
+          p_agency_id?: string
+          p_client_id?: string
+          p_content_id?: string
+          p_event: string
+          p_payload?: Json
+        }
+        Returns: string
+      }
       sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
+      send_last_day_reminders: { Args: never; Returns: undefined }
       send_notification: {
         Args: {
           p_agency_id?: string
