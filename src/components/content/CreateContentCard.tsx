@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, CalendarIcon, Save, Loader2, X, Clock, FileText, ImageIcon, Images, Video, Smartphone } from "lucide-react";
+import { Upload, CalendarIcon, Save, Loader2, X, Clock, FileText, ImageIcon, Images, Video, Smartphone, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ import { TimeInput } from "@/components/ui/time-input";
 import { checkMonthlyPostsLimit, checkCreativesStorageLimit } from "@/lib/plan-limits";
 import { CreativeRotationDialog } from "./CreativeRotationDialog";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { AILegendAssistant } from "./AILegendAssistant";
+import { MediaAccessibility } from "./MediaAccessibility";
 
 interface CreateContentCardProps {
   clientId: string;
@@ -991,6 +993,16 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           onChange={(e) => handleCaptionChange(e.target.value)}
           className="min-h-[100px]"
         />
+        
+        {/* Assistente de IA para Legendas */}
+        {!isContentPlan && (
+          <AILegendAssistant
+            clientId={clientId}
+            contentType={contentType === 'feed' ? 'post' : contentType === 'reels' ? 'reels' : contentType === 'story' ? 'stories' : 'post'}
+            context={{ title, category }}
+            onSelectSuggestion={(suggestion) => setCaption(suggestion)}
+          />
+        )}
 
         {/* Upload de capa para Reels */}
         {contentType === 'reels' && (
@@ -1042,9 +1054,17 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
                   {channel}
                 </Label>
               </div>
-            ))}
+          ))}
           </div>
         </div>
+        
+        {/* Intérprete de Imagem com IA - mostra apenas se tiver imagens carregadas */}
+        {!isContentPlan && files.length > 0 && files.some(f => f.type.startsWith('image/')) && (
+          <MediaAccessibility
+            clientId={clientId}
+            imageUrl={previews.find((_, i) => files[i].type.startsWith('image/')) || ''}
+          />
+        )}
 
         <Button
           onClick={handleSave}

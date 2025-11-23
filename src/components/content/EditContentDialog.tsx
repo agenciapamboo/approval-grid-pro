@@ -9,11 +9,13 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TimeInput } from "@/components/ui/time-input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Upload } from "lucide-react";
+import { Calendar, Upload, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AILegendAssistant } from "./AILegendAssistant";
+import { MediaAccessibility } from "./MediaAccessibility";
 
 interface EditContentDialogProps {
   open: boolean;
@@ -37,6 +39,7 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
   const [channels, setChannels] = useState<string[]>([]);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [currentMediaUrl, setCurrentMediaUrl] = useState<string>("");
+  const [clientId, setClientId] = useState<string>("");
 
   useEffect(() => {
     if (open) {
@@ -51,11 +54,14 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
       // Buscar dados do conteúdo
       const { data: content, error: contentError } = await supabase
         .from("contents")
-        .select("*")
+        .select("*, clients!inner(id)")
         .eq("id", contentId)
         .single();
 
       if (contentError) throw contentError;
+      
+      // Guardar client_id para usar nos componentes de IA
+      setClientId(content.client_id);
 
       // Buscar legenda
       const { data: textData } = await supabase
@@ -356,7 +362,9 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
 
             {/* Legenda */}
             <div className="space-y-2">
-              <Label htmlFor="caption">Legenda</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="caption">Legenda</Label>
+              </div>
               <Textarea
                 id="caption"
                 value={caption}
@@ -364,6 +372,16 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
                 placeholder="Digite a legenda do post..."
                 className="min-h-[120px]"
               />
+              
+              {/* Assistente de IA para Legendas */}
+              {clientId && (
+                <AILegendAssistant
+                  clientId={clientId}
+                  contentType={type === 'feed' ? 'post' : type === 'reels' ? 'reels' : type === 'story' ? 'stories' : 'post'}
+                  context={{ title }}
+                  onSelectSuggestion={(suggestion) => setCaption(suggestion)}
+                />
+              )}
             </div>
 
             {/* Mídia Atual e Upload */}
@@ -398,6 +416,14 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
                   {mediaFile ? mediaFile.name : "Substituir mídia"}
                 </Button>
               </div>
+              
+              {/* Intérprete de Imagem com IA - mostra apenas se houver imagem */}
+              {clientId && currentMediaUrl && !currentMediaUrl.includes('.mp4') && !currentMediaUrl.includes('video') && (
+                <MediaAccessibility
+                  clientId={clientId}
+                  imageUrl={currentMediaUrl}
+                />
+              )}
             </div>
           </div>
         )}
