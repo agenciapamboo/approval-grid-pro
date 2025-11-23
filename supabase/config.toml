@@ -75,5 +75,8 @@ verify_jwt = true
 [functions.generate-content-suggestions]
 verify_jwt = true
 
+[functions.generate-monthly-editorial]
+verify_jwt = true
+
 [storage]
 file_size_limit = "100MiB"

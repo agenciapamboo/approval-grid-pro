@@ -105,6 +105,12 @@ const menuItems = [
     category: "sistema"
   },
   {
+    title: "Templates de Briefing",
+    url: "/admin/briefing-templates",
+    icon: FileText,
+    category: "sistema"
+  },
+  {
     title: "Configuração Stripe",
     url: "/admin/stripe",
     icon: CreditCard,
