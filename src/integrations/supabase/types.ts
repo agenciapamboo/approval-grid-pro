@@ -128,6 +128,149 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_configurations: {
+        Row: {
+          created_at: string | null
+          default_model: string | null
+          id: string
+          max_tokens_briefing: number | null
+          max_tokens_caption: number | null
+          openai_api_key_encrypted: string | null
+          prompt_behavior: string | null
+          prompt_skills: string | null
+          selected_models: Json | null
+          temperature: number | null
+          updated_at: string | null
+          vision_model: string | null
+          whisper_model: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_model?: string | null
+          id?: string
+          max_tokens_briefing?: number | null
+          max_tokens_caption?: number | null
+          openai_api_key_encrypted?: string | null
+          prompt_behavior?: string | null
+          prompt_skills?: string | null
+          selected_models?: Json | null
+          temperature?: number | null
+          updated_at?: string | null
+          vision_model?: string | null
+          whisper_model?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_model?: string | null
+          id?: string
+          max_tokens_briefing?: number | null
+          max_tokens_caption?: number | null
+          openai_api_key_encrypted?: string | null
+          prompt_behavior?: string | null
+          prompt_skills?: string | null
+          selected_models?: Json | null
+          temperature?: number | null
+          updated_at?: string | null
+          vision_model?: string | null
+          whisper_model?: string | null
+        }
+        Relationships: []
+      }
+      ai_response_cache: {
+        Row: {
+          ai_response: Json
+          cost_usd: number | null
+          created_at: string | null
+          expires_at: string | null
+          hit_count: number | null
+          id: string
+          last_hit_at: string | null
+          model_used: string
+          prompt_hash: string
+          prompt_input: Json
+          prompt_type: string
+          tokens_used: number | null
+        }
+        Insert: {
+          ai_response: Json
+          cost_usd?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          last_hit_at?: string | null
+          model_used: string
+          prompt_hash: string
+          prompt_input: Json
+          prompt_type: string
+          tokens_used?: number | null
+        }
+        Update: {
+          ai_response?: Json
+          cost_usd?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          hit_count?: number | null
+          id?: string
+          last_hit_at?: string | null
+          model_used?: string
+          prompt_hash?: string
+          prompt_input?: Json
+          prompt_type?: string
+          tokens_used?: number | null
+        }
+        Relationships: []
+      }
+      ai_usage_logs: {
+        Row: {
+          agency_id: string | null
+          client_id: string | null
+          cost_usd: number | null
+          created_at: string | null
+          feature: string
+          from_cache: boolean | null
+          id: string
+          model_used: string
+          request_payload: Json | null
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          client_id?: string | null
+          cost_usd?: number | null
+          created_at?: string | null
+          feature: string
+          from_cache?: boolean | null
+          id?: string
+          model_used: string
+          request_payload?: Json | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          client_id?: string | null
+          cost_usd?: number | null
+          created_at?: string | null
+          feature?: string
+          from_cache?: boolean | null
+          id?: string
+          model_used?: string
+          request_payload?: Json | null
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_approvers: {
         Row: {
           agency_id: string
@@ -1120,6 +1263,7 @@ export type Database = {
       }
       plan_entitlements: {
         Row: {
+          ai_uses_limit: number | null
           created_at: string | null
           creatives_limit: number | null
           global_agenda: boolean | null
@@ -1136,6 +1280,7 @@ export type Database = {
           whatsapp_support: boolean | null
         }
         Insert: {
+          ai_uses_limit?: number | null
           created_at?: string | null
           creatives_limit?: number | null
           global_agenda?: boolean | null
@@ -1152,6 +1297,7 @@ export type Database = {
           whatsapp_support?: boolean | null
         }
         Update: {
+          ai_uses_limit?: number | null
           created_at?: string | null
           creatives_limit?: number | null
           global_agenda?: boolean | null
