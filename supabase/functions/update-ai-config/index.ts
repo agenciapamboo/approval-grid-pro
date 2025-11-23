@@ -31,16 +31,15 @@ serve(async (req) => {
       });
     }
 
-    // Verificar se é super admin
+    // Verificar se é admin (super_admin ou agency_admin)
     const { data: roles } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'super_admin')
-      .single();
+      .in('role', ['super_admin', 'agency_admin']);
 
-    if (!roles) {
-      return new Response(JSON.stringify({ error: 'Forbidden - Super admin only' }), {
+    if (!roles || roles.length === 0) {
+      return new Response(JSON.stringify({ error: 'Forbidden - Admin access required' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
