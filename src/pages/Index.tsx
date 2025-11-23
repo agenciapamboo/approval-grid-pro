@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Users, Zap, Instagram, Facebook, MessageSquare, ArrowRight, ChevronRight, Menu, X } from "lucide-react";
+import { Pricing } from "@/components/blocks/pricing";
 const Index = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -68,7 +69,7 @@ const Index = () => {
                   <Button onClick={() => navigate("/auth")} variant="ghost">
                     Entrar
                   </Button>
-                  <Button onClick={() => navigate("/auth")} variant="default">
+                  <Button onClick={() => navigate("/auth?signup=true")} variant="default">
                     Começar Grátis
                   </Button>
                 </div>}
@@ -97,7 +98,7 @@ const Index = () => {
                   <Button onClick={() => navigate("/auth")} variant="ghost" className="w-full">
                     Entrar
                   </Button>
-                  <Button onClick={() => navigate("/auth")} className="w-full">
+                  <Button onClick={() => navigate("/auth?signup=true")} className="w-full">
                     Começar Grátis
                   </Button>
                 </>}
@@ -126,7 +127,7 @@ const Index = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 group">
+              <Button size="lg" onClick={() => navigate("/auth?signup=true")} className="text-lg px-8 group">
                 Começar Gratuitamente
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -216,7 +217,7 @@ const Index = () => {
                     <span className="text-lg">{benefit}</span>
                   </div>)}
               </div>
-              <Button size="lg" onClick={() => navigate("/auth")} className="mt-8">
+              <Button size="lg" onClick={() => navigate("/auth?signup=true")} className="mt-8">
                 Começar Agora
                 <ChevronRight className="ml-2 w-5 h-5" />
               </Button>
@@ -281,12 +282,20 @@ const Index = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8">
+            <Button size="lg" onClick={() => navigate("/auth?signup=true")} className="text-lg px-8">
               Começar Gratuitamente
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
         </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4 bg-muted/30">
+        <Pricing 
+          title="Escolha o plano ideal para você"
+          description="Todos os planos incluem acesso à plataforma completa, ferramentas de aprovação e suporte dedicado."
+        />
       </section>
 
       {/* CTA Section */}
@@ -300,7 +309,7 @@ const Index = () => {
               Junte-se a centenas de agências que já simplificaram seu workflow
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="secondary" onClick={() => navigate("/auth")} className="text-lg px-8">
+              <Button size="lg" variant="secondary" onClick={() => navigate("/auth?signup=true")} className="text-lg px-8">
                 Criar Conta Grátis
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 border-primary-foreground/20 hover:bg-primary-foreground/10" onClick={() => window.open("mailto:contato@aprovacriativos.com.br", "_blank")}>

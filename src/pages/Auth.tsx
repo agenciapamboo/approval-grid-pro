@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,109 @@ import { STRIPE_PRODUCTS, StripePlan, StripePriceInterval, PLAN_ORDER } from "@/
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage, getCheckoutErrorMessage } from "@/lib/error-messages";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+// Informações detalhadas dos planos
+const PLAN_DETAILS: Record<string, {
+  description: string;
+  features: string[];
+  metrics: {
+    performance: string;
+    retrabalho: string;
+    rejeicao: string;
+  };
+}> = {
+  creator: {
+    description: "Ideal para influencers e criadores independentes que desejam centralizar aprovações e agendamentos básicos sem custo, conta do instagram precisa necessariamente ser pessoal ou criador de conteúdo (Contas de empresa cadastradas como criador de conteúdo não estão habilitadas neste plano).",
+    metrics: {
+      performance: "70%",
+      retrabalho: "30%",
+      rejeicao: "20%"
+    },
+    features: [
+      "Clientes ilimitados",
+      "Aprovadores ilimitados",
+      "Até 80 criativos/mês",
+      "80 criativos ou 30 dias de histórico",
+      "Controle do consumo do contrato dos clientes",
+      "Usuário por cliente para aprovação",
+      "1 membro na equipe",
+      "Aprovação de criativos direto na plataforma",
+      "Agendamento de postagens",
+      "Download de mídia pela janela de aprovação",
+      "Histórico de criativos publicados",
+      "Logs e histórico de aprovações",
+      "Notificações por e-mail (pendente, aprovado, ajustes, nova solicitação)",
+      "Agenda por cliente"
+    ]
+  },
+  eugencia: {
+    description: "Perfeito para autônomos e microagências que precisam de um fluxo criativo organizado, com solicitações e aprovações simplificadas.",
+    metrics: {
+      performance: "80%",
+      retrabalho: "20%",
+      rejeicao: "15%"
+    },
+    features: [
+      "Todos os recursos do Creator",
+      "Clientes ilimitados",
+      "Aprovadores ilimitados",
+      "100 criativos/mês",
+      "200 criativos ou 60 dias de histórico",
+      "Solicitação de criativos com briefing (clientes pedem novas peças)",
+      "1 membro na equipe",
+      "Agendamento de postagens automáticas",
+      "Notificações automáticas por e-mail (pendente, aprovado, ajustes, nova solicitação)"
+    ]
+  },
+  socialmidia: {
+    description: "Feito para pequenas equipes e agências de social media que buscam automação e comunicação direta com seus clientes.",
+    metrics: {
+      performance: "85%",
+      retrabalho: "15%",
+      rejeicao: "10%"
+    },
+    features: [
+      "Todos os recursos do Creator e Eugência",
+      "Clientes ilimitados",
+      "Aprovadores ilimitados",
+      "120 postagens por mês",
+      "300 criativos ou 90 dias de histórico",
+      "Até 3 membros na equipe",
+      "Aprovação automática pós-deadline",
+      "Notificações automáticas por e-mail e WhatsApp",
+      "Agenda por cliente",
+      "Histórico completo de criativos publicados",
+      "Download de mídias pela janela de aprovação",
+      "Logs e histórico detalhado de feedbacks por versão"
+    ]
+  },
+  fullservice: {
+    description: "Projetado para agências completas e equipes multidisciplinares que gerenciam múltiplos clientes, campanhas e fornecedores com fluxo de aprovação 360°.",
+    metrics: {
+      performance: "95%",
+      retrabalho: "5%",
+      rejeicao: "5%"
+    },
+    features: [
+      "Todos os recursos do Creator, Eugência e Social Mídia",
+      "Clientes ilimitados",
+      "Aprovadores ilimitados",
+      "Postagens ilimitadas",
+      "500 criativos ou 90 dias de histórico",
+      "Membros da equipe ilimitados",
+      "Aprovação automática pós-deadline",
+      "Aprovação de conteúdos gráficos (PDF, Key Visuals, peças offline)",
+      "Link direto para fornecedores baixarem arquivos fechados",
+      "Agenda geral consolidada (todos os clientes e campanhas)",
+      "Kanban da equipe",
+      "Notificações internas automáticas para equipe (ajustes, novas solicitações, prazos e deadlines)",
+      "Notificações externas por e-mail e WhatsApp (clientes e revisores)"
+    ]
+  }
+};
 
 // Step 1: Personal data
 const step1Schema = z.object({
@@ -100,12 +203,39 @@ const loginSchema = z.object({
 });
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     toast
   } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  // Verificar parâmetros de URL
+  const signupParam = searchParams.get('signup');
+  const planParam = searchParams.get('plan') as StripePlan | null;
+  const billingParam = searchParams.get('billing') as StripePriceInterval | null;
+  
+  const [isSignUp, setIsSignUp] = useState(signupParam === 'true');
+  // Se plano pré-selecionado, começar no passo 1 (dados pessoais), senão começar no passo 1 também
+  // Mas o passo 3 (seleção de planos) só aparecerá se não houver plano pré-selecionado
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Atualizar isSignUp e plano quando os parâmetros de URL mudarem
+  useEffect(() => {
+    const signup = searchParams.get('signup');
+    const plan = searchParams.get('plan') as StripePlan | null;
+    const billing = searchParams.get('billing') as StripePriceInterval | null;
+    
+    if (signup === 'true' && !isSignUp) {
+      setIsSignUp(true);
+    }
+    
+    if (plan && ['creator', 'eugencia', 'socialmidia', 'fullservice'].includes(plan)) {
+      setSelectedPlan(plan);
+    }
+    
+    if (billing && (billing === 'monthly' || billing === 'annual')) {
+      setBillingCycle(billing);
+    }
+  }, [searchParams, isSignUp]);
 
   // Step 1: Personal data
   const [email, setEmail] = useState("");
@@ -129,9 +259,15 @@ const Auth = () => {
   const [instagramHandle, setInstagramHandle] = useState("");
   const [loadingCep, setLoadingCep] = useState(false);
 
-  // Step 3: Plan selection
-  const [selectedPlan, setSelectedPlan] = useState<StripePlan>('creator');
-  const [billingCycle, setBillingCycle] = useState<StripePriceInterval>('monthly');
+  // Step 3: Plan selection (só se não houver plano pré-selecionado)
+  const [selectedPlan, setSelectedPlan] = useState<StripePlan>(planParam && ['creator', 'eugencia', 'socialmidia', 'fullservice'].includes(planParam) ? planParam : 'creator');
+  const [billingCycle, setBillingCycle] = useState<StripePriceInterval>(billingParam && (billingParam === 'monthly' || billingParam === 'annual') ? billingParam : 'monthly');
+  
+  // Determinar se o plano foi pré-selecionado
+  const hasPreSelectedPlan = planParam && ['creator', 'eugencia', 'socialmidia', 'fullservice'].includes(planParam);
+  
+  // Número máximo de passos: 2 se plano pré-selecionado (dados pessoais + dados cadastrais), 3 se não (dados pessoais + dados cadastrais + planos)
+  const maxSteps = hasPreSelectedPlan ? 2 : 3;
   const [creatingUsers, setCreatingUsers] = useState(false);
   
   // Função para buscar endereço pelo CEP usando ViaCEP
@@ -628,7 +764,13 @@ const Auth = () => {
     }
   };
   return <div className="min-h-screen flex flex-col items-center justify-center relative">
-      <main className="w-full max-w-md space-y-8 relative z-10 flex-grow flex flex-col justify-center px-4">
+      <main className={`w-full space-y-8 relative z-10 flex-grow flex flex-col justify-center px-4 ${
+        !isSignUp 
+          ? 'max-w-md' // Login: mais estreito
+          : currentStep === 3 && !hasPreSelectedPlan
+            ? 'max-w-5xl' // Passo 3 (planos): mais largo, só se não houver plano pré-selecionado
+            : 'max-w-2xl' // Passos 1 e 2: tamanho médio
+      }`}>
         <div className="text-center">
           <div className="flex flex-col items-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-[#00B878] flex items-center justify-center shadow-lg">
@@ -646,7 +788,7 @@ const Auth = () => {
         <Card className="shadow-2xl border-2 backdrop-blur-sm bg-card/95">
           <CardHeader>
             <CardTitle>
-              {isSignUp ? `Criar conta - Passo ${currentStep} de 3` : "Entrar"}
+              {isSignUp ? `Criar conta - Passo ${currentStep} de ${maxSteps}` : "Entrar"}
             </CardTitle>
             <CardDescription>
               {isSignUp ? currentStep === 1 ? "Preencha seus dados pessoais" : currentStep === 2 ? "Dados da empresa/profissional" : "Escolha seu plano" : "Entre com suas credenciais para acessar"}
@@ -676,7 +818,7 @@ const Auth = () => {
                       Processando...
                     </> : "Entrar"}
                 </Button>
-                <Button type="button" variant="ghost" className="w-full" onClick={() => setIsSignUp(true)} disabled={loading}>
+                <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/auth?signup=true')} disabled={loading}>
                   Não tem conta? Criar agora
                 </Button>
               </CardFooter>
@@ -843,7 +985,7 @@ const Auth = () => {
                   </>}
 
                 {/* Step 3: Plan Selection */}
-                {currentStep === 3 && <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                {currentStep === 3 && <div className="space-y-4 p-4 bg-muted/50 rounded-lg w-full">
                     <div className="flex justify-between items-center">
                       <Label className="text-lg font-semibold">Selecione seu plano</Label>
                       <div className="flex gap-2">
@@ -858,32 +1000,167 @@ const Auth = () => {
                     
                     <RadioGroup value={selectedPlan} onValueChange={value => setSelectedPlan(value as StripePlan)}>
                       <div className="space-y-3">
-                        {PLAN_ORDER.map(key => {
+                        {PLAN_ORDER.filter(key => key !== 'unlimited').map(key => {
                     const product = STRIPE_PRODUCTS[key];
                     const isCreator = 'free' in product && product.free;
                     const price = !isCreator && 'prices' in product ? product.prices[billingCycle] : null;
-                    return <div key={key} className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedPlan === key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setSelectedPlan(key as StripePlan)}>
-                              <RadioGroupItem value={key} id={key} />
+                          const planDetails = PLAN_DETAILS[key];
+                          const displayName = key === 'socialmidia' ? 'Social Mídia' : product.name;
+                          
+                          return (
+                            <div 
+                              key={key} 
+                              className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedPlan === key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`} 
+                              onClick={() => setSelectedPlan(key as StripePlan)}
+                            >
+                              <RadioGroupItem value={key} id={key} className="mt-1" />
                               <div className="flex-1">
+                                <div className="flex items-center gap-2">
                                 <Label htmlFor={key} className="cursor-pointer font-semibold">
-                                  {product.name}
+                                    {displayName}
                                 </Label>
-                                <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                                {price && <p className="text-lg font-bold mt-2">
-                                    R$ {(price.amount / 100).toFixed(2)}
+                                  {planDetails && (
+                                    <Popover>
+                                      <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                          type="button"
+                                          className="bg-green-600 hover:bg-green-700 text-white rounded-full p-1 transition-colors flex items-center justify-center h-5 w-5"
+                                          onClick={(e) => e.stopPropagation()}
+                                          aria-label="Informações do plano"
+                                        >
+                                          <Info className="h-3 w-3" />
+                                        </button>
+                                      </PopoverTrigger>
+                                      <PopoverContent 
+                                        className="w-[calc(100vw-2rem)] md:w-[600px] p-6 max-h-[calc(100vh-2rem)] overflow-y-auto" 
+                                        align="start" 
+                                        side="bottom"
+                                        sideOffset={8}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <div className="space-y-4">
+                                          <h4 className="font-semibold text-base mb-4">{displayName}</h4>
+                                          
+                                          {/* Métricas de Performance */}
+                                          {planDetails.metrics && (
+                                            <div className="p-4 bg-muted/50 rounded-lg space-y-2 mb-4">
+                                              <h5 className="font-medium text-sm mb-3">Métricas de Performance</h5>
+                                              <div className="space-y-2">
+                                                <div className="flex items-center justify-between text-sm">
+                                                  <span className="text-muted-foreground">Performance de Aprovação:</span>
+                                                  <span className="font-semibold text-primary">{planDetails.metrics.performance}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                  <span className="text-muted-foreground">Nível de Retrabalho:</span>
+                                                  <span className="font-semibold text-orange-600">{planDetails.metrics.retrabalho}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                  <span className="text-muted-foreground">Índice de Rejeição:</span>
+                                                  <span className="font-semibold text-red-600">{planDetails.metrics.rejeicao}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                          
+                                          <div>
+                                            <h5 className="font-medium text-sm mb-4">Informações do plano:</h5>
+                                            <div className="grid grid-cols-1 gap-3 text-sm">
+                                              {planDetails.features.map((feature, idx) => (
+                                                <div key={idx} className="flex items-start gap-2">
+                                                  <span className="text-primary mt-1 flex-shrink-0">•</span>
+                                                  <span className="text-muted-foreground">{feature}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">{planDetails?.description || product.description}</p>
+                                {price && !isCreator && (
+                                  billingCycle === 'annual' && 'prices' in product && product.prices ? (
+                                    (() => {
+                                      const monthlyPrice = product.prices.monthly.amount;
+                                      const annualPrice = product.prices.annual.amount;
+                                      const monthlyPriceX12 = monthlyPrice * 12;
+                                      const savings = Math.round(((monthlyPriceX12 - annualPrice) / monthlyPriceX12) * 100);
+                                      // Calcular equivalente mensal: dividir por 100 (centavos para reais) e depois por 12 meses
+                                      const monthlyEquivalent = (annualPrice / 100 / 12).toFixed(2).replace('.', ',');
+                                      const monthlyPriceFormatted = (monthlyPrice / 100).toFixed(2).replace('.', ',');
+                                      const annualPriceFormatted = (annualPrice / 100).toFixed(2).replace('.', ',');
+                                      
+                                      return (
+                                        <div className="space-y-2 mt-2">
+                                          {/* Badge de economia */}
+                                          <Badge className="bg-green-600 text-white hover:bg-green-700">
+                                            Economia anual de {savings}%
+                                          </Badge>
+                                          
+                                          {/* Comparativo de preços mensais */}
+                                          <div className="text-sm text-muted-foreground">
+                                            de{' '}
+                                            <span className="line-through">R$ {monthlyPriceFormatted}/mês</span>
+                                            {' '}por{' '}
+                                            <span className="font-semibold text-foreground">R$ {monthlyEquivalent}/mês</span>
+                                          </div>
+                                          
+                                          {/* Preço anual */}
+                                          <div className="text-lg font-bold">
+                                            R$ {annualPriceFormatted}
+                                            <span className="text-sm font-normal text-muted-foreground">/ano</span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })()
+                                  ) : (
+                                    <p className="text-lg font-bold mt-2">
+                                      R$ {(price.amount / 100).toFixed(2).replace('.', ',')}
                                     <span className="text-sm font-normal text-muted-foreground">
                                       /{billingCycle === 'monthly' ? 'mês' : 'ano'}
                                     </span>
-                                  </p>}
-                                {isCreator && <p className="text-lg font-bold text-success mt-2">Gratuito</p>}
+                                    </p>
+                                  )
+                                )}
+                                {isCreator && <p className="text-lg font-bold text-green-600 mt-2">Gratuito</p>}
                               </div>
-                              {selectedPlan === key && <Check className="h-5 w-5 text-primary" />}
-                            </div>;
+                              {selectedPlan === key && <Check className="h-5 w-5 text-primary mt-1" />}
+                            </div>
+                          );
                   })}
                       </div>
                     </RadioGroup>
                   </div>}
               </CardContent>
+              
+              {/* Mostrar plano pré-selecionado se houver */}
+              {hasPreSelectedPlan && isSignUp && currentStep < 3 && (
+                <CardContent className="pt-0">
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Plano selecionado</p>
+                      <p className="text-lg font-bold">{STRIPE_PRODUCTS[selectedPlan].name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Cobrança {billingCycle === 'monthly' ? 'mensal' : 'anual'}
+                      </p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        // Remover plano da URL e ir para seleção de planos
+                        navigate('/auth?signup=true');
+                        setSelectedPlan('creator');
+                        setCurrentStep(3);
+                      }}
+                    >
+                      Alterar
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
               
               <CardFooter className="flex-col gap-4">
                 <div className="w-full flex gap-2">
@@ -892,11 +1169,11 @@ const Auth = () => {
                       Voltar
                     </Button>}
                   
-                  {currentStep < 3 ? <Button type="button" className="flex-1" onClick={handleNextStep} disabled={loading}>
+                  {currentStep < maxSteps ? <Button type="button" className="flex-1" onClick={handleNextStep} disabled={loading}>
                       {loading ? <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Validando...
-                        </> : "Próximo"}
+                        </> : currentStep === 2 && hasPreSelectedPlan ? "Finalizar Cadastro" : "Próximo"}
                     </Button> : <Button type="button" className="flex-1" onClick={handleSignUp} disabled={loading}>
                       {loading ? <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -906,6 +1183,7 @@ const Auth = () => {
                 </div>
                 
                 <Button type="button" variant="ghost" className="w-full" onClick={() => {
+              navigate('/auth');
               setIsSignUp(false);
               setCurrentStep(1);
             }} disabled={loading}>
@@ -913,6 +1191,36 @@ const Auth = () => {
                 </Button>
               </CardFooter>
             </div>}
+        
+        {/* Mostrar plano pré-selecionado se houver */}
+        {hasPreSelectedPlan && isSignUp && (
+          <Card className="mt-4 border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Plano selecionado</p>
+                  <p className="text-lg font-bold">{STRIPE_PRODUCTS[selectedPlan].name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Cobrança {billingCycle === 'monthly' ? 'mensal' : 'anual'}
+                  </p>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    // Remover plano da URL e ir para seleção de planos
+                    navigate('/auth?signup=true');
+                    setSelectedPlan('creator');
+                    setCurrentStep(3);
+                  }}
+                >
+                  Alterar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         </Card>
 
         <div className="text-center mb-24">
