@@ -766,6 +766,8 @@ export type Database = {
       contents: {
         Row: {
           agency_id: string | null
+          ai_features_used: Json | null
+          ai_generated: boolean | null
           auto_publish: boolean | null
           category: string | null
           channels: string[] | null
@@ -788,6 +790,8 @@ export type Database = {
         }
         Insert: {
           agency_id?: string | null
+          ai_features_used?: Json | null
+          ai_generated?: boolean | null
           auto_publish?: boolean | null
           category?: string | null
           channels?: string[] | null
@@ -810,6 +814,8 @@ export type Database = {
         }
         Update: {
           agency_id?: string | null
+          ai_features_used?: Json | null
+          ai_generated?: boolean | null
           auto_publish?: boolean | null
           category?: string | null
           channels?: string[] | null

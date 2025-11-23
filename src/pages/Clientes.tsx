@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
-import { ArrowLeft, Search, Users, Eye, Send, Loader2, FileText } from "lucide-react";
+import { ArrowLeft, Search, Users, Eye, Send, Loader2, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -35,6 +35,7 @@ const Clientes = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
+  const [clientBriefings, setClientBriefings] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (userDataLoading || !profile) return;
@@ -88,6 +89,11 @@ const Clientes = () => {
         setClients([]);
       } else {
         setClients(data || []);
+        
+        // Carregar status de briefing para cada cliente
+        if (data && data.length > 0) {
+          loadBriefingStatus(data.map(c => c.id));
+        }
       }
 
     } catch (error) {
@@ -96,6 +102,26 @@ const Clientes = () => {
       setClients([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBriefingStatus = async (clientIds: string[]) => {
+    try {
+      // Verificar se existem perfis de IA para os clientes
+      const { count } = await supabase
+        .from('contents')
+        .select('*', { count: 'exact', head: true })
+        .in('client_id', clientIds)
+        .limit(1);
+
+      // Por enquanto, marcar todos como pendentes (pode ser melhorado futuramente)
+      const briefingMap: Record<string, boolean> = {};
+      clientIds.forEach(id => {
+        briefingMap[id] = false; // TODO: implementar verificação real
+      });
+      setClientBriefings(briefingMap);
+    } catch (error) {
+      console.error('Erro ao carregar status de briefing:', error);
     }
   };
 
@@ -214,6 +240,23 @@ const Clientes = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 bg-green-500/10 border-green-500/20 hover:bg-green-500/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/cliente/${client.id}/briefing`);
+                        }}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4 text-green-500" />
+                        Briefing IA
+                      </Button>
+                      <Badge variant={clientBriefings[client.id] ? "success" : "outline"} className="self-center">
+                        {clientBriefings[client.id] ? "Completo" : "Pendente"}
+                      </Badge>
+                    </div>
                     <Button
                       variant="outline"
                       className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
