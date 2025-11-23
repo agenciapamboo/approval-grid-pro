@@ -19,6 +19,8 @@ export const SystemSettingsManager = () => {
   const [originalPlatformWebhookUrl, setOriginalPlatformWebhookUrl] = useState("");
   const [twoFactorWebhookUrl, setTwoFactorWebhookUrl] = useState("");
   const [originalTwoFactorWebhookUrl, setOriginalTwoFactorWebhookUrl] = useState("");
+  const [agencyWebhookUrl, setAgencyWebhookUrl] = useState("");
+  const [originalAgencyWebhookUrl, setOriginalAgencyWebhookUrl] = useState("");
 
   const loadSettings = async () => {
     setLoading(true);
@@ -57,6 +59,17 @@ export const SystemSettingsManager = () => {
       const twoFactorUrl = twoFactorData?.value || "";
       setTwoFactorWebhookUrl(twoFactorUrl);
       setOriginalTwoFactorWebhookUrl(twoFactorUrl);
+
+      // Webhook de agências
+      const { data: agencyData } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "agency_notifications_webhook_url")
+        .single();
+
+      const agencyUrl = agencyData?.value || "";
+      setAgencyWebhookUrl(agencyUrl);
+      setOriginalAgencyWebhookUrl(agencyUrl);
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
       toast({
@@ -222,9 +235,52 @@ export const SystemSettingsManager = () => {
     }
   };
 
+  const handleSaveAgencyWebhook = async () => {
+    if (!agencyWebhookUrl.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A URL do webhook não pode estar vazia.",
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .upsert({
+          key: "agency_notifications_webhook_url",
+          value: agencyWebhookUrl.trim(),
+          description: "URL do webhook N8N para notificações de agências (status de criativos, solicitações de ajuste e criativo)",
+          updated_by: (await supabase.auth.getUser()).data.user?.id
+        }, {
+          onConflict: "key"
+        });
+
+      if (error) throw error;
+
+      setOriginalAgencyWebhookUrl(agencyWebhookUrl.trim());
+      toast({
+        title: "Configurações salvas",
+        description: "O webhook de notificações de agências foi atualizado com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao salvar webhook de agências:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar o webhook de agências.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const hasChanges = webhookUrl !== originalWebhookUrl;
   const hasPlatformChanges = platformWebhookUrl !== originalPlatformWebhookUrl;
   const has2FAChanges = twoFactorWebhookUrl !== originalTwoFactorWebhookUrl;
+  const hasAgencyChanges = agencyWebhookUrl !== originalAgencyWebhookUrl;
 
   return (
     <Card>
@@ -390,6 +446,58 @@ export const SystemSettingsManager = () => {
                   <Button
                     variant="outline"
                     onClick={() => setTwoFactorWebhookUrl(originalTwoFactorWebhookUrl)}
+                    disabled={saving}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Webhook de Notificações de Agências */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-1">Webhook de Notificações de Agências</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Recebe notificações de status de criativos, solicitações de ajuste e solicitações de criativo. Todas as agências usam este mesmo webhook.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agency-webhook-url">URL do Webhook (N8N)</Label>
+                <Input
+                  id="agency-webhook-url"
+                  type="url"
+                  placeholder="https://webhook.example.com/webhook/..."
+                  value={agencyWebhookUrl}
+                  onChange={(e) => setAgencyWebhookUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveAgencyWebhook}
+                  disabled={!hasAgencyChanges || saving}
+                  className="flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Salvar Webhook de Agências
+                    </>
+                  )}
+                </Button>
+                {hasAgencyChanges && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setAgencyWebhookUrl(originalAgencyWebhookUrl)}
                     disabled={saving}
                   >
                     Cancelar

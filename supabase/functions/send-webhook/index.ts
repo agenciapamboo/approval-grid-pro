@@ -123,18 +123,26 @@ serve(async (req) => {
         );
       }
 
-      // Buscar webhook_url da agência (não do notification.agencies que pode estar null)
+      // Buscar webhook_url global do system_settings
+      const { data: webhookSetting } = await supabaseAdmin
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'agency_notifications_webhook_url')
+        .single()
+
+      webhookUrl = webhookSetting?.value || null
+
+      // Buscar dados da agência para incluir no payload
       const { data: agency } = await supabaseAdmin
         .from('agencies_secure')
-        .select('webhook_url, id, name, slug, email, whatsapp')
+        .select('id, name, slug, email, whatsapp')
         .eq('id', notification.agency_id)
         .single()
 
-      webhookUrl = agency?.webhook_url || null
       targetId = notification.agency_id
       targetType = 'agency'
 
-      console.log('Job webhook URL from agency:', { 
+      console.log('Job webhook URL from system settings:', { 
         agency_id: notification.agency_id, 
         webhook_url: webhookUrl ? '[REDACTED]' : null,
         event 
@@ -185,18 +193,18 @@ serve(async (req) => {
       const client = content.clients
       const agency = client.agencies
 
-      // Usar webhook_url da agência (via agencies_secure)
-      const { data: agencySecure } = await supabaseAdmin
-        .from('agencies_secure')
-        .select('webhook_url')
-        .eq('id', agency.id)
+      // Buscar webhook_url global do system_settings
+      const { data: webhookSetting } = await supabaseAdmin
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'agency_notifications_webhook_url')
         .single()
 
-      webhookUrl = agencySecure?.webhook_url || null
+      webhookUrl = webhookSetting?.value || null
       targetId = agency.id
       targetType = 'agency'
 
-      console.log('Content webhook URL from agency:', { 
+      console.log('Content webhook URL from system settings:', { 
         agency_id: agency.id, 
         webhook_url: webhookUrl ? '[REDACTED]' : null,
         event 
