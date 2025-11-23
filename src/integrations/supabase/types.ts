@@ -271,6 +271,45 @@ export type Database = {
           },
         ]
       }
+      briefing_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fields: Json
+          id: string
+          is_active: boolean
+          name: string
+          system_prompt: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          system_prompt: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          system_prompt?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_approvers: {
         Row: {
           agency_id: string

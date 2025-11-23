@@ -27,6 +27,7 @@ interface BriefingTemplateEditorProps {
 
 export function BriefingTemplateEditor({ templateId, onSaved }: BriefingTemplateEditorProps) {
   const queryClient = useQueryClient();
+  const [templateType, setTemplateType] = useState<'client_profile' | 'editorial_line'>('client_profile');
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -41,6 +42,23 @@ export function BriefingTemplateEditor({ templateId, onSaved }: BriefingTemplate
   ]);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Prompts pré-configurados por tipo
+  const defaultPrompts = {
+    client_profile: `Você é um estrategista de marketing digital. Analise as respostas do briefing e crie um perfil detalhado do cliente incluindo:
+- Resumo do negócio
+- Persona do público-alvo (faixa etária, interesses, dores)
+- Pilares de conteúdo (3-5 pilares)
+- Tom de voz (3-5 características)
+- Palavras-chave principais`,
+    
+    editorial_line: `Você é um planejador de conteúdo para redes sociais. Use o PERFIL DO CLIENTE e as respostas do briefing para criar uma linha editorial estruturada:
+- Objetivo principal da comunicação
+- Frequência de posts recomendada
+- Melhores horários para postar
+- Mix de conteúdo (% educacional, promocional, entretenimento)
+- Temas prioritários para os próximos 30 dias`
+  };
 
   const addField = () => {
     const newField: BriefingField = {
@@ -73,6 +91,7 @@ export function BriefingTemplateEditor({ templateId, onSaved }: BriefingTemplate
       const { data: userData } = await supabase.auth.getUser();
       
       const payload = {
+        template_type: templateType,
         name,
         description,
         fields: { fields },
@@ -113,6 +132,22 @@ export function BriefingTemplateEditor({ templateId, onSaved }: BriefingTemplate
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="type">Tipo do Template</Label>
+            <Select value={templateType} onValueChange={(value: any) => {
+              setTemplateType(value);
+              setSystemPrompt(defaultPrompts[value as 'client_profile' | 'editorial_line']);
+            }}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="client_profile">Perfil do Cliente</SelectItem>
+                <SelectItem value="editorial_line">Linha Editorial</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div>
             <Label htmlFor="name">Nome do Template</Label>
             <Input

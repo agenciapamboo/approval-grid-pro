@@ -8,7 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Loader2, FileText, Settings, Plus, FileImage, HardDrive, CheckCircle, RefreshCw, XCircle } from "lucide-react";
+import { Building2, Users, Loader2, FileText, Settings, Plus, FileImage, HardDrive, CheckCircle, RefreshCw, XCircle, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { SuperAdminStats } from "@/components/admin/SuperAdminStats";
@@ -384,6 +384,30 @@ const Dashboard = () => {
                           >
                             <FileText className="h-4 w-4" />
                             Conteúdos
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full gap-2 bg-green-500/10 border-green-500/20 hover:bg-green-500/20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/cliente/${client.id}/briefing?type=client_profile`);
+                            }}
+                          >
+                            <Sparkles className="h-4 w-4 text-green-500" />
+                            Criar Perfil
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full gap-2 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/cliente/${client.id}/briefing?type=editorial_line`);
+                            }}
+                          >
+                            <TrendingUp className="h-4 w-4 text-blue-500" />
+                            Linha Editorial
                           </Button>
                           <Button 
                             variant="outline" 
