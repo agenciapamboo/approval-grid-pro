@@ -125,7 +125,7 @@ export function HeroSection() {
                                             asChild
                                             size="lg"
                                             className="rounded-xl px-5 text-base">
-                                            <Link to="/auth">
+                                            <Link to="/auth?signup=true">
                                                 <span className="text-nowrap">Começar Agora</span>
                                             </Link>
                                         </Button>
@@ -355,7 +355,7 @@ const HeroHeader = () => {
                                     asChild
                                     size="sm"
                                     className={cn(isScrolled && 'lg:hidden')}>
-                                    <Link to="/auth">
+                                    <Link to="/auth?signup=true">
                                         <span>Cadastrar</span>
                                     </Link>
                                 </Button>

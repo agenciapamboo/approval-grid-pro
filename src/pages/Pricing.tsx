@@ -141,7 +141,7 @@ export default function Pricing() {
       
       if (!user) {
         toast.error("Faça login para continuar");
-        navigate("/auth");
+        navigate("/auth?signup=true");
         return;
       }
 
