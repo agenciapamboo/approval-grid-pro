@@ -176,33 +176,77 @@ serve(async (req) => {
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     // Build system prompt
-    let systemPrompt = aiConfig.prompt_skills || 'Você é um assistente especializado em criação de conteúdo para redes sociais.';
+    let systemPrompt = 'Você é um especialista em copywriting para redes sociais.';
     
-    if (aiConfig.prompt_behavior) {
-      systemPrompt += '\n\n' + aiConfig.prompt_behavior;
-    }
-
     if (clientProfile) {
-      systemPrompt += `\n\nPerfil do Cliente:\n${JSON.stringify(clientProfile.profile_data, null, 2)}`;
+      systemPrompt += `\n\nPERFIL DO CLIENTE:`;
+      if (clientProfile.profile_summary) {
+        systemPrompt += `\n- Negócio: ${clientProfile.profile_summary}`;
+      }
+      if (clientProfile.tone_of_voice?.length > 0) {
+        systemPrompt += `\n- Tom de Voz da Marca: ${clientProfile.tone_of_voice.join(', ')}`;
+      }
+      if (clientProfile.content_pillars?.length > 0) {
+        systemPrompt += `\n- Pilares de Conteúdo: ${clientProfile.content_pillars.join(', ')}`;
+      }
+      if (clientProfile.keywords?.length > 0) {
+        systemPrompt += `\n- Palavras-chave: ${clientProfile.keywords.join(', ')}`;
+      }
     }
 
-    // Build user prompt
-    let userPrompt = `Gere 3 sugestões de ${contentType === 'post' ? 'legendas' : 'roteiros'} criativas e envolventes.`;
-    
-    if (context?.title) {
-      userPrompt += `\n\nTítulo/Tema: ${context.title}`;
-    }
-    if (context?.category) {
-      userPrompt += `\nCategoria: ${context.category}`;
-    }
-    if (context?.description) {
-      userPrompt += `\nDescrição adicional: ${context.description}`;
+    systemPrompt += `\n\nSua tarefa é gerar ${contentType === 'post' ? '3 legendas criativas' : '3 roteiros de vídeo'} considerando o contexto fornecido.`;
+
+    // Build user prompt with enriched context
+    const { title, objective, toneOfVoice, expectedAction, category, description } = context || {};
+
+    let userPrompt = `Contexto da Peça:\n`;
+
+    if (title) {
+      userPrompt += `- Título: ${title}\n`;
     }
 
-    userPrompt += `\n\nRetorne as sugestões em formato JSON: { "suggestions": ["sugestão 1", "sugestão 2", "sugestão 3"] }`;
+    if (objective) {
+      const objectiveLabels: Record<string, string> = {
+        engagement: "Aumentar engajamento (curtidas, comentários)",
+        awareness: "Reconhecimento de marca",
+        traffic: "Gerar tráfego para site/loja",
+        conversion: "Conversão/Vendas",
+        education: "Educar o público",
+        entertainment: "Entretenimento",
+        community: "Fortalecer comunidade",
+      };
+      userPrompt += `- Objetivo: ${objectiveLabels[objective] || objective}\n`;
+    }
+
+    if (toneOfVoice) {
+      if (toneOfVoice === 'brand' && clientProfile?.tone_of_voice) {
+        userPrompt += `- Tom de Voz: Use o tom da marca (${clientProfile.tone_of_voice.join(', ')})\n`;
+      } else {
+        const toneLabels: Record<string, string> = {
+          friendly: "Amigável",
+          professional: "Profissional/Séria",
+          institutional: "Institucional",
+        };
+        userPrompt += `- Tom de Voz: ${toneLabels[toneOfVoice] || toneOfVoice}\n`;
+      }
+    }
+
+    if (expectedAction) {
+      userPrompt += `- Ação Esperada: ${expectedAction}\n`;
+    }
+
+    if (category) {
+      userPrompt += `- Categoria: ${category}\n`;
+    }
+
+    if (description) {
+      userPrompt += `- Descrição Adicional: ${description}\n`;
+    }
+
+    userPrompt += `\nGere as sugestões em JSON: {"suggestions": ["...", "...", "..."]}`;
 
     // Call OpenAI
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {

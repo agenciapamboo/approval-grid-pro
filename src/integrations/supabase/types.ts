@@ -310,6 +310,81 @@ export type Database = {
         }
         Relationships: []
       }
+      client_ai_profiles: {
+        Row: {
+          best_posting_times: string[] | null
+          briefing_responses: Json | null
+          briefing_template_id: string | null
+          client_id: string
+          communication_objective: string | null
+          content_mix: Json | null
+          content_pillars: string[] | null
+          created_at: string | null
+          generated_by: string | null
+          id: string
+          keywords: string[] | null
+          post_frequency: string | null
+          priority_themes: string[] | null
+          profile_summary: string | null
+          target_persona: Json | null
+          tone_of_voice: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          best_posting_times?: string[] | null
+          briefing_responses?: Json | null
+          briefing_template_id?: string | null
+          client_id: string
+          communication_objective?: string | null
+          content_mix?: Json | null
+          content_pillars?: string[] | null
+          created_at?: string | null
+          generated_by?: string | null
+          id?: string
+          keywords?: string[] | null
+          post_frequency?: string | null
+          priority_themes?: string[] | null
+          profile_summary?: string | null
+          target_persona?: Json | null
+          tone_of_voice?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          best_posting_times?: string[] | null
+          briefing_responses?: Json | null
+          briefing_template_id?: string | null
+          client_id?: string
+          communication_objective?: string | null
+          content_mix?: Json | null
+          content_pillars?: string[] | null
+          created_at?: string | null
+          generated_by?: string | null
+          id?: string
+          keywords?: string[] | null
+          post_frequency?: string | null
+          priority_themes?: string[] | null
+          profile_summary?: string | null
+          target_persona?: Json | null
+          tone_of_voice?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_ai_profiles_briefing_template_id_fkey"
+            columns: ["briefing_template_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_ai_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_approvers: {
         Row: {
           agency_id: string
