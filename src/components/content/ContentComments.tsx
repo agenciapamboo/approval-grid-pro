@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, MessageSquare } from "lucide-react";
+import { Trash2, MessageSquare, Volume2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { AudioRecorder } from "./AudioRecorder";
 // triggerWebhook removido - webhooks agora são automáticos via triggers
 
 interface Comment {
@@ -15,6 +16,7 @@ interface Comment {
   created_at: string;
   is_adjustment_request: boolean;
   adjustment_reason?: string;
+  audio_url?: string | null;
   profiles?: {
     name: string;
   } | null;
@@ -33,11 +35,24 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>("");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   useEffect(() => {
     loadComments();
     getCurrentUser();
+    getClientId();
   }, [contentId]);
+
+  const getClientId = async () => {
+    const { data } = await supabase
+      .from("contents")
+      .select("client_id")
+      .eq("id", contentId)
+      .single();
+    
+    if (data) setClientId(data.client_id);
+  };
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -90,6 +105,7 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
             body: newComment,
             author_user_id: currentUserId,
             version: contentData?.version || 1,
+            audio_url: audioUrl,
           })
           .select()
           .single();
@@ -108,6 +124,7 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
         }
 
         setNewComment("");
+        setAudioUrl(null);
         await loadComments(); // Re-carregar comentários para garantir visibilidade
         onUpdate();
         
@@ -184,6 +201,12 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
                     </p>
                   )}
                   <p className="text-sm whitespace-pre-wrap break-words">{comment.body}</p>
+                  {comment.audio_url && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <Volume2 className="h-3 w-3" />
+                      <span>Transcrição de áudio</span>
+                    </div>
+                  )}
                 </div>
                 {currentUserId && comment.author_user_id === currentUserId && (
                   <Button
@@ -206,20 +229,31 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
         <Textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Escreva um comentário..."
+          placeholder="Escreva um comentário ou grave um áudio..."
           rows={3}
           className="resize-none"
         />
-        <Button 
-          size="sm" 
-          variant="outline"
-          onClick={handleAddComment}
-          disabled={!newComment.trim()}
-          className="w-full"
-        >
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Adicionar comentário
-        </Button>
+        <div className="flex gap-2">
+          {clientId && (
+            <AudioRecorder 
+              clientId={clientId}
+              onTranscriptionComplete={(transcription, url) => {
+                setNewComment(transcription);
+                setAudioUrl(url);
+              }}
+            />
+          )}
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={handleAddComment}
+            disabled={!newComment.trim()}
+            className="flex-1"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Adicionar comentário
+          </Button>
+        </div>
       </div>
     </div>
   );
