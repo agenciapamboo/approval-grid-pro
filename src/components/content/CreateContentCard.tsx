@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { triggerWebhook } from "@/lib/webhooks";
+// triggerWebhook removido - webhooks agora são automáticos via triggers
 import { createNotification } from "@/lib/notifications";
 import { TimeInput } from "@/components/ui/time-input";
 import { checkMonthlyPostsLimit, checkCreativesStorageLimit } from "@/lib/plan-limits";

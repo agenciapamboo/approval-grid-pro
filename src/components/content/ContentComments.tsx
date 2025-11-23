@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { triggerWebhook } from "@/lib/webhooks";
+// triggerWebhook removido - webhooks agora são automáticos via triggers
 
 interface Comment {
   id: string;
@@ -104,12 +104,7 @@ export function ContentComments({ contentId, onUpdate, showHistory = true }: Con
             .eq("id", contentData.client_id)
             .single();
 
-          await triggerWebhook(
-            "comentario",
-            contentId,
-            contentData.client_id,
-            clientData?.agency_id
-          );
+          // Webhook agora é disparado automaticamente via trigger do banco
         }
 
         setNewComment("");

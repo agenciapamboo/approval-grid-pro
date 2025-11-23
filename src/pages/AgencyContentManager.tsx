@@ -9,7 +9,7 @@ import { CreateContentCard } from "@/components/content/CreateContentCard";
 import { ContentCategorySelector } from "@/components/content/ContentCategorySelector";
 import { ContentFilters } from "@/components/content/ContentFilters";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { triggerWebhook } from "@/lib/webhooks";
+// triggerWebhook removido - webhooks agora são automáticos via triggers
 import { createNotification } from "@/lib/notifications";
 import { format } from "date-fns";
 
