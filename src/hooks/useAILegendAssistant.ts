@@ -17,7 +17,7 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
   const [loading, setLoading] = useState(false);
   const [fromCache, setFromCache] = useState(false);
 
-  const generateSuggestions = async () => {
+  const generateSuggestions = async (captionContext?: any) => {
     if (!clientId) {
       toast.error("Cliente não identificado");
       return;
@@ -25,11 +25,16 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
 
     setLoading(true);
     try {
+      const fullContext = {
+        ...context,
+        ...(captionContext || {}),
+      };
+
       const { data, error } = await (supabase as any).functions.invoke('generate-caption', {
         body: {
           clientId,
           contentType,
-          context: context || {},
+          context: fullContext,
         },
       });
 

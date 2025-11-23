@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Copy, Loader2 } from "lucide-react";
 import { useAILegendAssistant } from "@/hooks/useAILegendAssistant";
 import { toast } from "sonner";
+import { CaptionContextDialog, CaptionContext } from "./CaptionContextDialog";
 
 interface AILegendAssistantProps {
   clientId: string;
@@ -22,8 +24,15 @@ export function AILegendAssistant({
   context,
   onSelectSuggestion 
 }: AILegendAssistantProps) {
+  const [showContextDialog, setShowContextDialog] = useState(false);
+  
   const { suggestions, loading, fromCache, generateSuggestions, clearSuggestions } = 
     useAILegendAssistant({ clientId, contentType, context });
+
+  const handleGenerateWithContext = async (captionContext: CaptionContext) => {
+    await generateSuggestions(captionContext);
+    setShowContextDialog(false);
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -53,7 +62,7 @@ export function AILegendAssistant({
 
       {suggestions.length === 0 ? (
         <Button
-          onClick={generateSuggestions}
+          onClick={() => setShowContextDialog(true)}
           disabled={loading}
           variant="outline"
           className="w-full border-green-500/20 hover:bg-green-500/10"
@@ -124,6 +133,16 @@ export function AILegendAssistant({
           </Button>
         </div>
       )}
+      
+      <CaptionContextDialog
+        open={showContextDialog}
+        onOpenChange={setShowContextDialog}
+        clientId={clientId}
+        contentType={contentType}
+        initialTitle={context?.title}
+        onGenerate={handleGenerateWithContext}
+        loading={loading}
+      />
     </div>
   );
 }
