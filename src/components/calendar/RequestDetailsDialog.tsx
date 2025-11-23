@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Wrench, Clipboard } from "lucide-react";
 
 interface Content {
   id: string;
@@ -33,8 +34,18 @@ export function RequestDetailsDialog({ open, onOpenChange, request }: RequestDet
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {isCreativeRequest ? '📋 Solicitação de Criativo' : '🔧 Solicitação de Ajuste'}
+          <DialogTitle className="flex items-center gap-2">
+            {isCreativeRequest ? (
+              <>
+                <Clipboard className="h-5 w-5" />
+                Solicitação de Criativo
+              </>
+            ) : (
+              <>
+                <Wrench className="h-5 w-5" />
+                Solicitação de Ajuste
+              </>
+            )}
           </DialogTitle>
         </DialogHeader>
 

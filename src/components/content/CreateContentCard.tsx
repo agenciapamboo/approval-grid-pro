@@ -301,6 +301,16 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
   };
 
   const handleSave = async () => {
+    // Validação: título é obrigatório
+    if (!title || !title.trim()) {
+      toast({
+        title: "Título obrigatório",
+        description: "Por favor, preencha o título do conteúdo",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validação: se for plano, não precisa de mídia
     if (!isContentPlan && files.length === 0) {
       toast({
@@ -364,8 +374,8 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
       // String no formato ISO local com "T" para evitar parse UTC no front
       const dateTimeString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
-      // Gerar título automático se não preenchido
-      const contentTitle = title.trim() || `Conteúdo ${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      // Título é obrigatório (já validado acima)
+      const contentTitle = title.trim();
 
       const { data: content, error: contentError } = await supabase
         .from("contents")
@@ -900,10 +910,11 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
         )}
 
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Título (opcional)</Label>
+          <Label className="text-sm font-medium">Título *</Label>
           <Input
             placeholder="Ex: Lançamento do produto X"
             value={title}
+            required
             onChange={(e) => {
               setTitle(e.target.value);
               setHasChanges(true);

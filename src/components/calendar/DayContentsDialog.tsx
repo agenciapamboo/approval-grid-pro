@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Clock, FileText } from "lucide-react";
+import { Clock, FileText, Wrench, Clipboard } from "lucide-react";
 
 interface Content {
   id: string;
@@ -76,10 +76,10 @@ export function DayContentsDialog({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             {content.itemType === 'creative_request' && (
-                              <span className="text-base">📋</span>
+                              <Clipboard className="h-4 w-4 flex-shrink-0" />
                             )}
                             {content.itemType === 'adjustment_request' && (
-                              <span className="text-base">🔧</span>
+                              <Wrench className="h-4 w-4 flex-shrink-0" />
                             )}
                             <h4 className="font-semibold text-sm truncate">
                               {content.title}
