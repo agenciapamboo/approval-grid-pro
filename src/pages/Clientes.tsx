@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SendPlatformNotificationDialog } from "@/components/admin/SendPlatformNotificationDialog";
 import { AddClientDialog } from "@/components/admin/AddClientDialog";
-import { ArrowLeft, Search, Users, Eye, Send, Loader2, FileText, Sparkles } from "lucide-react";
+import { ArrowLeft, Search, Users, Eye, Send, Loader2, FileText, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import AccessGate from "@/components/auth/AccessGate";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -240,22 +240,31 @@ const Clientes = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 bg-green-500/10 border-green-500/20 hover:bg-green-500/20"
+                        className="bg-green-500/10 border-green-500/20 hover:bg-green-500/20"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/cliente/${client.id}/briefing`);
+                          navigate(`/cliente/${client.id}/briefing?type=client_profile`);
                         }}
                       >
                         <Sparkles className="mr-2 h-4 w-4 text-green-500" />
-                        Briefing IA
+                        Perfil IA
                       </Button>
-                      <Badge variant={clientBriefings[client.id] ? "success" : "outline"} className="self-center">
-                        {clientBriefings[client.id] ? "Completo" : "Pendente"}
-                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/cliente/${client.id}/briefing?type=editorial_line`);
+                        }}
+                      >
+                        <TrendingUp className="mr-2 h-4 w-4 text-blue-500" />
+                        Editorial
+                      </Button>
                     </div>
                     <Button
                       variant="outline"

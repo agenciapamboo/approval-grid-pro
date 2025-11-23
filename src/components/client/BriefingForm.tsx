@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,11 @@ export function BriefingForm({ templateId, clientId, onProfileGenerated }: Brief
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useState(() => {
-    loadTemplate();
-  });
+  useEffect(() => {
+    if (templateId) {
+      loadTemplate();
+    }
+  }, [templateId]);
 
   async function loadTemplate() {
     const { data, error } = await (supabase as any)
