@@ -8,7 +8,8 @@ import {
   MessageSquare, 
   Bell, 
   Settings,
-  UsersRound
+  UsersRound,
+  Sparkles
 } from "lucide-react";
 import { NavLink } from "@/components/ui/nav-link";
 import { useUserData } from "@/hooks/useUserData";
@@ -33,6 +34,7 @@ import {
     { title: "Calendário", url: "/agenda", icon: Calendar },
     { title: "Kanban", url: "/kanban", icon: KanbanSquare },
     { title: "Solicitações de Criativos", url: "/creative-requests", icon: Paintbrush },
+    { title: "Configurações de IA", url: "/admin/ai", icon: Sparkles },
     { title: "Tickets da Agência", url: "/agencia/tickets", icon: Ticket },
     { title: "Meus Tickets", url: "/meus-tickets", icon: MessageSquare },
     { title: "Notificações", url: "/notificacoes", icon: Bell },

@@ -16,7 +16,8 @@ import {
   Monitor,
   UserCog,
   UsersRound,
-  LayoutDashboard
+  LayoutDashboard,
+  Sparkles
 } from "lucide-react";
 import {
   Sidebar,
@@ -95,6 +96,12 @@ const menuItems = [
     title: "Tickets Suporte",
     url: "/admin/tickets",
     icon: Bell,
+    category: "sistema"
+  },
+  {
+    title: "Configurações de IA",
+    url: "/admin/ai",
+    icon: Sparkles,
     category: "sistema"
   },
   {
