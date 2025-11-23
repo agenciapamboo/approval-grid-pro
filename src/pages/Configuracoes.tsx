@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SystemSettingsManager } from "@/components/admin/SystemSettingsManager";
+import { WebhookTester } from "@/components/admin/WebhookTester";
 import { PlanEntitlementsEditor } from "@/components/admin/PlanEntitlementsEditor";
 import { RolesManager } from "@/components/admin/RolesManager";
 import { TestRunner } from "@/components/admin/TestRunner";
@@ -287,8 +288,10 @@ const Configuracoes = () => {
                   </CardHeader>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0 space-y-6">
                     <SystemSettingsManager />
+                    <Separator />
+                    <WebhookTester />
                   </CardContent>
                 </AccordionContent>
               </Card>

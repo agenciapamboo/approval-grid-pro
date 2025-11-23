@@ -44,7 +44,6 @@ export function EditAgencyDialog({ agency, onAgencyUpdated, open: controlledOpen
     brand_primary: agency.brand_primary || "#2563eb",
     brand_secondary: agency.brand_secondary || "#8b5cf6",
     logo_url: agency.logo_url || "",
-    webhook_url: agency.webhook_url || "",
     email: agency.email || "",
     whatsapp: agency.whatsapp || "",
     plan: agency.plan || "free",
@@ -81,13 +80,6 @@ export function EditAgencyDialog({ agency, onAgencyUpdated, open: controlledOpen
           token: formData.whatsapp
         });
         updateData.whatsapp_encrypted = whatsappEnc;
-      }
-
-      if (formData.webhook_url) {
-        const { data: webhookEnc } = await supabase.rpc('encrypt_social_token', {
-          token: formData.webhook_url
-        });
-        updateData.webhook_url_encrypted = webhookEnc;
       }
 
       const { error } = await supabase
@@ -264,20 +256,6 @@ export function EditAgencyDialog({ agency, onAgencyUpdated, open: controlledOpen
               onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
               placeholder="https://exemplo.com/logo.png"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="webhook_url">Webhook URL (n8n)</Label>
-            <Input
-              id="webhook_url"
-              type="url"
-              value={formData.webhook_url}
-              onChange={(e) => setFormData({ ...formData, webhook_url: e.target.value })}
-              placeholder="https://seu-n8n.com/webhook/..."
-            />
-            <p className="text-xs text-muted-foreground">
-              URL do webhook n8n para notificações de mudanças de status
-            </p>
           </div>
 
           <div className="flex gap-3 pt-4">
