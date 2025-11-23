@@ -2,12 +2,13 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AIConfiguration } from "@/components/admin/AIConfiguration";
+import { AICostDashboard } from "@/components/admin/AICostDashboard";
 import { Sparkles, Database, TrendingUp } from "lucide-react";
 import AccessGate from "@/components/auth/AccessGate";
 
 export default function AISettings() {
   return (
-    <AccessGate allow={['super_admin']}>
+    <AccessGate allow={['super_admin', 'agency_admin']}>
       <AppLayout>
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
@@ -87,19 +88,7 @@ export default function AISettings() {
             </TabsContent>
 
             <TabsContent value="costs" className="mt-6">
-              <Card className="glass">
-                <CardHeader>
-                  <CardTitle>Dashboard de Custos</CardTitle>
-                  <CardDescription>
-                    Monitore uso e economia com cache (em breve)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12 text-muted-foreground">
-                    Dashboard de custos será implementado na Fase 6
-                  </div>
-                </CardContent>
-              </Card>
+              <AICostDashboard />
             </TabsContent>
           </Tabs>
         </div>
