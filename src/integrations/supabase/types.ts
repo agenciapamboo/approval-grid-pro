@@ -1804,27 +1804,36 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           event: string
+          http_method: string | null
           id: string
+          last_notification_at: string | null
           payload: Json
           status: Database["public"]["Enums"]["webhook_status"]
+          webhook_type: string | null
         }
         Insert: {
           client_id: string
           created_at?: string
           delivered_at?: string | null
           event: string
+          http_method?: string | null
           id?: string
+          last_notification_at?: string | null
           payload: Json
           status?: Database["public"]["Enums"]["webhook_status"]
+          webhook_type?: string | null
         }
         Update: {
           client_id?: string
           created_at?: string
           delivered_at?: string | null
           event?: string
+          http_method?: string | null
           id?: string
+          last_notification_at?: string | null
           payload?: Json
           status?: Database["public"]["Enums"]["webhook_status"]
+          webhook_type?: string | null
         }
         Relationships: [
           {
@@ -1906,6 +1915,8 @@ export type Database = {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
       }
+      check_daily_quota_alerts: { Args: never; Returns: undefined }
+      check_weekly_overage_alerts: { Args: never; Returns: undefined }
       cleanup_old_login_attempts: { Args: never; Returns: undefined }
       decrypt_social_token: {
         Args: { encrypted_token: string }
@@ -2010,7 +2021,20 @@ export type Database = {
         }
         Returns: string
       }
+      queue_webhook_event: {
+        Args: {
+          p_agency_id?: string
+          p_client_id?: string
+          p_content_id?: string
+          p_event: string
+          p_method?: string
+          p_payload?: Json
+          p_webhook_type?: string
+        }
+        Returns: string
+      }
       sanitize_webhook_payload: { Args: { payload: Json }; Returns: Json }
+      send_hourly_approval_notifications: { Args: never; Returns: undefined }
       send_last_day_reminders: { Args: never; Returns: undefined }
       send_notification: {
         Args: {
