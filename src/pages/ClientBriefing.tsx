@@ -37,21 +37,27 @@ export default function ClientBriefing() {
     if (profileData) {
       setProfile(profileData);
       
-      // Se for editorial_line e já existe perfil, buscar template específico de linha editorial
+      // Se for editorial_line, verificar se o template associado ao perfil é do tipo editorial_line
       if (briefingType === 'editorial_line') {
-        const { data: editorialTemplate } = await (supabase as any)
-          .from('briefing_templates')
-          .select('*')
-          .eq('template_type', 'editorial_line')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (editorialTemplate) {
-          setTemplate(editorialTemplate);
+        // Se o perfil tem um template associado e é do tipo editorial_line, usar ele
+        if (profileData.briefing_templates?.template_type === 'editorial_line') {
+          setTemplate(profileData.briefing_templates);
         } else {
-          setTemplate(null);
+          // Buscar template específico de linha editorial ativo
+          const { data: editorialTemplate } = await (supabase as any)
+            .from('briefing_templates')
+            .select('*')
+            .eq('template_type', 'editorial_line')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (editorialTemplate) {
+            setTemplate(editorialTemplate);
+          } else {
+            setTemplate(null);
+          }
         }
       } else {
         setTemplate(profileData.briefing_templates);
@@ -91,8 +97,10 @@ export default function ClientBriefing() {
 
   const handleProfileGenerated = async (newProfile: any) => {
     // Recarregar dados após gerar perfil
+    setLoading(true);
     await loadData();
     setShowForm(false);
+    setLoading(false);
   };
 
   if (loading) {
@@ -321,25 +329,165 @@ export default function ClientBriefing() {
                 </Card>
               </div>
             </div>
-          ) : briefingType === 'editorial_line' && profile?.editorial_line ? (
-            // Exibir apenas linha editorial quando type=editorial_line
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-green-500" />
-                  Linha Editorial
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  {profile.editorial_line || profile.ai_generated_profile?.editorial_line}
-                </p>
-                <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Atualizar Linha Editorial
-                </Button>
-              </CardContent>
-            </Card>
+          ) : briefingType === 'editorial_line' && (profile?.editorial_line || profile?.ai_generated_profile?.editorial_line) ? (
+            // Exibir linha editorial quando type=editorial_line
+            // Priorizar editorial_line direto (gerado pelo formulário de linha editorial)
+            // sobre ai_generated_profile.editorial_line (do perfil completo)
+            <div className="space-y-6">
+              <Card className="glass border-green-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    <div className="h-10 w-10 rounded-lg bg-green-500 flex items-center justify-center">
+                      <MessageSquare className="h-6 w-6 text-white" />
+                    </div>
+                    Linha Editorial
+                  </CardTitle>
+                  <CardDescription>
+                    Base editorial gerada com Inteligência Artificial
+                    {template?.template_type === 'editorial_line' && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Template: {template.name})
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Exibir linha editorial estruturada se disponível */}
+                  {(() => {
+                    const editorialData = (template?.template_type === 'editorial_line' || profile?.briefing_templates?.template_type === 'editorial_line')
+                      ? (profile.editorial_line || profile.ai_generated_profile?.editorial_line)
+                      : (profile.ai_generated_profile?.editorial_line || profile.editorial_line);
+                    
+                    // Tentar parsear se for JSON (estrutura semanal)
+                    let parsedData = null;
+                    try {
+                      parsedData = typeof editorialData === 'string' ? JSON.parse(editorialData) : editorialData;
+                    } catch {
+                      parsedData = null;
+                    }
+                    
+                    // Se tiver estrutura semanal, exibir de forma organizada
+                    if (parsedData?.monthly_structure) {
+                      const structure = parsedData.monthly_structure;
+                      return (
+                        <div className="space-y-6">
+                          {/* Descrição geral */}
+                          {parsedData.editorial_line && (
+                            <div className="prose prose-sm max-w-none">
+                              <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                                {parsedData.editorial_line}
+                              </p>
+                            </div>
+                          )}
+                          
+                          <Separator />
+                          
+                          {/* Estrutura semanal */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-lg font-semibold">Planejamento Mensal</h3>
+                              <Badge variant="outline" className="text-sm">
+                                Total: {structure.total_creatives} criativos
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid gap-4">
+                              {structure.weeks?.map((week: any, weekIndex: number) => (
+                                <Card key={weekIndex} className="border-l-4 border-l-green-500">
+                                  <CardHeader className="pb-3">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                      <span className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold">
+                                        {week.week_number}
+                                      </span>
+                                      Semana {week.week_number}
+                                      <Badge variant="secondary" className="ml-auto">
+                                        {week.posts?.length || 0} posts
+                                      </Badge>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-2">
+                                      {week.posts?.map((post: any, postIndex: number) => (
+                                        <div key={postIndex} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
+                                          <Badge variant="outline" className="shrink-0">
+                                            {post.type}
+                                          </Badge>
+                                          <p className="text-sm text-muted-foreground flex-1">
+                                            {post.description || 'Conteúdo sugerido'}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Exibir como texto simples se não tiver estrutura
+                    return (
+                      <div className="prose prose-sm max-w-none">
+                        <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                          {typeof editorialData === 'string' ? editorialData : JSON.stringify(editorialData, null, 2)}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={() => setShowForm(true)} variant="outline" className="gap-2">
+                      <RefreshCw className="h-4 w-4" />
+                      Atualizar Linha Editorial
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Informações adicionais se disponíveis */}
+              {(profile.content_pillars?.length > 0 || profile.ai_generated_profile?.content_pillars?.length > 0) && (
+                <Card className="glass">
+                  <CardHeader>
+                    <CardTitle>Pilares de Conteúdo Relacionados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {(profile.content_pillars || profile.ai_generated_profile?.content_pillars)?.map(
+                        (pillar: string, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500" />
+                            <span>{pillar}</span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {(profile.tone_of_voice?.length > 0 || profile.ai_generated_profile?.tone_of_voice?.length > 0) && (
+                <Card className="glass">
+                  <CardHeader>
+                    <CardTitle>Tom de Voz</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {(profile.tone_of_voice || profile.ai_generated_profile?.tone_of_voice)?.map(
+                        (tone: string) => (
+                          <Badge key={tone} variant="outline">{tone}</Badge>
+                        )
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+              );
+            })()
           ) : (
             <Card className="glass">
               <CardContent className="text-center py-12">
