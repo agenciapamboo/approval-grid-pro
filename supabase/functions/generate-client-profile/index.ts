@@ -39,11 +39,23 @@ serve(async (req) => {
     const { data: aiConfig, error: configError } = await supabaseClient
       .from('ai_configurations')
       .select('openai_api_key_encrypted, default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
+      .limit(1)
       .single();
 
     if (configError || !aiConfig?.openai_api_key_encrypted) {
       throw new Error('OpenAI API key not configured');
     }
+
+    // Descriptografar a chave de API
+    const { data: decryptedKey } = await supabaseClient.rpc('decrypt_secret', {
+      encrypted_data: aiConfig.openai_api_key_encrypted
+    });
+
+    if (!decryptedKey) {
+      throw new Error('Failed to decrypt OpenAI API key');
+    }
+
+    const openaiApiKey = decryptedKey;
 
     // Verificar limite de uso
     const { data: userData } = await supabaseClient.auth.getUser();
@@ -179,7 +191,7 @@ Retorne um JSON válido com a seguinte estrutura:
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${aiConfig.openai_api_key_encrypted}`,
+          'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -234,11 +246,16 @@ Retorne um JSON válido com a seguinte estrutura:
         client_id: clientId,
         briefing_template_id: templateId,
         briefing_responses: briefingResponses,
-        ai_generated_profile: profile,
-        editorial_line: profile.editorial_line,
-        keywords: profile.keywords,
+        profile_summary: profile.summary,
+        target_persona: profile.target_persona,
+        content_pillars: profile.content_pillars,
         tone_of_voice: profile.tone_of_voice,
-        content_pillars: profile.content_pillars
+        keywords: profile.keywords,
+        communication_objective: profile.content_strategy?.objective,
+        post_frequency: profile.content_strategy?.post_frequency,
+        best_posting_times: profile.content_strategy?.best_times,
+        content_mix: profile.content_strategy?.content_mix,
+        priority_themes: profile.content_pillars
       }, {
         onConflict: 'client_id'
       });
