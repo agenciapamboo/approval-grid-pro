@@ -25,11 +25,20 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
 
     setLoading(true);
     try {
-      // Verificar sessão ativa
-      const { data: { session } } = await supabase.auth.getSession();
+      // Verificar sessão ativa e renovar se necessário
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
-        toast.error("Sessão expirada. Faça login novamente.");
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
+        toast.error("Sua sessão expirou. Por favor, faça login novamente.", {
+          description: "Redirecionando para a página de login..."
+        });
+        
+        // Redirecionar para login após 2 segundos
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 2000);
+        
         setLoading(false);
         return;
       }

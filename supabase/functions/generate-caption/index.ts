@@ -106,7 +106,7 @@ serve(async (req) => {
       console.error('Profile not found for user:', user.id);
       return new Response(JSON.stringify({ 
         error: 'Profile not found',
-        details: 'Perfil do usuário não encontrado' 
+        details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.' 
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
