@@ -324,11 +324,8 @@ const AgenciaDetalhes = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
 
-      <AppFooter />
-
-      {editDialogOpen && (
+        {editDialogOpen && (
         <EditAgencyDialog
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
