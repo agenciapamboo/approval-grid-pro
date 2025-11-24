@@ -15,10 +15,6 @@ serve(async (req) => {
   try {
     console.log('=== Generate Caption Function Called ===');
     console.log('Method:', req.method);
-<<<<<<< HEAD
-    console.log('Headers:', Object.fromEntries(req.headers.entries()));
-=======
->>>>>>> origin/main
     
     // Verificar se há Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -32,27 +28,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-<<<<<<< HEAD
-
-    // Ler body primeiro (antes de criar cliente para não consumir o stream)
-    let body;
-    try {
-      body = await req.json();
-      console.log('Body received:', { clientId: body.clientId, contentType: body.contentType });
-    } catch (parseError) {
-      console.error('Error parsing body:', parseError);
-      return new Response(JSON.stringify({ 
-        error: 'Invalid request body',
-        details: parseError instanceof Error ? parseError.message : 'Failed to parse JSON'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    const { clientId, contentType, context } = body;
-=======
->>>>>>> origin/main
 
     // Extrair JWT do header
     const jwt = authHeader.replace('Bearer ', '');
@@ -111,7 +86,7 @@ serve(async (req) => {
       console.error('Erro ao buscar profile:', profileError);
       return new Response(JSON.stringify({ 
         error: 'Profile error', 
-        details: profileError.message || 'Erro ao buscar perfil do usuário' 
+        details: 'Erro ao buscar perfil do usuário' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -122,11 +97,7 @@ serve(async (req) => {
       console.error('Profile not found for user:', user.id);
       return new Response(JSON.stringify({ 
         error: 'Profile not found',
-<<<<<<< HEAD
-        details: 'Perfil do usuário não encontrado' 
-=======
-        details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.' 
->>>>>>> origin/main
+        details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.'
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
