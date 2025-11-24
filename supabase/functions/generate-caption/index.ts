@@ -51,24 +51,59 @@ serve(async (req) => {
       });
     }
 
-    // Check usage limit
+    // Buscar perfil do usuário
     const { data: profile } = await supabaseClient
       .from('profiles')
       .select('agency_id, client_id')
       .eq('id', user.id)
       .single();
 
-    if (!profile?.agency_id) {
-      return new Response(JSON.stringify({ error: 'Agency not found' }), {
+    if (!profile) {
+      return new Response(JSON.stringify({ error: 'Profile not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Buscar agency_id: pode estar no profile ou através do client_id
+    let agencyId = profile.agency_id;
+    
+    if (!agencyId && clientId) {
+      // Se não tem agency_id no profile, buscar através do client_id
+      console.log('Buscando agency_id através do client_id:', clientId);
+      const { data: client, error: clientError } = await supabaseClient
+        .from('clients')
+        .select('agency_id')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError) {
+        console.error('Erro ao buscar cliente:', clientError);
+        return new Response(JSON.stringify({ error: 'Client not found', details: clientError.message }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (client?.agency_id) {
+        agencyId = client.agency_id;
+        console.log('Agency_id encontrado através do cliente:', agencyId);
+      }
+    }
+
+    if (!agencyId) {
+      console.error('Agency not found. Profile agency_id:', profile.agency_id, 'Client ID:', clientId);
+      return new Response(JSON.stringify({ error: 'Agency not found for this client', details: 'Não foi possível identificar a agência associada ao cliente' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Buscar dados da agência para verificar o plano
     const { data: agency } = await supabaseClient
       .from('agencies')
       .select('plan')
-      .eq('id', profile.agency_id)
+      .eq('id', agencyId)
       .single();
 
     const { data: entitlements } = await supabaseClient
@@ -106,7 +141,7 @@ serve(async (req) => {
     const promptData = {
       type: 'caption',
       clientId,
-      agencyId: profile.agency_id,
+      agencyId: agencyId,
       contentType,
       context: context || {}
     };
@@ -139,7 +174,7 @@ serve(async (req) => {
       // Log cache hit (doesn't count against limit)
       await supabaseClient.from('ai_usage_logs').insert({
         user_id: user.id,
-        agency_id: profile.agency_id,
+        agency_id: agencyId,
         client_id: clientId,
         feature: 'caption_generation',
         model_used: 'cached',
@@ -202,7 +237,7 @@ serve(async (req) => {
     const { data: templates } = await supabaseClient
       .from('ai_text_templates')
       .select('*')
-      .eq('agency_id', client?.agency_id)
+      .eq('agency_id', agencyId)
       .eq('template_type', contentType === 'post' || contentType === 'plan_caption' || contentType === 'plan_description' ? 'caption' : 'script')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -348,7 +383,7 @@ serve(async (req) => {
     // Log usage (counts against limit)
     await supabaseClient.from('ai_usage_logs').insert({
       user_id: user.id,
-      agency_id: profile.agency_id,
+      agency_id: agencyId,
       client_id: clientId,
       feature: 'caption_generation',
       model_used: aiConfig.default_model || 'gpt-4o-mini',
@@ -367,8 +402,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-caption function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error('Error details:', errorDetails);
+    
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: errorMessage,
+      details: errorDetails
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

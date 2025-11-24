@@ -48,13 +48,30 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from Edge Function:', error);
+        // Se o erro contém uma mensagem ou detalhes, exibir
+        const errorMessage = error.message || error.error || 'Erro desconhecido';
+        const errorDetails = error.details || error.error_description || '';
+        throw new Error(errorDetails || errorMessage);
+      }
 
-      if (data.limitReached) {
+      // Verificar se a resposta contém erro
+      if (data?.error) {
+        const errorMessage = data.error || 'Erro desconhecido';
+        const errorDetails = data.details || '';
+        throw new Error(errorDetails || errorMessage);
+      }
+
+      if (data?.limitReached) {
         toast.error("Limite de uso de IA atingido para este mês", {
           description: "Considere fazer upgrade do plano para mais usos de IA"
         });
         return;
+      }
+
+      if (!data?.suggestions) {
+        throw new Error('Resposta inválida da função: sugestões não encontradas');
       }
 
       setSuggestions(data.suggestions || []);
@@ -67,10 +84,11 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
       } else {
         toast.success("Sugestões geradas com sucesso");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating suggestions:', error);
+      const errorMessage = error?.message || error?.error || error?.details || 'Erro ao gerar sugestões. Tente novamente.';
       toast.error("Erro ao gerar sugestões", {
-        description: error instanceof Error ? error.message : "Tente novamente"
+        description: errorMessage
       });
     } finally {
       setLoading(false);
