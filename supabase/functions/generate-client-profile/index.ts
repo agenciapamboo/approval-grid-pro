@@ -38,24 +38,18 @@ serve(async (req) => {
     // Buscar configuração de IA
     const { data: aiConfig, error: configError } = await supabaseClient
       .from('ai_configurations')
-      .select('openai_api_key_encrypted, default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
-      .limit(1)
+      .select('default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
       .single();
 
-    if (configError || !aiConfig?.openai_api_key_encrypted) {
-      throw new Error('OpenAI API key not configured');
+    if (configError) {
+      throw new Error('Failed to fetch AI configuration');
     }
 
-    // Descriptografar a chave de API
-    const { data: decryptedKey } = await supabaseClient.rpc('decrypt_secret', {
-      encrypted_data: aiConfig.openai_api_key_encrypted
-    });
-
-    if (!decryptedKey) {
-      throw new Error('Failed to decrypt OpenAI API key');
+    // Buscar chave do ambiente (Supabase Secret)
+    const openaiApiKey = Deno.env.get('aprova_openai');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured in secrets');
     }
-
-    const openaiApiKey = decryptedKey;
 
     // Verificar limite de uso
     const { data: userData } = await supabaseClient.auth.getUser();

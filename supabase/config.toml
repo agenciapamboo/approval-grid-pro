@@ -72,16 +72,19 @@ verify_jwt = true
 [functions.generate-caption]
 verify_jwt = true
 
+[functions.generate-client-profile]
+verify_jwt = true
+
 [functions.generate-content-suggestions]
+verify_jwt = true
+
+[functions.generate-monthly-editorial]
 verify_jwt = true
 
 [functions.get-ai-config]
 verify_jwt = true
 
 [functions.update-ai-config]
-verify_jwt = true
-
-[functions.generate-monthly-editorial]
 verify_jwt = true
 
 [storage]

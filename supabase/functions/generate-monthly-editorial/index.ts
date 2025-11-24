@@ -172,21 +172,10 @@ serve(async (req) => {
     }
 
     // 7. Buscar OpenAI API Key
-    const { data: aiConfig } = await supabase
-      .from('ai_configurations')
-      .select('openai_api_key_encrypted')
-      .limit(1)
-      .single();
-
-    if (!aiConfig?.openai_api_key_encrypted) {
-      throw new Error('OpenAI API key não configurada');
+    const openaiApiKey = Deno.env.get('aprova_openai');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured in secrets');
     }
-
-    const { data: decryptedData } = await supabase.rpc('decrypt_secret', {
-      encrypted_data: aiConfig.openai_api_key_encrypted
-    });
-
-    const openaiApiKey = decryptedData;
 
     // 8. Gerar linha editorial com OpenAI
     const systemPrompt = `Você é um estrategista de conteúdo para redes sociais.
