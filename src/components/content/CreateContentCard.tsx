@@ -727,9 +727,20 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
 
           {/* Textarea de descrição do plano */}
           <div className="space-y-3 p-4 border rounded-lg">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <FileText className="h-4 w-4" />
-              <span className="text-sm font-medium">Descrição do Plano</span>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm font-medium">Descrição do Plano</span>
+              </div>
+              <AIAssistantIcon
+                clientId={clientId}
+                contentType="plan_description"
+                context={{ title, category }}
+                onInsert={(text) => {
+                  setPlanDescription(text);
+                  setHasChanges(true);
+                }}
+              />
             </div>
             <Textarea
               id="plan-description"

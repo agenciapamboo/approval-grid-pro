@@ -39,15 +39,13 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         ...(captionContext || {}),
       };
 
-      // Passar Authorization header explicitamente
+      // Passar JWT diretamente no body em vez de header para evitar 401
       const { data, error } = await supabase.functions.invoke('generate-caption', {
         body: {
           clientId,
           contentType,
           context: fullContext,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          jwt: session.access_token, // JWT passado no body
         },
       });
 
