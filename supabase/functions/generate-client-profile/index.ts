@@ -35,7 +35,6 @@ serve(async (req) => {
       throw new Error('Template not found');
     }
 
-    // Buscar configuração de IA
     // Buscar chave do ambiente (Supabase Secret)
     const openaiApiKey = Deno.env.get('aprova_openai');
     if (!openaiApiKey) {
