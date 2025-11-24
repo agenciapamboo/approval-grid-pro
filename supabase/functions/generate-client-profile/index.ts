@@ -36,20 +36,25 @@ serve(async (req) => {
     }
 
     // Buscar configuração de IA
-    const { data: aiConfig, error: configError } = await supabaseClient
-      .from('ai_configurations')
-      .select('default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
-      .single();
-
-    if (configError) {
-      throw new Error('Failed to fetch AI configuration');
-    }
-
     // Buscar chave do ambiente (Supabase Secret)
     const openaiApiKey = Deno.env.get('aprova_openai');
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured in secrets');
     }
+
+    // Buscar configuração de IA (com valores padrão como fallback)
+    const { data: aiConfigData } = await supabaseClient
+      .from('ai_configurations')
+      .select('default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
+      .limit(1);
+
+    const aiConfig = aiConfigData?.[0] || {
+      default_model: 'gpt-4o-mini',
+      prompt_behavior: 'Seja criativo, objetivo e sempre mantenha a consistência com a identidade da marca.',
+      prompt_skills: 'Você é um assistente especializado em marketing digital e criação de conteúdo.',
+      temperature: 0.7,
+      max_tokens_briefing: 2000
+    };
 
     // Verificar limite de uso
     const { data: userData } = await supabaseClient.auth.getUser();
