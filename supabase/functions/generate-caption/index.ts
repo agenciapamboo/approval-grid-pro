@@ -30,31 +30,13 @@ serve(async (req) => {
       });
     }
 
-    // Ler body primeiro (antes de criar cliente para não consumir o stream)
-    let body;
-    try {
-      body = await req.json();
-      console.log('Body received:', { clientId: body.clientId, contentType: body.contentType });
-    } catch (parseError) {
-      console.error('Error parsing body:', parseError);
-      return new Response(JSON.stringify({ 
-        error: 'Invalid request body',
-        details: parseError instanceof Error ? parseError.message : 'Failed to parse JSON'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    const { clientId, contentType, context } = body;
-
     // Criar cliente Supabase com header Authorization padrão
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
@@ -74,6 +56,9 @@ serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id);
+
+    // Ler body após autenticação
+    const { clientId, contentType, context } = await req.json();
 
     if (!clientId || !contentType) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
