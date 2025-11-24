@@ -1,12 +1,35 @@
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AIConfiguration } from "@/components/admin/AIConfiguration";
 import { AICostDashboard } from "@/components/admin/AICostDashboard";
-import { Sparkles, Database, TrendingUp } from "lucide-react";
+import { Sparkles, Database, TrendingUp, AlertCircle } from "lucide-react";
 import AccessGate from "@/components/auth/AccessGate";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AISettings() {
+  const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.rpc('get_user_role', { _user_id: user.id });
+          setRole(data);
+        }
+      } catch (error) {
+        console.error('Error checking role:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRole();
+  }, []);
+
   return (
     <AccessGate allow={['super_admin', 'agency_admin']}>
       <AppLayout>
@@ -23,6 +46,17 @@ export default function AISettings() {
               </p>
             </div>
           </div>
+
+          {/* Alerta para Agency Admin */}
+          {!loading && role === 'agency_admin' && (
+            <Alert className="border-blue-500/20 bg-blue-500/10">
+              <AlertCircle className="h-4 w-4 text-blue-500" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
+                <strong>Modo Visualização:</strong> Você pode visualizar as configurações de IA, mas apenas Super Admins podem editá-las. 
+                Configurações globais afetam toda a plataforma.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Tabs */}
           <Tabs defaultValue="config" className="w-full">

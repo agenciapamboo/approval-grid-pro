@@ -39,6 +39,8 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         ...(captionContext || {}),
       };
 
+      console.log('Calling generate-caption with:', { clientId, contentType, context: fullContext });
+
       // O Supabase client automaticamente envia o token no header Authorization
       const { data, error } = await supabase.functions.invoke('generate-caption', {
         body: {
@@ -48,18 +50,74 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         },
       });
 
+      // Tratar erros da Edge Function
       if (error) {
         console.error('Error from Edge Function:', error);
-        // Se o erro contém uma mensagem ou detalhes, exibir
-        const errorMessage = error.message || error.error || 'Erro desconhecido';
-        const errorDetails = error.details || error.error_description || '';
-        throw new Error(errorDetails || errorMessage);
+        console.error('Error object:', JSON.stringify(error, null, 2));
+        
+        // Tentar extrair mensagem de erro
+        let errorMessage = 'Erro ao gerar sugestões';
+        let errorDetails = '';
+        
+        // Verificar se o erro tem uma mensagem direta
+        if ((error as any)?.message) {
+          errorDetails = (error as any).message;
+        }
+        
+        // Verificar se há dados no erro que podem conter a mensagem
+        if ((error as any)?.error) {
+          errorMessage = (error as any).error;
+          errorDetails = (error as any).error;
+        }
+        
+        // Se há um objeto de contexto com resposta
+        const errorContext = (error as any)?.context;
+        if (errorContext) {
+          // Tentar extrair mensagem do contexto
+          if (errorContext.message) {
+            errorDetails = errorContext.message;
+          }
+          
+          // Se há uma resposta no contexto, tentar extrair JSON
+          if (errorContext.response) {
+            try {
+              const clonedResponse = errorContext.response.clone();
+              const errorResponse = await clonedResponse.json().catch(() => null);
+              if (errorResponse) {
+                errorMessage = errorResponse.error || errorMessage;
+                errorDetails = errorResponse.details || errorResponse.error || errorDetails;
+              } else {
+                // Tentar como texto
+                const errorText = await clonedResponse.text().catch(() => null);
+                if (errorText) {
+                  try {
+                    const parsed = JSON.parse(errorText);
+                    errorMessage = parsed.error || errorMessage;
+                    errorDetails = parsed.details || parsed.error || errorDetails;
+                  } catch {
+                    errorDetails = errorText || errorDetails;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing error response:', e);
+            }
+          }
+        }
+        
+        // Se ainda não temos detalhes, usar mensagem padrão
+        if (!errorDetails || errorDetails === errorMessage) {
+          errorDetails = errorMessage || 'Não foi possível gerar sugestões. Verifique sua conexão e tente novamente.';
+        }
+        
+        throw new Error(errorDetails);
       }
 
-      // Verificar se a resposta contém erro
+      // Verificar se a resposta contém erro (mesmo com status 200)
       if (data?.error) {
         const errorMessage = data.error || 'Erro desconhecido';
         const errorDetails = data.details || '';
+        console.error('Error in response data:', { error: errorMessage, details: errorDetails });
         throw new Error(errorDetails || errorMessage);
       }
 
