@@ -15,6 +15,7 @@ export function RoleProtectedRoute({ children, allow }: RoleProtectedRouteProps)
   const { user, loading: authLoading } = useAuth();
   const { role, loading: roleLoading } = useUserData();
 
+  // Aguardar carregamento completo da autenticação e role
   if (authLoading || roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -26,12 +27,27 @@ export function RoleProtectedRoute({ children, allow }: RoleProtectedRouteProps)
     );
   }
 
+  // Só redirecionar para auth se não tiver usuário E o loading já terminou
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!role || !allow.includes(role)) {
+  // Só redirecionar para dashboard se o role foi carregado e não está na lista de permitidos
+  // Isso evita redirecionamento durante o carregamento inicial
+  if (role && !allow.includes(role)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Se ainda não tem role definido mas não está loading, aguardar
+  if (!role) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
