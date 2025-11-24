@@ -69,7 +69,7 @@ serve(async (req) => {
       .from('profiles')
       .select('agency_id, client_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('Erro ao buscar profile:', profileError);
@@ -86,7 +86,7 @@ serve(async (req) => {
       console.error('Profile not found for user:', user.id);
       return new Response(JSON.stringify({ 
         error: 'Profile not found',
-        details: 'Perfil do usuário não encontrado' 
+        details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.' 
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
