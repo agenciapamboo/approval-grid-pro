@@ -13,8 +13,39 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== Generate Caption Function Called ===');
+    console.log('Method:', req.method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+    
+    // Verificar se há Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No Authorization header found');
+      return new Response(JSON.stringify({ 
+        error: 'Authentication failed', 
+        details: 'Authorization header missing' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Ler body primeiro (antes de criar cliente para não consumir o stream)
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+      console.log('Body received:', { clientId: body.clientId, contentType: body.contentType });
+    } catch (parseError) {
+      console.error('Error parsing body:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid request body',
+        details: parseError instanceof Error ? parseError.message : 'Failed to parse JSON'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const { clientId, contentType, context } = body;
 
     // Criar cliente Supabase com header Authorization padrão
@@ -52,18 +83,35 @@ serve(async (req) => {
     }
 
     // Buscar perfil do usuário
-    const { data: profile } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('agency_id, client_id')
       .eq('id', user.id)
       .single();
 
+    if (profileError) {
+      console.error('Erro ao buscar profile:', profileError);
+      return new Response(JSON.stringify({ 
+        error: 'Profile error', 
+        details: profileError.message || 'Erro ao buscar perfil do usuário' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!profile) {
-      return new Response(JSON.stringify({ error: 'Profile not found' }), {
+      console.error('Profile not found for user:', user.id);
+      return new Response(JSON.stringify({ 
+        error: 'Profile not found',
+        details: 'Perfil do usuário não encontrado' 
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Profile found:', { agency_id: profile.agency_id, client_id: profile.client_id });
 
     // Buscar agency_id: pode estar no profile ou através do client_id
     let agencyId = profile.agency_id;
@@ -79,7 +127,10 @@ serve(async (req) => {
 
       if (clientError) {
         console.error('Erro ao buscar cliente:', clientError);
-        return new Response(JSON.stringify({ error: 'Client not found', details: clientError.message }), {
+        return new Response(JSON.stringify({ 
+          error: 'Client not found', 
+          details: clientError.message || 'Cliente não encontrado' 
+        }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -93,11 +144,16 @@ serve(async (req) => {
 
     if (!agencyId) {
       console.error('Agency not found. Profile agency_id:', profile.agency_id, 'Client ID:', clientId);
-      return new Response(JSON.stringify({ error: 'Agency not found for this client', details: 'Não foi possível identificar a agência associada ao cliente' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Agency not found', 
+        details: 'Não foi possível identificar a agência associada ao cliente. Verifique se o cliente está vinculado a uma agência.' 
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    console.log('Using agency_id:', agencyId);
 
     // Buscar dados da agência para verificar o plano
     const { data: agency } = await supabaseClient
@@ -162,14 +218,20 @@ serve(async (req) => {
       .single();
 
     if (cachedResponse) {
-      // Update hit count
-      await supabaseClient
+      console.log('Cache hit found for prompt hash:', promptHash);
+      
+      // Update hit count (usar update simples em vez de RPC)
+      const { error: updateError } = await supabaseClient
         .from('ai_response_cache')
         .update({ 
-          hit_count: supabaseClient.rpc('increment', { row_id: cachedResponse.id }),
           last_hit_at: new Date().toISOString()
         })
         .eq('id', cachedResponse.id);
+      
+      if (updateError) {
+        console.error('Error updating cache hit:', updateError);
+        // Não falhar se não conseguir atualizar o cache
+      }
 
       // Log cache hit (doesn't count against limit)
       await supabaseClient.from('ai_usage_logs').insert({
