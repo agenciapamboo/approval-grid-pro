@@ -20,6 +20,9 @@ interface Template {
   template_content: string;
   category: string | null;
   tone: string[] | null;
+  text_structure: string | null;
+  example: string | null;
+  structure_link: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -36,6 +39,9 @@ export default function AITextTemplateManager() {
     template_content: "",
     category: "",
     tone: [] as string[],
+    text_structure: "",
+    example: "",
+    structure_link: "",
   });
 
   useEffect(() => {
@@ -75,6 +81,16 @@ export default function AITextTemplateManager() {
         return;
       }
 
+      // Validar URL se fornecida
+      if (formData.structure_link && !formData.structure_link.match(/^https?:\/\/.+/)) {
+        toast({
+          title: "Link inválido",
+          description: "O link deve começar com http:// ou https://",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
@@ -94,6 +110,9 @@ export default function AITextTemplateManager() {
             template_content: formData.template_content,
             category: formData.category || null,
             tone: formData.tone.length > 0 ? formData.tone : null,
+            text_structure: formData.text_structure || null,
+            example: formData.example || null,
+            structure_link: formData.structure_link || null,
           })
           .eq("id", editingTemplate.id);
 
@@ -107,6 +126,9 @@ export default function AITextTemplateManager() {
             template_content: formData.template_content,
             category: formData.category || null,
             tone: formData.tone.length > 0 ? formData.tone : null,
+            text_structure: formData.text_structure || null,
+            example: formData.example || null,
+            structure_link: formData.structure_link || null,
             agency_id: profile.agency_id,
             created_by: user.id,
           });
@@ -167,6 +189,9 @@ export default function AITextTemplateManager() {
       template_content: template.template_content,
       category: template.category || "",
       tone: template.tone || [],
+      text_structure: template.text_structure || "",
+      example: template.example || "",
+      structure_link: template.structure_link || "",
     });
     setShowDialog(true);
   };
@@ -178,6 +203,9 @@ export default function AITextTemplateManager() {
       template_content: "",
       category: "",
       tone: [],
+      text_structure: "",
+      example: "",
+      structure_link: "",
     });
     setEditingTemplate(null);
   };
@@ -343,7 +371,7 @@ export default function AITextTemplateManager() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label htmlFor="name">Nome do Template *</Label>
               <Input
@@ -370,13 +398,55 @@ export default function AITextTemplateManager() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
+              <Label htmlFor="category">Categoria/Formato</Label>
               <Input
                 id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="Ex: social, promocional, educacional"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="text_structure">Estrutura de Texto</Label>
+              <Textarea
+                id="text_structure"
+                value={formData.text_structure}
+                onChange={(e) => setFormData({ ...formData, text_structure: e.target.value })}
+                placeholder="Ex: Introdução + Problema + Solução + Call-to-Action"
+                className="min-h-[100px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Defina a estrutura que o texto deve seguir
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="example">Exemplo</Label>
+              <Textarea
+                id="example"
+                value={formData.example}
+                onChange={(e) => setFormData({ ...formData, example: e.target.value })}
+                placeholder="Digite um exemplo prático de como o template seria aplicado..."
+                className="min-h-[150px] font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Exemplo concreto de texto seguindo este template
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="structure_link">Link de Estrutura Aplicada (opcional)</Label>
+              <Input
+                id="structure_link"
+                type="url"
+                value={formData.structure_link}
+                onChange={(e) => setFormData({ ...formData, structure_link: e.target.value })}
+                placeholder="https://exemplo.com/referencia-estrutura"
+              />
+              <p className="text-xs text-muted-foreground">
+                Link de referência para a estrutura (opcional)
+              </p>
             </div>
 
             <div className="space-y-2">

@@ -227,11 +227,14 @@ export type Database = {
           category: string | null
           created_at: string | null
           created_by: string | null
+          example: string | null
           id: string
           is_active: boolean | null
+          structure_link: string | null
           template_content: string
           template_name: string
           template_type: string
+          text_structure: string | null
           tone: string[] | null
           updated_at: string | null
         }
@@ -240,11 +243,14 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
+          example?: string | null
           id?: string
           is_active?: boolean | null
+          structure_link?: string | null
           template_content: string
           template_name: string
           template_type: string
+          text_structure?: string | null
           tone?: string[] | null
           updated_at?: string | null
         }
@@ -253,11 +259,14 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
+          example?: string | null
           id?: string
           is_active?: boolean | null
+          structure_link?: string | null
           template_content?: string
           template_name?: string
           template_type?: string
+          text_structure?: string | null
           tone?: string[] | null
           updated_at?: string | null
         }
