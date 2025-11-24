@@ -25,16 +25,29 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
 
     setLoading(true);
     try {
+      // Buscar sessão ativa para pegar token de autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        setLoading(false);
+        return;
+      }
+
       const fullContext = {
         ...context,
         ...(captionContext || {}),
       };
 
-      const { data, error } = await (supabase as any).functions.invoke('generate-caption', {
+      // Passar Authorization header explicitamente
+      const { data, error } = await supabase.functions.invoke('generate-caption', {
         body: {
           clientId,
           contentType,
           context: fullContext,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
