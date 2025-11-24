@@ -13,38 +13,30 @@ serve(async (req) => {
   }
 
   try {
-    // Parse body primeiro para extrair JWT
-    const { clientId, contentType, context, jwt } = await req.json();
-    
-    // Validar JWT recebido no body
-    if (!jwt) {
-      console.error('Missing JWT in request body');
-      return new Response(JSON.stringify({ error: 'Authentication failed', details: 'Auth session missing!' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Ler body primeiro (antes de criar cliente para não consumir o stream)
+    const body = await req.json();
+    const { clientId, contentType, context } = body;
 
-    // Criar cliente Supabase
+    // Criar cliente Supabase com header Authorization padrão
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
     );
 
-    // Validar JWT diretamente usando getUser(jwt)
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
+    // Validar autenticação usando padrão Supabase
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
-    if (authError) {
-      console.error('Auth error:', authError);
-      return new Response(JSON.stringify({ error: 'Authentication failed', details: authError.message }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    if (!user) {
-      console.error('No user found after auth');
-      return new Response(JSON.stringify({ error: 'Authentication failed', details: 'Auth session missing!' }), {
+    if (authError || !user) {
+      console.error('Auth error:', authError?.message || 'No user found');
+      return new Response(JSON.stringify({ 
+        error: 'Authentication failed', 
+        details: authError?.message || 'Auth session missing!' 
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

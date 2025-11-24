@@ -25,7 +25,7 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
 
     setLoading(true);
     try {
-      // Buscar sessão ativa para pegar token de autenticação
+      // Verificar sessão ativa
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -39,13 +39,12 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         ...(captionContext || {}),
       };
 
-      // Passar JWT diretamente no body em vez de header para evitar 401
+      // O Supabase client automaticamente envia o token no header Authorization
       const { data, error } = await supabase.functions.invoke('generate-caption', {
         body: {
           clientId,
           contentType,
           context: fullContext,
-          jwt: session.access_token, // JWT passado no body
         },
       });
 
