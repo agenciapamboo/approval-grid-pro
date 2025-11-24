@@ -18,7 +18,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    const { briefingResponses, templateId, clientId } = await req.json();
+    const { briefingResponses, templateId, clientId, briefingType = 'client_profile' } = await req.json();
 
     if (!briefingResponses || !templateId || !clientId) {
       throw new Error('Missing required parameters');
@@ -27,7 +27,7 @@ serve(async (req) => {
     // Buscar template e system prompt
     const { data: template, error: templateError } = await supabaseClient
       .from('briefing_templates')
-      .select('system_prompt, name')
+      .select('system_prompt, name, template_type')
       .eq('id', templateId)
       .single();
 
@@ -103,12 +103,16 @@ serve(async (req) => {
       }
     }
 
-    // Gerar hash do prompt para cache
+    // Determinar se é linha editorial
+    const isEditorialLine = briefingType === 'editorial_line' || template.template_type === 'editorial_line';
+    
+    // Gerar hash do prompt para cache (incluir tipo de briefing para diferenciar)
     const promptInput = {
       template: template.system_prompt,
       responses: briefingResponses,
       behavior: aiConfig.prompt_behavior,
-      skills: aiConfig.prompt_skills
+      skills: aiConfig.prompt_skills,
+      briefingType: briefingType || template.template_type
     };
     
     const encoder = new TextEncoder();
@@ -147,7 +151,17 @@ serve(async (req) => {
 
     } else {
       // Chamar OpenAI
-      const systemPrompt = `${template.system_prompt}
+      const systemPrompt = isEditorialLine
+        ? `${template.system_prompt}
+
+Comportamento: ${aiConfig.prompt_behavior || 'Profissional e objetivo'}
+Habilidades: ${aiConfig.prompt_skills || 'Análise de mercado, estratégia de conteúdo'}
+
+Retorne um JSON válido com a seguinte estrutura:
+{
+  "editorial_line": "Linha editorial detalhada e completa, descrevendo o posicionamento, tom de voz, temas principais, abordagem de conteúdo e diretrizes editoriais para o cliente"
+}`
+        : `${template.system_prompt}
 
 Comportamento: ${aiConfig.prompt_behavior || 'Profissional e objetivo'}
 Habilidades: ${aiConfig.prompt_skills || 'Análise de mercado, estratégia de conteúdo'}
@@ -227,26 +241,69 @@ Retorne um JSON válido com a seguinte estrutura:
         });
     }
 
-    // Salvar perfil gerado
-    const { error: upsertError } = await supabaseClient
-      .from('client_ai_profiles')
-      .upsert({
-        client_id: clientId,
-        briefing_template_id: templateId,
-        briefing_responses: briefingResponses,
-        ai_generated_profile: profile,
-        editorial_line: profile.editorial_line,
-        keywords: profile.keywords,
-        tone_of_voice: profile.tone_of_voice,
-        content_pillars: profile.content_pillars
-      }, {
-        onConflict: 'client_id'
-      });
+    // Salvar perfil gerado ou atualizar apenas linha editorial
+    if (isEditorialLine) {
+      // Para linha editorial, atualizar apenas o campo editorial_line
+      const { data: existingProfile } = await supabaseClient
+        .from('client_ai_profiles')
+        .select('*')
+        .eq('client_id', clientId)
+        .single();
 
-    if (upsertError) {
-      console.error('Error saving profile:', upsertError);
-      throw upsertError;
+      if (existingProfile) {
+        // Atualizar apenas a linha editorial
+        const { error: updateError } = await supabaseClient
+          .from('client_ai_profiles')
+          .update({
+            editorial_line: profile.editorial_line,
+            updated_at: new Date().toISOString()
+          })
+          .eq('client_id', clientId);
+
+        if (updateError) {
+          console.error('Error updating editorial line:', updateError);
+          throw updateError;
+        }
+      } else {
+        // Criar registro mínimo se não existir perfil
+        const { error: insertError } = await supabaseClient
+          .from('client_ai_profiles')
+          .insert({
+            client_id: clientId,
+            briefing_template_id: templateId,
+            briefing_responses: briefingResponses,
+            editorial_line: profile.editorial_line,
+            ai_generated_profile: { editorial_line: profile.editorial_line }
+          });
+
+        if (insertError) {
+          console.error('Error inserting editorial line:', insertError);
+          throw insertError;
+        }
+      }
+    } else {
+      // Para perfil completo, fazer upsert normal
+      const { error: upsertError } = await supabaseClient
+        .from('client_ai_profiles')
+        .upsert({
+          client_id: clientId,
+          briefing_template_id: templateId,
+          briefing_responses: briefingResponses,
+          ai_generated_profile: profile,
+          editorial_line: profile.editorial_line,
+          keywords: profile.keywords,
+          tone_of_voice: profile.tone_of_voice,
+          content_pillars: profile.content_pillars
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (upsertError) {
+        console.error('Error saving profile:', upsertError);
+        throw upsertError;
+      }
     }
+
 
     // Log de uso
     if (userData.user) {
