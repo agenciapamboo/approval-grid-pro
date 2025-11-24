@@ -24,6 +24,7 @@ export interface CaptionContext {
   objective: string;
   toneOfVoice: string;
   expectedAction: string;
+  templateId?: string; // ID do template de roteiro selecionado
 }
 
 export function CaptionContextDialog({ 
@@ -41,6 +42,9 @@ export function CaptionContextDialog({
   const [expectedAction, setExpectedAction] = useState("");
   const [brandTone, setBrandTone] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [templates, setTemplates] = useState<Array<{ id: string; template_name: string }>>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   useEffect(() => {
     if (!open || !clientId) return;
@@ -66,9 +70,44 @@ export function CaptionContextDialog({
       }
     };
 
+    // Carregar templates de roteiro se contentType for plan_description
+    const loadTemplates = async () => {
+      if (contentType !== 'post') return; // Só carregar para posts/planos
+      
+      setLoadingTemplates(true);
+      try {
+        // Buscar agency_id do cliente
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('agency_id')
+          .eq('id', clientId)
+          .single();
+        
+        if (!clientData?.agency_id) return;
+        
+        // Buscar templates da agência
+        const { data: templatesData } = await supabase
+          .from('ai_text_templates')
+          .select('id, template_name')
+          .eq('agency_id', clientData.agency_id)
+          .eq('template_type', 'script')
+          .eq('is_active', true)
+          .order('template_name');
+        
+        if (templatesData) {
+          setTemplates(templatesData);
+        }
+      } catch (error) {
+        console.error('Error loading templates:', error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
     loadBrandTone();
+    loadTemplates();
     setTitle(initialTitle);
-  }, [open, clientId, initialTitle]);
+  }, [open, clientId, initialTitle, contentType]);
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -81,6 +120,7 @@ export function CaptionContextDialog({
       objective,
       toneOfVoice,
       expectedAction,
+      templateId: selectedTemplate || undefined,
     });
   };
 
@@ -153,6 +193,33 @@ export function CaptionContextDialog({
               </Select>
             )}
           </div>
+
+          {/* Template de Roteiro - aparece apenas para plan_description ou posts */}
+          {contentType === 'post' && templates.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="template">Template de Roteiro (opcional)</Label>
+              {loadingTemplates ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando templates...
+                </div>
+              ) : (
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger id="template">
+                    <SelectValue placeholder="Selecione um template ou crie novo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sem template (criar novo)</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.template_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
 
           {/* Ação Esperada */}
           <div className="space-y-2">

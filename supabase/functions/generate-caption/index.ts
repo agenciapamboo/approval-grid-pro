@@ -13,27 +13,26 @@ serve(async (req) => {
   }
 
   try {
-    // Check for Authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('Missing Authorization header');
-      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+    // Parse body primeiro para extrair JWT
+    const { clientId, contentType, context, jwt } = await req.json();
+    
+    // Validar JWT recebido no body
+    if (!jwt) {
+      console.error('Missing JWT in request body');
+      return new Response(JSON.stringify({ error: 'Authentication failed', details: 'Auth session missing!' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Criar cliente Supabase
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Validar JWT diretamente usando getUser(jwt)
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     
     if (authError) {
       console.error('Auth error:', authError);
@@ -45,15 +44,13 @@ serve(async (req) => {
     
     if (!user) {
       console.error('No user found after auth');
-      return new Response(JSON.stringify({ error: 'User not authenticated' }), {
+      return new Response(JSON.stringify({ error: 'Authentication failed', details: 'Auth session missing!' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     console.log('User authenticated:', user.id);
-
-    const { clientId, contentType, context } = await req.json();
 
     if (!clientId || !contentType) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
