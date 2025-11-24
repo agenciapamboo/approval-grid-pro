@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, CheckCircle2, Calendar } from "lucide-react";
+import { Loader2, Sparkles, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -124,7 +124,7 @@ export function EditorialLineAssistant({
   };
 
   const handleGenerateContent = async () => {
-    if (!selectedClientId || !editorialData?.monthly_structure || selectedWeek === null) {
+    if (!selectedClientId || !editorialData?.monthly_structure || selectedWeek === null || !selectedMonth) {
       toast.error("Selecione um cliente, semana e mês");
       return;
     }
@@ -142,6 +142,9 @@ export function EditorialLineAssistant({
 
       // Calcular data da semana selecionada no mês escolhido
       const [year, month] = selectedMonth.split('-').map(Number);
+      if (!year || !month) {
+        throw new Error("Data inválida");
+      }
       const weekStartDate = new Date(year, month - 1, 1 + (selectedWeek - 1) * 7);
 
       // Criar conteúdos para cada post da semana
@@ -287,7 +290,7 @@ export function EditorialLineAssistant({
                     <p className="text-sm text-muted-foreground">
                       {typeof editorialData.editorial_line === 'string' 
                         ? editorialData.editorial_line 
-                        : editorialData.editorial_line}
+                        : JSON.stringify(editorialData.editorial_line)}
                     </p>
                   </CardContent>
                 </Card>
