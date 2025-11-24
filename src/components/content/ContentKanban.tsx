@@ -26,13 +26,14 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users, GripVertical, ImageIcon, Video, Images, Smartphone } from "lucide-react";
+import { Eye, Calendar, RefreshCw, Send, Plus, X, ChevronDown, ChevronUp, MessageSquare, Paperclip, Upload, FileIcon, ZoomIn, Loader2, CheckCircle2, CalendarIcon, AlertCircle, Hand, Keyboard, Users, GripVertical, ImageIcon, Video, Images, Smartphone, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RequestCard } from "./RequestCard";
 import { RequestDetailsDialog } from "./RequestDetailsDialog";
 import { ContentDetailsDialog } from "./ContentDetailsDialog";
 import { CreateContentWrapper } from "./CreateContentWrapper";
+import { EditorialLineAssistant } from "./EditorialLineAssistant";
 
 interface Content {
   id: string;
@@ -233,6 +234,9 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   const [isNewContentOpen, setIsNewContentOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showClientSelector, setShowClientSelector] = useState(false);
+  
+  // Estado para assistente de linha editorial
+  const [showEditorialAssistant, setShowEditorialAssistant] = useState(false);
   
   // Estados para histórico de dias e filtros
   const [historyDays, setHistoryDays] = useState<number>(30);
@@ -1203,15 +1207,26 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
             <CardDescription>Gerencie o workflow dos conteúdos</CardDescription>
           </div>
           
-          {/* Botão Novo Conteúdo - Full width em mobile */}
-          <Button
-            onClick={() => setShowClientSelector(true)}
-            className="w-full md:w-auto gap-2"
-            size="sm"
-          >
-            <Plus className="h-4 w-4" />
-            Novo Conteúdo
-          </Button>
+          {/* Botões de ação - Full width em mobile */}
+          <div className="flex flex-col md:flex-row gap-2">
+            <Button
+              onClick={() => setShowClientSelector(true)}
+              className="w-full md:w-auto gap-2"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Conteúdo
+            </Button>
+            <Button
+              onClick={() => setShowEditorialAssistant(true)}
+              className="w-full md:w-auto gap-2 bg-green-500 hover:bg-green-600"
+              size="sm"
+              variant="default"
+            >
+              <Sparkles className="h-4 w-4" />
+              Assistente IA - Linha Editorial
+            </Button>
+          </div>
           
           {/* Atalhos - Grid 2 colunas em mobile */}
           <div className="grid grid-cols-2 md:flex md:flex-row gap-2">
@@ -2070,6 +2085,17 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           </Select>
         </DialogContent>
       </Dialog>
+
+      {/* Assistente de IA - Linha Editorial */}
+      <EditorialLineAssistant
+        open={showEditorialAssistant}
+        onOpenChange={setShowEditorialAssistant}
+        agencyId={agencyId}
+        onContentCreated={() => {
+          loadContents();
+          setShowEditorialAssistant(false);
+        }}
+      />
 
       {/* Dialog de criação de conteúdo */}
       {selectedClientId && (
