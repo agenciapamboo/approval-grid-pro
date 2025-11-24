@@ -94,13 +94,29 @@ export default function AITextTemplateManager() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("agency_id")
-        .eq("id", user.id)
-        .single();
+      // Verificar se é super_admin
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["super_admin"]);
 
-      if (!profile?.agency_id) throw new Error("Agência não encontrada");
+      const isSuperAdmin = roles && roles.length > 0;
+
+      // Buscar agency_id apenas se não for super_admin
+      let agencyId: string | null = null;
+      if (!isSuperAdmin) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("agency_id")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile?.agency_id) {
+          throw new Error("Agência não encontrada. Apenas super admins podem criar templates sem agência.");
+        }
+        agencyId = profile.agency_id;
+      }
 
       if (editingTemplate) {
         const { error } = await supabase
@@ -116,24 +132,36 @@ export default function AITextTemplateManager() {
           })
           .eq("id", editingTemplate.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro detalhado ao atualizar template:", error);
+          throw error;
+        }
       } else {
+        const insertData: any = {
+          template_name: formData.template_name,
+          template_type: formData.template_type,
+          template_content: formData.template_content,
+          category: formData.category || null,
+          tone: formData.tone.length > 0 ? formData.tone : null,
+          text_structure: formData.text_structure || null,
+          example: formData.example || null,
+          structure_link: formData.structure_link || null,
+          created_by: user.id,
+        };
+
+        // Incluir agency_id apenas se não for super_admin (super_admin pode ter NULL)
+        if (agencyId) {
+          insertData.agency_id = agencyId;
+        }
+
         const { error } = await supabase
           .from("ai_text_templates")
-          .insert({
-            template_name: formData.template_name,
-            template_type: formData.template_type,
-            template_content: formData.template_content,
-            category: formData.category || null,
-            tone: formData.tone.length > 0 ? formData.tone : null,
-            text_structure: formData.text_structure || null,
-            example: formData.example || null,
-            structure_link: formData.structure_link || null,
-            agency_id: profile.agency_id,
-            created_by: user.id,
-          });
+          .insert(insertData);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro detalhado ao criar template:", error);
+          throw error;
+        }
       }
 
       toast({
@@ -144,11 +172,12 @@ export default function AITextTemplateManager() {
       setShowDialog(false);
       resetForm();
       loadTemplates();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar template:", error);
+      const errorMessage = error?.message || error?.error_description || "Erro desconhecido";
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar o template",
+        description: errorMessage || "Não foi possível salvar o template",
         variant: "destructive",
       });
     }
