@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, FileEdit } from "lucide-react";
+import { useStorageUrl } from "@/hooks/useStorageUrl";
 
 interface EditCreativeRequestDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ export function EditCreativeRequestDialog({ open, onOpenChange, request }: EditC
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [signedUrls, setSignedUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     type: "",
@@ -38,8 +40,30 @@ export function EditCreativeRequestDialog({ open, onOpenChange, request }: EditC
         observations: request.payload.observations || "",
         reference_files: request.payload.reference_files || [],
       });
+      
+      // Gerar signed URLs para as imagens de referência
+      if (request.payload.reference_files?.length > 0) {
+        loadSignedUrls(request.payload.reference_files);
+      }
     }
   }, [request]);
+  
+  const loadSignedUrls = async (paths: string[]) => {
+    try {
+      const urls = await Promise.all(
+        paths.map(async (path) => {
+          const { data } = await supabase.functions.invoke('get-media-url', {
+            body: { path }
+          });
+          return data?.url || path;
+        })
+      );
+      setSignedUrls(urls);
+    } catch (error) {
+      console.error('Erro ao gerar signed URLs:', error);
+      setSignedUrls(paths);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,9 +200,9 @@ export function EditCreativeRequestDialog({ open, onOpenChange, request }: EditC
                 <Upload className="h-8 w-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground text-center">Adicionar novas imagens para referência</p>
               </label>
-              {formData.reference_files?.length > 0 && (
+              {signedUrls.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  {formData.reference_files.map((url, i) => (
+                  {signedUrls.map((url, i) => (
                     <img key={i} src={url} alt={`ref-${i}`} className="w-full h-24 object-cover rounded" />
                   ))}
                 </div>

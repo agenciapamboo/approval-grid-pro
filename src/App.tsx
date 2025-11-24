@@ -57,6 +57,7 @@ const TeamMembersManager = lazy(() => import("./pages/admin/TeamMembersManager")
 const DatabaseBackups = lazy(() => import("./pages/admin/DatabaseBackups"));
 const AISettings = lazy(() => import("./pages/admin/AISettings"));
 const BriefingTemplates = lazy(() => import("./pages/admin/BriefingTemplates"));
+const AITextTemplateManager = lazy(() => import("./components/admin/AITextTemplateManager"));
 const ClientBriefing = lazy(() => import("./pages/ClientBriefing"));
 const ManageApprovers = lazy(() => import("./pages/ManageApprovers"));
 const AgencySettings = lazy(() => import("./pages/AgencySettings"));
@@ -154,6 +155,7 @@ const App = () => (
                 <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
                 <Route path="/admin/backups" element={<RoleProtectedRoute allow={['super_admin']}><DatabaseBackups /></RoleProtectedRoute>} />
                 <Route path="/admin/ai" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><AISettings /></RoleProtectedRoute>} />
+                <Route path="/admin/ai-templates" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><AITextTemplateManager /></RoleProtectedRoute>} />
                 <Route path="/admin/briefing-templates" element={<RoleProtectedRoute allow={['super_admin']}><BriefingTemplates /></RoleProtectedRoute>} />
                 <Route path="/cliente/:clientId/briefing" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'client_user']}><ClientBriefing /></RoleProtectedRoute>} />
                 

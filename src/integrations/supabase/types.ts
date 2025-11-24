@@ -221,6 +221,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_text_templates: {
+        Row: {
+          agency_id: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          template_content: string
+          template_name: string
+          template_type: string
+          tone: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_content: string
+          template_name: string
+          template_type: string
+          tone?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          template_content?: string
+          template_name?: string
+          template_type?: string
+          tone?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_text_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage_logs: {
         Row: {
           agency_id: string | null
