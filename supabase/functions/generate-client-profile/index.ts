@@ -35,15 +35,25 @@ serve(async (req) => {
       throw new Error('Template not found');
     }
 
-    // Buscar configuração de IA
-    const { data: aiConfig, error: configError } = await supabaseClient
-      .from('ai_configurations')
-      .select('openai_api_key_encrypted, default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
-      .single();
-
-    if (configError || !aiConfig?.openai_api_key_encrypted) {
-      throw new Error('OpenAI API key not configured');
+    // Buscar chave do ambiente (Supabase Secret)
+    const openaiApiKey = Deno.env.get('aprova_openai');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured in secrets');
     }
+
+    // Buscar configuração de IA (com valores padrão como fallback)
+    const { data: aiConfigData } = await supabaseClient
+      .from('ai_configurations')
+      .select('default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
+      .limit(1);
+
+    const aiConfig = aiConfigData?.[0] || {
+      default_model: 'gpt-4o-mini',
+      prompt_behavior: 'Seja criativo, objetivo e sempre mantenha a consistência com a identidade da marca.',
+      prompt_skills: 'Você é um assistente especializado em marketing digital e criação de conteúdo.',
+      temperature: 0.7,
+      max_tokens_briefing: 2000
+    };
 
     // Verificar limite de uso
     const { data: userData } = await supabaseClient.auth.getUser();
@@ -179,7 +189,7 @@ Retorne um JSON válido com a seguinte estrutura:
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${aiConfig.openai_api_key_encrypted}`,
+          'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -234,6 +244,7 @@ Retorne um JSON válido com a seguinte estrutura:
         client_id: clientId,
         briefing_template_id: templateId,
         briefing_responses: briefingResponses,
+<<<<<<< HEAD
         ai_generated_profile: profile,
         profile_summary: profile.summary,
         target_persona: profile.target_persona,
@@ -246,6 +257,18 @@ Retorne um JSON válido com a seguinte estrutura:
         best_posting_times: profile.content_strategy?.best_times || [],
         content_mix: profile.content_strategy?.content_mix,
         priority_themes: profile.content_pillars || []
+=======
+        profile_summary: profile.summary,
+        target_persona: profile.target_persona,
+        content_pillars: profile.content_pillars,
+        tone_of_voice: profile.tone_of_voice,
+        keywords: profile.keywords,
+        communication_objective: profile.content_strategy?.objective,
+        post_frequency: profile.content_strategy?.post_frequency,
+        best_posting_times: profile.content_strategy?.best_times,
+        content_mix: profile.content_strategy?.content_mix,
+        priority_themes: profile.content_pillars
+>>>>>>> origin/main
       }, {
         onConflict: 'client_id'
       });

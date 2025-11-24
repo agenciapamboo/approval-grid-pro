@@ -15,7 +15,10 @@ serve(async (req) => {
   try {
     console.log('=== Generate Caption Function Called ===');
     console.log('Method:', req.method);
+<<<<<<< HEAD
     console.log('Headers:', Object.fromEntries(req.headers.entries()));
+=======
+>>>>>>> origin/main
     
     // Verificar se há Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -29,6 +32,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+<<<<<<< HEAD
 
     // Ler body primeiro (antes de criar cliente para não consumir o stream)
     let body;
@@ -47,20 +51,20 @@ serve(async (req) => {
     }
     
     const { clientId, contentType, context } = body;
+=======
+>>>>>>> origin/main
 
-    // Criar cliente Supabase com header Authorization padrão
+    // Extrair JWT do header
+    const jwt = authHeader.replace('Bearer ', '');
+
+    // Criar cliente Supabase
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Validar autenticação usando padrão Supabase
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Validar autenticação passando o JWT explicitamente
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     
     if (authError || !user) {
       console.error('Auth error:', authError?.message || 'No user found');
@@ -75,6 +79,9 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
+    // Ler body após autenticação
+    const { clientId, contentType, context } = await req.json();
+
     if (!clientId || !contentType) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
@@ -87,7 +94,18 @@ serve(async (req) => {
       .from('profiles')
       .select('agency_id, client_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Erro ao buscar profile:', profileError);
+      return new Response(JSON.stringify({ 
+        error: 'Profile error', 
+        details: profileError.message || 'Erro ao buscar perfil do usuário' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (profileError) {
       console.error('Erro ao buscar profile:', profileError);
@@ -104,7 +122,11 @@ serve(async (req) => {
       console.error('Profile not found for user:', user.id);
       return new Response(JSON.stringify({ 
         error: 'Profile not found',
+<<<<<<< HEAD
         details: 'Perfil do usuário não encontrado' 
+=======
+        details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.' 
+>>>>>>> origin/main
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
