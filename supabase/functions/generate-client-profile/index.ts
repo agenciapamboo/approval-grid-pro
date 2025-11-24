@@ -123,7 +123,7 @@ serve(async (req) => {
     
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify(promptInput));
-    const hashBuffer = await crypto.subtle.digest('MD5', data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const promptHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -244,7 +244,6 @@ Retorne um JSON válido com a seguinte estrutura:
         client_id: clientId,
         briefing_template_id: templateId,
         briefing_responses: briefingResponses,
-<<<<<<< HEAD
         ai_generated_profile: profile,
         profile_summary: profile.summary,
         target_persona: profile.target_persona,
@@ -257,18 +256,6 @@ Retorne um JSON válido com a seguinte estrutura:
         best_posting_times: profile.content_strategy?.best_times || [],
         content_mix: profile.content_strategy?.content_mix,
         priority_themes: profile.content_pillars || []
-=======
-        profile_summary: profile.summary,
-        target_persona: profile.target_persona,
-        content_pillars: profile.content_pillars,
-        tone_of_voice: profile.tone_of_voice,
-        keywords: profile.keywords,
-        communication_objective: profile.content_strategy?.objective,
-        post_frequency: profile.content_strategy?.post_frequency,
-        best_posting_times: profile.content_strategy?.best_times,
-        content_mix: profile.content_strategy?.content_mix,
-        priority_themes: profile.content_pillars
->>>>>>> origin/main
       }, {
         onConflict: 'client_id'
       });

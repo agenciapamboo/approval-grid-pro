@@ -25,6 +25,7 @@ interface Template {
   example: string | null;
   structure_link: string | null;
   is_active: boolean;
+  agency_id?: string | null;
   created_at: string;
 }
 

@@ -371,6 +371,7 @@ export type Database = {
       }
       client_ai_profiles: {
         Row: {
+          ai_generated_profile: Json | null
           best_posting_times: string[] | null
           briefing_responses: Json | null
           briefing_template_id: string | null
@@ -379,6 +380,7 @@ export type Database = {
           content_mix: Json | null
           content_pillars: string[] | null
           created_at: string | null
+          editorial_line: string | null
           generated_by: string | null
           id: string
           keywords: string[] | null
@@ -390,6 +392,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_generated_profile?: Json | null
           best_posting_times?: string[] | null
           briefing_responses?: Json | null
           briefing_template_id?: string | null
@@ -398,6 +401,7 @@ export type Database = {
           content_mix?: Json | null
           content_pillars?: string[] | null
           created_at?: string | null
+          editorial_line?: string | null
           generated_by?: string | null
           id?: string
           keywords?: string[] | null
@@ -409,6 +413,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_generated_profile?: Json | null
           best_posting_times?: string[] | null
           briefing_responses?: Json | null
           briefing_template_id?: string | null
@@ -417,6 +422,7 @@ export type Database = {
           content_mix?: Json | null
           content_pillars?: string[] | null
           created_at?: string | null
+          editorial_line?: string | null
           generated_by?: string | null
           id?: string
           keywords?: string[] | null
@@ -438,7 +444,7 @@ export type Database = {
           {
             foreignKeyName: "client_ai_profiles_client_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
