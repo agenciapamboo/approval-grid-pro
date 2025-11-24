@@ -96,14 +96,34 @@ export function AIConfiguration() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from Edge Function:', error);
+        const errorMessage = (error as any)?.message || (error as any)?.error || 'Erro desconhecido';
+        const errorDetails = (error as any)?.details || '';
+        throw new Error(errorDetails || errorMessage);
+      }
+
+      // Verificar se há erro na resposta
+      if (data?.error) {
+        throw new Error(data.error || data.details || 'Erro ao salvar configuração');
+      }
+
+      if (!data?.success) {
+        throw new Error('Resposta inválida da função');
+      }
 
       toast.success('Configuração salva com sucesso!');
       setApiKey(''); // Limpar campo após salvar
-      setHasApiKey(data.config.hasApiKey);
-    } catch (error) {
+      setHasApiKey(data.config?.hasApiKey || false);
+      
+      // Recarregar configuração para atualizar os valores
+      await loadConfig();
+    } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Erro ao salvar configuração');
+      const errorMessage = error?.message || error?.error || 'Erro ao salvar configuração';
+      toast.error('Erro ao salvar configuração', {
+        description: errorMessage
+      });
     } finally {
       setSaving(false);
     }
@@ -288,7 +308,7 @@ export function AIConfiguration() {
       <div className="flex justify-end">
         <Button
           onClick={handleSave}
-          disabled={saving || (!apiKey && !hasApiKey)}
+          disabled={saving}
           size="lg"
           className="bg-primary hover:bg-primary-hover"
         >

@@ -18,7 +18,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    const { briefingResponses, templateId, clientId } = await req.json();
+    const { briefingResponses, templateId, clientId, briefingType = 'client_profile' } = await req.json();
 
     if (!briefingResponses || !templateId || !clientId) {
       throw new Error('Missing required parameters');
@@ -27,7 +27,7 @@ serve(async (req) => {
     // Buscar template e system prompt
     const { data: template, error: templateError } = await supabaseClient
       .from('briefing_templates')
-      .select('system_prompt, name')
+      .select('system_prompt, name, template_type')
       .eq('id', templateId)
       .single();
 
@@ -35,25 +35,15 @@ serve(async (req) => {
       throw new Error('Template not found');
     }
 
-    // Buscar chave do ambiente (Supabase Secret)
-    const openaiApiKey = Deno.env.get('aprova_openai');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured in secrets');
-    }
-
-    // Buscar configuração de IA (com valores padrão como fallback)
-    const { data: aiConfigData } = await supabaseClient
+    // Buscar configuração de IA
+    const { data: aiConfig, error: configError } = await supabaseClient
       .from('ai_configurations')
-      .select('default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
-      .limit(1);
+      .select('openai_api_key_encrypted, default_model, prompt_behavior, prompt_skills, temperature, max_tokens_briefing')
+      .single();
 
-    const aiConfig = aiConfigData?.[0] || {
-      default_model: 'gpt-4o-mini',
-      prompt_behavior: 'Seja criativo, objetivo e sempre mantenha a consistência com a identidade da marca.',
-      prompt_skills: 'Você é um assistente especializado em marketing digital e criação de conteúdo.',
-      temperature: 0.7,
-      max_tokens_briefing: 2000
-    };
+    if (configError || !aiConfig?.openai_api_key_encrypted) {
+      throw new Error('OpenAI API key not configured');
+    }
 
     // Verificar limite de uso
     const { data: userData } = await supabaseClient.auth.getUser();
@@ -113,17 +103,21 @@ serve(async (req) => {
       }
     }
 
-    // Gerar hash do prompt para cache
+    // Determinar se é linha editorial
+    const isEditorialLine = briefingType === 'editorial_line' || template.template_type === 'editorial_line';
+    
+    // Gerar hash do prompt para cache (incluir tipo de briefing para diferenciar)
     const promptInput = {
       template: template.system_prompt,
       responses: briefingResponses,
       behavior: aiConfig.prompt_behavior,
-      skills: aiConfig.prompt_skills
+      skills: aiConfig.prompt_skills,
+      briefingType: briefingType || template.template_type
     };
     
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify(promptInput));
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest('MD5', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const promptHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -157,7 +151,17 @@ serve(async (req) => {
 
     } else {
       // Chamar OpenAI
-      const systemPrompt = `${template.system_prompt}
+      const systemPrompt = isEditorialLine
+        ? `${template.system_prompt}
+
+Comportamento: ${aiConfig.prompt_behavior || 'Profissional e objetivo'}
+Habilidades: ${aiConfig.prompt_skills || 'Análise de mercado, estratégia de conteúdo'}
+
+Retorne um JSON válido com a seguinte estrutura:
+{
+  "editorial_line": "Linha editorial detalhada e completa, descrevendo o posicionamento, tom de voz, temas principais, abordagem de conteúdo e diretrizes editoriais para o cliente"
+}`
+        : `${template.system_prompt}
 
 Comportamento: ${aiConfig.prompt_behavior || 'Profissional e objetivo'}
 Habilidades: ${aiConfig.prompt_skills || 'Análise de mercado, estratégia de conteúdo'}
@@ -189,7 +193,7 @@ Retorne um JSON válido com a seguinte estrutura:
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
+          'Authorization': `Bearer ${aiConfig.openai_api_key_encrypted}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -237,33 +241,69 @@ Retorne um JSON válido com a seguinte estrutura:
         });
     }
 
-    // Salvar perfil gerado
-    const { error: upsertError } = await supabaseClient
-      .from('client_ai_profiles')
-      .upsert({
-        client_id: clientId,
-        briefing_template_id: templateId,
-        briefing_responses: briefingResponses,
-        ai_generated_profile: profile,
-        profile_summary: profile.summary,
-        target_persona: profile.target_persona,
-        editorial_line: profile.editorial_line,
-        keywords: profile.keywords || [],
-        tone_of_voice: profile.tone_of_voice || [],
-        content_pillars: profile.content_pillars || [],
-        communication_objective: profile.content_strategy?.post_frequency,
-        post_frequency: profile.content_strategy?.post_frequency,
-        best_posting_times: profile.content_strategy?.best_times || [],
-        content_mix: profile.content_strategy?.content_mix,
-        priority_themes: profile.content_pillars || []
-      }, {
-        onConflict: 'client_id'
-      });
+    // Salvar perfil gerado ou atualizar apenas linha editorial
+    if (isEditorialLine) {
+      // Para linha editorial, atualizar apenas o campo editorial_line
+      const { data: existingProfile } = await supabaseClient
+        .from('client_ai_profiles')
+        .select('*')
+        .eq('client_id', clientId)
+        .single();
 
-    if (upsertError) {
-      console.error('Error saving profile:', upsertError);
-      throw upsertError;
+      if (existingProfile) {
+        // Atualizar apenas a linha editorial
+        const { error: updateError } = await supabaseClient
+          .from('client_ai_profiles')
+          .update({
+            editorial_line: profile.editorial_line,
+            updated_at: new Date().toISOString()
+          })
+          .eq('client_id', clientId);
+
+        if (updateError) {
+          console.error('Error updating editorial line:', updateError);
+          throw updateError;
+        }
+      } else {
+        // Criar registro mínimo se não existir perfil
+        const { error: insertError } = await supabaseClient
+          .from('client_ai_profiles')
+          .insert({
+            client_id: clientId,
+            briefing_template_id: templateId,
+            briefing_responses: briefingResponses,
+            editorial_line: profile.editorial_line,
+            ai_generated_profile: { editorial_line: profile.editorial_line }
+          });
+
+        if (insertError) {
+          console.error('Error inserting editorial line:', insertError);
+          throw insertError;
+        }
+      }
+    } else {
+      // Para perfil completo, fazer upsert normal
+      const { error: upsertError } = await supabaseClient
+        .from('client_ai_profiles')
+        .upsert({
+          client_id: clientId,
+          briefing_template_id: templateId,
+          briefing_responses: briefingResponses,
+          ai_generated_profile: profile,
+          editorial_line: profile.editorial_line,
+          keywords: profile.keywords,
+          tone_of_voice: profile.tone_of_voice,
+          content_pillars: profile.content_pillars
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (upsertError) {
+        console.error('Error saving profile:', upsertError);
+        throw upsertError;
+      }
     }
+
 
     // Log de uso
     if (userData.user) {
