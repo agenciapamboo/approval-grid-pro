@@ -15,7 +15,6 @@ serve(async (req) => {
   try {
     console.log('=== Generate Caption Function Called ===');
     console.log('Method:', req.method);
-    console.log('Headers:', Object.fromEntries(req.headers.entries()));
     
     // Verificar se há Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -30,19 +29,17 @@ serve(async (req) => {
       });
     }
 
-    // Criar cliente Supabase com header Authorization padrão
+    // Extrair JWT do header
+    const jwt = authHeader.replace('Bearer ', '');
+
+    // Criar cliente Supabase
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Validar autenticação usando padrão Supabase
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Validar autenticação passando o JWT explicitamente
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
     
     if (authError || !user) {
       console.error('Auth error:', authError?.message || 'No user found');
