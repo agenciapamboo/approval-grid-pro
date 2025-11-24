@@ -52,10 +52,34 @@ export default function AITextTemplateManager() {
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Verificar role do usuário para filtrar templates
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+      
+      const { data: roleData } = await supabase
+        .rpc('get_user_role', { _user_id: user.id });
+      
+      let query = supabase
         .from("ai_text_templates")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
+      
+      // Se não for super_admin, filtrar por agency_id
+      // Super admin vê todos os templates (da agência + globais)
+      if (roleData !== 'super_admin') {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("agency_id")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile?.agency_id) {
+          // Agency admin vê templates da própria agência + globais
+          query = query.or(`agency_id.eq.${profile.agency_id},agency_id.is.null`);
+        }
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setTemplates((data || []) as Template[]);
@@ -290,6 +314,7 @@ export default function AITextTemplateManager() {
                       <TableHead>Nome</TableHead>
                       <TableHead>Categoria</TableHead>
                       <TableHead>Tom</TableHead>
+                      <TableHead>Escopo</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -348,6 +373,7 @@ export default function AITextTemplateManager() {
                       <TableHead>Nome</TableHead>
                       <TableHead>Categoria</TableHead>
                       <TableHead>Tom</TableHead>
+                      <TableHead>Escopo</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -365,6 +391,11 @@ export default function AITextTemplateManager() {
                               ))}
                             </div>
                           ) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={!template.agency_id ? "default" : "outline"} className="text-xs">
+                            {!template.agency_id ? "Global" : "Agência"}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={template.is_active ? "success" : "outline"}>

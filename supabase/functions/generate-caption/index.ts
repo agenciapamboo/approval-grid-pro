@@ -15,6 +15,10 @@ serve(async (req) => {
   try {
     console.log('=== Generate Caption Function Called ===');
     console.log('Method:', req.method);
+<<<<<<< HEAD
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+=======
+>>>>>>> origin/main
     
     // Verificar se há Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -28,6 +32,27 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+<<<<<<< HEAD
+
+    // Ler body primeiro (antes de criar cliente para não consumir o stream)
+    let body;
+    try {
+      body = await req.json();
+      console.log('Body received:', { clientId: body.clientId, contentType: body.contentType });
+    } catch (parseError) {
+      console.error('Error parsing body:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid request body',
+        details: parseError instanceof Error ? parseError.message : 'Failed to parse JSON'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const { clientId, contentType, context } = body;
+=======
+>>>>>>> origin/main
 
     // Extrair JWT do header
     const jwt = authHeader.replace('Bearer ', '');
@@ -82,11 +107,26 @@ serve(async (req) => {
       });
     }
 
+    if (profileError) {
+      console.error('Erro ao buscar profile:', profileError);
+      return new Response(JSON.stringify({ 
+        error: 'Profile error', 
+        details: profileError.message || 'Erro ao buscar perfil do usuário' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!profile) {
       console.error('Profile not found for user:', user.id);
       return new Response(JSON.stringify({ 
         error: 'Profile not found',
+<<<<<<< HEAD
+        details: 'Perfil do usuário não encontrado' 
+=======
         details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.' 
+>>>>>>> origin/main
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -277,15 +317,15 @@ serve(async (req) => {
 
     const clientProfileData = clientProfile || null;
 
-    // Buscar templates da agência para usar como base
+    // Buscar templates da agência E templates globais (agency_id NULL) para usar como base
     const { data: templates } = await supabaseClient
       .from('ai_text_templates')
       .select('*')
-      .eq('agency_id', agencyId)
+      .or(`agency_id.eq.${agencyId},agency_id.is.null`)  // Inclui templates da agência + globais
       .eq('template_type', contentType === 'post' || contentType === 'plan_caption' || contentType === 'plan_description' ? 'caption' : 'script')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(10);  // Aumentado para 10 para incluir mais templates
 
     // Build system prompt
     let systemPrompt = 'Você é um especialista em copywriting para redes sociais.';

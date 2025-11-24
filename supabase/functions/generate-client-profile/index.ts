@@ -244,6 +244,20 @@ Retorne um JSON válido com a seguinte estrutura:
         client_id: clientId,
         briefing_template_id: templateId,
         briefing_responses: briefingResponses,
+<<<<<<< HEAD
+        ai_generated_profile: profile,
+        profile_summary: profile.summary,
+        target_persona: profile.target_persona,
+        editorial_line: profile.editorial_line,
+        keywords: profile.keywords || [],
+        tone_of_voice: profile.tone_of_voice || [],
+        content_pillars: profile.content_pillars || [],
+        communication_objective: profile.content_strategy?.post_frequency,
+        post_frequency: profile.content_strategy?.post_frequency,
+        best_posting_times: profile.content_strategy?.best_times || [],
+        content_mix: profile.content_strategy?.content_mix,
+        priority_themes: profile.content_pillars || []
+=======
         profile_summary: profile.summary,
         target_persona: profile.target_persona,
         content_pillars: profile.content_pillars,
@@ -254,6 +268,7 @@ Retorne um JSON válido com a seguinte estrutura:
         best_posting_times: profile.content_strategy?.best_times,
         content_mix: profile.content_strategy?.content_mix,
         priority_themes: profile.content_pillars
+>>>>>>> origin/main
       }, {
         onConflict: 'client_id'
       });

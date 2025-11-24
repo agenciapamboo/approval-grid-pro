@@ -85,11 +85,11 @@ export function CaptionContextDialog({
         
         if (!clientData?.agency_id) return;
         
-        // Buscar templates da agência
+        // Buscar templates da agência E templates globais (agency_id NULL)
         const { data: templatesData } = await supabase
           .from('ai_text_templates')
-          .select('id, template_name')
-          .eq('agency_id', clientData.agency_id)
+          .select('id, template_name, agency_id')
+          .or(`agency_id.eq.${clientData.agency_id},agency_id.is.null`)
           .eq('template_type', 'script')
           .eq('is_active', true)
           .order('template_name');
