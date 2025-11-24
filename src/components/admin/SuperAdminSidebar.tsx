@@ -111,6 +111,12 @@ const menuItems = [
     category: "sistema"
   },
   {
+    title: "Templates de Texto/Roteiros",
+    url: "/admin/ai-templates",
+    icon: FileText,
+    category: "sistema"
+  },
+  {
     title: "Configuração Stripe",
     url: "/admin/stripe",
     icon: CreditCard,
