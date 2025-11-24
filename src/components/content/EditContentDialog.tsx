@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AILegendAssistant } from "./AILegendAssistant";
 import { MediaAccessibility } from "./MediaAccessibility";
+import { AIAssistantIcon } from "./AIAssistantIcon";
 
 interface EditContentDialogProps {
   open: boolean;
@@ -364,6 +365,14 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
             <div className="space-y-2">
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="caption">Legenda</Label>
+                {clientId && (
+                  <AIAssistantIcon
+                    clientId={clientId}
+                    contentType={type === 'feed' ? 'post' : type === 'reels' ? 'reels' : type === 'story' ? 'stories' : 'post'}
+                    context={{ title }}
+                    onInsert={(text) => setCaption(text)}
+                  />
+                )}
               </div>
               <Textarea
                 id="caption"
@@ -372,16 +381,6 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
                 placeholder="Digite a legenda do post..."
                 className="min-h-[120px]"
               />
-              
-              {/* Assistente de IA para Legendas */}
-              {clientId && (
-                <AILegendAssistant
-                  clientId={clientId}
-                  contentType={type === 'feed' ? 'post' : type === 'reels' ? 'reels' : type === 'story' ? 'stories' : 'post'}
-                  context={{ title }}
-                  onSelectSuggestion={(suggestion) => setCaption(suggestion)}
-                />
-              )}
             </div>
 
             {/* Mídia Atual e Upload */}

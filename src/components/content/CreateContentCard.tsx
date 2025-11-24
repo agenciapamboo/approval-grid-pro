@@ -22,6 +22,7 @@ import { CreativeRotationDialog } from "./CreativeRotationDialog";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { AILegendAssistant } from "./AILegendAssistant";
 import { MediaAccessibility } from "./MediaAccessibility";
+import { AIAssistantIcon } from "./AIAssistantIcon";
 
 interface CreateContentCardProps {
   clientId: string;
@@ -987,22 +988,26 @@ export function CreateContentCard({ clientId, onContentCreated, category = 'soci
           </div>
         </div>
 
-        <Textarea
-          placeholder="Escreva a legenda..."
-          value={caption}
-          onChange={(e) => handleCaptionChange(e.target.value)}
-          className="min-h-[100px]"
-        />
-        
-        {/* Assistente de IA para Legendas */}
-        {!isContentPlan && (
-          <AILegendAssistant
-            clientId={clientId}
-            contentType={contentType === 'feed' ? 'post' : contentType === 'reels' ? 'reels' : contentType === 'story' ? 'stories' : 'post'}
-            context={{ title, category }}
-            onSelectSuggestion={(suggestion) => setCaption(suggestion)}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between mb-2">
+            <Label>Escreva a legenda...</Label>
+            <AIAssistantIcon
+              clientId={clientId}
+              contentType={isContentPlan ? 'plan_caption' : (contentType === 'feed' ? 'post' : contentType === 'reels' ? 'reels' : contentType === 'story' ? 'stories' : 'post')}
+              context={{ title, category }}
+              onInsert={(text) => {
+                setCaption(text);
+                setHasChanges(true);
+              }}
+            />
+          </div>
+          <Textarea
+            placeholder="Escreva a legenda..."
+            value={caption}
+            onChange={(e) => handleCaptionChange(e.target.value)}
+            className="min-h-[100px]"
           />
-        )}
+        </div>
 
         {/* Upload de capa para Reels */}
         {contentType === 'reels' && (

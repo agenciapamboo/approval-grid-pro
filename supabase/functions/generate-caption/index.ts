@@ -113,10 +113,11 @@ serve(async (req) => {
       });
     }
 
-    // Build prompt hash for cache lookup
+    // Build prompt hash for cache lookup (incluir agency_id para evitar conflito entre agências)
     const promptData = {
       type: 'caption',
       clientId,
+      agencyId: profile.agency_id,
       contentType,
       context: context || {}
     };
@@ -191,32 +192,62 @@ serve(async (req) => {
       });
     }
 
-    // Get client AI profile
+    // Get client AI profile and client data
+    const { data: client } = await supabaseClient
+      .from('clients')
+      .select('agency_id')
+      .eq('id', clientId)
+      .single();
+
     const { data: clientProfile } = await supabaseClient
       .from('client_ai_profiles')
       .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle();
+      .single();
+
+    const clientProfileData = clientProfile || null;
+
+    // Buscar templates da agência para usar como base
+    const { data: templates } = await supabaseClient
+      .from('ai_text_templates')
+      .select('*')
+      .eq('agency_id', client?.agency_id)
+      .eq('template_type', contentType === 'post' || contentType === 'plan_caption' || contentType === 'plan_description' ? 'caption' : 'script')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
     // Build system prompt
     let systemPrompt = 'Você é um especialista em copywriting para redes sociais.';
     
-    if (clientProfile) {
+    if (clientProfileData) {
       systemPrompt += `\n\nPERFIL DO CLIENTE:`;
-      if (clientProfile.profile_summary) {
-        systemPrompt += `\n- Negócio: ${clientProfile.profile_summary}`;
+      if (clientProfileData.profile_summary) {
+        systemPrompt += `\n- Negócio: ${clientProfileData.profile_summary}`;
       }
-      if (clientProfile.tone_of_voice?.length > 0) {
-        systemPrompt += `\n- Tom de Voz da Marca: ${clientProfile.tone_of_voice.join(', ')}`;
+      if (clientProfileData.tone_of_voice?.length > 0) {
+        systemPrompt += `\n- Tom de Voz da Marca: ${clientProfileData.tone_of_voice.join(', ')}`;
       }
-      if (clientProfile.content_pillars?.length > 0) {
-        systemPrompt += `\n- Pilares de Conteúdo: ${clientProfile.content_pillars.join(', ')}`;
+      if (clientProfileData.content_pillars?.length > 0) {
+        systemPrompt += `\n- Pilares de Conteúdo: ${clientProfileData.content_pillars.join(', ')}`;
       }
-      if (clientProfile.keywords?.length > 0) {
-        systemPrompt += `\n- Palavras-chave: ${clientProfile.keywords.join(', ')}`;
+      if (clientProfileData.keywords?.length > 0) {
+        systemPrompt += `\n- Palavras-chave: ${clientProfileData.keywords.join(', ')}`;
       }
+    }
+
+    // Incluir templates da agência como exemplos/estruturas base
+    if (templates && templates.length > 0) {
+      systemPrompt += `\n\nTEMPLATES DE REFERÊNCIA DA AGÊNCIA:`;
+      templates.forEach((t, i) => {
+        systemPrompt += `\n\n[Template ${i + 1}] ${t.template_name}:`;
+        if (t.category) systemPrompt += `\nCategoria: ${t.category}`;
+        if (t.tone && t.tone.length > 0) systemPrompt += `\nTom: ${t.tone.join(', ')}`;
+        systemPrompt += `\n${t.template_content}`;
+      });
+      systemPrompt += `\n\nUse esses templates como inspiração/estrutura, mas adapte ao contexto específico fornecido.`;
     }
 
     systemPrompt += `\n\nSua tarefa é gerar ${contentType === 'post' ? '3 legendas criativas' : '3 roteiros de vídeo'} considerando o contexto fornecido.`;
@@ -244,8 +275,8 @@ serve(async (req) => {
     }
 
     if (toneOfVoice) {
-      if (toneOfVoice === 'brand' && clientProfile?.tone_of_voice) {
-        userPrompt += `- Tom de Voz: Use o tom da marca (${clientProfile.tone_of_voice.join(', ')})\n`;
+      if (toneOfVoice === 'brand' && clientProfileData?.tone_of_voice) {
+        userPrompt += `- Tom de Voz: Use o tom da marca (${clientProfileData.tone_of_voice.join(', ')})\n`;
       } else {
         const toneLabels: Record<string, string> = {
           friendly: "Amigável",
