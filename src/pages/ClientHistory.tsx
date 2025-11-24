@@ -482,7 +482,6 @@ export default function ClientHistory() {
           )}
         </DialogContent>
       </Dialog>
-        </div>
       </div>
     </AppLayout>
   );
