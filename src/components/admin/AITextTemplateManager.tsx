@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -243,8 +244,9 @@ export default function AITextTemplateManager() {
   const scriptTemplates = templates.filter(t => t.template_type === 'script');
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <AppLayout>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Templates de Texto e Roteiros</h1>
           <p className="text-muted-foreground">Gerencie estruturas para a IA utilizar como base</p>
@@ -384,11 +386,11 @@ export default function AITextTemplateManager() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
 
-      {/* Dialog de criação/edição */}
-      <Dialog open={showDialog} onOpenChange={(open) => {
+        {/* Dialog de criação/edição */}
+        <Dialog open={showDialog} onOpenChange={(open) => {
         setShowDialog(open);
         if (!open) resetForm();
       }}>
@@ -505,7 +507,8 @@ export default function AITextTemplateManager() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-    </div>
+        </Dialog>
+      </div>
+    </AppLayout>
   );
 }
