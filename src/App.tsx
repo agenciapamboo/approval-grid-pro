@@ -155,7 +155,7 @@ const App = () => (
                 <Route path="/admin/membros-equipe" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><TeamMembersManager /></RoleProtectedRoute>} />
                 <Route path="/admin/backups" element={<RoleProtectedRoute allow={['super_admin']}><DatabaseBackups /></RoleProtectedRoute>} />
                 <Route path="/admin/ai" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><AISettings /></RoleProtectedRoute>} />
-                <Route path="/admin/ai-templates" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin']}><AITextTemplateManager /></RoleProtectedRoute>} />
+                <Route path="/admin/ai-templates" element={<RoleProtectedRoute allow={['super_admin']}><AITextTemplateManager /></RoleProtectedRoute>} />
                 <Route path="/admin/briefing-templates" element={<RoleProtectedRoute allow={['super_admin']}><BriefingTemplates /></RoleProtectedRoute>} />
                 <Route path="/cliente/:clientId/briefing" element={<RoleProtectedRoute allow={['super_admin', 'agency_admin', 'client_user']}><ClientBriefing /></RoleProtectedRoute>} />
                 
