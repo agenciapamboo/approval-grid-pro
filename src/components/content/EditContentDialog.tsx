@@ -29,6 +29,7 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [hasClientProfile, setHasClientProfile] = useState(false);
   
   // Form states
   const [title, setTitle] = useState("");
@@ -47,6 +48,26 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
       loadContent();
     }
   }, [open, contentId]);
+
+  useEffect(() => {
+    if (clientId) {
+      checkClientProfile();
+    }
+  }, [clientId]);
+
+  const checkClientProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('client_ai_profiles')
+        .select('id')
+        .eq('client_id', clientId)
+        .single();
+      
+      setHasClientProfile(!!data);
+    } catch (error) {
+      setHasClientProfile(false);
+    }
+  };
 
   const loadContent = async () => {
     try {
@@ -365,13 +386,17 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
             <div className="space-y-2">
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="caption">Legenda</Label>
-                {clientId && (
+                {hasClientProfile ? (
                   <AIAssistantIcon
                     clientId={clientId}
                     contentType={type === 'feed' ? 'post' : type === 'reels' ? 'reels' : type === 'story' ? 'stories' : 'post'}
                     context={{ title }}
                     onInsert={(text) => setCaption(text)}
                   />
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Configure o perfil do cliente para usar IA
+                  </span>
                 )}
               </div>
               <Textarea
@@ -416,8 +441,8 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
                 </Button>
               </div>
               
-              {/* Intérprete de Imagem com IA - mostra apenas se houver imagem */}
-              {clientId && currentMediaUrl && !currentMediaUrl.includes('.mp4') && !currentMediaUrl.includes('video') && (
+              {/* Intérprete de Imagem com IA - mostra apenas se houver perfil e imagem */}
+              {hasClientProfile && currentMediaUrl && !currentMediaUrl.includes('.mp4') && !currentMediaUrl.includes('video') && (
                 <MediaAccessibility
                   clientId={clientId}
                   imageUrl={currentMediaUrl}

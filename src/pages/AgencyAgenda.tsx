@@ -6,9 +6,12 @@ import { MonthlyEditorialGenerator } from "@/components/client/MonthlyEditorialG
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Loader2, Info, Lightbulb, CalendarPlus, TrendingUp } from "lucide-react";
+import { EnrichEditorialButton } from "@/components/ai/EnrichEditorialButton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AgencyAgenda() {
   const { profile, agency, loading } = useUserData();
+  const { toast } = useToast();
   const [showMonthlyEditorialDialog, setShowMonthlyEditorialDialog] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
@@ -44,14 +47,29 @@ export default function AgencyAgenda() {
               Visualize e gerencie todo o calendário de conteúdos
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowMonthlyEditorialDialog(true)}
-            className="gap-2 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20"
-          >
-            <TrendingUp className="h-4 w-4 text-blue-500" />
-            Linha Editorial
-          </Button>
+          <div className="flex gap-2">
+            {selectedClientId && (
+              <EnrichEditorialButton
+                clientId={selectedClientId}
+                variant="outline"
+                size="sm"
+                onSuccess={() => {
+                  toast({
+                    title: "Linha Editorial Atualizada",
+                    description: "A linha editorial foi enriquecida com sucesso"
+                  });
+                }}
+              />
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => setShowMonthlyEditorialDialog(true)}
+              className="gap-2 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20"
+            >
+              <TrendingUp className="h-4 w-4 text-blue-500" />
+              Linha Editorial
+            </Button>
+          </div>
         </div>
         
         <Alert className="mb-4">

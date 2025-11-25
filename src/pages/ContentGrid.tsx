@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { StoriesHighlights } from "@/components/content/StoriesHighlights";
+import { EnrichEditorialButton } from "@/components/ai/EnrichEditorialButton";
 
 interface Content {
   id: string;
@@ -383,15 +384,28 @@ export default function ContentGrid() {
               {userClient.name}
             </p>
           </div>
-          {/* Botão visível apenas para agency_admin e team_member */}
+          {/* Botões visíveis apenas para agency_admin e team_member */}
           {(role === 'agency_admin' || role === 'team_member') && (
-            <Button 
-              onClick={() => setShowCreateDialog(true)}
-              className="w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Conteúdo
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <EnrichEditorialButton
+                clientId={userClient.id}
+                variant="outline"
+                size="sm"
+                onSuccess={() => {
+                  toast({
+                    title: "Linha Editorial Atualizada",
+                    description: "A linha editorial foi enriquecida com sucesso"
+                  });
+                }}
+              />
+              <Button 
+                onClick={() => setShowCreateDialog(true)}
+                className="flex-1 sm:flex-none"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Conteúdo
+              </Button>
+            </div>
           )}
         </div>
 

@@ -20,6 +20,7 @@ import { ClientDetailsAccordion } from "@/components/admin/ClientDetailsAccordio
 import { ClientMetricCard } from "@/components/admin/ClientMetricCard";
 import { useClientMetrics } from "@/hooks/useClientMetrics";
 import { useToast } from "@/hooks/use-toast";
+import { ClientProfileCardWrapper } from "@/components/dashboard/ClientProfileCardWrapper";
 import { 
   ArrowLeft, Building2, Edit, Calendar, FileText, Users, Shield,
   Loader2, Globe, MapPin, Share2, Eye, CheckCircle, RefreshCw, XCircle
@@ -682,6 +683,14 @@ const ClienteDetalhes = () => {
 
           {/* Tab: Visão Geral */}
           <TabsContent value="overview" className="space-y-4">
+            {/* Perfil e Linha Editorial do Cliente */}
+            {clientId && (
+              <ClientProfileCardWrapper
+                clientId={clientId}
+                showActions={true}
+              />
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-3">
