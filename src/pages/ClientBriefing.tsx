@@ -486,8 +486,6 @@ export default function ClientBriefing() {
                 </Card>
               )}
             </div>
-              );
-            })()
           ) : (
             <Card className="glass">
               <CardContent className="text-center py-12">
