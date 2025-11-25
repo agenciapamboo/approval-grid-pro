@@ -50,8 +50,14 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
 
       console.log('Calling generate-caption with:', { clientId, contentType, context: fullContext });
 
-      // O Supabase client automaticamente envia o token no header Authorization
+      // Garantir que o token JWT seja enviado no header Authorization
+      const headers: Record<string, string> = {};
+      if (session.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-caption', {
+        headers,
         body: {
           clientId,
           contentType,
