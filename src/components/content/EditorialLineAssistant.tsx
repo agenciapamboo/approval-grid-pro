@@ -155,7 +155,7 @@ export function EditorialLineAssistant({
 
         const { data: content, error: contentError } = await supabase
           .from('contents')
-          .insert({
+          .insert([{
             client_id: selectedClientId,
             agency_id: agencyId,
             title: `${post.type} - ${post.description.substring(0, 50)}`,
@@ -165,7 +165,7 @@ export function EditorialLineAssistant({
             owner_user_id: user.id,
             is_content_plan: true,
             plan_description: `Tipo: ${post.type}\n\n${post.description}\n\nBaseado na linha editorial do cliente.`
-          })
+          }])
           .select()
           .single();
 
@@ -192,8 +192,8 @@ export function EditorialLineAssistant({
     }
   };
 
-  const getContentTypeFromPostType = (postType: string): string => {
-    const typeMap: Record<string, string> = {
+  const getContentTypeFromPostType = (postType: string): "feed" | "story" | "reels" | "carousel" | "image" => {
+    const typeMap: Record<string, "feed" | "story" | "reels" | "carousel" | "image"> = {
       'Carrossel História': 'carousel',
       'Venda direta': 'feed',
       'Educacional': 'feed',
@@ -318,7 +318,7 @@ export function EditorialLineAssistant({
                             </span>
                             Semana {week.week_number}
                           </CardTitle>
-                          <Badge variant="secondary">
+                          <Badge variant="outline">
                             {week.posts.length} posts
                           </Badge>
                         </div>

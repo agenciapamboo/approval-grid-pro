@@ -400,7 +400,7 @@ export default function ClientBriefing() {
                                         {week.week_number}
                                       </span>
                                       Semana {week.week_number}
-                                      <Badge variant="secondary" className="ml-auto">
+                                      <Badge variant="outline" className="ml-auto">
                                         {week.posts?.length || 0} posts
                                       </Badge>
                                     </CardTitle>
