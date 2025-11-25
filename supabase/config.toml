@@ -3,6 +3,15 @@ project_id = "dhwuvhcpqlbmqnklsgjz"
 [functions.admin-change-plan]
 verify_jwt = true
 
+[functions.combine-editorial-data]
+verify_jwt = true
+
+[functions.generate-editorial-base]
+verify_jwt = true
+
+[functions.enrich-editorial-line]
+verify_jwt = true
+
 [functions.send-2fa-code]
 verify_jwt = false
 

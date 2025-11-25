@@ -21,6 +21,9 @@ import { PlanInfoCard } from "@/components/client/PlanInfoCard";
 import { TeamMembersList } from "@/components/admin/TeamMembersList";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ClientProfileCard } from "@/components/dashboard/ClientProfileCard";
+import { useClientEditorialData } from "@/hooks/useClientEditorialData";
+import { ClientProfileCardWrapper } from "@/components/dashboard/ClientProfileCardWrapper";
 
 // Helper para evitar inferência de tipos recursiva do Supabase
 async function fetchApproverClients(userId: string) {
@@ -492,8 +495,13 @@ const Dashboard = () => {
               </CardHeader>
             </Card>
 
-            {/* Informações do Plano */}
-            {dashboardData.client && <PlanInfoCard clientId={dashboardData.client.id} />}
+            {/* Perfil e Linha Editorial do Cliente */}
+            {profile?.client_id && (
+              <ClientProfileCardWrapper
+                clientId={profile.client_id}
+                showActions={false}
+              />
+            )}
 
             {/* Cards de Estatísticas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
