@@ -85,17 +85,39 @@ export function CaptionContextDialog({
         
         if (!clientData?.agency_id) return;
         
-        // Buscar templates da agência
-        const { data: templatesData } = await supabase
-          .from('ai_text_templates')
-          .select('id, template_name')
-          .eq('agency_id', clientData.agency_id)
-          .eq('template_type', 'script')
-          .eq('is_active', true)
-          .order('template_name');
+        // Buscar templates da agência E templates globais (super_admin)
+        const [agencyTemplatesResult, globalTemplatesResult] = await Promise.all([
+          supabase
+            .from('ai_text_templates')
+            .select('id, template_name')
+            .eq('agency_id', clientData.agency_id)
+            .eq('template_type', 'script')
+            .eq('is_active', true)
+            .order('template_name'),
+          supabase
+            .from('ai_text_templates')
+            .select('id, template_name')
+            .is('agency_id', null)
+            .eq('template_type', 'script')
+            .eq('is_active', true)
+            .order('template_name')
+        ]);
         
-        if (templatesData) {
-          setTemplates(templatesData);
+        const allTemplates: Array<{ id: string; template_name: string }> = [];
+        if (agencyTemplatesResult.data) {
+          allTemplates.push(...agencyTemplatesResult.data);
+        }
+        if (globalTemplatesResult.data) {
+          // Adicionar templates globais, evitando duplicatas
+          globalTemplatesResult.data.forEach(t => {
+            if (!allTemplates.find(existing => existing.id === t.id)) {
+              allTemplates.push(t);
+            }
+          });
+        }
+        
+        if (allTemplates.length > 0) {
+          setTemplates(allTemplates);
         }
       } catch (error) {
         console.error('Error loading templates:', error);

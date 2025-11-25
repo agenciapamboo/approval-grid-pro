@@ -18,7 +18,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    const { briefingResponses, templateId, clientId } = await req.json();
+    const { briefingResponses, templateId, clientId, briefingType = 'client_profile' } = await req.json();
 
     if (!briefingResponses || !templateId || !clientId) {
       throw new Error('Missing required parameters');
@@ -27,7 +27,7 @@ serve(async (req) => {
     // Buscar template e system prompt
     const { data: template, error: templateError } = await supabaseClient
       .from('briefing_templates')
-      .select('system_prompt, name')
+      .select('system_prompt, name, template_type')
       .eq('id', templateId)
       .single();
 
@@ -103,12 +103,42 @@ serve(async (req) => {
       }
     }
 
-    // Gerar hash do prompt para cache
+    // Determinar se é linha editorial
+    const isEditorialLine = briefingType === 'editorial_line' || template.template_type === 'editorial_line';
+    
+    // Buscar informações do cliente e perfil (se for linha editorial)
+    let clientInfo = null;
+    let clientProfile = null;
+    
+    if (isEditorialLine) {
+      // Buscar informações do cliente (monthly_creatives)
+      const { data: clientData } = await supabaseClient
+        .from('clients')
+        .select('monthly_creatives, name')
+        .eq('id', clientId)
+        .single();
+      
+      clientInfo = clientData;
+      
+      // Buscar perfil do cliente existente para complementar informações
+      const { data: existingProfile } = await supabaseClient
+        .from('client_ai_profiles')
+        .select('content_pillars, tone_of_voice, keywords, ai_generated_profile')
+        .eq('client_id', clientId)
+        .maybeSingle();
+      
+      clientProfile = existingProfile;
+    }
+    
+    // Gerar hash do prompt para cache (incluir tipo de briefing e informações do cliente para diferenciar)
     const promptInput = {
       template: template.system_prompt,
       responses: briefingResponses,
       behavior: aiConfig.prompt_behavior,
-      skills: aiConfig.prompt_skills
+      skills: aiConfig.prompt_skills,
+      briefingType: briefingType || template.template_type,
+      monthlyCreatives: clientInfo?.monthly_creatives,
+      contentPillars: clientProfile?.content_pillars || clientProfile?.ai_generated_profile?.content_pillars
     };
     
     const encoder = new TextEncoder();
@@ -147,7 +177,107 @@ serve(async (req) => {
 
     } else {
       // Chamar OpenAI
-      const systemPrompt = `${template.system_prompt}
+      const monthlyCreatives = clientInfo?.monthly_creatives || 8;
+      const contentPillars = clientProfile?.content_pillars || clientProfile?.ai_generated_profile?.content_pillars || [];
+      const toneOfVoice = clientProfile?.tone_of_voice || clientProfile?.ai_generated_profile?.tone_of_voice || [];
+      
+      // Calcular posts por semana (distribuição aproximada)
+      const postsPerWeek = Math.ceil(monthlyCreatives / 4);
+      
+      const systemPrompt = isEditorialLine
+        ? `${template.system_prompt}
+
+Comportamento: ${aiConfig.prompt_behavior || 'Profissional e objetivo'}
+Habilidades: ${aiConfig.prompt_skills || 'Análise de mercado, estratégia de conteúdo'}
+
+INSTRUÇÕES ESPECIAIS PARA LINHA EDITORIAL:
+Você deve criar um gabarito/esqueleto base para planejamento mensal de conteúdos, dividido em semanas.
+Use PREFERENCIALMENTE as informações do formulário de briefing e COMPLEMENTE com informações do perfil do cliente quando disponíveis.
+
+Total de criativos mensais: ${monthlyCreatives}
+Posts por semana (aproximado): ${postsPerWeek}
+${contentPillars.length > 0 ? `Pilares de conteúdo do cliente: ${JSON.stringify(contentPillars)}` : ''}
+${toneOfVoice.length > 0 ? `Tom de voz do cliente: ${JSON.stringify(toneOfVoice)}` : ''}
+
+TIPOS DE CONTEÚDO DISPONÍVEIS (use conforme as proporções indicadas no formulário):
+- Institucional
+- Carrossel História
+- Venda direta
+- Curiosidade
+- Educacional
+- Entretenimento
+- Promocional
+- Engajamento
+
+Retorne um JSON válido com a seguinte estrutura:
+{
+  "editorial_line": "Descrição geral da linha editorial e diretrizes",
+  "monthly_structure": {
+    "total_creatives": ${monthlyCreatives},
+    "weeks": [
+      {
+        "week_number": 1,
+        "posts": [
+          {
+            "type": "Institucional",
+            "description": "Breve descrição do conteúdo sugerido"
+          },
+          {
+            "type": "Carrossel História",
+            "description": "Breve descrição do conteúdo sugerido"
+          }
+        ]
+      },
+      {
+        "week_number": 2,
+        "posts": [
+          {
+            "type": "Venda direta",
+            "description": "Breve descrição do conteúdo sugerido"
+          },
+          {
+            "type": "Curiosidade",
+            "description": "Breve descrição do conteúdo sugerido"
+          }
+        ]
+      },
+      {
+        "week_number": 3,
+        "posts": [
+          {
+            "type": "Venda direta",
+            "description": "Breve descrição do conteúdo sugerido"
+          },
+          {
+            "type": "Educacional",
+            "description": "Breve descrição do conteúdo sugerido"
+          }
+        ]
+      },
+      {
+        "week_number": 4,
+        "posts": [
+          {
+            "type": "Curiosidade",
+            "description": "Breve descrição do conteúdo sugerido"
+          },
+          {
+            "type": "Educacional",
+            "description": "Breve descrição do conteúdo sugerido"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+IMPORTANTE:
+- Distribua os ${monthlyCreatives} criativos entre as 4 semanas de forma equilibrada
+- Use as proporções de tipos de conteúdo indicadas no formulário
+- Cada post deve ter um tipo e uma descrição breve do conteúdo sugerido
+- Se houver pilares de conteúdo do cliente, use-os para orientar os temas
+- Se houver tom de voz definido, respeite-o nas descrições`
+        : `${template.system_prompt}
 
 Comportamento: ${aiConfig.prompt_behavior || 'Profissional e objetivo'}
 Habilidades: ${aiConfig.prompt_skills || 'Análise de mercado, estratégia de conteúdo'}
@@ -176,6 +306,22 @@ Retorne um JSON válido com a seguinte estrutura:
   "keywords": ["palavra1", "palavra2"]
 }`;
 
+      // Construir mensagem do usuário com informações complementares
+      let userMessage = `Respostas do briefing:\n${JSON.stringify(briefingResponses, null, 2)}`;
+      
+      if (isEditorialLine && clientProfile) {
+        userMessage += `\n\nInformações complementares do perfil do cliente:\n`;
+        if (contentPillars.length > 0) {
+          userMessage += `- Pilares de conteúdo: ${JSON.stringify(contentPillars)}\n`;
+        }
+        if (toneOfVoice.length > 0) {
+          userMessage += `- Tom de voz: ${JSON.stringify(toneOfVoice)}\n`;
+        }
+        if (clientProfile.ai_generated_profile?.target_persona) {
+          userMessage += `- Persona: ${JSON.stringify(clientProfile.ai_generated_profile.target_persona)}\n`;
+        }
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -186,11 +332,11 @@ Retorne um JSON válido com a seguinte estrutura:
           model: aiConfig.default_model || 'gpt-4o-mini',
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Respostas do briefing:\n${JSON.stringify(briefingResponses, null, 2)}` }
+            { role: 'user', content: userMessage }
           ],
           response_format: { type: "json_object" },
           temperature: aiConfig.temperature || 0.7,
-          max_tokens: aiConfig.max_tokens_briefing || 2000
+          max_tokens: aiConfig.max_tokens_briefing || 3000 // Aumentado para linha editorial estruturada
         }),
       });
 
@@ -227,26 +373,75 @@ Retorne um JSON válido com a seguinte estrutura:
         });
     }
 
-    // Salvar perfil gerado
-    const { error: upsertError } = await supabaseClient
-      .from('client_ai_profiles')
-      .upsert({
-        client_id: clientId,
-        briefing_template_id: templateId,
-        briefing_responses: briefingResponses,
-        ai_generated_profile: profile,
-        editorial_line: profile.editorial_line,
-        keywords: profile.keywords,
-        tone_of_voice: profile.tone_of_voice,
-        content_pillars: profile.content_pillars
-      }, {
-        onConflict: 'client_id'
-      });
+    // Salvar perfil gerado ou atualizar apenas linha editorial
+    if (isEditorialLine) {
+      // Para linha editorial, salvar a estrutura completa (editorial_line + monthly_structure)
+      // Se profile tiver monthly_structure, salvar como JSON stringificado
+      const editorialLineToSave = profile.monthly_structure 
+        ? JSON.stringify(profile) // Salvar estrutura completa como JSON
+        : (profile.editorial_line || JSON.stringify(profile)); // Fallback para texto simples ou JSON
+      
+      const { data: existingProfile } = await supabaseClient
+        .from('client_ai_profiles')
+        .select('*')
+        .eq('client_id', clientId)
+        .single();
 
-    if (upsertError) {
-      console.error('Error saving profile:', upsertError);
-      throw upsertError;
+      if (existingProfile) {
+        // Atualizar apenas a linha editorial e o template usado
+        const { error: updateError } = await supabaseClient
+          .from('client_ai_profiles')
+          .update({
+            editorial_line: editorialLineToSave,
+            briefing_template_id: templateId, // Salvar o template de linha editorial usado
+            updated_at: new Date().toISOString()
+          })
+          .eq('client_id', clientId);
+
+        if (updateError) {
+          console.error('Error updating editorial line:', updateError);
+          throw updateError;
+        }
+      } else {
+        // Criar registro mínimo se não existir perfil
+        const { error: insertError } = await supabaseClient
+          .from('client_ai_profiles')
+          .insert({
+            client_id: clientId,
+            briefing_template_id: templateId,
+            briefing_responses: briefingResponses,
+            editorial_line: editorialLineToSave,
+            ai_generated_profile: profile.monthly_structure ? profile : { editorial_line: profile.editorial_line }
+          });
+
+        if (insertError) {
+          console.error('Error inserting editorial line:', insertError);
+          throw insertError;
+        }
+      }
+    } else {
+      // Para perfil completo, fazer upsert normal
+      const { error: upsertError } = await supabaseClient
+        .from('client_ai_profiles')
+        .upsert({
+          client_id: clientId,
+          briefing_template_id: templateId,
+          briefing_responses: briefingResponses,
+          ai_generated_profile: profile,
+          editorial_line: profile.editorial_line,
+          keywords: profile.keywords,
+          tone_of_voice: profile.tone_of_voice,
+          content_pillars: profile.content_pillars
+        }, {
+          onConflict: 'client_id'
+        });
+
+      if (upsertError) {
+        console.error('Error saving profile:', upsertError);
+        throw upsertError;
+      }
     }
+
 
     // Log de uso
     if (userData.user) {
