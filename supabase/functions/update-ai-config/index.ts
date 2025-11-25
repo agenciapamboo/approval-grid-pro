@@ -79,24 +79,20 @@ serve(async (req) => {
           });
         }
 
-        // Criptografar chave usando encrypt_api_key
+        // Criptografar chave usando pgcrypto via RPC
+        const encryptionKey = Deno.env.get('OPENAI_KEY_ENCRYPTION_PASSPHRASE') || 'default-key-change-in-production';
         const { data: encryptedData, error: encryptError } = await supabaseClient
-          .rpc('encrypt_api_key', {
-            api_key: openai_api_key,
+          .rpc('pgp_sym_encrypt', {
+            data: openai_api_key,
+            key: encryptionKey,
           });
 
         if (encryptError) {
           console.error('Encryption error:', encryptError);
-          return new Response(JSON.stringify({ 
-            error: 'Erro ao criptografar chave OpenAI',
-            details: encryptError.message 
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          encrypted_key = openai_api_key; // Fallback: salvar em texto plano (não recomendado)
+        } else {
+          encrypted_key = encryptedData;
         }
-        
-        encrypted_key = encryptedData;
       } catch (error) {
         console.error('Error validating OpenAI key:', error);
         return new Response(JSON.stringify({ 

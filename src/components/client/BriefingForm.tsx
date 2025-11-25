@@ -24,11 +24,10 @@ interface BriefingField {
 interface BriefingFormProps {
   templateId: string;
   clientId: string;
-  briefingType?: 'client_profile' | 'editorial_line';
   onProfileGenerated?: (profile: any) => void;
 }
 
-export function BriefingForm({ templateId, clientId, briefingType = 'client_profile', onProfileGenerated }: BriefingFormProps) {
+export function BriefingForm({ templateId, clientId, onProfileGenerated }: BriefingFormProps) {
   const [template, setTemplate] = useState<any>(null);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [generating, setGenerating] = useState(false);
@@ -85,8 +84,7 @@ export function BriefingForm({ templateId, clientId, briefingType = 'client_prof
         body: {
           briefingResponses: responses,
           templateId,
-          clientId,
-          briefingType
+          clientId
         }
       });
 
@@ -102,12 +100,8 @@ export function BriefingForm({ templateId, clientId, briefingType = 'client_prof
       }
 
       toast.success(data.fromCache 
-        ? (briefingType === 'editorial_line' 
-            ? "Linha editorial gerada (cache)! ✨" 
-            : "Perfil gerado (cache)! ✨")
-        : (briefingType === 'editorial_line'
-            ? `Linha editorial gerada! (${data.tokensUsed} tokens)`
-            : `Perfil gerado! (${data.tokensUsed} tokens)`)
+        ? "Perfil gerado (cache)! ✨" 
+        : `Perfil gerado! (${data.tokensUsed} tokens)`
       );
       
       onProfileGenerated?.(data.profile);
@@ -261,12 +255,12 @@ export function BriefingForm({ templateId, clientId, briefingType = 'client_prof
           {generating ? (
             <>
               <Sparkles className="h-4 w-4 animate-spin" />
-              {briefingType === 'editorial_line' ? 'Gerando linha editorial...' : 'Gerando perfil...'}
+              Gerando perfil...
             </>
           ) : (
             <>
               <CheckCircle2 className="h-4 w-4" />
-              {briefingType === 'editorial_line' ? 'Gerar Linha Editorial com IA' : 'Gerar Perfil com IA'}
+              Gerar Perfil com IA
             </>
           )}
         </Button>

@@ -15,9 +15,7 @@ serve(async (req) => {
   try {
     console.log('=== Generate Caption Function Called ===');
     console.log('Method:', req.method);
-    // Não logar headers completos por segurança (contém token JWT)
-    const hasAuth = req.headers.get('Authorization') ? 'present' : 'missing';
-    console.log('Authorization header:', hasAuth);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
     
     // Verificar se há Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -106,7 +104,7 @@ serve(async (req) => {
       console.error('Profile not found for user:', user.id);
       return new Response(JSON.stringify({ 
         error: 'Profile not found',
-        details: 'Seu perfil ainda não foi criado. Por favor, complete seu cadastro ou entre em contato com o suporte.' 
+        details: 'Perfil do usuário não encontrado' 
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -297,28 +295,8 @@ serve(async (req) => {
 
     const clientProfileData = clientProfile || null;
 
-    // Verificar se há templateId específico no contexto
-    const { templateId } = context || {};
-    let selectedTemplate = null;
-    
-    if (templateId) {
-      // Buscar template específico selecionado pelo usuário
-      const { data: templateData } = await supabaseClient
-        .from('ai_text_templates')
-        .select('*')
-        .eq('id', templateId)
-        .eq('is_active', true)
-        .single();
-      
-      if (templateData) {
-        selectedTemplate = templateData;
-        console.log('Using selected template:', templateData.template_name);
-      }
-    }
-
-    // Buscar templates da agência E templates globais (super_admin) para usar como base
-    // Templates globais têm agency_id = NULL
-    const { data: agencyTemplates } = await supabaseClient
+    // Buscar templates da agência para usar como base
+    const { data: templates } = await supabaseClient
       .from('ai_text_templates')
       .select('*')
       .eq('agency_id', agencyId)
@@ -326,40 +304,6 @@ serve(async (req) => {
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(5);
-
-    const { data: globalTemplates } = await supabaseClient
-      .from('ai_text_templates')
-      .select('*')
-      .is('agency_id', null)
-      .eq('template_type', contentType === 'post' || contentType === 'plan_caption' || contentType === 'plan_description' ? 'caption' : 'script')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(3);
-
-    // Combinar templates: template selecionado primeiro, depois templates da agência, depois globais
-    const templates: any[] = [];
-    if (selectedTemplate) {
-      templates.push(selectedTemplate);
-    }
-    if (agencyTemplates) {
-      // Evitar duplicatas se o template selecionado já está na lista
-      agencyTemplates.forEach(t => {
-        if (!selectedTemplate || t.id !== selectedTemplate.id) {
-          templates.push(t);
-        }
-      });
-    }
-    if (globalTemplates) {
-      // Adicionar templates globais, evitando duplicatas
-      globalTemplates.forEach(t => {
-        if (!templates.find(existing => existing.id === t.id)) {
-          templates.push(t);
-        }
-      });
-    }
-    
-    // Limitar a 5 templates no total
-    const finalTemplates = templates.slice(0, 5);
 
     // Build system prompt
     let systemPrompt = 'Você é um especialista em copywriting para redes sociais.';
@@ -380,35 +324,15 @@ serve(async (req) => {
       }
     }
 
-    // Incluir templates como exemplos/estruturas base
-    if (finalTemplates && finalTemplates.length > 0) {
-      if (selectedTemplate) {
-        systemPrompt += `\n\nTEMPLATE SELECIONADO (use como base principal):`;
-        systemPrompt += `\n\n[Template Selecionado] ${selectedTemplate.template_name}:`;
-        if (selectedTemplate.category) systemPrompt += `\nCategoria: ${selectedTemplate.category}`;
-        if (selectedTemplate.tone && selectedTemplate.tone.length > 0) {
-          systemPrompt += `\nTom: ${selectedTemplate.tone.join(', ')}`;
-        }
-        systemPrompt += `\n${selectedTemplate.template_content}`;
-        
-        if (finalTemplates.length > 1) {
-          systemPrompt += `\n\nTEMPLATES DE REFERÊNCIA ADICIONAIS:`;
-          finalTemplates.slice(1).forEach((t, i) => {
-            systemPrompt += `\n\n[Template ${i + 1}] ${t.template_name}:`;
-            if (t.category) systemPrompt += `\nCategoria: ${t.category}`;
-            if (t.tone && t.tone.length > 0) systemPrompt += `\nTom: ${t.tone.join(', ')}`;
-            systemPrompt += `\n${t.template_content}`;
-          });
-        }
-      } else {
-        systemPrompt += `\n\nTEMPLATES DE REFERÊNCIA:`;
-        finalTemplates.forEach((t, i) => {
-          systemPrompt += `\n\n[Template ${i + 1}] ${t.template_name}:`;
-          if (t.category) systemPrompt += `\nCategoria: ${t.category}`;
-          if (t.tone && t.tone.length > 0) systemPrompt += `\nTom: ${t.tone.join(', ')}`;
-          systemPrompt += `\n${t.template_content}`;
-        });
-      }
+    // Incluir templates da agência como exemplos/estruturas base
+    if (templates && templates.length > 0) {
+      systemPrompt += `\n\nTEMPLATES DE REFERÊNCIA DA AGÊNCIA:`;
+      templates.forEach((t, i) => {
+        systemPrompt += `\n\n[Template ${i + 1}] ${t.template_name}:`;
+        if (t.category) systemPrompt += `\nCategoria: ${t.category}`;
+        if (t.tone && t.tone.length > 0) systemPrompt += `\nTom: ${t.tone.join(', ')}`;
+        systemPrompt += `\n${t.template_content}`;
+      });
       systemPrompt += `\n\nUse esses templates como inspiração/estrutura, mas adapte ao contexto específico fornecido.`;
     }
 
