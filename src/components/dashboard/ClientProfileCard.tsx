@@ -136,12 +136,23 @@ export function ClientProfileCard({
             </div>
           )}
 
-          {profile.post_frequency && (
-            <div>
-              <h4 className="text-sm font-semibold mb-1">Frequência</h4>
+          <div>
+            <h4 className="text-sm font-semibold mb-1">Frequência</h4>
+            {monthlyLimit ? (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {Math.ceil(monthlyLimit / 4)} vezes por semana
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {monthlyLimit} criativos por mês
+                </p>
+              </div>
+            ) : profile.post_frequency ? (
               <p className="text-sm text-muted-foreground">{profile.post_frequency}</p>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground">Não configurado</p>
+            )}
+          </div>
 
           {profile.best_posting_times && profile.best_posting_times.length > 0 && (
             <div>
