@@ -359,8 +359,78 @@ export default function ClientBriefing() {
                     <div>
                       <p className="text-sm font-medium mb-3">Mix de Conteúdo</p>
                       <div className="space-y-2">
-                        {Object.entries(profile.ai_generated_profile.content_strategy.content_mix || {}).map(
-                          ([type, percentage]: [string, any]) => (
+                        {(() => {
+                          // Tentar extrair mix de conteúdo do briefing_responses.content_balance primeiro
+                          let contentMix: Record<string, number> = {};
+                          
+                          try {
+                            const responses = typeof profile.briefing_responses === 'string' 
+                              ? JSON.parse(profile.briefing_responses) 
+                              : profile.briefing_responses;
+                            
+                            if (responses?.content_balance && typeof responses.content_balance === 'string') {
+                              // Parsear texto como "15% Institucional branding, 40% educativo, 30% tendencias e envolvimento, 15% vendas"
+                              const balanceText = responses.content_balance.trim();
+                              
+                              // Dividir por vírgulas ou quebras de linha
+                              const parts = balanceText.split(/[,;\n]/).filter(p => p.trim().length > 0);
+                              
+                              parts.forEach((part: string) => {
+                                const trimmed = part.trim();
+                                // Buscar padrão: número seguido de % seguido de texto
+                                const match = trimmed.match(/^(\d+)%\s*(.+)$/);
+                                
+                                if (match) {
+                                  const percentage = parseInt(match[1], 10);
+                                  const typeText = match[2].trim().toLowerCase();
+                                  
+                                  // Normalizar nomes de tipos de conteúdo
+                                  let normalizedType = '';
+                                  
+                                  if (typeText.includes('institucional') || typeText.includes('branding')) {
+                                    normalizedType = 'Institucional';
+                                  } else if (typeText.includes('educativo') || typeText.includes('educacional')) {
+                                    normalizedType = 'Educacional';
+                                  } else if (typeText.includes('tendencias') || typeText.includes('tendências') || 
+                                           typeText.includes('envolvimento') || typeText.includes('engajamento') ||
+                                           typeText.includes('engaj')) {
+                                    normalizedType = 'Engajamento';
+                                  } else if (typeText.includes('vendas') || typeText.includes('promocional') || 
+                                           typeText.includes('comercial')) {
+                                    normalizedType = 'Promocional';
+                                  } else if (typeText.includes('entretenimento')) {
+                                    normalizedType = 'Entretenimento';
+                                  } else {
+                                    // Se não reconhecer, usar o texto original capitalizado
+                                    normalizedType = match[2].trim()
+                                      .split(/\s+/)
+                                      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                      .join(' ');
+                                  }
+                                  
+                                  if (normalizedType && percentage > 0) {
+                                    contentMix[normalizedType] = percentage;
+                                  }
+                                }
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Erro ao parsear content_balance:', error);
+                          }
+                          
+                          // Se não encontrou no content_balance, usar ai_generated_profile
+                          if (Object.keys(contentMix).length === 0) {
+                            contentMix = profile.ai_generated_profile.content_strategy.content_mix || {};
+                          }
+                          
+                          // Ordenar por porcentagem (maior para menor)
+                          const sortedEntries = Object.entries(contentMix).sort((a, b) => (b[1] as number) - (a[1] as number));
+                          
+                          if (sortedEntries.length === 0) {
+                            return <p className="text-sm text-muted-foreground">Nenhum mix de conteúdo configurado</p>;
+                          }
+                          
+                          return sortedEntries.map(([type, percentage]: [string, any]) => (
                             <div key={type} className="flex items-center gap-3">
                               <span className="text-sm min-w-[120px] capitalize">{type}</span>
                               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -371,8 +441,8 @@ export default function ClientBriefing() {
                               </div>
                               <span className="text-sm font-medium min-w-[40px] text-right">{percentage}%</span>
                             </div>
-                          )
-                        )}
+                          ));
+                        })()}
                       </div>
                     </div>
                   </CardContent>
@@ -389,9 +459,46 @@ export default function ClientBriefing() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {profile.editorial_line || profile.ai_generated_profile?.editorial_line}
-                    </p>
+                    {(() => {
+                      const editorialData = profile.editorial_line || profile.ai_generated_profile?.editorial_line;
+                      
+                      if (!editorialData) {
+                        return <p className="text-sm text-muted-foreground">Nenhuma linha editorial configurada</p>;
+                      }
+                      
+                      // Tentar parsear se for JSON estruturado
+                      let parsedData = null;
+                      try {
+                        parsedData = typeof editorialData === 'string' ? JSON.parse(editorialData) : editorialData;
+                      } catch {
+                        parsedData = null;
+                      }
+                      
+                      // Se tiver estrutura semanal (JSON), renderizar estruturado
+                      if (parsedData && typeof parsedData === 'object' && parsedData.editorial_line && parsedData.monthly_structure) {
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-muted-foreground leading-relaxed">
+                              {parsedData.editorial_line}
+                            </p>
+                            <Separator />
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium text-muted-foreground">Planejamento Mensal</p>
+                              <p className="text-xs text-muted-foreground">
+                                {parsedData.monthly_structure.total_creatives || 0} criativos distribuídos em {parsedData.monthly_structure.weeks?.length || 0} semanas
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // Se for texto simples ou JSON inválido, exibir como texto
+                      return (
+                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                          {typeof editorialData === 'string' ? editorialData : JSON.stringify(editorialData, null, 2)}
+                        </p>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
 
@@ -559,6 +666,160 @@ export default function ClientBriefing() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Estratégia de Conteúdo - também para linha editorial */}
+              <Card className="glass">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-500" />
+                    Estratégia de Conteúdo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(() => {
+                    // Tentar extrair frequência e horários do briefing_responses
+                    let postFrequency = null;
+                    let bestTimes: string[] = [];
+                    
+                    try {
+                      const responses = typeof profile.briefing_responses === 'string' 
+                        ? JSON.parse(profile.briefing_responses) 
+                        : profile.briefing_responses;
+                      
+                      if (responses?.content_frequency) {
+                        postFrequency = responses.content_frequency;
+                      }
+                      
+                      // Tentar buscar horários do perfil se disponível
+                      if (profile.ai_generated_profile?.content_strategy?.best_times) {
+                        bestTimes = profile.ai_generated_profile.content_strategy.best_times;
+                      }
+                    } catch (error) {
+                      console.error('Erro ao parsear briefing responses:', error);
+                    }
+                    
+                    // Se não encontrou frequência, usar do ai_generated_profile
+                    if (!postFrequency && profile.ai_generated_profile?.content_strategy?.post_frequency) {
+                      postFrequency = profile.ai_generated_profile.content_strategy.post_frequency;
+                    }
+                    
+                    return (
+                      <>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium mb-2">Frequência de Posts</p>
+                            <p className="text-muted-foreground">
+                              {postFrequency || 'Não especificado'}
+                            </p>
+                          </div>
+                          {bestTimes && bestTimes.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium mb-2">Melhores Horários</p>
+                              <div className="flex flex-wrap gap-2">
+                                {bestTimes.map((time: string) => (
+                                  <Badge key={time}>{time}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                          <p className="text-sm font-medium mb-3">Mix de Conteúdo</p>
+                          <div className="space-y-2">
+                            {(() => {
+                              // Tentar extrair mix de conteúdo do briefing_responses.content_balance primeiro
+                              let contentMix: Record<string, number> = {};
+                              
+                              try {
+                                const responses = typeof profile.briefing_responses === 'string' 
+                                  ? JSON.parse(profile.briefing_responses) 
+                                  : profile.briefing_responses;
+                                
+                                if (responses?.content_balance && typeof responses.content_balance === 'string') {
+                                  // Parsear texto como "15% Institucional branding, 40% educativo, 30% tendencias e envolvimento, 15% vendas"
+                                  const balanceText = responses.content_balance.trim();
+                                  
+                                  // Dividir por vírgulas ou quebras de linha
+                                  const parts = balanceText.split(/[,;\n]/).filter(p => p.trim().length > 0);
+                                  
+                                  parts.forEach((part: string) => {
+                                    const trimmed = part.trim();
+                                    // Buscar padrão: número seguido de % seguido de texto
+                                    const match = trimmed.match(/^(\d+)%\s*(.+)$/);
+                                    
+                                    if (match) {
+                                      const percentage = parseInt(match[1], 10);
+                                      const typeText = match[2].trim().toLowerCase();
+                                      
+                                      // Normalizar nomes de tipos de conteúdo
+                                      let normalizedType = '';
+                                      
+                                      if (typeText.includes('institucional') || typeText.includes('branding')) {
+                                        normalizedType = 'Institucional';
+                                      } else if (typeText.includes('educativo') || typeText.includes('educacional')) {
+                                        normalizedType = 'Educacional';
+                                      } else if (typeText.includes('tendencias') || typeText.includes('tendências') || 
+                                               typeText.includes('envolvimento') || typeText.includes('engajamento') ||
+                                               typeText.includes('engaj')) {
+                                        normalizedType = 'Engajamento';
+                                      } else if (typeText.includes('vendas') || typeText.includes('promocional') || 
+                                               typeText.includes('comercial')) {
+                                        normalizedType = 'Promocional';
+                                      } else if (typeText.includes('entretenimento')) {
+                                        normalizedType = 'Entretenimento';
+                                      } else {
+                                        // Se não reconhecer, usar o texto original capitalizado
+                                        normalizedType = match[2].trim()
+                                          .split(/\s+/)
+                                          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                          .join(' ');
+                                      }
+                                      
+                                      if (normalizedType && percentage > 0) {
+                                        contentMix[normalizedType] = percentage;
+                                      }
+                                    }
+                                  });
+                                }
+                              } catch (error) {
+                                console.error('Erro ao parsear content_balance:', error);
+                              }
+                              
+                              // Se não encontrou no content_balance, usar ai_generated_profile
+                              if (Object.keys(contentMix).length === 0) {
+                                contentMix = profile.ai_generated_profile?.content_strategy?.content_mix || {};
+                              }
+                              
+                              // Ordenar por porcentagem (maior para menor)
+                              const sortedEntries = Object.entries(contentMix).sort((a, b) => (b[1] as number) - (a[1] as number));
+                              
+                              if (sortedEntries.length === 0) {
+                                return <p className="text-sm text-muted-foreground">Nenhum mix de conteúdo configurado</p>;
+                              }
+                              
+                              return sortedEntries.map(([type, percentage]: [string, any]) => (
+                                <div key={type} className="flex items-center gap-3">
+                                  <span className="text-sm min-w-[120px] capitalize">{type}</span>
+                                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-green-500"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium min-w-[40px] text-right">{percentage}%</span>
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
               
               <Card className="glass border-green-500/20">
                 <CardHeader>
@@ -584,16 +845,30 @@ export default function ClientBriefing() {
                       ? (profile.editorial_line || profile.ai_generated_profile?.editorial_line)
                       : (profile.ai_generated_profile?.editorial_line || profile.editorial_line);
                     
+                    if (!editorialData) {
+                      return (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhuma linha editorial encontrada
+                        </p>
+                      );
+                    }
+                    
                     // Tentar parsear se for JSON (estrutura semanal)
                     let parsedData = null;
                     try {
-                      parsedData = typeof editorialData === 'string' ? JSON.parse(editorialData) : editorialData;
-                    } catch {
+                      if (typeof editorialData === 'string') {
+                        // Tentar parsear JSON
+                        parsedData = JSON.parse(editorialData);
+                      } else if (typeof editorialData === 'object') {
+                        parsedData = editorialData;
+                      }
+                    } catch (error) {
+                      // Se falhar, não é JSON válido
                       parsedData = null;
                     }
                     
                     // Se tiver estrutura semanal, exibir de forma organizada
-                    if (parsedData?.monthly_structure) {
+                    if (parsedData && typeof parsedData === 'object' && parsedData.monthly_structure) {
                       const structure = parsedData.monthly_structure;
                       return (
                         <div className="space-y-6">
@@ -613,41 +888,49 @@ export default function ClientBriefing() {
                             <div className="flex items-center justify-between">
                               <h3 className="text-lg font-semibold">Planejamento Mensal</h3>
                               <Badge variant="outline" className="text-sm">
-                                Total: {structure.total_creatives} criativos
+                                Total: {structure.total_creatives || 0} criativos
                               </Badge>
                             </div>
                             
-                            <div className="grid gap-4">
-                              {structure.weeks?.map((week: any, weekIndex: number) => (
-                                <Card key={weekIndex} className="border-l-4 border-l-green-500">
-                                  <CardHeader className="pb-3">
-                                    <CardTitle className="text-base flex items-center gap-2">
-                                      <span className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold">
-                                        {week.week_number}
-                                      </span>
-                                      Semana {week.week_number}
-                                      <Badge variant="outline" className="ml-auto">
-                                        {week.posts?.length || 0} posts
-                                      </Badge>
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <div className="space-y-2">
-                                      {week.posts?.map((post: any, postIndex: number) => (
-                                        <div key={postIndex} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
-                                          <Badge variant="outline" className="shrink-0">
-                                            {post.type}
-                                          </Badge>
-                                          <p className="text-sm text-muted-foreground flex-1">
-                                            {post.description || 'Conteúdo sugerido'}
-                                          </p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </div>
+                            {structure.weeks && Array.isArray(structure.weeks) && structure.weeks.length > 0 ? (
+                              <div className="grid gap-4">
+                                {structure.weeks.map((week: any, weekIndex: number) => (
+                                  <Card key={weekIndex} className="border-l-4 border-l-green-500">
+                                    <CardHeader className="pb-3">
+                                      <CardTitle className="text-base flex items-center gap-2">
+                                        <span className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold">
+                                          {week.week_number || weekIndex + 1}
+                                        </span>
+                                        Semana {week.week_number || weekIndex + 1}
+                                        <Badge variant="outline" className="ml-auto">
+                                          {week.posts?.length || 0} posts
+                                        </Badge>
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                      <div className="space-y-2">
+                                        {week.posts && Array.isArray(week.posts) && week.posts.length > 0 ? (
+                                          week.posts.map((post: any, postIndex: number) => (
+                                            <div key={postIndex} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
+                                              <Badge variant="outline" className="shrink-0">
+                                                {post.type || 'Conteúdo'}
+                                              </Badge>
+                                              <p className="text-sm text-muted-foreground flex-1">
+                                                {post.description || 'Conteúdo sugerido'}
+                                              </p>
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <p className="text-xs text-muted-foreground">Nenhum post definido para esta semana</p>
+                                        )}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Estrutura semanal não disponível</p>
+                            )}
                           </div>
                         </div>
                       );
