@@ -18,6 +18,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { StoriesHighlights } from "@/components/content/StoriesHighlights";
 import { EnrichEditorialButton } from "@/components/ai/EnrichEditorialButton";
+import { MonthlyContentPlanner } from "@/components/content/MonthlyContentPlanner";
+import { TrendingUp } from "lucide-react";
 
 interface Content {
   id: string;
@@ -57,6 +59,7 @@ export default function ContentGrid() {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
 
   // Função para converter status do banco em status para client users
   const getClientStatus = (content: Content): 'pending' | 'producing' | 'scheduled' | 'published' | null => {
@@ -387,6 +390,14 @@ export default function ContentGrid() {
           {/* Botões visíveis apenas para agency_admin e team_member */}
           {(role === 'agency_admin' || role === 'team_member') && (
             <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => setShowMonthlyPlanner(true)}
+                size="sm"
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Planejamento IA
+              </Button>
               <EnrichEditorialButton
                 clientId={userClient.id}
                 variant="outline"
@@ -646,6 +657,15 @@ export default function ContentGrid() {
             open={showProfileDialog}
             onOpenChange={setShowProfileDialog}
             onUpdate={() => {}}
+          />
+        )}
+
+        {userClient && (
+          <MonthlyContentPlanner
+            clientId={userClient.id}
+            open={showMonthlyPlanner}
+            onOpenChange={setShowMonthlyPlanner}
+            onSuccess={() => loadContents(userClient.id)}
           />
         )}
       </div>

@@ -90,6 +90,9 @@ verify_jwt = true
 [functions.generate-monthly-editorial]
 verify_jwt = true
 
+[functions.generate-monthly-plan]
+verify_jwt = true
+
 [functions.get-ai-config]
 verify_jwt = true
 

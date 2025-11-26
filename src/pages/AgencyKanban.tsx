@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useUserData } from "@/hooks/useUserData";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ContentKanban } from "@/components/content/ContentKanban";
-import { Loader2 } from "lucide-react";
+import { MonthlyContentPlanner } from "@/components/content/MonthlyContentPlanner";
+import { Button } from "@/components/ui/button";
+import { Loader2, TrendingUp } from "lucide-react";
 import { EnrichEditorialButton } from "@/components/ai/EnrichEditorialButton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -10,6 +12,7 @@ export default function AgencyKanban() {
   const { profile, agency, loading } = useUserData();
   const { toast } = useToast();
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
 
   if (loading) {
     return (
@@ -43,25 +46,44 @@ export default function AgencyKanban() {
               Gerencie o fluxo de trabalho de todos os conteúdos
             </p>
           </div>
-          {selectedClientId && (
-            <EnrichEditorialButton
-              clientId={selectedClientId}
+          <div className="flex gap-2">
+            {selectedClientId && (
+              <EnrichEditorialButton
+                clientId={selectedClientId}
+                variant="outline"
+                size="sm"
+                onSuccess={() => {
+                  toast({
+                    title: "Linha Editorial Atualizada",
+                    description: "A linha editorial foi enriquecida com sucesso"
+                  });
+                }}
+              />
+            )}
+            <Button
               variant="outline"
-              size="sm"
-              onSuccess={() => {
-                toast({
-                  title: "Linha Editorial Atualizada",
-                  description: "A linha editorial foi enriquecida com sucesso"
-                });
-              }}
-            />
-          )}
+              onClick={() => setShowMonthlyPlanner(true)}
+              disabled={!selectedClientId}
+              className="gap-2 bg-green-500/10 border-green-500/20 hover:bg-green-500/20"
+            >
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              Planejamento IA
+            </Button>
+          </div>
         </div>
         
         <ContentKanban 
           agencyId={profile.agency_id} 
           onClientFilterChange={setSelectedClientId}
         />
+
+        {selectedClientId && (
+          <MonthlyContentPlanner
+            clientId={selectedClientId}
+            open={showMonthlyPlanner}
+            onOpenChange={setShowMonthlyPlanner}
+          />
+        )}
       </div>
     </AppLayout>
   );
