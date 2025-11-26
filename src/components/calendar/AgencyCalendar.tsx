@@ -39,6 +39,7 @@ interface Content {
 interface AgencyCalendarProps {
   agencyId: string;
   clientId?: string | null;
+  onClientSelectionChange?: (clientId: string | null) => void;
 }
 
 const CLIENT_COLOR_PALETTE = [
@@ -46,7 +47,7 @@ const CLIENT_COLOR_PALETTE = [
   '#EF4444', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
 ];
 
-export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProps) {
+export function AgencyCalendar({ agencyId, clientId = null, onClientSelectionChange }: AgencyCalendarProps) {
   const { toast } = useToast();
   const [contents, setContents] = useState<Content[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -75,6 +76,14 @@ export function AgencyCalendar({ agencyId, clientId = null }: AgencyCalendarProp
   useEffect(() => {
     loadClients();
   }, [agencyId]);
+
+  useEffect(() => {
+    setSelectedClient(clientId ?? null);
+  }, [clientId]);
+
+  useEffect(() => {
+    onClientSelectionChange?.(selectedClient);
+  }, [selectedClient, onClientSelectionChange]);
 
   useEffect(() => {
     loadContents();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { EnrichEditorialDialog } from "./EnrichEditorialDialog";
@@ -17,16 +17,22 @@ export function EnrichEditorialButton({
   onSuccess,
 }: EnrichEditorialButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const buttonClasses = useMemo(() => {
+    const base = variant === "default" ? "bg-green-500 hover:bg-green-600" : "";
+    return `${base} gap-2`.trim();
+  }, [variant]);
 
   return (
     <>
       <Button
+        type="button"
         variant={variant}
         size={size}
+        disabled={!clientId}
         onClick={() => setDialogOpen(true)}
-        className={variant === "default" ? "bg-green-500 hover:bg-green-600" : ""}
+        className={buttonClasses}
       >
-        <Sparkles className="h-4 w-4 mr-2" />
+        <Sparkles className="h-4 w-4" />
         Enriquecer Linha Editorial
       </Button>
 
