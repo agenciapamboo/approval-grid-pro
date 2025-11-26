@@ -9,6 +9,8 @@ import { Sparkles, RefreshCw, Target, TrendingUp, MessageSquare } from "lucide-r
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import AccessGate from "@/components/auth/AccessGate";
+import { callApi } from "@/lib/apiClient";
+import { toast } from "sonner";
 
 export default function ClientBriefing() {
   const { clientId } = useParams<{ clientId: string }>();
@@ -26,73 +28,97 @@ export default function ClientBriefing() {
 
   async function loadData() {
     if (!clientId) return;
+    setLoading(true);
 
-    // Buscar perfil existente
-    const { data: profileData } = await (supabase as any)
-      .from('client_ai_profiles')
-      .select('*, briefing_templates(*)')
-      .eq('client_id', clientId)
-      .single();
+    const legacyLoad = async () => {
+      let profileData = null;
+      const { data } = await (supabase as any)
+        .from('client_ai_profiles')
+        .select('*, briefing_templates(*)')
+        .eq('client_id', clientId)
+        .single();
 
-    if (profileData) {
-      setProfile(profileData);
-      
-      // Se for editorial_line, verificar se o template associado ao perfil é do tipo editorial_line
-      if (briefingType === 'editorial_line') {
-        // Se o perfil tem um template associado e é do tipo editorial_line, usar ele
-        if (profileData.briefing_templates?.template_type === 'editorial_line') {
-          setTemplate(profileData.briefing_templates);
-        } else {
-          // Buscar template específico de linha editorial ativo
-          const { data: editorialTemplate } = await (supabase as any)
-            .from('briefing_templates')
-            .select('*')
-            .eq('template_type', 'editorial_line')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          
-          if (editorialTemplate) {
-            setTemplate(editorialTemplate);
+      profileData = data;
+      let templateToUse = null;
+      let shouldShowForm = false;
+
+      if (profileData) {
+        if (briefingType === 'editorial_line') {
+          if (profileData.briefing_templates?.template_type === 'editorial_line') {
+            templateToUse = profileData.briefing_templates;
           } else {
-            setTemplate(null);
+            const { data: editorialTemplate } = await (supabase as any)
+              .from('briefing_templates')
+              .select('*')
+              .eq('template_type', 'editorial_line')
+              .eq('is_active', true)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            templateToUse = editorialTemplate;
           }
+        } else {
+          templateToUse = profileData.briefing_templates;
         }
       } else {
-        setTemplate(profileData.briefing_templates);
-      }
-    } else {
-      // Buscar template ativo do tipo correto
-      const { data: templateData } = await (supabase as any)
-        .from('briefing_templates')
-        .select('*')
-        .eq('template_type', briefingType)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (templateData) {
-        setTemplate(templateData);
-        setShowForm(true);
-      } else {
-        // Se não encontrou template do tipo específico, buscar qualquer template ativo como fallback
-        const { data: fallbackTemplate } = await (supabase as any)
+        const { data: templateData } = await (supabase as any)
           .from('briefing_templates')
           .select('*')
+          .eq('template_type', briefingType)
           .eq('is_active', true)
+          .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
-        if (fallbackTemplate) {
-          setTemplate(fallbackTemplate);
-          setShowForm(true);
+
+        if (templateData) {
+          templateToUse = templateData;
+          shouldShowForm = true;
+        } else {
+          const { data: fallbackTemplate } = await (supabase as any)
+            .from('briefing_templates')
+            .select('*')
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+
+          if (fallbackTemplate) {
+            templateToUse = fallbackTemplate;
+            shouldShowForm = true;
+          }
         }
       }
-    }
 
-    setLoading(false);
+      return {
+        profile: profileData,
+        template: templateToUse,
+        showForm: shouldShowForm || !profileData,
+      };
+    };
+
+    try {
+      const payload = { clientId, type: briefingType };
+      console.log('[ClientBriefing] payload', payload);
+
+      const response = await callApi<{
+        profile: any;
+        template: any;
+        showForm: boolean;
+      }>('/api/briefing/getEditorialBriefing', {
+        method: "POST",
+        payload,
+        fallback: legacyLoad,
+      });
+      console.log('[ClientBriefing] response', response);
+
+      setProfile(response.profile);
+      setTemplate(response.template);
+      setShowForm(Boolean(response.showForm ?? !response.profile));
+    } catch (error) {
+      console.error('Error loading briefing data:', error);
+      toast.error("Erro ao carregar briefing");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleProfileGenerated = async (newProfile: any) => {

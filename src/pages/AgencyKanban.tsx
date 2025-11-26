@@ -58,7 +58,10 @@ export default function AgencyKanban() {
           )}
         </div>
         
-        <ContentKanban agencyId={profile.agency_id} />
+        <ContentKanban 
+          agencyId={profile.agency_id} 
+          onClientFilterChange={setSelectedClientId}
+        />
       </div>
     </AppLayout>
   );

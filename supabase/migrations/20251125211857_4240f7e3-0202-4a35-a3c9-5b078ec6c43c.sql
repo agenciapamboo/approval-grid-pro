@@ -16,6 +16,7 @@ USING (
 WITH CHECK (
   has_role(auth.uid(), 'agency_admin'::app_role) 
   AND agency_id = get_user_agency_id(auth.uid())
+  AND agency_id = OLD.agency_id
 );
 
 -- 2. CORREÇÃO: contents table - agency_admin e team_member UPDATE
@@ -33,6 +34,8 @@ USING (
 WITH CHECK (
   has_role(auth.uid(), 'agency_admin'::app_role) 
   AND agency_id = get_user_agency_id(auth.uid())
+  AND agency_id = OLD.agency_id
+  AND client_id = OLD.client_id
 );
 
 CREATE POLICY "Team members can update contents"
@@ -46,6 +49,8 @@ USING (
 WITH CHECK (
   has_role(auth.uid(), 'team_member'::app_role) 
   AND agency_id = get_user_agency_id(auth.uid())
+  AND agency_id = OLD.agency_id
+  AND client_id = OLD.client_id
 );
 
 -- 3. SIMPLIFICAÇÃO: content_texts policies
@@ -61,7 +66,7 @@ WITH CHECK (
   (has_role(auth.uid(), 'agency_admin'::app_role) OR has_role(auth.uid(), 'team_member'::app_role))
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_texts.content_id
     AND c.agency_id = get_user_agency_id(auth.uid())
   )
 );
@@ -74,7 +79,7 @@ WITH CHECK (
   has_role(auth.uid(), 'client_user'::app_role)
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_texts.content_id
     AND c.client_id = get_user_client_id(auth.uid())
   )
 );
@@ -87,7 +92,7 @@ USING (
   (has_role(auth.uid(), 'agency_admin'::app_role) OR has_role(auth.uid(), 'team_member'::app_role))
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_texts.content_id
     AND c.agency_id = get_user_agency_id(auth.uid())
   )
 )
@@ -116,7 +121,7 @@ WITH CHECK (
   has_role(auth.uid(), 'client_user'::app_role)
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_texts.content_id
     AND c.client_id = get_user_client_id(auth.uid())
   )
 );
@@ -129,7 +134,7 @@ USING (
   (has_role(auth.uid(), 'agency_admin'::app_role) OR has_role(auth.uid(), 'team_member'::app_role))
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_texts.content_id
     AND c.agency_id = get_user_agency_id(auth.uid())
   )
 );
@@ -142,7 +147,7 @@ USING (
   has_role(auth.uid(), 'client_user'::app_role)
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_texts.content_id
     AND c.client_id = get_user_client_id(auth.uid())
   )
 );
@@ -160,7 +165,7 @@ WITH CHECK (
   (has_role(auth.uid(), 'agency_admin'::app_role) OR has_role(auth.uid(), 'team_member'::app_role))
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_media.content_id
     AND c.agency_id = get_user_agency_id(auth.uid())
   )
 );
@@ -173,7 +178,7 @@ WITH CHECK (
   has_role(auth.uid(), 'client_user'::app_role)
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_media.content_id
     AND c.client_id = get_user_client_id(auth.uid())
   )
 );
@@ -186,7 +191,7 @@ USING (
   (has_role(auth.uid(), 'agency_admin'::app_role) OR has_role(auth.uid(), 'team_member'::app_role))
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_media.content_id
     AND c.agency_id = get_user_agency_id(auth.uid())
   )
 )
@@ -215,7 +220,7 @@ WITH CHECK (
   has_role(auth.uid(), 'client_user'::app_role)
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_media.content_id
     AND c.client_id = get_user_client_id(auth.uid())
   )
 );
@@ -228,7 +233,7 @@ USING (
   (has_role(auth.uid(), 'agency_admin'::app_role) OR has_role(auth.uid(), 'team_member'::app_role))
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_media.content_id
     AND c.agency_id = get_user_agency_id(auth.uid())
   )
 );
@@ -241,7 +246,7 @@ USING (
   has_role(auth.uid(), 'client_user'::app_role)
   AND EXISTS (
     SELECT 1 FROM contents c
-    WHERE c.id = content_id
+    WHERE c.id = content_media.content_id
     AND c.client_id = get_user_client_id(auth.uid())
   )
 );

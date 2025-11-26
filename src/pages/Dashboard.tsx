@@ -24,6 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { ClientProfileCard } from "@/components/dashboard/ClientProfileCard";
 import { useClientEditorialData } from "@/hooks/useClientEditorialData";
 import { ClientProfileCardWrapper } from "@/components/dashboard/ClientProfileCardWrapper";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Helper para evitar inferência de tipos recursiva do Supabase
 async function fetchApproverClients(userId: string) {
@@ -60,6 +61,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
+  const [selectedAgencyClientId, setSelectedAgencyClientId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -301,6 +303,41 @@ const Dashboard = () => {
                 Cadastrar Novo Cliente
               </Button>
             </div>
+
+            {dashboardData?.agency?.clients?.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Visualizar cliente
+                  </span>
+                  <Select
+                    value={selectedAgencyClientId || "all"}
+                    onValueChange={(value) =>
+                      setSelectedAgencyClientId(value === "all" ? null : value)
+                    }
+                  >
+                    <SelectTrigger className="md:w-80">
+                      <SelectValue placeholder="Selecione um cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os clientes</SelectItem>
+                      {dashboardData.agency.clients.map((client: any) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedAgencyClientId && (
+                  <ClientProfileCardWrapper
+                    clientId={selectedAgencyClientId}
+                    showActions={true}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Métricas da Agência - Linha 1: 2 colunas (Criativos do Mês + Armazenamento) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

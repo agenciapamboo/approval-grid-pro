@@ -42,6 +42,8 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [currentMediaUrl, setCurrentMediaUrl] = useState<string>("");
   const [clientId, setClientId] = useState<string>("");
+  const aiContentType: 'post' | 'reels' | 'stories' =
+    type === 'reels' ? 'reels' : type === 'story' ? 'stories' : 'post';
 
   useEffect(() => {
     if (open) {
@@ -406,6 +408,16 @@ export function EditContentDialog({ open, onOpenChange, contentId, onSuccess }: 
                 placeholder="Digite a legenda do post..."
                 className="min-h-[120px]"
               />
+              {hasClientProfile && clientId && (
+                <div className="mt-3 rounded-lg border border-green-500/20 bg-muted/30 p-4">
+                  <AILegendAssistant
+                    clientId={clientId}
+                    contentType={aiContentType}
+                    context={{ title }}
+                    onSelectSuggestion={(suggestion) => setCaption(suggestion)}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Mídia Atual e Upload */}

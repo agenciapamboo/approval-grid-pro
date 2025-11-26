@@ -69,6 +69,7 @@ interface CreativeRequestData {
   type: 'creative_request';
   title: string;
   clientName: string;
+  clientId: string | null;
   clientEmail?: string;
   clientWhatsapp?: string;
   createdAt: string;
@@ -86,6 +87,7 @@ interface AdjustmentRequestData {
   type: 'adjustment_request';
   title: string;
   clientName: string;
+  clientId: string | null;
   createdAt: string;
   contentTitle: string;
   reason: string;
@@ -101,6 +103,7 @@ interface UploadProgress {
 
 interface ContentKanbanProps {
   agencyId: string;
+  onClientFilterChange?: (clientId: string | null) => void;
 }
 
 // Schema de validação para novo creative request
@@ -194,7 +197,7 @@ const getColumnForContent = (content: Content, isRequest: boolean = false): stri
   }
 };
 
-export function ContentKanban({ agencyId }: ContentKanbanProps) {
+export function ContentKanban({ agencyId, onClientFilterChange }: ContentKanbanProps) {
   const { toast } = useToast();
   const [contents, setContents] = useState<Content[]>([]);
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
@@ -237,6 +240,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   
   // Estado para assistente de linha editorial
   const [showEditorialAssistant, setShowEditorialAssistant] = useState(false);
+  const [clientFilter, setClientFilter] = useState<string | null>(null);
   
   // Estados para histórico de dias e filtros
   const [historyDays, setHistoryDays] = useState<number>(30);
@@ -273,6 +277,10 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         },
       },
     }),
+  };
+
+  const handleClientFilterChange = (value: string | null) => {
+    setClientFilter(value);
   };
 
   // Keyboard navigation effect
@@ -351,8 +359,6 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
   useEffect(() => {
     loadAgencyEntitlements();
     loadColumns();
-    loadContents();
-    loadRequests();
     loadClients();
     
     
@@ -452,6 +458,20 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
     };
   }, [agencyId, dateRange, selectedMonthOffset]);
 
+  useEffect(() => {
+    if (!agencyId) return;
+    loadContents();
+    loadRequests();
+  }, [agencyId, dateRange, selectedMonthOffset, clientFilter]);
+
+  useEffect(() => {
+    onClientFilterChange?.(clientFilter);
+  }, [clientFilter, onClientFilterChange]);
+
+  useEffect(() => {
+    setClientFilter(null);
+  }, [agencyId]);
+
   const loadAgencyEntitlements = async () => {
     try {
       // Proteção: verificar se agencyId existe
@@ -540,20 +560,27 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
       setLoading(true);
       
       // Buscar clientes da agência
-      const { data: clients, error: clientsError } = await supabase
+      const { data: agencyClients, error: clientsError } = await supabase
         .from("clients")
         .select("id")
         .eq("agency_id", agencyId);
 
       if (clientsError) throw clientsError;
 
-      if (!clients || clients.length === 0) {
+      if (!agencyClients || agencyClients.length === 0) {
         setContents([]);
         setLoading(false);
         return;
       }
 
-      const clientIds = clients.map((c) => c.id);
+      const clientIds = agencyClients.map((c) => c.id);
+      const targetClientIds = clientFilter ? clientIds.filter((id) => id === clientFilter) : clientIds;
+
+      if (targetClientIds.length === 0) {
+        setContents([]);
+        setLoading(false);
+        return;
+      }
 
       // Calcular range baseado no mês selecionado
       const now = new Date();
@@ -582,7 +609,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
           supplier_link,
           clients (name)
         `)
-        .in("client_id", clientIds)
+        .in("client_id", targetClientIds)
         .gte("date", effectiveStartDate.toISOString())
         .lte("date", endOfMonth.toISOString())
         .order("date", { ascending: true });
@@ -652,15 +679,13 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
   const loadRequests = async () => {
     try {
-      // Proteção: verificar se agencyId existe
       if (!agencyId) {
         console.warn('[loadRequests] agencyId não definido');
         setRequests([]);
         return;
       }
 
-      // 1. Buscar creative requests (sempre, independente de clientes)
-      const { data: creativeNotifications, error: creativeError } = await supabase
+      let creativeQuery = supabase
         .from("notifications")
         .select(`
           *,
@@ -675,6 +700,12 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         .eq("agency_id", agencyId)
         .order("created_at", { ascending: false });
 
+      if (clientFilter) {
+        creativeQuery = creativeQuery.eq("client_id", clientFilter);
+      }
+
+      const { data: creativeNotifications, error: creativeError } = await creativeQuery;
+
       if (creativeError) throw creativeError;
 
       const creativeRequests: CreativeRequestData[] = (creativeNotifications || []).map((notif: any) => ({
@@ -682,6 +713,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         type: 'creative_request' as const,
         title: notif.payload?.title || 'Sem título',
         clientName: notif.clients?.name || 'Cliente',
+        clientId: notif.client_id || null,
         clientEmail: notif.clients?.email,
         clientWhatsapp: notif.clients?.whatsapp,
         deadline: notif.payload?.deadline,
@@ -694,7 +726,6 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
         referenceFiles: notif.payload?.reference_files || [],
       }));
 
-      // 2. Buscar clientes da agência (para adjustment requests)
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select("id, name, email, whatsapp")
@@ -702,23 +733,25 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
 
       if (clientsError) throw clientsError;
 
-      // Se não houver clientes, retornar apenas creative requests
       if (!clients || clients.length === 0) {
-        setRequests(creativeRequests);
+        const filteredCreatives = clientFilter
+          ? creativeRequests.filter((request) => request.clientId === clientFilter)
+          : creativeRequests;
+        setRequests(filteredCreatives);
         return;
       }
 
       const clientIds = clients.map((c) => c.id);
+      const targetClientIds = clientFilter ? clientIds.filter((id) => id === clientFilter) : clientIds;
       const clientMap = new Map(clients.map((c) => [c.id, c]));
 
-      // 3. Buscar adjustment requests (apenas se houver clientes)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data: contentsList } = await supabase
         .from("contents")
         .select("id, title, client_id")
-        .in("client_id", clientIds)
+        .in("client_id", targetClientIds.length > 0 ? targetClientIds : clientIds)
         .gte("created_at", thirtyDaysAgo.toISOString());
 
       if (contentsList && contentsList.length > 0) {
@@ -741,6 +774,7 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
               type: 'adjustment_request' as const,
               title: `Ajuste: ${content?.title || 'Conteúdo'}`,
               clientName: client?.name || 'Cliente',
+              clientId: content?.client_id || null,
               createdAt: comment.created_at,
               contentTitle: content?.title || 'Sem título',
               reason: comment.adjustment_reason || 'Não especificado',
@@ -749,12 +783,23 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
             };
           });
 
-          setRequests([...creativeRequests, ...adjustmentRequests]);
+          const combinedRequests = [...creativeRequests, ...adjustmentRequests];
+          const filteredCombined = clientFilter
+            ? combinedRequests.filter((request) => request.clientId === clientFilter)
+            : combinedRequests;
+          filteredCombined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setRequests(filteredCombined);
         } else {
-          setRequests(creativeRequests);
+          const filteredCreatives = clientFilter
+            ? creativeRequests.filter((request) => request.clientId === clientFilter)
+            : creativeRequests;
+          setRequests(filteredCreatives);
         }
       } else {
-        setRequests(creativeRequests);
+        const filteredCreatives = clientFilter
+          ? creativeRequests.filter((request) => request.clientId === clientFilter)
+          : creativeRequests;
+        setRequests(filteredCreatives);
       }
     } catch (error) {
       console.error("Erro ao carregar solicitações:", error);
@@ -1227,6 +1272,28 @@ export function ContentKanban({ agencyId }: ContentKanbanProps) {
               Assistente IA - Linha Editorial
             </Button>
           </div>
+
+          {clients.length > 0 && (
+            <div className="flex flex-col md:flex-row gap-2 md:items-center">
+              <Label className="text-sm font-medium">Filtrar por cliente</Label>
+              <Select
+                value={clientFilter || "all"}
+                onValueChange={(value) => handleClientFilterChange(value === "all" ? null : value)}
+              >
+                <SelectTrigger className="md:w-80">
+                  <SelectValue placeholder="Todos os clientes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os clientes</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           {/* Atalhos - Grid 2 colunas em mobile */}
           <div className="grid grid-cols-2 md:flex md:flex-row gap-2">

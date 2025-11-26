@@ -87,7 +87,10 @@ export default function AgencyAgenda() {
           </AlertDescription>
         </Alert>
         
-        <AgencyCalendar agencyId={profile.agency_id} />
+        <AgencyCalendar 
+          agencyId={profile.agency_id} 
+          onClientSelectionChange={setSelectedClientId}
+        />
         
         {selectedClientId && (
           <MonthlyEditorialGenerator

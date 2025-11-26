@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,8 +11,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { callApi } from "@/lib/apiClient";
 
 interface EnrichEditorialDialogProps {
   open: boolean;
@@ -30,31 +30,45 @@ export function EnrichEditorialDialog({
   const [monthContext, setMonthContext] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!open) {
+      setMonthContext("");
+      setLoading(false);
+    }
+  }, [open]);
+
   const handleEnrich = async () => {
     if (!monthContext.trim()) {
       toast.error("Por favor, descreva o contexto do mês");
       return;
     }
 
+    const payload = {
+      clientId,
+      monthContext: monthContext.trim(),
+    };
+
     setLoading(true);
+    console.log("[EnrichEditorialDialog] payload", payload);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { data, error } = await supabase.functions.invoke('enrich-editorial-line', {
-        body: { 
-          clientId, 
-          monthContext: monthContext.trim(),
-          jwt: session?.access_token 
-        },
-      });
+      const data = await callApi<{ success?: boolean; tokens?: number }>(
+        "/api/ia/enrichEditorialBase",
+        {
+          method: "POST",
+          payload,
+        }
+      );
+      console.log("[EnrichEditorialDialog] response", data);
 
-      if (error) throw error;
-
-      if (data.error) {
-        throw new Error(data.error);
+      if (!data?.success) {
+        throw new Error("Não foi possível enriquecer a linha editorial.");
       }
 
-      toast.success(`Linha editorial enriquecida! (${data.tokens} tokens usados)`);
+      toast.success(
+        data.tokens
+          ? `Linha editorial enriquecida! (${data.tokens} tokens usados)`
+          : "Linha editorial enriquecida com sucesso!"
+      );
       setMonthContext("");
       onOpenChange(false);
       onSuccess?.();
