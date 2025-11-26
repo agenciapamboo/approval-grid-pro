@@ -37,7 +37,7 @@ export function PixelIntegrationManager() {
       const { data, error } = await supabase
         .from('tracking_pixels')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
