@@ -2,6 +2,40 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
+// Helper function to decode JWT and extract user info
+function decodeJWT(token: string): { sub?: string; exp?: number } | null {
+  try {
+    // Remove "Bearer " prefix if present
+    const cleanToken = token.replace(/^Bearer\s+/i, '');
+    
+    // JWT has 3 parts separated by dots
+    const parts = cleanToken.split('.');
+    if (parts.length !== 3) {
+      console.error('Invalid JWT format: expected 3 parts, got', parts.length);
+      return null;
+    }
+    
+    // Decode the payload (second part)
+    const payload = parts[1];
+    
+    // Base64 decode
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const json = JSON.parse(decoded);
+    
+    console.log('JWT decoded successfully:', {
+      sub: json.sub,
+      exp: json.exp,
+      expiresAt: json.exp ? new Date(json.exp * 1000).toISOString() : 'N/A',
+      isExpired: json.exp ? json.exp < Math.floor(Date.now() / 1000) : false,
+    });
+    
+    return json;
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -51,31 +85,92 @@ serve(async (req) => {
     const { clientId, contentType, context } = body;
 
     // Criar cliente Supabase com header Authorization padrão
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    
+    console.log('Creating Supabase client with URL:', supabaseUrl.substring(0, 30) + '...');
+    console.log('Authorization header first 50 chars:', authHeader.substring(0, 50) + '...');
+    
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
     // Validar autenticação usando padrão Supabase
+    console.log('Attempting to validate user with auth.getUser()...');
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
+    console.log('Auth validation result:', {
+      hasUser: !!user,
+      hasError: !!authError,
+      errorMessage: authError?.message,
+      errorName: authError?.name,
+      errorStatus: (authError as any)?.status,
+    });
+    
+    // Se getUser() falhar, tentar validação manual do JWT
+    let userId: string | null = user?.id || null;
+    
     if (authError || !user) {
-      console.error('Auth error:', authError?.message || 'No user found');
-      return new Response(JSON.stringify({ 
-        error: 'Authentication failed', 
-        details: authError?.message || 'Auth session missing!' 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.warn('⚠️ getUser() failed, attempting manual JWT validation...');
+      console.error('Error details:', JSON.stringify(authError, null, 2));
+      
+      // Tentar decodificar o JWT manualmente
+      const decodedJWT = decodeJWT(authHeader);
+      
+      if (decodedJWT && decodedJWT.sub) {
+        // Verificar se o token não está expirado
+        const now = Math.floor(Date.now() / 1000);
+        if (decodedJWT.exp && decodedJWT.exp < now) {
+          const expiredMinutesAgo = Math.floor((now - decodedJWT.exp) / 60);
+          console.error(`❌ JWT expired ${expiredMinutesAgo} minutes ago!`);
+          
+          return new Response(JSON.stringify({ 
+            error: 'Authentication failed', 
+            details: `Token expired ${expiredMinutesAgo} minutes ago. Please refresh your session.`,
+            debug: {
+              expired: true,
+              expiredAt: new Date((decodedJWT.exp || 0) * 1000).toISOString(),
+              expiredMinutesAgo,
+            }
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        userId = decodedJWT.sub;
+        console.log('✅ Manual JWT validation successful! User ID:', userId);
+        console.log(`   Token expires in ${Math.floor(((decodedJWT.exp || 0) - now) / 60)} minutes`);
+        
+        // Criar um objeto user mínimo para continuar
+        user = { id: userId } as any;
+      } else {
+        console.error('❌ Manual JWT validation also failed!');
+        
+        return new Response(JSON.stringify({ 
+          error: 'Authentication failed', 
+          details: authError?.message || 'Auth session missing! Both getUser() and manual JWT validation failed.',
+          debug: {
+            hasError: !!authError,
+            hasUser: !!user,
+            errorName: authError?.name,
+            errorMessage: authError?.message,
+            manualValidation: 'failed',
+          }
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      console.log('✅ User authenticated successfully via getUser():', user.id);
     }
-
-    console.log('User authenticated:', user.id);
 
     if (!clientId || !contentType) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
