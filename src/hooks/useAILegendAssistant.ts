@@ -114,8 +114,14 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
       const freshExpiresAt = freshSession.session.expires_at || 0;
       const now = Math.floor(Date.now() / 1000);
       const freshExpiresInMinutes = Math.floor((freshExpiresAt - now) / 60);
+      const freshAccessToken = freshSession.session.access_token;
+      
       console.log('[AI Assistant] ✅ Token renovado! Expira em:', freshExpiresInMinutes, 'minutos');
-      console.log('[AI Assistant] 🔑 Novo token (50 chars):', freshSession.session.access_token?.substring(0, 50) + '...');
+      console.log('[AI Assistant] 🔑 Novo token (50 chars):', freshAccessToken?.substring(0, 50) + '...');
+      
+      // ✅ SOLUÇÃO CRÍTICA: Aguardar um pouco para o token propagar no Supabase
+      console.log('[AI Assistant] ⏳ Aguardando 1s para token propagar no sistema...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const fullContext = {
         ...context,
@@ -134,11 +140,24 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         try {
           console.log(`[AI Assistant] 🚀 Invocando Edge Function (tentativa ${retryCount + 1}/${maxRetries + 1})...`);
           
+          // ✅ CORREÇÃO CRÍTICA: Obter token atualizado IMEDIATAMENTE antes da chamada
+          const { data: currentSession } = await supabase.auth.getSession();
+          const currentToken = currentSession.session?.access_token;
+          
+          if (!currentToken) {
+            throw new Error('Token não disponível após refresh');
+          }
+          
+          console.log('[AI Assistant] 🔑 Usando token da sessão atual (50 chars):', currentToken.substring(0, 50) + '...');
+          
           const { data, error } = await supabase.functions.invoke('generate-caption', {
             body: {
               clientId,
               contentType,
               context: fullContext,
+            },
+            headers: {
+              Authorization: `Bearer ${currentToken}`,
             },
           });
 
