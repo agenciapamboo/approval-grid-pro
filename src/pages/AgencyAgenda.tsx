@@ -3,6 +3,7 @@ import { useUserData } from "@/hooks/useUserData";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AgencyCalendar } from "@/components/calendar/AgencyCalendar";
 import { MonthlyEditorialGenerator } from "@/components/client/MonthlyEditorialGenerator";
+import { MonthlyContentPlanner } from "@/components/content/MonthlyContentPlanner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Loader2, Info, Lightbulb, CalendarPlus, TrendingUp } from "lucide-react";
@@ -13,6 +14,7 @@ export default function AgencyAgenda() {
   const { profile, agency, loading } = useUserData();
   const { toast } = useToast();
   const [showMonthlyEditorialDialog, setShowMonthlyEditorialDialog] = useState(false);
+  const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   if (loading) {
@@ -63,8 +65,18 @@ export default function AgencyAgenda() {
             )}
             <Button 
               variant="outline" 
+              onClick={() => setShowMonthlyPlanner(true)}
+              className="gap-2 bg-green-500/10 border-green-500/20 hover:bg-green-500/20"
+              disabled={!selectedClientId}
+            >
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              Planejamento IA
+            </Button>
+            <Button 
+              variant="outline" 
               onClick={() => setShowMonthlyEditorialDialog(true)}
               className="gap-2 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20"
+              disabled={!selectedClientId}
             >
               <TrendingUp className="h-4 w-4 text-blue-500" />
               Linha Editorial
@@ -93,11 +105,18 @@ export default function AgencyAgenda() {
         />
         
         {selectedClientId && (
-          <MonthlyEditorialGenerator
-            clientId={selectedClientId}
-            open={showMonthlyEditorialDialog}
-            onOpenChange={setShowMonthlyEditorialDialog}
-          />
+          <>
+            <MonthlyEditorialGenerator
+              clientId={selectedClientId}
+              open={showMonthlyEditorialDialog}
+              onOpenChange={setShowMonthlyEditorialDialog}
+            />
+            <MonthlyContentPlanner
+              clientId={selectedClientId}
+              open={showMonthlyPlanner}
+              onOpenChange={setShowMonthlyPlanner}
+            />
+          </>
         )}
       </div>
     </AppLayout>

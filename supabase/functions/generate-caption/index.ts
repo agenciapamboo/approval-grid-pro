@@ -206,7 +206,7 @@ serve(async (req) => {
     const promptString = JSON.stringify(promptData);
     const encoder = new TextEncoder();
     const data = encoder.encode(promptString);
-    const hashBuffer = await crypto.subtle.digest('MD5', data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const promptHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -461,7 +461,13 @@ serve(async (req) => {
       userPrompt += `- Descrição Adicional: ${description}\n`;
     }
 
-    userPrompt += `\nGere as sugestões em JSON: {"suggestions": ["...", "...", "..."]}`;
+    userPrompt += `\n\nGere 3 legendas entre 100-300 palavras. Cada legenda deve incluir:
+- Gancho inicial (primeira linha chamativa)
+- Corpo do texto (conteúdo principal com storytelling)
+- CTA (call-to-action claro e persuasivo)
+- Hashtags relevantes (5-10 hashtags estratégicas)
+
+Retorne em JSON: {"suggestions": ["...", "...", "..."]}`;
 
     // Call OpenAI
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -477,7 +483,7 @@ serve(async (req) => {
           { role: 'user', content: userPrompt }
         ],
         temperature: aiConfig.temperature || 0.7,
-        max_tokens: aiConfig.max_tokens_caption || 500,
+        max_tokens: aiConfig.max_tokens_caption || 1200,
       }),
     });
 
