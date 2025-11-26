@@ -360,6 +360,114 @@ export default function ClientBriefing() {
             // Priorizar editorial_line direto (gerado pelo formulário de linha editorial)
             // sobre ai_generated_profile.editorial_line (do perfil completo)
             <div className="space-y-6">
+              {/* Informações do Formulário do Briefing */}
+              {profile?.briefing_responses && (
+                <Card className="glass">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Target className="h-5 w-5 text-green-500" />
+                      Informações do Briefing
+                    </CardTitle>
+                    <CardDescription>
+                      Dados preenchidos no formulário de linha editorial
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(() => {
+                      try {
+                        const responses = typeof profile.briefing_responses === 'string' 
+                          ? JSON.parse(profile.briefing_responses) 
+                          : profile.briefing_responses;
+                        
+                        if (!responses || typeof responses !== 'object') {
+                          return <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>;
+                        }
+                        
+                        // Mapear IDs dos campos para labels legíveis baseado nos campos mencionados pelo usuário
+                        const fieldLabels: Record<string, string> = {
+                          'business_type': 'Tipo de negócio',
+                          'content_pillars': 'Quais pilares principais você gostaria de priorizar nos conteúdos?',
+                          'content_frequency': 'Há algum tipo de conteúdo que você deseja produzir com mais frequência?',
+                          'monthly_themes': 'Quais temas ou assuntos devem aparecer todos os meses?',
+                          'restrictions': 'Existe alguma restrição de temas, estilos ou abordagens que não devem entrar na linha editorial?',
+                          'content_balance': 'Qual o nível de equilíbrio ideal entre conteúdo institucional, educativo e comercial?'
+                        };
+                        
+                        // Se tiver template com fields, usar os labels do template
+                        const fieldMap = template?.fields 
+                          ? new Map(template.fields.map((f: any) => [f.id, f]))
+                          : new Map();
+                        
+                        const fieldsToDisplay = Object.keys(responses).filter(key => {
+                          const value = responses[key];
+                          return value !== null && value !== undefined && value !== '' && 
+                                 (!Array.isArray(value) || value.length > 0);
+                        });
+                        
+                        if (fieldsToDisplay.length === 0) {
+                          return <p className="text-sm text-muted-foreground">Nenhum dado preenchido</p>;
+                        }
+                        
+                        return (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {fieldsToDisplay.map((fieldId) => {
+                              const responseValue = responses[fieldId];
+                              const field = fieldMap.get(fieldId);
+                              const label = field?.label || fieldLabels[fieldId] || fieldId;
+                              
+                              let displayValue: any = null;
+                              
+                              if (Array.isArray(responseValue)) {
+                                if (responseValue.length === 0) return null;
+                                displayValue = (
+                                  <div className="flex flex-wrap gap-2">
+                                    {responseValue.map((item: string, idx: number) => (
+                                      <Badge key={idx} variant="outline" className="text-xs">
+                                        {String(item)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                );
+                              } else if (typeof responseValue === 'boolean') {
+                                displayValue = (
+                                  <Badge variant={responseValue ? "default" : "outline"}>
+                                    {responseValue ? 'Sim' : 'Não'}
+                                  </Badge>
+                                );
+                              } else if (typeof responseValue === 'object' && responseValue !== null) {
+                                displayValue = (
+                                  <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                                    {JSON.stringify(responseValue, null, 2)}
+                                  </pre>
+                                );
+                              } else {
+                                displayValue = (
+                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {String(responseValue)}
+                                  </p>
+                                );
+                              }
+                              
+                              return (
+                                <div key={fieldId} className="space-y-2">
+                                  <h4 className="text-sm font-semibold text-foreground">{label}</h4>
+                                  <div>
+                                    {displayValue}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      } catch (error) {
+                        console.error('Error parsing briefing responses:', error);
+                        return <p className="text-sm text-muted-foreground">Erro ao carregar dados do briefing</p>;
+                      }
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+              
               <Card className="glass border-green-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-2xl">
