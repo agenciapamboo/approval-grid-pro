@@ -25,7 +25,7 @@ export function useConversionTracking() {
         .from('tracking_pixels')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (!pixels) {
         console.log('Nenhum pixel global configurado');

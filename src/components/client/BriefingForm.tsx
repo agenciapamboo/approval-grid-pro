@@ -24,6 +24,7 @@ interface BriefingField {
 interface BriefingFormProps {
   templateId: string;
   clientId: string;
+  briefingType?: "client_profile" | "editorial_line";
   onProfileGenerated?: (profile: any) => void;
 }
 
