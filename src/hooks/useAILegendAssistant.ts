@@ -67,8 +67,8 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         
         // ✅ CORREÇÃO 2: Verificar se token não está próximo de expirar
         if (expiresAt) {
-          // Se expira em menos de 5 minutos, renovar preventivamente
-          if (timeUntilExpiry < 300) {
+          // Se expira em menos de 30 minutos, renovar preventivamente (mais agressivo para evitar 401)
+          if (timeUntilExpiry < 1800) {
             console.log(`[AI Assistant] ⚠️ Token expirando em ${expiresInMinutes} minutos, renovando preventivamente...`);
             const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
             
@@ -98,6 +98,24 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
           }
         }
       }
+
+      // ✅ CORREÇÃO 3: SEMPRE renovar token antes de chamar Edge Function (solução definitiva!)
+      console.log('[AI Assistant] 🔄 Renovando token ANTES da chamada (garantir token fresco)...');
+      const { data: freshSession, error: freshError } = await supabase.auth.refreshSession();
+      
+      if (freshError || !freshSession.session) {
+        console.error('[AI Assistant] ❌ Falha ao renovar token:', freshError);
+        toast.error("Erro ao renovar sessão. Por favor, faça login novamente.");
+        setTimeout(() => window.location.href = '/auth', 2000);
+        setLoading(false);
+        return;
+      }
+      
+      const freshExpiresAt = freshSession.session.expires_at || 0;
+      const now = Math.floor(Date.now() / 1000);
+      const freshExpiresInMinutes = Math.floor((freshExpiresAt - now) / 60);
+      console.log('[AI Assistant] ✅ Token renovado! Expira em:', freshExpiresInMinutes, 'minutos');
+      console.log('[AI Assistant] 🔑 Novo token (50 chars):', freshSession.session.access_token?.substring(0, 50) + '...');
 
       const fullContext = {
         ...context,
