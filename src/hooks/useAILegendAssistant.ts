@@ -26,19 +26,19 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
     setLoading(true);
     try {
       // ✅ CORREÇÃO 1: Garantir sessão válida com refresh automático
-      console.log('[AI Assistant] Verificando sessão...');
+      console.log('[AI Assistant] 🔍 Verificando sessão...');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('[AI Assistant] Erro ao verificar sessão:', sessionError);
+        console.error('[AI Assistant] ❌ Erro ao verificar sessão:', sessionError);
       }
       
       if (!session) {
-        console.log('[AI Assistant] Sessão não encontrada, tentando refresh...');
+        console.log('[AI Assistant] ⚠️ Sessão não encontrada, tentando refresh...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !refreshData.session) {
-          console.error('[AI Assistant] Falha no refresh:', refreshError);
+          console.error('[AI Assistant] ❌ Falha no refresh:', refreshError);
           toast.error("Sua sessão expirou. Por favor, faça login novamente.", {
             description: "Redirecionando para a página de login..."
           });
@@ -52,25 +52,49 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         }
         
         console.log('[AI Assistant] ✅ Sessão renovada com sucesso');
+        console.log('[AI Assistant] 📊 Novo token expira em:', new Date((refreshData.session.expires_at || 0) * 1000).toLocaleString());
       } else {
+        const expiresAt = session.expires_at || 0;
+        const now = Math.floor(Date.now() / 1000);
+        const timeUntilExpiry = expiresAt - now;
+        const expiresInMinutes = Math.floor(timeUntilExpiry / 60);
+        
         console.log('[AI Assistant] ✅ Sessão válida encontrada');
+        console.log('[AI Assistant] 📊 Token atual:');
+        console.log(`  - User ID: ${session.user?.id}`);
+        console.log(`  - Expira em: ${expiresInMinutes} minutos (${new Date(expiresAt * 1000).toLocaleString()})`);
+        console.log(`  - Access Token (primeiros 50 chars): ${session.access_token?.substring(0, 50)}...`);
         
         // ✅ CORREÇÃO 2: Verificar se token não está próximo de expirar
-        const expiresAt = session.expires_at;
         if (expiresAt) {
-          const now = Math.floor(Date.now() / 1000);
-          const timeUntilExpiry = expiresAt - now;
-          
           // Se expira em menos de 5 minutos, renovar preventivamente
           if (timeUntilExpiry < 300) {
-            console.log('[AI Assistant] Token expirando em breve, renovando preventivamente...');
+            console.log(`[AI Assistant] ⚠️ Token expirando em ${expiresInMinutes} minutos, renovando preventivamente...`);
             const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
             
             if (refreshError) {
-              console.warn('[AI Assistant] Aviso: refresh preventivo falhou:', refreshError);
-            } else {
+              console.warn('[AI Assistant] ⚠️ Aviso: refresh preventivo falhou:', refreshError);
+            } else if (refreshData.session) {
               console.log('[AI Assistant] ✅ Token renovado preventivamente');
+              const newExpiresAt = refreshData.session.expires_at || 0;
+              const newExpiresInMinutes = Math.floor((newExpiresAt - now) / 60);
+              console.log(`[AI Assistant] 📊 Novo token expira em: ${newExpiresInMinutes} minutos`);
             }
+          } else if (timeUntilExpiry < 0) {
+            console.error(`[AI Assistant] ❌ Token JÁ EXPIROU há ${Math.abs(expiresInMinutes)} minutos!`);
+            console.log('[AI Assistant] 🔄 Forçando refresh do token expirado...');
+            
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            
+            if (refreshError || !refreshData.session) {
+              console.error('[AI Assistant] ❌ Não foi possível renovar token expirado:', refreshError);
+              toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+              setTimeout(() => window.location.href = '/auth', 2000);
+              setLoading(false);
+              return;
+            }
+            
+            console.log('[AI Assistant] ✅ Token expirado renovado com sucesso');
           }
         }
       }
@@ -80,7 +104,8 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
         ...(captionContext || {}),
       };
 
-      console.log('[AI Assistant] Chamando generate-caption:', { clientId, contentType, context: fullContext });
+      console.log('[AI Assistant] 📤 Preparando chamada para generate-caption');
+      console.log('[AI Assistant] 📋 Payload:', { clientId, contentType, context: fullContext });
 
       // ✅ CORREÇÃO 3: Adicionar timeout e retry
       let retryCount = 0;
@@ -89,12 +114,20 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
 
       while (retryCount <= maxRetries) {
         try {
+          console.log(`[AI Assistant] 🚀 Invocando Edge Function (tentativa ${retryCount + 1}/${maxRetries + 1})...`);
+          
           const { data, error } = await supabase.functions.invoke('generate-caption', {
             body: {
               clientId,
               contentType,
               context: fullContext,
             },
+          });
+
+          console.log('[AI Assistant] 📥 Resposta recebida:', { 
+            hasError: !!error, 
+            hasData: !!data,
+            dataKeys: data ? Object.keys(data) : []
           });
 
           // Se teve sucesso, sair do loop
@@ -134,21 +167,32 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
           // Se teve erro, verificar se é de autenticação
           if (error && retryCount < maxRetries) {
             const errorMessage = (error as any)?.message || '';
+            console.error(`[AI Assistant] ❌ Erro na tentativa ${retryCount + 1}:`, errorMessage);
             
             // Se for erro de autenticação, tentar refresh e retry
-            if (errorMessage.includes('Authentication') || errorMessage.includes('Auth session') || errorMessage.includes('401')) {
-              console.log(`[AI Assistant] Erro de autenticação detectado, tentando refresh (tentativa ${retryCount + 1}/${maxRetries})...`);
+            if (errorMessage.includes('Authentication') || errorMessage.includes('Auth session') || errorMessage.includes('401') || errorMessage.includes('FunctionsHttpError')) {
+              console.log(`[AI Assistant] 🔄 Erro de autenticação detectado, tentando refresh (tentativa ${retryCount + 1}/${maxRetries})...`);
               
               const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
               
               if (refreshError) {
-                console.error('[AI Assistant] Refresh falhou:', refreshError);
+                console.error('[AI Assistant] ❌ Refresh falhou:', refreshError);
                 throw error; // Não tentar mais
               }
               
-              console.log('[AI Assistant] ✅ Sessão renovada, tentando novamente...');
+              if (refreshData.session) {
+                const newExpiresAt = refreshData.session.expires_at || 0;
+                const now = Math.floor(Date.now() / 1000);
+                const expiresInMinutes = Math.floor((newExpiresAt - now) / 60);
+                console.log('[AI Assistant] ✅ Sessão renovada com sucesso!');
+                console.log(`[AI Assistant] 📊 Novo token expira em: ${expiresInMinutes} minutos`);
+                console.log(`[AI Assistant] 🔑 Access Token (primeiros 50 chars): ${refreshData.session.access_token?.substring(0, 50)}...`);
+              }
+              
               retryCount++;
+              console.log(`[AI Assistant] ⏳ Aguardando 500ms antes de tentar novamente...`);
               await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar 500ms
+              console.log(`[AI Assistant] 🔄 Tentando novamente (tentativa ${retryCount + 1}/${maxRetries + 1})...`);
               continue;
             }
           }
