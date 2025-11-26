@@ -42,30 +42,49 @@ export default function ClientBriefing() {
       let templateToUse = null;
       let shouldShowForm = false;
 
-      // Sempre buscar o template correto baseado no briefingType
-      // Mesmo que haja um perfil existente, podemos querer usar um template diferente
-      const { data: templateData } = await (supabase as any)
-        .from('briefing_templates')
-        .select('*')
-        .eq('template_type', briefingType)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (templateData) {
-        templateToUse = templateData;
+      if (profileData) {
+        if (briefingType === 'editorial_line') {
+          if (profileData.briefing_templates?.template_type === 'editorial_line') {
+            templateToUse = profileData.briefing_templates;
+          } else {
+            const { data: editorialTemplate } = await (supabase as any)
+              .from('briefing_templates')
+              .select('*')
+              .eq('template_type', 'editorial_line')
+              .eq('is_active', true)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            templateToUse = editorialTemplate;
+          }
+        } else {
+          templateToUse = profileData.briefing_templates;
+        }
       } else {
-        // Fallback: buscar qualquer template ativo se não encontrar do tipo específico
-        const { data: fallbackTemplate } = await (supabase as any)
+        const { data: templateData } = await (supabase as any)
           .from('briefing_templates')
           .select('*')
+          .eq('template_type', briefingType)
           .eq('is_active', true)
+          .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (fallbackTemplate) {
-          templateToUse = fallbackTemplate;
+        if (templateData) {
+          templateToUse = templateData;
+          shouldShowForm = true;
+        } else {
+          const { data: fallbackTemplate } = await (supabase as any)
+            .from('briefing_templates')
+            .select('*')
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+
+          if (fallbackTemplate) {
+            templateToUse = fallbackTemplate;
+            shouldShowForm = true;
+          }
         }
       }
 

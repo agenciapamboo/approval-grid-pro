@@ -101,13 +101,10 @@ export function BriefingForm({ templateId, clientId, briefingType = 'client_prof
         return;
       }
 
-      toast.success(data.fromCache 
-        ? (briefingType === 'editorial_line' 
-            ? "Linha editorial gerada (cache)! ✨" 
-            : "Perfil gerado (cache)! ✨")
-        : (briefingType === 'editorial_line'
-            ? `Linha editorial gerada! (${data.tokensUsed} tokens)`
-            : `Perfil gerado! (${data.tokensUsed} tokens)`)
+      toast.success(
+        briefingType === 'editorial_line'
+          ? "✨ Assistente de IA processou suas informações com sucesso! Sua linha editorial foi gerada."
+          : "✨ Assistente de IA processou suas informações com sucesso! Seu perfil foi gerado."
       );
       
       onProfileGenerated?.(data.profile);
