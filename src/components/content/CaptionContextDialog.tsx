@@ -24,6 +24,7 @@ export interface CaptionContext {
   objective: string;
   toneOfVoice: string;
   expectedAction: string;
+  contentPillar: string;
   templateId?: string; // ID do template de roteiro selecionado
 }
 
@@ -40,7 +41,9 @@ export function CaptionContextDialog({
   const [objective, setObjective] = useState("");
   const [toneOfVoice, setToneOfVoice] = useState("");
   const [expectedAction, setExpectedAction] = useState("");
+  const [contentPillar, setContentPillar] = useState("");
   const [brandTone, setBrandTone] = useState<string | null>(null);
+  const [contentPillars, setContentPillars] = useState<string[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [templates, setTemplates] = useState<Array<{ id: string; template_name: string }>>([]);
@@ -54,7 +57,7 @@ export function CaptionContextDialog({
       try {
         const { data } = await supabase
           .from('client_ai_profiles')
-          .select('tone_of_voice')
+          .select('tone_of_voice, content_pillars')
           .eq('client_id', clientId)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -62,6 +65,9 @@ export function CaptionContextDialog({
         
         if (data?.tone_of_voice?.length > 0) {
           setBrandTone(data.tone_of_voice.join(', '));
+        }
+        if (data?.content_pillars?.length > 0) {
+          setContentPillars(data.content_pillars);
         }
       } catch (error) {
         console.error('Error loading brand tone:', error);
@@ -142,6 +148,7 @@ export function CaptionContextDialog({
       objective,
       toneOfVoice,
       expectedAction,
+      contentPillar,
       templateId: selectedTemplate || undefined,
     });
   };
@@ -211,6 +218,36 @@ export function CaptionContextDialog({
                       Da Marca ({brandTone})
                     </SelectItem>
                   )}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Pilar de Conteúdo */}
+          <div className="space-y-2">
+            <Label htmlFor="pillar">Pilar de Conteúdo</Label>
+            {loadingProfile ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando pilares...
+              </div>
+            ) : (
+              <Select value={contentPillar} onValueChange={setContentPillar}>
+                <SelectTrigger id="pillar">
+                  <SelectValue placeholder="Selecione o pilar de conteúdo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="institucional">Institucional</SelectItem>
+                  <SelectItem value="promocional">Promocional</SelectItem>
+                  <SelectItem value="educativo">Educativo</SelectItem>
+                  <SelectItem value="envolvimento">Envolvimento</SelectItem>
+                  <SelectItem value="motivacao">Motivação</SelectItem>
+                  <SelectItem value="opiniao">Opinião</SelectItem>
+                  {contentPillars.length > 0 && contentPillars.map((pillar) => (
+                    <SelectItem key={pillar} value={pillar}>
+                      {pillar.charAt(0).toUpperCase() + pillar.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}
