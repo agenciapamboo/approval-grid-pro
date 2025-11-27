@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2, Plus, FileText, ArrowLeft, X, ImageIcon, Video, Images } from "lucide-react";
+import { AlertCircle, Loader2, Plus, FileText, ArrowLeft, X, ImageIcon, Video, Images, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { ContentDetailsDialog } from "@/components/content/ContentDetailsDialog";
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { StoriesHighlights } from "@/components/content/StoriesHighlights";
 import { EnrichEditorialButton } from "@/components/ai/EnrichEditorialButton";
 import { MonthlyContentPlanner } from "@/components/content/MonthlyContentPlanner";
+import { EditorialLineAssistant } from "@/components/content/EditorialLineAssistant";
 import { TrendingUp } from "lucide-react";
 
 interface Content {
@@ -60,6 +61,7 @@ export default function ContentGrid() {
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
+  const [showEditorialAssistant, setShowEditorialAssistant] = useState(false);
 
   // Função para converter status do banco em status para client users
   const getClientStatus = (content: Content): 'pending' | 'producing' | 'scheduled' | 'published' | null => {
@@ -416,6 +418,14 @@ export default function ContentGrid() {
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Conteúdo
               </Button>
+              <Button
+                onClick={() => setShowEditorialAssistant(true)}
+                className="flex-1 sm:flex-none gap-2 bg-green-500 hover:bg-green-600"
+                size="sm"
+              >
+                <Sparkles className="h-4 w-4" />
+                Assistente IA - Linha Editorial
+              </Button>
             </div>
           )}
         </div>
@@ -666,6 +676,19 @@ export default function ContentGrid() {
             open={showMonthlyPlanner}
             onOpenChange={setShowMonthlyPlanner}
             onSuccess={() => loadContents(userClient.id)}
+          />
+        )}
+
+        {/* Assistente de IA - Linha Editorial */}
+        {userClient?.agency_id && (
+          <EditorialLineAssistant
+            open={showEditorialAssistant}
+            onOpenChange={setShowEditorialAssistant}
+            agencyId={userClient.agency_id}
+            onContentCreated={() => {
+              loadContents(userClient.id);
+              setShowEditorialAssistant(false);
+            }}
           />
         )}
       </div>
