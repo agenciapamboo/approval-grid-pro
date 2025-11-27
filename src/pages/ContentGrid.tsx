@@ -698,11 +698,12 @@ export default function ContentGrid() {
         {/* Assistente de IA - Linha Editorial */}
         {userClient?.agency_id ? (
           <>
-            {console.log('[ContentGrid] 🎨 Renderizando EditorialLineAssistant - Agency ID:', userClient.agency_id, 'Open:', showEditorialAssistant)}
+            {console.log('[ContentGrid] 🎨 Renderizando EditorialLineAssistant - Agency ID:', userClient.agency_id, 'Client ID:', userClient.id, 'Open:', showEditorialAssistant)}
             <EditorialLineAssistant
               open={showEditorialAssistant}
               onOpenChange={setShowEditorialAssistant}
               agencyId={userClient.agency_id}
+              clientId={userClient.id}
               onContentCreated={() => {
                 loadContents(userClient.id);
                 setShowEditorialAssistant(false);

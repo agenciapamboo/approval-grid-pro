@@ -15,6 +15,7 @@ interface EditorialLineAssistantProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   agencyId: string;
+  clientId?: string; // Cliente pré-selecionado (opcional)
   onContentCreated?: () => void;
 }
 
@@ -42,6 +43,7 @@ export function EditorialLineAssistant({
   open, 
   onOpenChange, 
   agencyId,
+  clientId, // Cliente pré-selecionado
   onContentCreated 
 }: EditorialLineAssistantProps) {
   const [clients, setClients] = useState<Client[]>([]);
@@ -53,11 +55,21 @@ export function EditorialLineAssistant({
   const [generating, setGenerating] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
 
+  // Inicializar com clientId se fornecido
   useEffect(() => {
-    if (open && agencyId) {
+    if (open && clientId) {
+      console.log('[EditorialLineAssistant] 🎯 Cliente pré-selecionado:', clientId);
+      setSelectedClientId(clientId);
+      loadClientName(clientId);
+    }
+  }, [open, clientId]);
+
+  useEffect(() => {
+    if (open && agencyId && !clientId) {
+      // Só carregar lista de clientes se não tiver um pré-selecionado
       loadClients();
     }
-  }, [open, agencyId]);
+  }, [open, agencyId, clientId]);
 
   useEffect(() => {
     if (selectedClientId) {
@@ -83,6 +95,23 @@ export function EditorialLineAssistant({
       toast.error("Erro ao carregar clientes");
     } finally {
       setLoadingClients(false);
+    }
+  };
+
+  const loadClientName = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, monthly_creatives')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setClients([data]);
+      }
+    } catch (error) {
+      console.error('Error loading client name:', error);
     }
   };
 
@@ -238,34 +267,52 @@ export function EditorialLineAssistant({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Seletor de Cliente */}
-          <div className="space-y-2">
-            <Label>Cliente</Label>
-            {loadingClients ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Carregando clientes...
+          {/* Seletor ou Exibição de Cliente */}
+          {!clientId ? (
+            // Modo seleção: permite escolher o cliente
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              {loadingClients ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando clientes...
+                </div>
+              ) : (
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                        {client.monthly_creatives && (
+                          <span className="text-muted-foreground ml-2">
+                            ({client.monthly_creatives} posts/mês)
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          ) : (
+            // Modo fixo: mostra o cliente já selecionado
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <div className="px-3 py-2 border rounded-md bg-green-50 border-green-200">
+                <span className="font-medium text-green-900">
+                  {clients.find(c => c.id === clientId)?.name || 'Carregando...'}
+                </span>
+                {clients.find(c => c.id === clientId)?.monthly_creatives && (
+                  <span className="text-green-700 ml-2 text-sm">
+                    ({clients.find(c => c.id === clientId)?.monthly_creatives} posts/mês)
+                  </span>
+                )}
               </div>
-            ) : (
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                      {client.monthly_creatives && (
-                        <span className="text-muted-foreground ml-2">
-                          ({client.monthly_creatives} posts/mês)
-                        </span>
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Carregando linha editorial */}
           {selectedClientId && loadingEditorial && (

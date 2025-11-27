@@ -479,11 +479,12 @@ export default function AgencyContentManager() {
         {/* Assistente de IA - Linha Editorial */}
         {client?.agency_id ? (
           <>
-            {console.log('[AgencyContentManager] 🎨 Renderizando EditorialLineAssistant - Agency ID:', client.agency_id, 'Open:', showEditorialAssistant)}
+            {console.log('[AgencyContentManager] 🎨 Renderizando EditorialLineAssistant - Agency ID:', client.agency_id, 'Client ID:', client.id, 'Open:', showEditorialAssistant)}
             <EditorialLineAssistant
               open={showEditorialAssistant}
               onOpenChange={setShowEditorialAssistant}
               agencyId={client.agency_id}
+              clientId={client.id}
               onContentCreated={() => {
                 loadContents(client.id);
                 setShowEditorialAssistant(false);
