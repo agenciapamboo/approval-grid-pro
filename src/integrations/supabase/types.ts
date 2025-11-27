@@ -2196,6 +2196,7 @@ export type Database = {
       check_daily_quota_alerts: { Args: never; Returns: undefined }
       check_weekly_overage_alerts: { Args: never; Returns: undefined }
       cleanup_old_login_attempts: { Args: never; Returns: undefined }
+      decrypt_api_key: { Args: { encrypted_key: string }; Returns: string }
       decrypt_social_token: {
         Args: { encrypted_token: string }
         Returns: string
