@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, ArrowLeft, Plus, Send } from "lucide-react";
+import { LogOut, ArrowLeft, Plus, Send, Sparkles, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ContentCard } from "@/components/content/ContentCard";
 import { CreateContentCard } from "@/components/content/CreateContentCard";
@@ -12,6 +12,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 // triggerWebhook removido - webhooks agora são automáticos via triggers
 import { createNotification } from "@/lib/notifications";
 import { format } from "date-fns";
+import { EditorialLineAssistant } from "@/components/content/EditorialLineAssistant";
+import { EnrichEditorialButton } from "@/components/ai/EnrichEditorialButton";
+import { MonthlyContentPlanner } from "@/components/content/MonthlyContentPlanner";
 
 interface Profile {
   id: string;
@@ -69,6 +72,8 @@ export default function AgencyContentManager() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [selectedCategory, setSelectedCategory] = useState<'social' | 'avulso'>('social');
+  const [showMonthlyPlanner, setShowMonthlyPlanner] = useState(false);
+  const [showEditorialAssistant, setShowEditorialAssistant] = useState(false);
   const monthParam = searchParams.get("month");
   const yearParam = searchParams.get("year");
   const categoryParam = searchParams.get("category") as 'social' | 'avulso' | null;
@@ -149,6 +154,11 @@ export default function AgencyContentManager() {
       if (agencyData) {
         setAgency(agencyData);
       }
+
+      // Debug logs
+      console.log('[AgencyContentManager] 🔍 Debug - Role:', profileData.role);
+      console.log('[AgencyContentManager] 🔍 Debug - Agency ID:', profileData.agency_id);
+      console.log('[AgencyContentManager] 🔍 Debug - Client:', clientData);
 
       // Carregar conteúdos
       await loadContents(clientData.id);
@@ -321,6 +331,54 @@ export default function AgencyContentManager() {
       <main className="container mx-auto px-4 py-8">
         {client && (
           <div className="space-y-4 mb-6">
+            {/* Header com título e botões */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">{client.name}</h1>
+                <p className="text-sm text-muted-foreground mt-1">Gerenciamento de Conteúdo</p>
+              </div>
+              
+              {/* Botões de IA */}
+              {role === 'agency_admin' && (
+                <>
+                  {console.log('[AgencyContentManager] ✅ Renderizando botões para role:', role)}
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowMonthlyPlanner(true)}
+                      size="sm"
+                      className="flex-shrink-0"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Planejamento IA
+                    </Button>
+                    <EnrichEditorialButton
+                      clientId={client.id}
+                      variant="outline"
+                      size="sm"
+                      onSuccess={() => {
+                        toast({
+                          title: "Linha Editorial Atualizada",
+                          description: "A linha editorial foi enriquecida com sucesso"
+                        });
+                      }}
+                    />
+                    <Button
+                      onClick={() => {
+                        console.log('[AgencyContentManager] 🎯 Botão Assistente IA clicado');
+                        setShowEditorialAssistant(true);
+                      }}
+                      className="gap-2 bg-green-500 hover:bg-green-600 flex-shrink-0"
+                      size="sm"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Assistente IA - Linha Editorial
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Seletor de Categoria */}
             <div className="flex gap-2 mb-4">
               <Button
@@ -406,6 +464,34 @@ export default function AgencyContentManager() {
               );
             })}
           </div>
+        )}
+
+        {/* Planejamento Mensal IA */}
+        {client && (
+          <MonthlyContentPlanner
+            clientId={client.id}
+            open={showMonthlyPlanner}
+            onOpenChange={setShowMonthlyPlanner}
+            onSuccess={() => loadContents(client.id)}
+          />
+        )}
+
+        {/* Assistente de IA - Linha Editorial */}
+        {client?.agency_id ? (
+          <>
+            {console.log('[AgencyContentManager] 🎨 Renderizando EditorialLineAssistant - Agency ID:', client.agency_id, 'Open:', showEditorialAssistant)}
+            <EditorialLineAssistant
+              open={showEditorialAssistant}
+              onOpenChange={setShowEditorialAssistant}
+              agencyId={client.agency_id}
+              onContentCreated={() => {
+                loadContents(client.id);
+                setShowEditorialAssistant(false);
+              }}
+            />
+          </>
+        ) : (
+          console.log('[AgencyContentManager] ⚠️ EditorialLineAssistant NÃO renderizado - Agency ID:', client?.agency_id)
         )}
       </main>
     </AppLayout>
