@@ -149,7 +149,26 @@ export function useAILegendAssistant({ clientId, contentType, context }: UseAILe
               throw new Error('Resposta inválida da função: sugestões não encontradas');
             }
 
-            setSuggestions(data.suggestions || []);
+            // Processar sugestões: extrair 'caption' se for objeto, ou usar string diretamente
+            let processedSuggestions: string[] = [];
+            
+            if (Array.isArray(data.suggestions)) {
+              processedSuggestions = data.suggestions.map((item: any) => {
+                // Se for objeto com propriedade 'caption', extrair o caption
+                if (typeof item === 'object' && item !== null && 'caption' in item) {
+                  return item.caption;
+                }
+                // Se já for string, usar direto
+                return typeof item === 'string' ? item : JSON.stringify(item);
+              });
+            }
+
+            console.log('[AI Assistant] 📝 Sugestões processadas:', {
+              total: processedSuggestions.length,
+              primeirosCaracteres: processedSuggestions.map(s => s.substring(0, 50) + '...')
+            });
+
+            setSuggestions(processedSuggestions);
             setFromCache(data.fromCache || false);
 
             if (data.fromCache) {
