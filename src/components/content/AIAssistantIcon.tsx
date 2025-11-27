@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CaptionContextDialog } from "./CaptionContextDialog";
+import { AISuggestionsDialog } from "./AISuggestionsDialog";
 import { useAILegendAssistant } from "@/hooks/useAILegendAssistant";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
 interface AIAssistantIconProps {
   clientId: string;
@@ -26,11 +24,19 @@ export function AIAssistantIcon({
   onInsert 
 }: AIAssistantIconProps) {
   const [showDialog, setShowDialog] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { suggestions, loading, generateSuggestions, clearSuggestions } = useAILegendAssistant({ 
     clientId, 
     contentType: contentType === 'plan_description' || contentType === 'plan_caption' ? 'post' : contentType,
     context 
   });
+
+  // Abrir dialog de sugestões automaticamente quando suggestions chegarem
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  }, [suggestions]);
 
   const handleGenerate = async (captionContext: any) => {
     await generateSuggestions(captionContext);
@@ -40,7 +46,14 @@ export function AIAssistantIcon({
   const handleInsert = (suggestion: string) => {
     onInsert(suggestion);
     clearSuggestions();
-    toast.success("Texto inserido!");
+    setShowSuggestions(false);
+    toast.success("Legenda inserida com sucesso!");
+  };
+
+  const handleGenerateNew = () => {
+    setShowSuggestions(false);
+    clearSuggestions();
+    setShowDialog(true);
   };
 
   return (
@@ -70,38 +83,14 @@ export function AIAssistantIcon({
         loading={loading}
       />
       
-      {/* Lista de sugestões com botão "Inserir" */}
-      {suggestions.length > 0 && (
-        <div className="space-y-2 mt-2">
-          {suggestions.map((suggestion, i) => (
-            <Card key={i} className="p-3 bg-green-50 border-green-200">
-              <p className="text-sm whitespace-pre-wrap">{suggestion}</p>
-              <Button
-                size="sm"
-                onClick={() => handleInsert(suggestion)}
-                className="mt-2 bg-green-500 hover:bg-green-600"
-              >
-                Inserir
-              </Button>
-            </Card>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDialog(true)}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Gerando...
-              </>
-            ) : (
-              "Gerar novamente"
-            )}
-          </Button>
-        </div>
-      )}
+      <AISuggestionsDialog
+        open={showSuggestions}
+        onOpenChange={setShowSuggestions}
+        suggestions={suggestions}
+        onInsert={handleInsert}
+        onGenerateNew={handleGenerateNew}
+        loading={loading}
+      />
     </>
   );
 }
