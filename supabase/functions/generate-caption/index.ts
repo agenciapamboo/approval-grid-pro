@@ -7,6 +7,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Função para decodificar JWT manualmente (fallback)
+function decodeJWT(token: string): { sub?: string; exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.error('❌ JWT inválido: não possui 3 partes');
+      return null;
+    }
+    
+    const payload = parts[1];
+    // Decodificar base64url
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const parsed = JSON.parse(decoded);
+    console.log('🔓 JWT decodificado:', { sub: parsed.sub, exp: parsed.exp });
+    return parsed;
+  } catch (e) {
+    console.error('❌ Erro ao decodificar JWT:', e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -61,18 +82,47 @@ serve(async (req) => {
       }
     );
 
-    // Validar autenticação usando padrão Supabase
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
-    if (authError || !user) {
-      console.error('Auth error:', authError?.message || 'No user found');
-      return new Response(JSON.stringify({ 
-        error: 'Authentication failed', 
-        details: authError?.message || 'Auth session missing!' 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Tentar validação padrão primeiro
+    let user = null;
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authData?.user) {
+      user = authData.user;
+      console.log('✅ User authenticated via auth.getUser():', user.id);
+    } else {
+      // FALLBACK: Validação manual de JWT
+      console.log('⚠️ auth.getUser() falhou, tentando validação manual de JWT...');
+      console.log('Erro original:', authError?.message);
+      
+      const token = authHeader.replace('Bearer ', '');
+      const payload = decodeJWT(token);
+      
+      if (payload?.sub) {
+        console.log('✅ User ID extraído do JWT via fallback:', payload.sub);
+        
+        // Verificar se token não está expirado
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          console.error('❌ Token JWT expirado');
+          return new Response(JSON.stringify({ 
+            error: 'Authentication failed', 
+            details: 'Token expirado' 
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        user = { id: payload.sub };
+      } else {
+        console.error('❌ Falha na validação manual de JWT');
+        return new Response(JSON.stringify({ 
+          error: 'Authentication failed', 
+          details: authError?.message || 'Não foi possível validar o token' 
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     console.log('User authenticated:', user.id);
