@@ -462,7 +462,7 @@ serve(async (req) => {
       systemPrompt += `\n\nUse esses templates como inspiração/estrutura, mas adapte ao contexto específico fornecido.`;
     }
 
-    systemPrompt += `\n\nSua tarefa é gerar ${contentType === 'post' ? '3 legendas criativas' : '3 roteiros de vídeo'} considerando o contexto fornecido.`;
+    systemPrompt += `\n\nSua tarefa é gerar ${contentType === 'post' ? '1 legenda criativa e completa' : '1 roteiro de vídeo completo'} considerando o contexto fornecido.`;
 
     // Build user prompt with enriched context
     const { title, objective, toneOfVoice, expectedAction, category, description } = context || {};
@@ -511,14 +511,14 @@ serve(async (req) => {
       userPrompt += `- Descrição Adicional: ${description}\n`;
     }
 
-    userPrompt += `\n\nGere 3 legendas entre 100-300 palavras. Cada legenda deve incluir:
+      userPrompt += `\n\nGere 1 legenda completa entre 100-300 palavras incluindo:
 - Gancho inicial (primeira linha chamativa)
 - Corpo do texto (conteúdo principal com storytelling)
 - CTA (call-to-action claro e persuasivo)
 - Hashtags relevantes (5-10 hashtags estratégicas)
 
 IMPORTANTE: Retorne APENAS um objeto JSON válido, SEM markdown, SEM blocos de código, SEM explicações.
-Formato exato: {"suggestions": ["legenda 1 aqui", "legenda 2 aqui", "legenda 3 aqui"]}`;
+Formato exato: {"suggestions": ["legenda completa aqui"]}`;
 
     // Call OpenAI
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {

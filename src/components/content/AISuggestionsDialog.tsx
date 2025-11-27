@@ -1,8 +1,8 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Check, Copy } from "lucide-react";
+import { Sparkles, Check, Copy, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -43,66 +43,65 @@ export function AISuggestionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh]">
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="bg-green-500 rounded p-1.5">
-              <Sparkles className="h-5 w-5 text-white" />
+              <Sparkles className="h-4 w-4 text-white" />
             </div>
             Sugestões de Legenda Geradas pela IA
-            <Badge variant="secondary" className="ml-auto">
-              {suggestions.length} sugestões
+            <Badge variant="outline" className="ml-auto">
+              {suggestions.length} {suggestions.length === 1 ? 'sugestão' : 'sugestões'}
             </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="h-[calc(85vh-120px)] pr-4">
+        <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
             {suggestions.map((suggestion, index) => (
               <Card 
                 key={index} 
-                className="border-2 border-green-100 hover:border-green-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="border border-green-200 hover:border-green-300 transition-all duration-200"
               >
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                   {/* Header do Card */}
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                      <div className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
                         {index + 1}
                       </div>
-                      <span className="font-semibold text-lg">Sugestão {index + 1}</span>
+                      <span className="font-medium text-sm">Sugestão {index + 1}</span>
                     </div>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                       {suggestion.length} caracteres
                     </Badge>
                   </div>
 
-                  <Separator className="mb-4" />
+                  <Separator className="mb-3" />
 
                   {/* Conteúdo da Legenda */}
-                  <div className="bg-muted/30 rounded-lg p-4 mb-4">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap font-normal">
+                  <div className="bg-muted/30 rounded-lg p-3 mb-3">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
                       {suggestion}
                     </p>
                   </div>
 
                   {/* Botões de Ação */}
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2">
                     <Button
                       onClick={() => handleInsert(suggestion)}
-                      className="bg-green-500 hover:bg-green-600 flex-1 min-w-[180px]"
-                      size="lg"
+                      className="bg-green-500 hover:bg-green-600 flex-1"
+                      size="sm"
                     >
-                      <Check className="mr-2 h-4 w-4" />
+                      <Check className="mr-1.5 h-3.5 w-3.5" />
                       Usar Esta Legenda
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => handleCopy(suggestion, index)}
-                      size="lg"
-                      className="hover:bg-muted"
+                      size="sm"
                     >
-                      <Copy className="mr-2 h-4 w-4" />
+                      <Copy className="mr-1.5 h-3.5 w-3.5" />
                       Copiar
                     </Button>
                   </div>
@@ -112,35 +111,36 @@ export function AISuggestionsDialog({
           </div>
         </ScrollArea>
 
-        {/* Footer com Botão de Gerar Novamente */}
-        <div className="flex gap-2 justify-between pt-4 border-t">
+        {/* Footer dentro do modal */}
+        <DialogFooter className="flex gap-2 pt-4 border-t mt-4">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            size="lg"
+            size="sm"
           >
+            <X className="mr-1.5 h-3.5 w-3.5" />
             Fechar
           </Button>
           <Button
             onClick={onGenerateNew}
             disabled={loading}
             variant="outline"
-            size="lg"
+            size="sm"
             className="hover:bg-green-50 hover:text-green-700 hover:border-green-300"
           >
             {loading ? (
               <>
-                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                <Sparkles className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 Gerando...
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Gerar Novas Sugestões
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                Gerar Nova Sugestão
               </>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
