@@ -2178,59 +2178,6 @@ export type Database = {
       }
     }
     Views: {
-      client_social_accounts_decrypted: {
-        Row: {
-          access_token: string | null
-          account_id: string | null
-          account_name: string | null
-          client_id: string | null
-          created_at: string | null
-          id: string | null
-          instagram_business_account_id: string | null
-          is_active: boolean | null
-          page_id: string | null
-          platform: string | null
-          token_expires_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          access_token?: never
-          account_id?: string | null
-          account_name?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          instagram_business_account_id?: string | null
-          is_active?: boolean | null
-          page_id?: string | null
-          platform?: string | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          access_token?: never
-          account_id?: string | null
-          account_name?: string | null
-          client_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          instagram_business_account_id?: string | null
-          is_active?: boolean | null
-          page_id?: string | null
-          platform?: string | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_social_accounts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       current_subscription_distribution: {
         Row: {
           active_count: number | null
