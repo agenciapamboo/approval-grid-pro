@@ -517,7 +517,8 @@ serve(async (req) => {
 - CTA (call-to-action claro e persuasivo)
 - Hashtags relevantes (5-10 hashtags estratégicas)
 
-Retorne em JSON: {"suggestions": ["...", "...", "..."]}`;
+IMPORTANTE: Retorne APENAS um objeto JSON válido, SEM markdown, SEM blocos de código, SEM explicações.
+Formato exato: {"suggestions": ["legenda 1 aqui", "legenda 2 aqui", "legenda 3 aqui"]}`;
 
     // Call OpenAI
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -534,6 +535,7 @@ Retorne em JSON: {"suggestions": ["...", "...", "..."]}`;
         ],
         temperature: aiConfig.temperature || 0.7,
         max_tokens: aiConfig.max_tokens_caption || 1200,
+        response_format: { type: "json_object" }, // ✅ Forçar resposta em JSON puro
       }),
     });
 
@@ -547,12 +549,22 @@ Retorne em JSON: {"suggestions": ["...", "...", "..."]}`;
     }
 
     const openAIData = await openAIResponse.json();
-    const responseContent = openAIData.choices[0].message.content;
+    let responseContent = openAIData.choices[0].message.content;
+    
+    // ✅ CORREÇÃO: Remover blocos markdown se existirem (```json ... ```)
+    if (responseContent.includes('```json')) {
+      responseContent = responseContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    } else if (responseContent.includes('```')) {
+      responseContent = responseContent.replace(/```\s*/g, '').trim();
+    }
     
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(responseContent);
-    } catch {
+    } catch (parseError) {
+      console.error('Erro ao fazer parse do JSON:', parseError);
+      console.log('Conteúdo recebido:', responseContent);
+      // Se falhar o parse, tentar extrair apenas o texto
       parsedResponse = { suggestions: [responseContent] };
     }
 
