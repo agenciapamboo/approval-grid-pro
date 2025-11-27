@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { checkMonthlyPostsLimit, checkCreativesStorageLimit } from "@/lib/plan-limits";
 import { CreativeRotationDialog } from "./CreativeRotationDialog";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { AIAssistantIcon } from "./AIAssistantIcon";
 
 interface CreateAvulsoCardProps {
   clientId: string;
@@ -374,15 +375,31 @@ export function CreateAvulsoCard({ clientId, onContentCreated, initialDate, init
           </PopoverContent>
         </Popover>
 
-        <Textarea
-          placeholder="Descrição ou observações..."
-          value={description}
-          onChange={(e) => {
-            setDescription(e.target.value);
-            setHasChanges(true);
-          }}
-          className="min-h-[100px]"
-        />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Descrição ou observações</label>
+            <AIAssistantIcon
+              clientId={clientId}
+              contentType="post"
+              context={{ title }}
+              onInsert={(text) => {
+                setDescription(text);
+                setHasChanges(true);
+              }}
+            />
+          </div>
+          <div className="relative">
+            <Textarea
+              placeholder="Descrição ou observações..."
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setHasChanges(true);
+              }}
+              className="min-h-[100px]"
+            />
+          </div>
+        </div>
 
         {hasChanges && (
           <Button

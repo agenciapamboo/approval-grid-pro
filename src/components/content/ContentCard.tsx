@@ -54,6 +54,50 @@ interface ContentCardProps {
   onUpdate: () => void;
 }
 
+// Componente wrapper para buscar clientId
+function ContentCaptionWithClient({ 
+  contentId, 
+  version, 
+  initialCaption,
+  contentType,
+  contentTitle
+}: {
+  contentId: string;
+  version: number;
+  initialCaption?: string | null;
+  contentType: 'post' | 'reels' | 'stories';
+  contentTitle: string;
+}) {
+  const [clientId, setClientId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const fetchClientId = async () => {
+      const { data } = await supabase
+        .from('contents')
+        .select('client_id')
+        .eq('id', contentId)
+        .single();
+      
+      if (data?.client_id) {
+        setClientId(data.client_id);
+      }
+    };
+
+    fetchClientId();
+  }, [contentId]);
+
+  return (
+    <ContentCaption
+      contentId={contentId}
+      version={version}
+      initialCaption={initialCaption}
+      clientId={clientId}
+      contentType={contentType}
+      contentTitle={contentTitle}
+    />
+  );
+}
+
 export function ContentCard({ content, isResponsible, isAgencyView = false, onUpdate }: ContentCardProps) {
   const { toast } = useToast();
   const { can } = usePermissions();
@@ -1020,10 +1064,12 @@ export function ContentCard({ content, isResponsible, isAgencyView = false, onUp
           )}
 
           {/* Linha 3: Legenda */}
-          <ContentCaption
+          <ContentCaptionWithClient
             contentId={content.id}
             version={content.version}
             initialCaption={content.caption ?? content.legend ?? undefined}
+            contentType={content.type as 'post' | 'reels' | 'stories'}
+            contentTitle={content.title}
           />
 
           {/* Ações - Simplificado para visualização autenticada */}
