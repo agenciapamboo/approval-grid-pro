@@ -364,6 +364,12 @@ export default function ContentGrid() {
     );
   }
 
+  // Debug: Log dados do usuário
+  console.log('[ContentGrid] 🔍 Debug - Role:', role);
+  console.log('[ContentGrid] 🔍 Debug - UserClient:', userClient);
+  console.log('[ContentGrid] 🔍 Debug - Agency ID:', userClient?.agency_id);
+  console.log('[ContentGrid] 🔍 Debug - Condição botões:', (role === 'agency_admin' || role === 'team_member'));
+
   return (
     <AppLayout>
       <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
@@ -390,12 +396,15 @@ export default function ContentGrid() {
             </p>
           </div>
           {/* Botões visíveis apenas para agency_admin e team_member */}
-          {(role === 'agency_admin' || role === 'team_member') && (
-            <div className="flex gap-2 w-full sm:w-auto">
+          {(role === 'agency_admin' || role === 'team_member') ? (
+            <>
+              {console.log('[ContentGrid] ✅ Renderizando botões para role:', role)}
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 onClick={() => setShowMonthlyPlanner(true)}
                 size="sm"
+                className="flex-shrink-0"
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Planejamento IA
@@ -413,20 +422,27 @@ export default function ContentGrid() {
               />
               <Button 
                 onClick={() => setShowCreateDialog(true)}
-                className="flex-1 sm:flex-none"
+                size="sm"
+                className="flex-shrink-0"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Conteúdo
               </Button>
               <Button
-                onClick={() => setShowEditorialAssistant(true)}
-                className="flex-1 sm:flex-none gap-2 bg-green-500 hover:bg-green-600"
+                onClick={() => {
+                  console.log('[ContentGrid] 🎯 Botão Assistente IA clicado');
+                  setShowEditorialAssistant(true);
+                }}
+                className="gap-2 bg-green-500 hover:bg-green-600 flex-shrink-0"
                 size="sm"
               >
                 <Sparkles className="h-4 w-4" />
                 Assistente IA - Linha Editorial
               </Button>
-            </div>
+              </div>
+            </>
+          ) : (
+            console.log('[ContentGrid] ❌ Botões NÃO renderizados - role:', role)
           )}
         </div>
 
@@ -680,16 +696,21 @@ export default function ContentGrid() {
         )}
 
         {/* Assistente de IA - Linha Editorial */}
-        {userClient?.agency_id && (
-          <EditorialLineAssistant
-            open={showEditorialAssistant}
-            onOpenChange={setShowEditorialAssistant}
-            agencyId={userClient.agency_id}
-            onContentCreated={() => {
-              loadContents(userClient.id);
-              setShowEditorialAssistant(false);
-            }}
-          />
+        {userClient?.agency_id ? (
+          <>
+            {console.log('[ContentGrid] 🎨 Renderizando EditorialLineAssistant - Agency ID:', userClient.agency_id, 'Open:', showEditorialAssistant)}
+            <EditorialLineAssistant
+              open={showEditorialAssistant}
+              onOpenChange={setShowEditorialAssistant}
+              agencyId={userClient.agency_id}
+              onContentCreated={() => {
+                loadContents(userClient.id);
+                setShowEditorialAssistant(false);
+              }}
+            />
+          </>
+        ) : (
+          console.log('[ContentGrid] ⚠️ EditorialLineAssistant NÃO renderizado - Agency ID:', userClient?.agency_id)
         )}
       </div>
     </AppLayout>
