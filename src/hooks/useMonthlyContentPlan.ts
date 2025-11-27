@@ -31,29 +31,98 @@ export function useMonthlyContentPlan() {
         throw new Error('Sessão não encontrada');
       }
 
-      const { data, error } = await supabase.functions.invoke('generate-monthly-plan', {
-        body: {
-          clientId,
-          period,
-          startDate,
-        },
-      });
+      // Buscar dados do cliente para calcular número de posts
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('monthly_creatives')
+        .eq('id', clientId)
+        .single();
 
-      if (error) throw error;
+      let postsCount = clientData?.monthly_creatives || 12;
+      if (period === 'week') postsCount = Math.ceil(postsCount / 4);
+      if (period === 'fortnight') postsCount = Math.ceil(postsCount / 2);
 
-      const generatedPosts = (data?.posts || []).map((post: any, index: number) => ({
-        ...post,
-        id: `temp-${Date.now()}-${index}`,
-      }));
+      console.log(`📅 Gerando ${postsCount} posts para ${period}`);
 
-      setPosts(generatedPosts);
+      // Gerar estrutura básica dos posts localmente
+      const basicPosts = [];
+      const startDateObj = new Date(startDate);
+      
+      for (let i = 0; i < postsCount; i++) {
+        const postDate = new Date(startDateObj);
+        postDate.setDate(postDate.getDate() + (i * 2)); // Espaçar 2 dias entre posts
+        
+        const types: ('feed' | 'reels' | 'story' | 'carousel')[] = ['feed', 'reels', 'carousel'];
+        const randomType = types[i % types.length];
+        
+        basicPosts.push({
+          id: `temp-${Date.now()}-${i}`,
+          title: `Post ${i + 1}`,
+          date: postDate.toISOString().split('T')[0],
+          type: randomType,
+          category: 'social',
+        });
+      }
+
+      console.log(`📝 Estrutura básica criada, gerando legendas via generate-caption...`);
+
+      // Gerar legendas usando generate-caption para cada post
+      const postsWithCaptions = await Promise.all(
+        basicPosts.map(async (post, index) => {
+          try {
+            console.log(`🤖 Gerando legenda para post ${index + 1}/${postsCount}...`);
+            
+            const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-caption', {
+              body: {
+                clientId,
+                contentType: post.type,
+                context: {
+                  title: `Post de ${post.type} para o dia ${post.date}`,
+                  description: `Crie uma legenda completa e envolvente para este post de redes sociais.`,
+                },
+              },
+            });
+
+            if (captionError) {
+              console.error(`❌ Erro ao gerar legenda para post ${index + 1}:`, captionError);
+              throw captionError;
+            }
+
+            const suggestions = captionData?.suggestions || [];
+            const caption = suggestions[0] || 'Legenda não gerada';
+            
+            // Extrair hashtags da legenda
+            const hashtagMatches = caption.match(/#\w+/g) || [];
+            const hashtags = hashtagMatches.slice(0, 10);
+
+            return {
+              ...post,
+              caption,
+              hashtags,
+              media_suggestion: `Imagem ou vídeo para ${post.type}`,
+            };
+          } catch (error: any) {
+            console.error(`❌ Erro no post ${index + 1}:`, error);
+            return {
+              ...post,
+              caption: 'Erro ao gerar legenda',
+              hashtags: [],
+              media_suggestion: `Imagem ou vídeo para ${post.type}`,
+            };
+          }
+        })
+      );
+
+      console.log(`✅ ${postsWithCaptions.length} posts gerados com legendas!`);
+
+      setPosts(postsWithCaptions);
       
       toast({
         title: 'Planejamento Gerado',
-        description: `${generatedPosts.length} posts criados com sucesso`,
+        description: `${postsWithCaptions.length} posts criados com sucesso`,
       });
 
-      return generatedPosts;
+      return postsWithCaptions;
     } catch (error: any) {
       console.error('Erro ao gerar planejamento:', error);
       toast({
