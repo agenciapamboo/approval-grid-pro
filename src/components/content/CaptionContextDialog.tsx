@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -54,8 +54,16 @@ export function CaptionContextDialog({
   const [contentPillars, setContentPillars] = useState<string[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [templates, setTemplates] = useState<Array<{ id: string; template_name: string; template_content: string }>>([]);
+  type TemplateOption = {
+    id: string;
+    template_name: string;
+    template_content: string;
+    template_type: 'script' | 'caption' | 'carousel';
+  };
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const isDebug = typeof import.meta !== "undefined" ? Boolean(import.meta.env?.DEV) : process.env.NODE_ENV !== "production";
   const [selectedType, setSelectedType] = useState<'script' | 'caption' | 'carousel'>('script'); // Tipo selecionado: Roteiro, Legenda ou Carrossel
   const [carouselSlideCount, setCarouselSlideCount] = useState<number>(5); // Número de slides para carrossel
   const [videoDurationSeconds, setVideoDurationSeconds] = useState<number>(60); // Duração do vídeo em segundos para roteiro
@@ -91,169 +99,63 @@ export function CaptionContextDialog({
     setTitle(initialTitle);
   }, [open, clientId, initialTitle, contentType]);
 
-  // Carregar templates quando o tipo selecionado mudar
-  useEffect(() => {
+  const loadTemplates = useCallback(async () => {
     if (!open || !clientId) return;
-    
-    /**
-     * Carrega templates da tabela ai_text_templates
-     * 
-     * IMPORTANTE: Inicialmente não haverá templates cadastrados por agência.
-     * Apenas templates do sistema (globais, com agency_id = NULL) são buscados.
-     * 
-     * NOTA: Existe um sistema de cache separado que armazena legendas criadas por agência
-     * para machine learning e reaproveitamento com conteúdo editado - isso é diferente
-     * dos templates de estrutura cadastrados pelo Super Admin.
-     * 
-     * Lógica de busca:
-     * - Todos os usuários: Busca apenas templates globais do sistema (agency_id = NULL)
-     * - Templates são cadastrados pelo Super Admin e ficam disponíveis para todos
-     * 
-     * Tabela: ai_text_templates
-     * Campos utilizados:
-     * - id: UUID do template
-     * - template_name: Nome do template
-     * - template_content: Conteúdo do template
-     * - agency_id: NULL (sempre NULL para templates do sistema)
-     * - template_type: 'script' | 'caption' | 'carousel'
-     * - is_active: true para templates ativos
-     */
-    const loadTemplatesOnTypeChange = async () => {
-      setLoadingTemplates(true);
-      try {
-        console.log('[CaptionContextDialog] 🔍 Carregando templates do sistema para tipo:', selectedType);
-        
-        // Verificar autenticação
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('[CaptionContextDialog] ⚠️ Usuário não autenticado');
-          setLoadingTemplates(false);
-          return;
-        }
 
-        // BUSCAR APENAS TEMPLATES GLOBAIS DO SISTEMA (agency_id = NULL)
-        // Templates são cadastrados pelo Super Admin e ficam disponíveis para todos
-        // IMPORTANTE: Templates de roteiro ('script') também estão disponíveis para carrosséis
-        console.log('[CaptionContextDialog] 🔍 Buscando templates globais do sistema na tabela ai_text_templates');
-        console.log('[CaptionContextDialog] 🔍 Tipo selecionado:', selectedType, '(tipo:', typeof selectedType, ')');
-        
-        // Garantir que o tipo está em minúsculas (como está no banco: 'caption', 'script', 'carousel')
-        const normalizedType = selectedType.toLowerCase();
-        console.log('[CaptionContextDialog] 🔍 Tipo normalizado:', normalizedType);
-        
-        // Para carrosséis, incluir também templates de roteiro ('script')
-        // Templates de roteiro podem ser usados em carrosséis
-        const typesToSearch = normalizedType === 'carousel' 
-          ? ['carousel', 'script'] 
-          : [normalizedType];
-        
-        console.log('[CaptionContextDialog] 🔍 Tipos a buscar:', typesToSearch);
-        console.log('[CaptionContextDialog] 🔍 Query: SELECT id, template_name, template_content, agency_id, template_type FROM ai_text_templates WHERE agency_id IS NULL AND template_type IN', typesToSearch, 'AND is_active = true');
-        
-        const { data, error } = await supabase
-          .from('ai_text_templates') // TABELA: ai_text_templates
-          .select('id, template_name, template_content, agency_id, template_type')
-          .is('agency_id', null) // Apenas templates globais do sistema
-          .in('template_type', typesToSearch) // Buscar tipos: se 'carousel', busca 'carousel' e 'script'
-          .eq('is_active', true)
-          .order('template_name');
-        
-        console.log('[CaptionContextDialog] 📊 Resultado da query:', { 
-          hasError: !!error, 
-          error: error, 
-          dataLength: data?.length || 0,
-          data: data 
-        });
-        
-        if (error) {
-          console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', error);
-          console.error('[CaptionContextDialog] ❌ Detalhes do erro:', JSON.stringify(error, null, 2));
-          setTemplates([]);
-        } else {
-          console.log('[CaptionContextDialog] ✅ Templates do sistema encontrados:', data?.length || 0);
-          if (data && data.length > 0) {
-            console.log('[CaptionContextDialog] 📋 Templates encontrados:', data.map(t => ({ 
-              name: t.template_name, 
-              id: t.id,
-              type: t.template_type,
-              agency_id: t.agency_id
-            })));
-          } else {
-            console.log('[CaptionContextDialog] ⚠️ Nenhum template do sistema encontrado para o tipo:', selectedType);
-            console.log('[CaptionContextDialog] 🔍 Verificando se existem templates na tabela sem filtros...');
-            
-            // Debug: Verificar se existem templates na tabela (sem filtros)
-            const { data: allTemplatesDebug, error: debugError } = await supabase
-              .from('ai_text_templates')
-              .select('id, template_name, template_type, agency_id')
-              .limit(10);
-            
-            console.log('[CaptionContextDialog] 🔍 DEBUG - Todos os templates na tabela (primeiros 10):', {
-              hasError: !!debugError,
-              error: debugError,
-              count: allTemplatesDebug?.length || 0,
-              templates: allTemplatesDebug
-            });
-            
-            // Debug: Verificar templates globais especificamente
-            const { data: globalTemplatesDebug, error: globalDebugError } = await supabase
-              .from('ai_text_templates')
-              .select('id, template_name, template_type, agency_id')
-              .is('agency_id', null)
-              .limit(10);
-            
-            console.log('[CaptionContextDialog] 🔍 DEBUG - Templates globais (agency_id IS NULL):', {
-              hasError: !!globalDebugError,
-              error: globalDebugError,
-              count: globalTemplatesDebug?.length || 0,
-              templates: globalTemplatesDebug
-            });
-            
-            // Debug: Verificar templates do tipo selecionado (com tipo normalizado)
-            const normalizedTypeDebug = selectedType.toLowerCase();
-            const typesToSearchDebug = normalizedTypeDebug === 'carousel' 
-              ? ['carousel', 'script'] 
-              : [normalizedTypeDebug];
-            
-            const { data: typeTemplatesDebug, error: typeDebugError } = await supabase
-              .from('ai_text_templates')
-              .select('id, template_name, template_type, agency_id')
-              .in('template_type', typesToSearchDebug)
-              .limit(10);
-            
-            console.log('[CaptionContextDialog] 🔍 DEBUG - Templates dos tipos', typesToSearchDebug.join(', ') + ':', {
-              hasError: !!typeDebugError,
-              error: typeDebugError,
-              count: typeTemplatesDebug?.length || 0,
-              templates: typeTemplatesDebug
-            });
-            
-            // Debug adicional: Verificar todos os tipos únicos na tabela
-            const { data: allTypesDebug, error: allTypesError } = await supabase
-              .from('ai_text_templates')
-              .select('template_type')
-              .limit(100);
-            
-            const uniqueTypes = [...new Set(allTypesDebug?.map(t => t.template_type) || [])];
-            console.log('[CaptionContextDialog] 🔍 DEBUG - Tipos únicos encontrados na tabela:', uniqueTypes);
-            
-            console.log('[CaptionContextDialog] 💡 Templates devem ser cadastrados pelo Super Admin em Admin → Templates de Texto e Roteiros');
-          }
-          setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
-        }
-        setSelectedTemplate("");
-        
-      } catch (error) {
-        console.error('[CaptionContextDialog] ❌ Erro geral ao carregar templates:', error);
-        setTemplates([]);
-      } finally {
-        setLoadingTemplates(false);
-        console.log('[CaptionContextDialog] ✅ Carregamento de templates finalizado');
+    setLoadingTemplates(true);
+    setTemplateError(null);
+
+    try {
+      const normalizedType = selectedType.toLowerCase();
+      const typesToSearch = normalizedType === 'carousel'
+        ? ['carousel', 'script']
+        : [normalizedType];
+
+      if (isDebug) {
+        console.log('[CaptionContextDialog] 🔍 Buscando templates', { typesToSearch, clientId });
       }
-    };
 
-    loadTemplatesOnTypeChange();
-  }, [selectedType, open, clientId]);
+      const { data, error } = await supabase
+        .from('ai_text_templates')
+        .select('id, template_name, template_content, template_type, agency_id')
+        .is('agency_id', null)
+        .in('template_type', typesToSearch)
+        .eq('is_active', true)
+        .order('template_name');
+
+      if (error) {
+        throw error;
+      }
+
+      const sanitizedTemplates = (data || []).map((template) => ({
+        id: template.id,
+        template_name: template.template_name,
+        template_content: template.template_content,
+        template_type: template.template_type as TemplateOption['template_type'],
+      }));
+
+      setTemplates(sanitizedTemplates);
+      setSelectedTemplate("");
+
+      if (isDebug) {
+        console.log('[CaptionContextDialog] ✅ Templates encontrados:', sanitizedTemplates);
+      }
+
+      if (sanitizedTemplates.length === 0 && isDebug) {
+        console.warn('[CaptionContextDialog] ⚠️ Nenhum template encontrado para os tipos:', typesToSearch);
+      }
+    } catch (error: any) {
+      console.error('[CaptionContextDialog] ❌ Erro ao carregar templates:', error);
+      setTemplates([]);
+      setTemplateError(error?.message || 'Erro ao carregar templates. Tente novamente mais tarde.');
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }, [clientId, open, selectedType, isDebug]);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -501,20 +403,47 @@ export function CaptionContextDialog({
                 ? 'Template de Legenda'
                 : 'Template de Carrossel'} (opcional)
             </Label>
-            {loadingTemplates ? (
+            {templateError ? (
+              <div className="text-sm text-red-600 bg-destructive/10 border border-destructive/30 rounded-lg p-3 space-y-2">
+                <p>{templateError}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadTemplates}
+                  disabled={loadingTemplates}
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : loadingTemplates ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Carregando templates...
               </div>
             ) : templates.length === 0 ? (
-              <div className="text-sm text-muted-foreground p-3 border rounded-lg bg-muted/30">
-                Nenhum template de {
-                  selectedType === 'script' 
-                    ? 'roteiro' 
-                    : selectedType === 'caption'
-                    ? 'legenda'
-                    : 'carrossel'
-                } cadastrado. Os templates são cadastrados pelo <strong>Super Admin</strong> e ficam disponíveis para uso.
+              <div className="text-sm text-muted-foreground p-3 border rounded-lg bg-muted/30 space-y-2">
+                <p>
+                  Nenhum template de {
+                    selectedType === 'script' 
+                      ? 'roteiro' 
+                      : selectedType === 'caption'
+                      ? 'legenda'
+                      : 'carrossel ou roteiro'
+                  } cadastrado. Os templates são cadastrados pelo <strong>Super Admin</strong> e ficam disponíveis para uso.
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadTemplates}
+                  disabled={loadingTemplates}
+                  className="w-fit"
+                >
+                  Recarregar templates
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Dica: ao selecionar carrossel listamos também templates do tipo roteiro.
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -525,7 +454,7 @@ export function CaptionContextDialog({
                         ? 'Selecione um template de roteiro ou crie novo'
                         : selectedType === 'caption'
                         ? 'Selecione um template de legenda ou crie novo'
-                        : 'Selecione um template de carrossel ou crie novo'
+                        : 'Selecione um template de carrossel ou roteiro'
                     } />
                   </SelectTrigger>
                   <SelectContent>
@@ -539,34 +468,37 @@ export function CaptionContextDialog({
                 </Select>
                 
                 {/* Lista de templates com hover para preview */}
-                {templates.length > 0 && (
-                  <div className="space-y-1 mt-2">
-                    <p className="text-xs text-muted-foreground">Passe o mouse nos templates abaixo para visualizar:</p>
-                    <div className="space-y-1 max-h-40 overflow-y-auto border rounded p-2">
-                      {templates.map((template) => (
-                        <HoverCard key={template.id}>
-                          <HoverCardTrigger asChild>
-                            <div 
-                              className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted/50 transition-colors"
-                              onClick={() => setSelectedTemplate(template.id)}
-                            >
-                              <span className="text-sm">{template.template_name}</span>
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                <div className="space-y-1 mt-2">
+                  <p className="text-xs text-muted-foreground">Passe o mouse nos templates abaixo para visualizar:</p>
+                  <div className="space-y-1 max-h-40 overflow-y-auto border rounded p-2">
+                    {templates.map((template) => (
+                      <HoverCard key={template.id}>
+                        <HoverCardTrigger asChild>
+                          <div 
+                            className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => setSelectedTemplate(template.id)}
+                          >
+                            <div>
+                              <span className="text-sm font-medium block">{template.template_name}</span>
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                {template.template_type === 'script' ? 'Roteiro' : template.template_type === 'caption' ? 'Legenda' : 'Carrossel'}
+                              </span>
                             </div>
-                          </HoverCardTrigger>
-                          <HoverCardContent className="w-96 max-h-96 overflow-y-auto">
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-sm">{template.template_name}</h4>
-                              <div className="text-sm text-muted-foreground whitespace-pre-wrap border-t pt-2">
-                                {template.template_content}
-                              </div>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-96 max-h-96 overflow-y-auto">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">{template.template_name}</h4>
+                            <div className="text-sm text-muted-foreground whitespace-pre-wrap border-t pt-2">
+                              {template.template_content}
                             </div>
-                          </HoverCardContent>
-                        </HoverCard>
-                      ))}
-                    </div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
