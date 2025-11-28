@@ -134,6 +134,9 @@ export function CaptionContextDialog({
         // BUSCAR APENAS TEMPLATES GLOBAIS DO SISTEMA (agency_id = NULL)
         // Templates são cadastrados pelo Super Admin e ficam disponíveis para todos
         console.log('[CaptionContextDialog] 🔍 Buscando templates globais do sistema na tabela ai_text_templates');
+        console.log('[CaptionContextDialog] 🔍 Tipo selecionado:', selectedType);
+        console.log('[CaptionContextDialog] 🔍 Query: SELECT id, template_name, template_content, agency_id, template_type FROM ai_text_templates WHERE agency_id IS NULL AND template_type = ? AND is_active = true');
+        
         const { data, error } = await supabase
           .from('ai_text_templates') // TABELA: ai_text_templates
           .select('id, template_name, template_content, agency_id, template_type')
@@ -142,15 +145,71 @@ export function CaptionContextDialog({
           .eq('is_active', true)
           .order('template_name');
         
+        console.log('[CaptionContextDialog] 📊 Resultado da query:', { 
+          hasError: !!error, 
+          error: error, 
+          dataLength: data?.length || 0,
+          data: data 
+        });
+        
         if (error) {
           console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', error);
+          console.error('[CaptionContextDialog] ❌ Detalhes do erro:', JSON.stringify(error, null, 2));
           setTemplates([]);
         } else {
           console.log('[CaptionContextDialog] ✅ Templates do sistema encontrados:', data?.length || 0);
           if (data && data.length > 0) {
-            console.log('[CaptionContextDialog] 📋 Templates:', data.map(t => ({ name: t.template_name, id: t.id })));
+            console.log('[CaptionContextDialog] 📋 Templates encontrados:', data.map(t => ({ 
+              name: t.template_name, 
+              id: t.id,
+              type: t.template_type,
+              agency_id: t.agency_id
+            })));
           } else {
             console.log('[CaptionContextDialog] ⚠️ Nenhum template do sistema encontrado para o tipo:', selectedType);
+            console.log('[CaptionContextDialog] 🔍 Verificando se existem templates na tabela sem filtros...');
+            
+            // Debug: Verificar se existem templates na tabela (sem filtros)
+            const { data: allTemplatesDebug, error: debugError } = await supabase
+              .from('ai_text_templates')
+              .select('id, template_name, template_type, agency_id')
+              .limit(10);
+            
+            console.log('[CaptionContextDialog] 🔍 DEBUG - Todos os templates na tabela (primeiros 10):', {
+              hasError: !!debugError,
+              error: debugError,
+              count: allTemplatesDebug?.length || 0,
+              templates: allTemplatesDebug
+            });
+            
+            // Debug: Verificar templates globais especificamente
+            const { data: globalTemplatesDebug, error: globalDebugError } = await supabase
+              .from('ai_text_templates')
+              .select('id, template_name, template_type, agency_id')
+              .is('agency_id', null)
+              .limit(10);
+            
+            console.log('[CaptionContextDialog] 🔍 DEBUG - Templates globais (agency_id IS NULL):', {
+              hasError: !!globalDebugError,
+              error: globalDebugError,
+              count: globalTemplatesDebug?.length || 0,
+              templates: globalTemplatesDebug
+            });
+            
+            // Debug: Verificar templates do tipo selecionado
+            const { data: typeTemplatesDebug, error: typeDebugError } = await supabase
+              .from('ai_text_templates')
+              .select('id, template_name, template_type, agency_id')
+              .eq('template_type', selectedType)
+              .limit(10);
+            
+            console.log('[CaptionContextDialog] 🔍 DEBUG - Templates do tipo', selectedType + ':', {
+              hasError: !!typeDebugError,
+              error: typeDebugError,
+              count: typeTemplatesDebug?.length || 0,
+              templates: typeTemplatesDebug
+            });
+            
             console.log('[CaptionContextDialog] 💡 Templates devem ser cadastrados pelo Super Admin em Admin → Templates de Texto e Roteiros');
           }
           setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
