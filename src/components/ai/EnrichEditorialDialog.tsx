@@ -28,11 +28,13 @@ export function EnrichEditorialDialog({
   onSuccess,
 }: EnrichEditorialDialogProps) {
   const [monthContext, setMonthContext] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setMonthContext("");
+      setCustomPrompt("");
       setLoading(false);
     }
   }, [open]);
@@ -56,6 +58,7 @@ export function EnrichEditorialDialog({
         body: { 
           clientId, 
           monthContext: monthContext.trim(),
+          customPrompt: customPrompt.trim() || undefined,
           jwt 
         }
       });
@@ -108,6 +111,25 @@ export function EnrichEditorialDialog({
               rows={6}
               disabled={loading}
             />
+          </div>
+
+          {/* Prompt Personalizado (Opcional) */}
+          <div className="space-y-2">
+            <Label htmlFor="customPrompt" className="text-sm font-medium">
+              Prompt Personalizado <span className="text-muted-foreground font-normal">(Opcional)</span>
+            </Label>
+            <Textarea
+              id="customPrompt"
+              placeholder="Adicione instruções específicas para enriquecer a linha editorial. Ex: Foque em storytelling, use linguagem mais técnica, inclua mais CTA..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              rows={3}
+              disabled={loading}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Este campo permite personalizar o enriquecimento com instruções adicionais
+            </p>
           </div>
         </div>
 
