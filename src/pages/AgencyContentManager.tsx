@@ -340,9 +340,7 @@ export default function AgencyContentManager() {
               
               {/* Botões de IA */}
               {role === 'agency_admin' && (
-                <>
-                  {console.log('[AgencyContentManager] ✅ Renderizando botões para role:', role)}
-                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       onClick={() => setShowMonthlyPlanner(true)}
@@ -375,7 +373,6 @@ export default function AgencyContentManager() {
                       Assistente IA - Linha Editorial
                     </Button>
                   </div>
-                </>
               )}
             </div>
 
@@ -477,10 +474,8 @@ export default function AgencyContentManager() {
         )}
 
         {/* Assistente de IA - Linha Editorial */}
-        {client?.agency_id ? (
-          <>
-            {console.log('[AgencyContentManager] 🎨 Renderizando EditorialLineAssistant - Agency ID:', client.agency_id, 'Client ID:', client.id, 'Open:', showEditorialAssistant)}
-            <EditorialLineAssistant
+        {client?.agency_id && (
+          <EditorialLineAssistant
               open={showEditorialAssistant}
               onOpenChange={setShowEditorialAssistant}
               agencyId={client.agency_id}
@@ -489,10 +484,7 @@ export default function AgencyContentManager() {
                 loadContents(client.id);
                 setShowEditorialAssistant(false);
               }}
-            />
-          </>
-        ) : (
-          console.log('[AgencyContentManager] ⚠️ EditorialLineAssistant NÃO renderizado - Agency ID:', client?.agency_id)
+          />
         )}
       </main>
     </AppLayout>

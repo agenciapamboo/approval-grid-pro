@@ -63,7 +63,7 @@ export function WebhookTester() {
         type: 'info' as const,
         description: 'Código 2FA solicitado',
         trigger: 'Quando usuário solicita código 2FA',
-        webhookType: '2fa' as const,
+        webhookType: 'internal' as const,
         payload: {
           type: "2fa_code",
           code: "123456",
