@@ -112,6 +112,51 @@ export function AddClientDialog({ agencyId, onClientAdded }: AddClientDialogProp
             });
 
           if (prefError) console.error('Erro ao criar preferências:', prefError);
+
+          // Buscar nome da agência
+          const { data: agencyData } = await supabase
+            .from("agencies")
+            .select("name")
+            .eq("id", agencyId)
+            .single();
+
+          // Criar notificação de boas-vindas
+          const { error: notificationError } = await supabase
+            .from("notifications")
+            .insert({
+              event: "user.account_created",
+              content_id: null,
+              client_id: clientData.id,
+              agency_id: agencyId,
+              user_id: authData.user.id,
+              channel: "webhook",
+              status: "pending",
+              payload: {
+                user: {
+                  id: authData.user.id,
+                  email: formData.email,
+                  name: formData.name,
+                  role: "client_user",
+                  password: formData.password, // Senha para arquivamento
+                  account_type: "creator",
+                },
+                client: {
+                  id: clientData.id,
+                  name: formData.name,
+                  agency_id: agencyId,
+                },
+                agency: {
+                  id: agencyId,
+                  name: agencyData?.name || "Agência",
+                },
+                login_url: `${window.location.origin}/auth`,
+                created_at: new Date().toISOString(),
+              },
+            });
+
+          if (notificationError) {
+            console.error('Erro ao criar notificação de boas-vindas:', notificationError);
+          }
         }
       }
 

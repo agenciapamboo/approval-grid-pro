@@ -427,6 +427,122 @@ export const NOTIFICATION_EVENTS: NotificationEvent[] = [
       priority: 'low',
       timestamp: '2024-01-15T14:00:00Z'
     }
+  },
+
+  // ==================== EVENTOS DE BOAS-VINDAS ====================
+  {
+    event: 'user.account_created',
+    category: 'internal',
+    type: 'info',
+    description: 'Enviado quando uma nova conta (cliente ou agência) é criada',
+    trigger: 'Ao criar nova conta via Auth.tsx (signup) ou AddClientDialog',
+    webhookType: 'internal',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      event: 'user.account_created',
+      channel: 'email',
+      user_id: 'uuid-do-usuario',
+      client_id: 'uuid-do-cliente',
+      agency_id: 'uuid-da-agencia',
+      payload: {
+        user: {
+          id: 'uuid-do-usuario',
+          email: 'usuario@exemplo.com',
+          name: 'Nome do Usuário',
+          role: 'client_user',
+          password: 'senha-temporaria-para-arquivamento',
+          account_type: 'creator'
+        },
+        client: {
+          id: 'uuid-do-cliente',
+          name: 'Nome do Cliente',
+          agency_id: 'uuid-da-agencia'
+        },
+        agency: {
+          id: 'uuid-da-agencia',
+          name: 'Nome da Agência'
+        },
+        login_url: 'https://app.exemplo.com/auth',
+        created_at: '2024-01-15T10:00:00Z'
+      }
+    }
+  },
+  {
+    event: 'user.team_member_created',
+    category: 'internal',
+    type: 'info',
+    description: 'Enviado quando um novo membro da equipe é cadastrado',
+    trigger: 'Ao criar novo membro via create-team-member edge function',
+    webhookType: 'internal',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      event: 'user.team_member_created',
+      channel: 'email',
+      user_id: 'uuid-do-membro',
+      agency_id: 'uuid-da-agencia',
+      payload: {
+        user: {
+          id: 'uuid-do-membro',
+          email: 'membro@exemplo.com',
+          name: 'Nome do Membro',
+          role: 'team_member',
+          password: 'senha-temporaria-para-arquivamento',
+          functions: ['designer', 'copywriter']
+        },
+        agency: {
+          id: 'uuid-da-agencia',
+          name: 'Nome da Agência'
+        },
+        created_by: {
+          id: 'uuid-do-admin',
+          name: 'Nome do Admin',
+          email: 'admin@exemplo.com'
+        },
+        login_url: 'https://app.exemplo.com/auth',
+        created_at: '2024-01-15T10:00:00Z'
+      }
+    }
+  },
+  {
+    event: 'user.approver_created',
+    category: 'internal',
+    type: 'info',
+    description: 'Enviado quando um novo aprovador é cadastrado',
+    trigger: 'Ao criar novo aprovador via AddApproverDialog',
+    webhookType: 'internal',
+    payload: {
+      notification_id: 'uuid-exemplo',
+      event: 'user.approver_created',
+      channel: 'email',
+      client_id: 'uuid-do-cliente',
+      agency_id: 'uuid-da-agencia',
+      payload: {
+        approver: {
+          id: 'uuid-do-aprovador',
+          name: 'Nome do Aprovador',
+          email: 'aprovador@exemplo.com',
+          whatsapp: '+5511999999999',
+          is_primary: true,
+          password: 'senha-temporaria-para-arquivamento',
+          password_hash: 'hash-da-senha'
+        },
+        client: {
+          id: 'uuid-do-cliente',
+          name: 'Nome do Cliente'
+        },
+        agency: {
+          id: 'uuid-da-agencia',
+          name: 'Nome da Agência'
+        },
+        created_by: {
+          id: 'uuid-do-admin',
+          name: 'Nome do Admin',
+          email: 'admin@exemplo.com'
+        },
+        login_url: 'https://app.exemplo.com/auth',
+        created_at: '2024-01-15T10:00:00Z'
+      }
+    }
   }
 ];
 

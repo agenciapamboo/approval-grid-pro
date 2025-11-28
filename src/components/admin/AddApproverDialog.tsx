@@ -94,10 +94,10 @@ export function AddApproverDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Buscar agency_id do cliente
+      // Buscar dados do cliente e agência
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
-        .select("agency_id")
+        .select("agency_id, name")
         .eq("id", clientId)
         .single();
 
@@ -159,6 +159,70 @@ export function AddApproverDialog({
       }]);
 
       if (error) throw error;
+
+      // Buscar nome da agência e dados do criador
+      const { data: agencyData } = await supabase
+        .from("agencies")
+        .select("name")
+        .eq("id", clientData.agency_id)
+        .single();
+
+      const { data: creatorProfile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      // Buscar o ID do aprovador recém-criado
+      const { data: newApprover } = await supabase
+        .from("client_approvers")
+        .select("id, created_at")
+        .eq("client_id", clientId)
+        .eq("email", data.email)
+        .single();
+
+      // Criar notificação de boas-vindas com senha para arquivamento
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          event: "user.approver_created",
+          content_id: null,
+          client_id: clientId,
+          agency_id: clientData.agency_id,
+          user_id: null,
+          channel: "webhook",
+          status: "pending",
+          payload: {
+            approver: {
+              id: newApprover?.id,
+              name: data.name,
+              email: data.email,
+              whatsapp: data.whatsapp || null,
+              is_primary: data.is_primary,
+              password: data.password, // Senha para arquivamento
+              password_hash: password_hash,
+            },
+            client: {
+              id: clientId,
+              name: clientData.name,
+            },
+            agency: {
+              id: clientData.agency_id,
+              name: agencyData?.name || "Agência",
+            },
+            created_by: {
+              id: user.id,
+              name: creatorProfile?.name || user.user_metadata?.name || user.email || "Admin",
+              email: user.email || "",
+            },
+            login_url: `${window.location.origin}/auth`,
+            created_at: newApprover?.created_at || new Date().toISOString(),
+          },
+        });
+
+      if (notificationError) {
+        console.error('Erro ao criar notificação de boas-vindas:', notificationError);
+      }
 
       toast({
         title: "Aprovador adicionado",

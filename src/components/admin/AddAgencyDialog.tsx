@@ -81,6 +81,40 @@ export function AddAgencyDialog({ onAgencyAdded }: AddAgencyDialogProps) {
             .eq("id", authData.user.id);
 
           if (profileError) throw profileError;
+
+          // Criar notificação de boas-vindas
+          const { error: notificationError } = await supabase
+            .from("notifications")
+            .insert({
+              event: "user.account_created",
+              content_id: null,
+              client_id: null,
+              agency_id: agencyData.id,
+              user_id: authData.user.id,
+              channel: "webhook",
+              status: "pending",
+              payload: {
+                user: {
+                  id: authData.user.id,
+                  email: formData.email,
+                  name: formData.name,
+                  role: "agency_admin",
+                  password: formData.password, // Senha para arquivamento
+                  account_type: "agency",
+                },
+                client: null,
+                agency: {
+                  id: agencyData.id,
+                  name: formData.name,
+                },
+                login_url: `${window.location.origin}/auth`,
+                created_at: new Date().toISOString(),
+              },
+            });
+
+          if (notificationError) {
+            console.error('Erro ao criar notificação de boas-vindas:', notificationError);
+          }
         }
       }
 
