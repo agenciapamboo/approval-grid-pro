@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { callApi } from "@/lib/apiClient";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EnrichEditorialDialogProps {
   open: boolean;
@@ -43,22 +43,24 @@ export function EnrichEditorialDialog({
       return;
     }
 
-    const payload = {
-      clientId,
-      monthContext: monthContext.trim(),
-    };
-
     setLoading(true);
-    console.log("[EnrichEditorialDialog] payload", payload);
     try {
-      const data = await callApi<{ success?: boolean; tokens?: number }>(
-        "/api/ia/enrichEditorialBase",
-        {
-          method: "POST",
-          payload,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData.session?.access_token;
+
+      if (!jwt) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+
+      const { data, error } = await supabase.functions.invoke('enrich-editorial-line', {
+        body: { 
+          clientId, 
+          monthContext: monthContext.trim(),
+          jwt 
         }
-      );
-      console.log("[EnrichEditorialDialog] response", data);
+      });
+
+      if (error) throw error;
 
       if (!data?.success) {
         throw new Error("Não foi possível enriquecer a linha editorial.");
