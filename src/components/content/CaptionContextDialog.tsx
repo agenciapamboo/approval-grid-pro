@@ -98,56 +98,55 @@ export function CaptionContextDialog({
     const loadTemplatesOnTypeChange = async () => {
       setLoadingTemplates(true);
       try {
-        // Carregar templates para todos os tipos (incluindo carrossel)
-
-        // Buscar agency_id do cliente
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('agency_id')
-          .eq('id', clientId)
-          .single();
-        
-        if (!clientData?.agency_id) {
+        // Verificar role do usuário para filtrar templates
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           setLoadingTemplates(false);
           return;
         }
+
+        const { data: roleData } = await supabase
+          .rpc('get_user_role', { _user_id: user.id });
         
-        // Buscar templates da agência E templates globais (super_admin) do tipo selecionado
-        const [agencyTemplatesResult, globalTemplatesResult] = await Promise.all([
-          supabase
-            .from('ai_text_templates')
-            .select('id, template_name, template_content')
-            .eq('agency_id', clientData.agency_id)
-            .eq('template_type', selectedType)
-            .eq('is_active', true)
-            .order('template_name'),
-          supabase
-            .from('ai_text_templates')
-            .select('id, template_name, template_content')
-            .is('agency_id', null)
-            .eq('template_type', selectedType)
-            .eq('is_active', true)
-            .order('template_name')
-        ]);
+        let query = supabase
+          .from('ai_text_templates')
+          .select('id, template_name, template_content')
+          .eq('template_type', selectedType)
+          .eq('is_active', true);
         
-        const allTemplates: Array<{ id: string; template_name: string; template_content: string }> = [];
-        if (agencyTemplatesResult.data) {
-          allTemplates.push(...agencyTemplatesResult.data);
+        // Se não for super_admin, filtrar por agency_id
+        // Super admin vê todos os templates (da agência + globais)
+        if (roleData !== 'super_admin') {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('agency_id')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.agency_id) {
+            // Agency admin vê templates da própria agência + globais
+            query = query.or(`agency_id.eq.${profile.agency_id},agency_id.is.null`);
+          } else {
+            // Se não tem agency_id, só busca globais
+            query = query.is('agency_id', null);
+          }
         }
-        if (globalTemplatesResult.data) {
-          // Adicionar templates globais, evitando duplicatas
-          globalTemplatesResult.data.forEach(t => {
-            if (!allTemplates.find(existing => existing.id === t.id)) {
-              allTemplates.push(t);
-            }
-          });
+        // Se for super_admin, não filtra por agency_id (busca todos)
+        
+        const { data, error } = await query.order('template_name');
+        
+        if (error) {
+          console.error('Error loading templates:', error);
+          setTemplates([]);
+        } else {
+          setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
         }
         
-        setTemplates(allTemplates);
         // Limpar seleção de template ao mudar o tipo
         setSelectedTemplate("");
       } catch (error) {
         console.error('Error loading templates:', error);
+        setTemplates([]);
       } finally {
         setLoadingTemplates(false);
       }
