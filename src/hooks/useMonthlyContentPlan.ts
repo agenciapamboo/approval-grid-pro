@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface CarouselSlide {
+  order: number;
+  text: string;
+}
+
 interface PlanPost {
   id?: string;
   title: string;
@@ -11,6 +16,8 @@ interface PlanPost {
   caption: string;
   hashtags: string[];
   media_suggestion: string;
+  slides?: CarouselSlide[]; // Para carrosséis: textos de cada slide
+  slideCount?: number; // Número de slides do carrossel
 }
 
 export function useMonthlyContentPlan() {
@@ -21,7 +28,8 @@ export function useMonthlyContentPlan() {
   const generatePlan = async (
     clientId: string,
     period: 'week' | 'fortnight' | 'month',
-    startDate: string
+    startDate: string,
+    carouselSlideCount: number = 5
   ) => {
     try {
       setLoading(true);
@@ -72,35 +80,114 @@ export function useMonthlyContentPlan() {
           try {
             console.log(`🤖 Gerando legenda para post ${index + 1}/${postsCount}...`);
             
-            const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-caption', {
-              body: {
-                clientId,
-                contentType: post.type,
-                context: {
-                  title: `Post de ${post.type} para o dia ${post.date}`,
-                  description: `Crie uma legenda completa e envolvente para este post de redes sociais.`,
+            // Se for carrossel, gerar textos para cada slide
+            if (post.type === 'carousel') {
+              console.log(`🎠 Gerando carrossel com ${carouselSlideCount} slides...`);
+              
+              // Gerar legenda principal do carrossel
+              const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-caption', {
+                body: {
+                  clientId,
+                  contentType: 'carousel',
+                  context: {
+                    title: `Carrossel para o dia ${post.date}`,
+                    description: `Crie uma legenda completa e envolvente para este carrossel de redes sociais com ${carouselSlideCount} slides.`,
+                  },
                 },
-              },
-            });
+              });
 
-            if (captionError) {
-              console.error(`❌ Erro ao gerar legenda para post ${index + 1}:`, captionError);
-              throw captionError;
+              if (captionError) {
+                console.error(`❌ Erro ao gerar legenda do carrossel ${index + 1}:`, captionError);
+                throw captionError;
+              }
+
+              const suggestions = captionData?.suggestions || [];
+              const caption = suggestions[0] || 'Legenda não gerada';
+              
+              // Extrair hashtags da legenda
+              const hashtagMatches = caption.match(/#\w+/g) || [];
+              const hashtags = hashtagMatches.slice(0, 10);
+
+              // Gerar textos para cada slide
+              const slides: CarouselSlide[] = [];
+              for (let slideIndex = 0; slideIndex < carouselSlideCount; slideIndex++) {
+                try {
+                  console.log(`  📄 Gerando texto para slide ${slideIndex + 1}/${carouselSlideCount}...`);
+                  
+                  const { data: slideData, error: slideError } = await supabase.functions.invoke('generate-caption', {
+                    body: {
+                      clientId,
+                      contentType: 'carousel',
+                      context: {
+                        title: `Slide ${slideIndex + 1} de ${carouselSlideCount} do carrossel para ${post.date}`,
+                        description: `Gere um texto conciso e direto para o slide ${slideIndex + 1} de um carrossel com ${carouselSlideCount} slides. O texto deve ser curto (idealmente 1-2 linhas) e complementar a legenda principal do carrossel. Cada slide deve ter um foco específico.`,
+                      },
+                    },
+                  });
+
+                  if (slideError) {
+                    console.error(`❌ Erro ao gerar texto do slide ${slideIndex + 1}:`, slideError);
+                    slides.push({
+                      order: slideIndex,
+                      text: `Texto do slide ${slideIndex + 1} não gerado`,
+                    });
+                  } else {
+                    const slideSuggestions = slideData?.suggestions || [];
+                    const slideText = slideSuggestions[0] || `Texto do slide ${slideIndex + 1}`;
+                    slides.push({
+                      order: slideIndex,
+                      text: slideText,
+                    });
+                  }
+                } catch (slideError: any) {
+                  console.error(`❌ Erro ao gerar slide ${slideIndex + 1}:`, slideError);
+                  slides.push({
+                    order: slideIndex,
+                    text: `Texto do slide ${slideIndex + 1} não gerado`,
+                  });
+                }
+              }
+
+              return {
+                ...post,
+                caption,
+                hashtags,
+                media_suggestion: `Carrossel com ${carouselSlideCount} imagens`,
+                slides,
+                slideCount: carouselSlideCount,
+              };
+            } else {
+              // Para outros tipos de post, gerar apenas a legenda principal
+              const { data: captionData, error: captionError } = await supabase.functions.invoke('generate-caption', {
+                body: {
+                  clientId,
+                  contentType: post.type,
+                  context: {
+                    title: `Post de ${post.type} para o dia ${post.date}`,
+                    description: `Crie uma legenda completa e envolvente para este post de redes sociais.`,
+                  },
+                },
+              });
+
+              if (captionError) {
+                console.error(`❌ Erro ao gerar legenda para post ${index + 1}:`, captionError);
+                throw captionError;
+              }
+
+              const suggestions = captionData?.suggestions || [];
+              const caption = suggestions[0] || 'Legenda não gerada';
+              
+              // Extrair hashtags da legenda
+              const hashtagMatches = caption.match(/#\w+/g) || [];
+              const hashtags = hashtagMatches.slice(0, 10);
+
+              return {
+                ...post,
+                caption,
+                hashtags,
+                media_suggestion: `Imagem ou vídeo para ${post.type}`,
+              };
             }
-
-            const suggestions = captionData?.suggestions || [];
-            const caption = suggestions[0] || 'Legenda não gerada';
-            
-            // Extrair hashtags da legenda
-            const hashtagMatches = caption.match(/#\w+/g) || [];
-            const hashtags = hashtagMatches.slice(0, 10);
-
-            return {
-              ...post,
-              caption,
-              hashtags,
-              media_suggestion: `Imagem ou vídeo para ${post.type}`,
-            };
           } catch (error: any) {
             console.error(`❌ Erro no post ${index + 1}:`, error);
             return {
@@ -191,19 +278,34 @@ export function useMonthlyContentPlan() {
     try {
       setLoading(true);
 
-      const contentsToInsert = posts.map((post) => ({
-        title: post.title,
-        date: post.date,
-        type: post.type,
-        category: post.category,
-        status: 'draft' as const,
-        client_id: clientId,
-        owner_user_id: userId,
-        agency_id: agencyId,
-        is_content_plan: true,
-        plan_description: post.media_suggestion,
-        version: 1,
-      }));
+      const contentsToInsert = posts.map((post) => {
+        // Se for carrossel com slides, armazenar informações dos slides no plan_description como JSON
+        let planDescription = post.media_suggestion;
+        if (post.type === 'carousel' && post.slides && post.slides.length > 0) {
+          const slidesInfo = {
+            slideCount: post.slideCount || post.slides.length,
+            slides: post.slides.map(s => ({ order: s.order, text: s.text })),
+          };
+          planDescription = JSON.stringify({
+            media_suggestion: post.media_suggestion,
+            carousel_slides: slidesInfo,
+          });
+        }
+
+        return {
+          title: post.title,
+          date: post.date,
+          type: post.type,
+          category: post.category,
+          status: 'draft' as const,
+          client_id: clientId,
+          owner_user_id: userId,
+          agency_id: agencyId,
+          is_content_plan: true,
+          plan_description: planDescription,
+          version: 1,
+        };
+      });
 
       const { data: insertedContents, error: insertError } = await supabase
         .from('contents')
