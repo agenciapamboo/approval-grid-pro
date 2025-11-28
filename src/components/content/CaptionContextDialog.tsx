@@ -133,15 +133,28 @@ export function CaptionContextDialog({
 
         // BUSCAR APENAS TEMPLATES GLOBAIS DO SISTEMA (agency_id = NULL)
         // Templates são cadastrados pelo Super Admin e ficam disponíveis para todos
+        // IMPORTANTE: Templates de roteiro ('script') também estão disponíveis para carrosséis
         console.log('[CaptionContextDialog] 🔍 Buscando templates globais do sistema na tabela ai_text_templates');
-        console.log('[CaptionContextDialog] 🔍 Tipo selecionado:', selectedType);
-        console.log('[CaptionContextDialog] 🔍 Query: SELECT id, template_name, template_content, agency_id, template_type FROM ai_text_templates WHERE agency_id IS NULL AND template_type = ? AND is_active = true');
+        console.log('[CaptionContextDialog] 🔍 Tipo selecionado:', selectedType, '(tipo:', typeof selectedType, ')');
+        
+        // Garantir que o tipo está em minúsculas (como está no banco: 'caption', 'script', 'carousel')
+        const normalizedType = selectedType.toLowerCase();
+        console.log('[CaptionContextDialog] 🔍 Tipo normalizado:', normalizedType);
+        
+        // Para carrosséis, incluir também templates de roteiro ('script')
+        // Templates de roteiro podem ser usados em carrosséis
+        const typesToSearch = normalizedType === 'carousel' 
+          ? ['carousel', 'script'] 
+          : [normalizedType];
+        
+        console.log('[CaptionContextDialog] 🔍 Tipos a buscar:', typesToSearch);
+        console.log('[CaptionContextDialog] 🔍 Query: SELECT id, template_name, template_content, agency_id, template_type FROM ai_text_templates WHERE agency_id IS NULL AND template_type IN', typesToSearch, 'AND is_active = true');
         
         const { data, error } = await supabase
           .from('ai_text_templates') // TABELA: ai_text_templates
           .select('id, template_name, template_content, agency_id, template_type')
           .is('agency_id', null) // Apenas templates globais do sistema
-          .eq('template_type', selectedType)
+          .in('template_type', typesToSearch) // Buscar tipos: se 'carousel', busca 'carousel' e 'script'
           .eq('is_active', true)
           .order('template_name');
         
@@ -196,19 +209,33 @@ export function CaptionContextDialog({
               templates: globalTemplatesDebug
             });
             
-            // Debug: Verificar templates do tipo selecionado
+            // Debug: Verificar templates do tipo selecionado (com tipo normalizado)
+            const normalizedTypeDebug = selectedType.toLowerCase();
+            const typesToSearchDebug = normalizedTypeDebug === 'carousel' 
+              ? ['carousel', 'script'] 
+              : [normalizedTypeDebug];
+            
             const { data: typeTemplatesDebug, error: typeDebugError } = await supabase
               .from('ai_text_templates')
               .select('id, template_name, template_type, agency_id')
-              .eq('template_type', selectedType)
+              .in('template_type', typesToSearchDebug)
               .limit(10);
             
-            console.log('[CaptionContextDialog] 🔍 DEBUG - Templates do tipo', selectedType + ':', {
+            console.log('[CaptionContextDialog] 🔍 DEBUG - Templates dos tipos', typesToSearchDebug.join(', ') + ':', {
               hasError: !!typeDebugError,
               error: typeDebugError,
               count: typeTemplatesDebug?.length || 0,
               templates: typeTemplatesDebug
             });
+            
+            // Debug adicional: Verificar todos os tipos únicos na tabela
+            const { data: allTypesDebug, error: allTypesError } = await supabase
+              .from('ai_text_templates')
+              .select('template_type')
+              .limit(100);
+            
+            const uniqueTypes = [...new Set(allTypesDebug?.map(t => t.template_type) || [])];
+            console.log('[CaptionContextDialog] 🔍 DEBUG - Tipos únicos encontrados na tabela:', uniqueTypes);
             
             console.log('[CaptionContextDialog] 💡 Templates devem ser cadastrados pelo Super Admin em Admin → Templates de Texto e Roteiros');
           }
