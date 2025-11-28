@@ -95,12 +95,35 @@ export function CaptionContextDialog({
   useEffect(() => {
     if (!open || !clientId) return;
     
+    /**
+     * Carrega templates da tabela ai_text_templates
+     * 
+     * IMPORTANTE: Inicialmente não haverá templates cadastrados por agência.
+     * Apenas templates do sistema (globais, com agency_id = NULL) são buscados.
+     * 
+     * NOTA: Existe um sistema de cache separado que armazena legendas criadas por agência
+     * para machine learning e reaproveitamento com conteúdo editado - isso é diferente
+     * dos templates de estrutura cadastrados pelo Super Admin.
+     * 
+     * Lógica de busca:
+     * - Todos os usuários: Busca apenas templates globais do sistema (agency_id = NULL)
+     * - Templates são cadastrados pelo Super Admin e ficam disponíveis para todos
+     * 
+     * Tabela: ai_text_templates
+     * Campos utilizados:
+     * - id: UUID do template
+     * - template_name: Nome do template
+     * - template_content: Conteúdo do template
+     * - agency_id: NULL (sempre NULL para templates do sistema)
+     * - template_type: 'script' | 'caption' | 'carousel'
+     * - is_active: true para templates ativos
+     */
     const loadTemplatesOnTypeChange = async () => {
       setLoadingTemplates(true);
       try {
-        console.log('[CaptionContextDialog] 🔍 Carregando templates para tipo:', selectedType);
+        console.log('[CaptionContextDialog] 🔍 Carregando templates do sistema para tipo:', selectedType);
         
-        // Verificar role do usuário para filtrar templates
+        // Verificar autenticação
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           console.log('[CaptionContextDialog] ⚠️ Usuário não autenticado');
@@ -108,112 +131,38 @@ export function CaptionContextDialog({
           return;
         }
 
-        const { data: roleData, error: roleError } = await supabase
-          .rpc('get_user_role', { _user_id: user.id });
+        // BUSCAR APENAS TEMPLATES GLOBAIS DO SISTEMA (agency_id = NULL)
+        // Templates são cadastrados pelo Super Admin e ficam disponíveis para todos
+        console.log('[CaptionContextDialog] 🔍 Buscando templates globais do sistema na tabela ai_text_templates');
+        const { data, error } = await supabase
+          .from('ai_text_templates') // TABELA: ai_text_templates
+          .select('id, template_name, template_content, agency_id, template_type')
+          .is('agency_id', null) // Apenas templates globais do sistema
+          .eq('template_type', selectedType)
+          .eq('is_active', true)
+          .order('template_name');
         
-        if (roleError) {
-          console.error('[CaptionContextDialog] ❌ Erro ao buscar role:', roleError);
-        }
-        
-        console.log('[CaptionContextDialog] 👤 Role do usuário:', roleData);
-        
-        // Buscar perfil do usuário primeiro
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('agency_id')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileError) {
-          console.error('[CaptionContextDialog] ❌ Erro ao buscar perfil:', profileError);
-        }
-        
-        console.log('[CaptionContextDialog] 🏢 Agency ID do usuário:', profile?.agency_id);
-        console.log('[CaptionContextDialog] 👑 Role do usuário:', roleData);
-        
-        // Construir query base - buscar templates da agência E globais separadamente
-        if (roleData === 'super_admin') {
-          // Super admin: busca todos os templates
-          console.log('[CaptionContextDialog] 🔍 Super admin: buscando todos os templates');
-          const { data, error } = await supabase
-            .from('ai_text_templates')
-            .select('id, template_name, template_content, agency_id, template_type')
-            .eq('template_type', selectedType)
-            .eq('is_active', true)
-            .order('template_name');
-          
-          if (error) {
-            console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', error);
-            setTemplates([]);
+        if (error) {
+          console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', error);
+          setTemplates([]);
+        } else {
+          console.log('[CaptionContextDialog] ✅ Templates do sistema encontrados:', data?.length || 0);
+          if (data && data.length > 0) {
+            console.log('[CaptionContextDialog] 📋 Templates:', data.map(t => ({ name: t.template_name, id: t.id })));
           } else {
-            console.log('[CaptionContextDialog] ✅ Templates encontrados (super admin):', data?.length || 0);
-            setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
+            console.log('[CaptionContextDialog] ⚠️ Nenhum template do sistema encontrado para o tipo:', selectedType);
+            console.log('[CaptionContextDialog] 💡 Templates devem ser cadastrados pelo Super Admin em Admin → Templates de Texto e Roteiros');
           }
-          setSelectedTemplate("");
-          setLoadingTemplates(false);
-          return;
+          setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
         }
-        
-        // Para agency_admin ou outros: buscar templates da agência + globais
-        const promises = [];
-        
-        if (profile?.agency_id) {
-          console.log('[CaptionContextDialog] 🔍 Buscando templates da agência', profile.agency_id);
-          promises.push(
-            supabase
-              .from('ai_text_templates')
-              .select('id, template_name, template_content, agency_id, template_type')
-              .eq('agency_id', profile.agency_id)
-              .eq('template_type', selectedType)
-              .eq('is_active', true)
-              .order('template_name')
-          );
-        }
-        
-        // Sempre buscar templates globais também
-        console.log('[CaptionContextDialog] 🔍 Buscando templates globais');
-        promises.push(
-          supabase
-            .from('ai_text_templates')
-            .select('id, template_name, template_content, agency_id, template_type')
-            .is('agency_id', null)
-            .eq('template_type', selectedType)
-            .eq('is_active', true)
-            .order('template_name')
-        );
-        
-        const results = await Promise.all(promises);
-        
-        // Combinar resultados
-        const allTemplates: Array<{ id: string; template_name: string; template_content: string }> = [];
-        const seenIds = new Set<string>();
-        
-        results.forEach((result) => {
-          if (result.error) {
-            console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', result.error);
-          } else if (result.data) {
-            result.data.forEach((template: any) => {
-              if (!seenIds.has(template.id)) {
-                seenIds.add(template.id);
-                allTemplates.push({
-                  id: template.id,
-                  template_name: template.template_name,
-                  template_content: template.template_content,
-                });
-              }
-            });
-          }
-        });
-        
-        console.log('[CaptionContextDialog] ✅ Total de templates encontrados:', allTemplates.length);
-        console.log('[CaptionContextDialog] 📋 Templates:', allTemplates.map(t => t.template_name));
-        setTemplates(allTemplates);
         setSelectedTemplate("");
         
       } catch (error) {
         console.error('[CaptionContextDialog] ❌ Erro geral ao carregar templates:', error);
         setTemplates([]);
+      } finally {
         setLoadingTemplates(false);
+        console.log('[CaptionContextDialog] ✅ Carregamento de templates finalizado');
       }
     };
 
@@ -458,22 +407,31 @@ export function CaptionContextDialog({
           </div>
 
           {/* Template de Roteiro, Legenda ou Carrossel */}
-          {templates.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="template">
-                {selectedType === 'script' 
-                  ? 'Template de Roteiro' 
-                  : selectedType === 'caption'
-                  ? 'Template de Legenda'
-                  : 'Template de Carrossel'} (opcional)
-              </Label>
-              {loadingTemplates ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando templates...
-                </div>
-              ) : (
-                <div className="space-y-2">
+          <div className="space-y-2">
+            <Label htmlFor="template">
+              {selectedType === 'script' 
+                ? 'Template de Roteiro' 
+                : selectedType === 'caption'
+                ? 'Template de Legenda'
+                : 'Template de Carrossel'} (opcional)
+            </Label>
+            {loadingTemplates ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando templates...
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="text-sm text-muted-foreground p-3 border rounded-lg bg-muted/30">
+                Nenhum template de {
+                  selectedType === 'script' 
+                    ? 'roteiro' 
+                    : selectedType === 'caption'
+                    ? 'legenda'
+                    : 'carrossel'
+                } cadastrado. Os templates são cadastrados pelo <strong>Super Admin</strong> e ficam disponíveis para uso.
+              </div>
+            ) : (
+              <div className="space-y-2">
                 <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
                   <SelectTrigger id="template">
                     <SelectValue placeholder={
@@ -484,62 +442,48 @@ export function CaptionContextDialog({
                         : 'Selecione um template de carrossel ou crie novo'
                     } />
                   </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Sem template (criar novo)</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="">Sem template (criar novo)</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.template_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Lista de templates com hover para preview */}
+                {templates.length > 0 && (
+                  <div className="space-y-1 mt-2">
+                    <p className="text-xs text-muted-foreground">Passe o mouse nos templates abaixo para visualizar:</p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto border rounded p-2">
                       {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.template_name}
-                        </SelectItem>
+                        <HoverCard key={template.id}>
+                          <HoverCardTrigger asChild>
+                            <div 
+                              className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => setSelectedTemplate(template.id)}
+                            >
+                              <span className="text-sm">{template.template_name}</span>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-96 max-h-96 overflow-y-auto">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm">{template.template_name}</h4>
+                              <div className="text-sm text-muted-foreground whitespace-pre-wrap border-t pt-2">
+                                {template.template_content}
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {/* Lista de templates com hover para preview */}
-                  {templates.length > 0 && (
-                    <div className="space-y-1 mt-2">
-                      <p className="text-xs text-muted-foreground">Passe o mouse nos templates abaixo para visualizar:</p>
-                      <div className="space-y-1 max-h-40 overflow-y-auto border rounded p-2">
-                        {templates.map((template) => (
-                          <HoverCard key={template.id}>
-                            <HoverCardTrigger asChild>
-                              <div 
-                                className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted/50 transition-colors"
-                                onClick={() => setSelectedTemplate(template.id)}
-                              >
-                                <span className="text-sm">{template.template_name}</span>
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="w-96 max-h-96 overflow-y-auto">
-                              <div className="space-y-2">
-                                <h4 className="font-semibold text-sm">{template.template_name}</h4>
-                                <div className="text-sm text-muted-foreground whitespace-pre-wrap border-t pt-2">
-                                  {template.template_content}
-                                </div>
-                              </div>
-                            </HoverCardContent>
-                          </HoverCard>
-                        ))}
-                      </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {templates.length === 0 && !loadingTemplates && (
-            <div className="text-sm text-muted-foreground p-3 border rounded-lg bg-muted/30">
-              Nenhum template de {
-                selectedType === 'script' 
-                  ? 'roteiro' 
-                  : selectedType === 'caption'
-                  ? 'legenda'
-                  : 'carrossel'
-              } cadastrado. 
-              Você pode criar templates em <strong>Admin → Templates de Texto e Roteiros</strong>.
-            </div>
-          )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Ação Esperada */}
           <div className="space-y-2">
