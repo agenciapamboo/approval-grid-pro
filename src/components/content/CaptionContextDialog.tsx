@@ -98,56 +98,121 @@ export function CaptionContextDialog({
     const loadTemplatesOnTypeChange = async () => {
       setLoadingTemplates(true);
       try {
+        console.log('[CaptionContextDialog] 🔍 Carregando templates para tipo:', selectedType);
+        
         // Verificar role do usuário para filtrar templates
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
+          console.log('[CaptionContextDialog] ⚠️ Usuário não autenticado');
           setLoadingTemplates(false);
           return;
         }
 
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .rpc('get_user_role', { _user_id: user.id });
         
-        let query = supabase
-          .from('ai_text_templates')
-          .select('id, template_name, template_content')
-          .eq('template_type', selectedType)
-          .eq('is_active', true);
+        if (roleError) {
+          console.error('[CaptionContextDialog] ❌ Erro ao buscar role:', roleError);
+        }
         
-        // Se não for super_admin, filtrar por agency_id
-        // Super admin vê todos os templates (da agência + globais)
-        if (roleData !== 'super_admin') {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('agency_id')
-            .eq('id', user.id)
-            .single();
+        console.log('[CaptionContextDialog] 👤 Role do usuário:', roleData);
+        
+        // Buscar perfil do usuário primeiro
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('agency_id')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileError) {
+          console.error('[CaptionContextDialog] ❌ Erro ao buscar perfil:', profileError);
+        }
+        
+        console.log('[CaptionContextDialog] 🏢 Agency ID do usuário:', profile?.agency_id);
+        console.log('[CaptionContextDialog] 👑 Role do usuário:', roleData);
+        
+        // Construir query base - buscar templates da agência E globais separadamente
+        if (roleData === 'super_admin') {
+          // Super admin: busca todos os templates
+          console.log('[CaptionContextDialog] 🔍 Super admin: buscando todos os templates');
+          const { data, error } = await supabase
+            .from('ai_text_templates')
+            .select('id, template_name, template_content, agency_id, template_type')
+            .eq('template_type', selectedType)
+            .eq('is_active', true)
+            .order('template_name');
           
-          if (profile?.agency_id) {
-            // Agency admin vê templates da própria agência + globais
-            query = query.or(`agency_id.eq.${profile.agency_id},agency_id.is.null`);
+          if (error) {
+            console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', error);
+            setTemplates([]);
           } else {
-            // Se não tem agency_id, só busca globais
-            query = query.is('agency_id', null);
+            console.log('[CaptionContextDialog] ✅ Templates encontrados (super admin):', data?.length || 0);
+            setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
           }
-        }
-        // Se for super_admin, não filtra por agency_id (busca todos)
-        
-        const { data, error } = await query.order('template_name');
-        
-        if (error) {
-          console.error('Error loading templates:', error);
-          setTemplates([]);
-        } else {
-          setTemplates((data || []) as Array<{ id: string; template_name: string; template_content: string }>);
+          setSelectedTemplate("");
+          setLoadingTemplates(false);
+          return;
         }
         
-        // Limpar seleção de template ao mudar o tipo
+        // Para agency_admin ou outros: buscar templates da agência + globais
+        const promises = [];
+        
+        if (profile?.agency_id) {
+          console.log('[CaptionContextDialog] 🔍 Buscando templates da agência', profile.agency_id);
+          promises.push(
+            supabase
+              .from('ai_text_templates')
+              .select('id, template_name, template_content, agency_id, template_type')
+              .eq('agency_id', profile.agency_id)
+              .eq('template_type', selectedType)
+              .eq('is_active', true)
+              .order('template_name')
+          );
+        }
+        
+        // Sempre buscar templates globais também
+        console.log('[CaptionContextDialog] 🔍 Buscando templates globais');
+        promises.push(
+          supabase
+            .from('ai_text_templates')
+            .select('id, template_name, template_content, agency_id, template_type')
+            .is('agency_id', null)
+            .eq('template_type', selectedType)
+            .eq('is_active', true)
+            .order('template_name')
+        );
+        
+        const results = await Promise.all(promises);
+        
+        // Combinar resultados
+        const allTemplates: Array<{ id: string; template_name: string; template_content: string }> = [];
+        const seenIds = new Set<string>();
+        
+        results.forEach((result) => {
+          if (result.error) {
+            console.error('[CaptionContextDialog] ❌ Erro ao buscar templates:', result.error);
+          } else if (result.data) {
+            result.data.forEach((template: any) => {
+              if (!seenIds.has(template.id)) {
+                seenIds.add(template.id);
+                allTemplates.push({
+                  id: template.id,
+                  template_name: template.template_name,
+                  template_content: template.template_content,
+                });
+              }
+            });
+          }
+        });
+        
+        console.log('[CaptionContextDialog] ✅ Total de templates encontrados:', allTemplates.length);
+        console.log('[CaptionContextDialog] 📋 Templates:', allTemplates.map(t => t.template_name));
+        setTemplates(allTemplates);
         setSelectedTemplate("");
+        
       } catch (error) {
-        console.error('Error loading templates:', error);
+        console.error('[CaptionContextDialog] ❌ Erro geral ao carregar templates:', error);
         setTemplates([]);
-      } finally {
         setLoadingTemplates(false);
       }
     };
