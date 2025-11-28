@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Sparkles, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ export interface CaptionContext {
   templateId?: string; // ID do template de roteiro, legenda ou carrossel selecionado
   templateType?: 'script' | 'caption' | 'carousel'; // Tipo de template selecionado
   slideCount?: number; // Número de slides para carrossel
+  videoDurationSeconds?: number; // Duração do vídeo em segundos para roteiro
 }
 
 export function CaptionContextDialog({ 
@@ -56,6 +58,7 @@ export function CaptionContextDialog({
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedType, setSelectedType] = useState<'script' | 'caption' | 'carousel'>('script'); // Tipo selecionado: Roteiro, Legenda ou Carrossel
   const [carouselSlideCount, setCarouselSlideCount] = useState<number>(5); // Número de slides para carrossel
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState<number>(60); // Duração do vídeo em segundos para roteiro
 
   useEffect(() => {
     if (!open || !clientId) return;
@@ -95,13 +98,7 @@ export function CaptionContextDialog({
     const loadTemplatesOnTypeChange = async () => {
       setLoadingTemplates(true);
       try {
-        // Para carrossel, não carregamos templates (não existe template_type 'carousel' ainda)
-        // O usuário pode usar templates de caption se quiser
-        if (selectedType === 'carousel') {
-          setTemplates([]);
-          setLoadingTemplates(false);
-          return;
-        }
+        // Carregar templates para todos os tipos (incluindo carrossel)
 
         // Buscar agency_id do cliente
         const { data: clientData } = await supabase
@@ -175,12 +172,13 @@ export function CaptionContextDialog({
       templateId: selectedTemplate || undefined,
       templateType: selectedTemplate ? selectedType : undefined,
       slideCount: selectedType === 'carousel' ? carouselSlideCount : undefined,
+      videoDurationSeconds: selectedType === 'script' ? videoDurationSeconds : undefined,
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="bg-green-500 rounded p-1.5">
@@ -190,7 +188,8 @@ export function CaptionContextDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <ScrollArea className="flex-1 pr-4 max-h-[calc(90vh-200px)]">
+          <div className="space-y-4 pr-4">
           {/* Título */}
           <div className="space-y-2">
             <Label htmlFor="title">Título da Peça *</Label>
@@ -202,50 +201,53 @@ export function CaptionContextDialog({
             />
           </div>
 
-          {/* Objetivo */}
-          <div className="space-y-2">
-            <Label htmlFor="objective">Objetivo da Peça</Label>
-            <Select value={objective} onValueChange={setObjective}>
-              <SelectTrigger id="objective">
-                <SelectValue placeholder="Selecione o objetivo principal" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="engagement">Engajamento (curtidas, comentários)</SelectItem>
-                <SelectItem value="awareness">Awareness (reconhecimento de marca)</SelectItem>
-                <SelectItem value="traffic">Tráfego (cliques para site/loja)</SelectItem>
-                <SelectItem value="conversion">Conversão (vendas diretas)</SelectItem>
-                <SelectItem value="education">Educação (informar, ensinar)</SelectItem>
-                <SelectItem value="entertainment">Entretenimento (diversão)</SelectItem>
-                <SelectItem value="community">Comunidade (fortalecer relacionamento)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Tom de Voz */}
-          <div className="space-y-2">
-            <Label htmlFor="tone">Tom de Voz</Label>
-            {loadingProfile ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Carregando tom da marca...
-              </div>
-            ) : (
-              <Select value={toneOfVoice} onValueChange={setToneOfVoice}>
-                <SelectTrigger id="tone">
-                  <SelectValue placeholder="Selecione o tom de voz" />
+          {/* Objetivo e Tom de Voz na mesma linha */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Objetivo */}
+            <div className="space-y-2">
+              <Label htmlFor="objective">Objetivo da Peça</Label>
+              <Select value={objective} onValueChange={setObjective}>
+                <SelectTrigger id="objective">
+                  <SelectValue placeholder="Selecione o objetivo principal" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="friendly">Amigável</SelectItem>
-                  <SelectItem value="professional">Profissional/Séria</SelectItem>
-                  <SelectItem value="institutional">Institucional</SelectItem>
-                  {brandTone && (
-                    <SelectItem value="brand">
-                      Da Marca ({brandTone})
-                    </SelectItem>
-                  )}
+                  <SelectItem value="engagement">Engajamento (curtidas, comentários)</SelectItem>
+                  <SelectItem value="awareness">Awareness (reconhecimento de marca)</SelectItem>
+                  <SelectItem value="traffic">Tráfego (cliques para site/loja)</SelectItem>
+                  <SelectItem value="conversion">Conversão (vendas diretas)</SelectItem>
+                  <SelectItem value="education">Educação (informar, ensinar)</SelectItem>
+                  <SelectItem value="entertainment">Entretenimento (diversão)</SelectItem>
+                  <SelectItem value="community">Comunidade (fortalecer relacionamento)</SelectItem>
                 </SelectContent>
               </Select>
-            )}
+            </div>
+
+            {/* Tom de Voz */}
+            <div className="space-y-2">
+              <Label htmlFor="tone">Tom de Voz</Label>
+              {loadingProfile ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando tom da marca...
+                </div>
+              ) : (
+                <Select value={toneOfVoice} onValueChange={setToneOfVoice}>
+                  <SelectTrigger id="tone">
+                    <SelectValue placeholder="Selecione o tom de voz" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="friendly">Amigável</SelectItem>
+                    <SelectItem value="professional">Profissional/Séria</SelectItem>
+                    <SelectItem value="institutional">Institucional</SelectItem>
+                    {brandTone && (
+                      <SelectItem value="brand">
+                        Da Marca ({brandTone})
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Pilar de Conteúdo */}
@@ -363,6 +365,32 @@ export function CaptionContextDialog({
                 </p>
               </div>
             )}
+
+            {/* Configuração de duração do vídeo para roteiro */}
+            {selectedType === 'script' && (
+              <div className="mt-4 space-y-2 p-3 bg-muted/50 rounded-lg">
+                <Label htmlFor="videoDuration" className="text-sm font-medium">
+                  Duração do vídeo (segundos)
+                </Label>
+                <Input
+                  id="videoDuration"
+                  type="number"
+                  min={15}
+                  max={180}
+                  value={videoDurationSeconds}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 15 && value <= 180) {
+                      setVideoDurationSeconds(value);
+                    }
+                  }}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Duração do vídeo em segundos (15-180s)
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Template de Roteiro, Legenda ou Carrossel */}
@@ -452,12 +480,11 @@ export function CaptionContextDialog({
           {/* Ação Esperada */}
           <div className="space-y-2">
             <Label htmlFor="action">Ação Esperada do Público</Label>
-            <Textarea
+            <Input
               id="action"
               value={expectedAction}
               onChange={(e) => setExpectedAction(e.target.value)}
               placeholder="Ex: Curtir, Comentar com opinião, Clicar no link, Marcar amigos, Salvar para depois, Compartilhar, Comprar no site"
-              rows={3}
             />
           </div>
 
@@ -479,33 +506,35 @@ export function CaptionContextDialog({
             </p>
           </div>
 
-          {/* Botões */}
-          <div className="flex gap-2 justify-end pt-4">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !title.trim()}
-              className="bg-green-500 hover:bg-green-600"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Gerar Sugestões
-                </>
-              )}
-            </Button>
           </div>
+        </ScrollArea>
+
+        {/* Botões fixos na parte inferior */}
+        <div className="flex gap-2 justify-end pt-4 border-t mt-4">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || !title.trim()}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Gerar Sugestões
+              </>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
