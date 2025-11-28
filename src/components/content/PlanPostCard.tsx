@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Edit, Trash2, Sparkles, Calendar, Hash, Image } from 'lucide-react';
+import { Edit, Trash2, Sparkles, Calendar, Hash, Image, Images } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+interface CarouselSlide {
+  order: number;
+  text: string;
+}
 
 interface PlanPost {
   id?: string;
@@ -18,6 +23,8 @@ interface PlanPost {
   caption: string;
   hashtags: string[];
   media_suggestion: string;
+  slides?: CarouselSlide[];
+  slideCount?: number;
 }
 
 interface PlanPostCardProps {
@@ -41,6 +48,11 @@ export function PlanPostCard({
   const [variationPrompt, setVariationPrompt] = useState('');
   const [variations, setVariations] = useState<string[]>([]);
   const [loadingVariations, setLoadingVariations] = useState(false);
+
+  // Atualizar editedPost quando post mudar
+  useEffect(() => {
+    setEditedPost(post);
+  }, [post]);
 
   const typeLabels = {
     feed: 'Feed',
@@ -209,6 +221,41 @@ export function PlanPostCard({
               Sugestão de Mídia
             </label>
             <p className="text-xs text-muted-foreground">{post.media_suggestion}</p>
+          </div>
+        )}
+
+        {/* Slides do Carrossel */}
+        {post.type === 'carousel' && post.slides && post.slides.length > 0 && (
+          <div className="space-y-2 border-t pt-3 mt-3">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Images className="h-3 w-3" />
+              Slides do Carrossel ({post.slides.length} slides)
+            </label>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {post.slides.map((slide, index) => (
+                <div key={slide.order} className="bg-muted/50 rounded p-2 border">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      Slide {slide.order + 1}
+                    </span>
+                  </div>
+                  {isEditing ? (
+                    <Textarea
+                      value={slide.text}
+                      onChange={(e) => {
+                        const updatedSlides = [...(post.slides || [])];
+                        updatedSlides[index] = { ...slide, text: e.target.value };
+                        setEditedPost({ ...editedPost, slides: updatedSlides });
+                      }}
+                      rows={2}
+                      className="text-xs"
+                    />
+                  ) : (
+                    <p className="text-xs whitespace-pre-wrap">{slide.text}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

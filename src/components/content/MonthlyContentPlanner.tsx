@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useMonthlyContentPlan } from '@/hooks/useMonthlyContentPlan';
 import { useUserData } from '@/hooks/useUserData';
 import { PlanPostCard } from './PlanPostCard';
-import { Loader2, Calendar, Sparkles } from 'lucide-react';
+import { Loader2, Calendar, Sparkles, Images } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MonthlyContentPlannerProps {
@@ -25,12 +27,13 @@ export function MonthlyContentPlanner({
   const { loading, posts, generatePlan, updatePost, deletePost, generateVariation, insertPlanIntoContents } = useMonthlyContentPlan();
   const [period, setPeriod] = useState<'week' | 'fortnight' | 'month'>('month');
   const [generationStep, setGenerationStep] = useState<'select' | 'generated'>('select');
+  const [carouselSlideCount, setCarouselSlideCount] = useState<number>(5);
 
   const handleGenerate = async () => {
     const today = new Date();
     const startDate = today.toISOString().split('T')[0];
     
-    await generatePlan(clientId, period, startDate);
+    await generatePlan(clientId, period, startDate, carouselSlideCount);
     setGenerationStep('generated');
   };
 
@@ -82,6 +85,35 @@ export function MonthlyContentPlanner({
                   <SelectItem value="month">Próximo Mês</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2 border rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Images className="h-4 w-4 text-muted-foreground" />
+                <label className="text-sm font-medium">Configuração de Carrosséis</label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slideCount" className="text-xs text-muted-foreground">
+                  Número de slides para carrosséis (1-20)
+                </Label>
+                <Input
+                  id="slideCount"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={carouselSlideCount}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (!isNaN(value) && value >= 1 && value <= 20) {
+                      setCarouselSlideCount(value);
+                    }
+                  }}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Quando um carrossel for gerado, será criado com {carouselSlideCount} slides, cada um com seu texto individual
+                </p>
+              </div>
             </div>
 
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
