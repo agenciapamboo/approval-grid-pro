@@ -44,6 +44,7 @@ interface Content {
   supplier_link?: string | null;
   published_at?: string | null;
   auto_publish?: boolean;
+  client_id?: string;
 }
 
 interface Comment {
@@ -783,7 +784,13 @@ export function ContentDetailsDialog({
               {/* Seção de Legenda */}
               <div>
                 <h3 className="text-sm font-semibold mb-3">Legenda</h3>
-                <ContentCaption contentId={contentId} version={content?.version || 1} />
+                <ContentCaption 
+                  contentId={contentId} 
+                  version={content?.version || 1}
+                  clientId={content?.client_id}
+                  contentType={(content?.type === 'reels' ? 'reels' : content?.type === 'story' ? 'stories' : 'post') as 'post' | 'reels' | 'stories'}
+                  contentTitle={content?.title}
+                />
               </div>
 
               {/* Seção de Histórico de Ajustes */}

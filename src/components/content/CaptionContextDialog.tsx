@@ -27,6 +27,7 @@ export interface CaptionContext {
   toneOfVoice: string;
   expectedAction: string;
   contentPillar: string;
+  customPrompt?: string; // Prompt personalizado opcional
   templateId?: string; // ID do template de roteiro, legenda ou carrossel selecionado
   templateType?: 'script' | 'caption' | 'carousel'; // Tipo de template selecionado
   slideCount?: number; // Número de slides para carrossel
@@ -46,6 +47,7 @@ export function CaptionContextDialog({
   const [toneOfVoice, setToneOfVoice] = useState("");
   const [expectedAction, setExpectedAction] = useState("");
   const [contentPillar, setContentPillar] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [brandTone, setBrandTone] = useState<string | null>(null);
   const [contentPillars, setContentPillars] = useState<string[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -169,6 +171,7 @@ export function CaptionContextDialog({
       toneOfVoice,
       expectedAction,
       contentPillar,
+      customPrompt: customPrompt.trim() || undefined,
       templateId: selectedTemplate || undefined,
       templateType: selectedTemplate ? selectedType : undefined,
       slideCount: selectedType === 'carousel' ? carouselSlideCount : undefined,
@@ -456,6 +459,24 @@ export function CaptionContextDialog({
               placeholder="Ex: Curtir, Comentar com opinião, Clicar no link, Marcar amigos, Salvar para depois, Compartilhar, Comprar no site"
               rows={3}
             />
+          </div>
+
+          {/* Prompt Personalizado (Opcional) */}
+          <div className="space-y-2">
+            <Label htmlFor="customPrompt" className="text-sm font-medium">
+              Prompt Personalizado <span className="text-muted-foreground font-normal">(Opcional)</span>
+            </Label>
+            <Textarea
+              id="customPrompt"
+              placeholder="Adicione instruções específicas para a IA. Ex: Use emojis, seja mais informal, foque em benefícios, mencione promoção..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              rows={3}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Este campo permite personalizar a geração com instruções adicionais
+            </p>
           </div>
 
           {/* Botões */}

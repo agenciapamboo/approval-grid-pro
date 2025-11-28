@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { callApi } from "@/lib/apiClient";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EnrichEditorialDialogProps {
   open: boolean;
@@ -28,11 +28,13 @@ export function EnrichEditorialDialog({
   onSuccess,
 }: EnrichEditorialDialogProps) {
   const [monthContext, setMonthContext] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setMonthContext("");
+      setCustomPrompt("");
       setLoading(false);
     }
   }, [open]);
@@ -43,22 +45,25 @@ export function EnrichEditorialDialog({
       return;
     }
 
-    const payload = {
-      clientId,
-      monthContext: monthContext.trim(),
-    };
-
     setLoading(true);
-    console.log("[EnrichEditorialDialog] payload", payload);
     try {
-      const data = await callApi<{ success?: boolean; tokens?: number }>(
-        "/api/ia/enrichEditorialBase",
-        {
-          method: "POST",
-          payload,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData.session?.access_token;
+
+      if (!jwt) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+
+      const { data, error } = await supabase.functions.invoke('enrich-editorial-line', {
+        body: { 
+          clientId, 
+          monthContext: monthContext.trim(),
+          customPrompt: customPrompt.trim() || undefined,
+          jwt 
         }
-      );
-      console.log("[EnrichEditorialDialog] response", data);
+      });
+
+      if (error) throw error;
 
       if (!data?.success) {
         throw new Error("Não foi possível enriquecer a linha editorial.");
@@ -106,6 +111,25 @@ export function EnrichEditorialDialog({
               rows={6}
               disabled={loading}
             />
+          </div>
+
+          {/* Prompt Personalizado (Opcional) */}
+          <div className="space-y-2">
+            <Label htmlFor="customPrompt" className="text-sm font-medium">
+              Prompt Personalizado <span className="text-muted-foreground font-normal">(Opcional)</span>
+            </Label>
+            <Textarea
+              id="customPrompt"
+              placeholder="Adicione instruções específicas para enriquecer a linha editorial. Ex: Foque em storytelling, use linguagem mais técnica, inclua mais CTA..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              rows={3}
+              disabled={loading}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Este campo permite personalizar o enriquecimento com instruções adicionais
+            </p>
           </div>
         </div>
 
