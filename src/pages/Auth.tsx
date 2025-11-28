@@ -591,6 +591,61 @@ const Auth = () => {
           is_active: true
         }).eq('id', authData.user.id);
         if (profileError) throw profileError;
+
+        // Buscar agency_id criado pelo handle_new_user trigger
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('agency_id')
+          .eq('id', authData.user.id)
+          .single();
+
+        // Buscar nome da agência
+        let agencyName_final = agencyName;
+        if (profileData?.agency_id) {
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select('name')
+            .eq('id', profileData.agency_id)
+            .single();
+          agencyName_final = agencyData?.name || agencyName;
+        }
+
+        // Criar notificação de boas-vindas (apenas para planos free onde temos a senha)
+        if (profileData?.agency_id) {
+          const { error: notificationError } = await supabase
+            .from("notifications")
+            .insert({
+              event: "user.account_created",
+              content_id: null,
+              client_id: null,
+              agency_id: profileData.agency_id,
+              user_id: authData.user.id,
+              channel: "webhook",
+              status: "pending",
+              payload: {
+                user: {
+                  id: authData.user.id,
+                  email: email,
+                  name: name,
+                  role: finalAccountType === 'agency' ? 'agency_admin' : 'creator',
+                  password: password, // Senha para arquivamento
+                  account_type: finalAccountType,
+                },
+                client: null,
+                agency: {
+                  id: profileData.agency_id,
+                  name: agencyName_final,
+                },
+                login_url: `${window.location.origin}/auth`,
+                created_at: new Date().toISOString(),
+              },
+            });
+
+          if (notificationError) {
+            console.error('Erro ao criar notificação de boas-vindas:', notificationError);
+          }
+        }
+
         toast({
           title: "Conta criada!",
           description: "Você já pode fazer login."

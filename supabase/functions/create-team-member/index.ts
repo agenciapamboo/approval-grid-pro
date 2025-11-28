@@ -147,6 +147,65 @@ serve(async (req) => {
       }
     }
 
+    // Buscar informações da agência e do criador
+    const { data: agencyData } = await supabaseClient
+      .from("agencies")
+      .select("name")
+      .eq("id", profile.agency_id)
+      .single();
+
+    const { data: creatorProfile } = await supabaseClient
+      .from("profiles")
+      .select("name")
+      .eq("id", requestingUser.id)
+      .single();
+
+    // Gerar senha temporária para o novo membro (será necessário resetar senha)
+    // Como não temos acesso à senha gerada pelo Supabase, vamos gerar uma temporária
+    const tempPassword = newUser.user.id.substring(0, 8) + Math.random().toString(36).substring(2, 12);
+    
+    // Criar notificação de boas-vindas
+    const siteUrl = Deno.env.get("SITE_URL") || "https://app.exemplo.com";
+    const { error: notificationError } = await supabaseClient
+      .from("notifications")
+      .insert({
+        event: "user.team_member_created",
+        content_id: null,
+        client_id: null,
+        agency_id: profile.agency_id,
+        user_id: newUser.user.id,
+        channel: "webhook",
+        status: "pending",
+        payload: {
+          user: {
+            id: newUser.user.id,
+            email: email,
+            name: name,
+            role: "team_member",
+            password: tempPassword, // Senha temporária para arquivamento
+            functions: memberFunctions,
+          },
+          agency: {
+            id: profile.agency_id,
+            name: agencyData?.name || "Agência",
+          },
+          created_by: {
+            id: requestingUser.id,
+            name: creatorProfile?.name || requestingUser.email || "Admin",
+            email: requestingUser.email || "",
+          },
+          login_url: `${siteUrl}/auth`,
+          created_at: new Date().toISOString(),
+        },
+      });
+
+    if (notificationError) {
+      logStep("Warning: Error creating notification", { error: notificationError.message });
+      // Não falhar se a notificação não for criada
+    } else {
+      logStep("Welcome notification created", { userId: newUser.user.id });
+    }
+
     logStep("Team member created successfully", { 
       userId: newUser.user.id,
       email,
