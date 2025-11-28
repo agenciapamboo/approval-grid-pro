@@ -231,10 +231,12 @@ export function WebhookTester() {
         }
 
         // Processar notificação imediatamente via edge function que dispara o webhook
-        const { error: processError } = await supabase.functions.invoke('notify-event');
+        const { error: processError } = await supabase.functions.invoke('notify-event', {
+          body: {}
+        });
 
         // Aguardar um pouco para o processamento
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Verificar status da notificação
         const { data: notificationStatus, error: statusError } = await supabase

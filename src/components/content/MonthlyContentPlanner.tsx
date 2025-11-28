@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useMonthlyContentPlan } from '@/hooks/useMonthlyContentPlan';
 import { useUserData } from '@/hooks/useUserData';
 import { PlanPostCard } from './PlanPostCard';
@@ -24,6 +26,7 @@ export function MonthlyContentPlanner({
   const { profile } = useUserData();
   const { loading, posts, generatePlan, updatePost, deletePost, generateVariation, insertPlanIntoContents } = useMonthlyContentPlan();
   const [period, setPeriod] = useState<'week' | 'fortnight' | 'month'>('month');
+  const [customPrompt, setCustomPrompt] = useState('');
   const [generationStep, setGenerationStep] = useState<'select' | 'generated'>('select');
 
   const handleGenerate = async () => {
@@ -93,6 +96,24 @@ export function MonthlyContentPlanner({
                 <li>• Use o botão ✨ para gerar variações de legenda</li>
                 <li>• Ao finalizar, os posts serão inseridos no planejamento</li>
               </ul>
+            </div>
+
+            {/* Prompt Personalizado (Opcional) */}
+            <div className="space-y-2">
+              <Label htmlFor="customPrompt" className="text-sm font-medium">
+                Prompt Personalizado <span className="text-muted-foreground font-normal">(Opcional)</span>
+              </Label>
+              <Textarea
+                id="customPrompt"
+                placeholder="Adicione instruções específicas para o planejamento. Ex: Foque em produtos novos, inclua mais vídeos, use tom mais profissional..."
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Este campo permite personalizar a geração com instruções adicionais
+              </p>
             </div>
 
             <Button
