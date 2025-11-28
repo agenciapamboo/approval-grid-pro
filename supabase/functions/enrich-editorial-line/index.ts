@@ -7,6 +7,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Função para decodificar JWT manualmente (fallback)
+function decodeJWT(token: string): { sub?: string; exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.error('❌ JWT inválido: não possui 3 partes');
+      return null;
+    }
+    
+    const payload = parts[1];
+    // Decodificar base64url
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const parsed = JSON.parse(decoded);
+    console.log('🔓 JWT decodificado:', { sub: parsed.sub, exp: parsed.exp });
+    return parsed;
+  } catch (e) {
+    console.error('❌ Erro ao decodificar JWT:', e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -21,8 +42,65 @@ serve(async (req) => {
       { global: { headers: { Authorization: `Bearer ${jwt}` } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
-    if (authError || !user) {
+    // Tentar validação padrão primeiro
+    let user = null;
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(jwt);
+
+    if (authData?.user) {
+      user = authData.user;
+      console.log('✅ User authenticated via auth.getUser():', user.id);
+    } else {
+      // FALLBACK: Validação manual de JWT
+      console.log('⚠️ auth.getUser() falhou, tentando validação manual de JWT...');
+      console.log('Erro original:', authError?.message);
+      
+      const payload = decodeJWT(jwt);
+      
+      if (payload?.sub) {
+        const userId = payload.sub;
+        console.log('✅ User ID extraído do JWT:', userId);
+        
+        // Verificar se o token está expirado
+        if (payload.exp && payload.exp < Date.now() / 1000) {
+          console.error('❌ Token JWT expirado');
+          return new Response(JSON.stringify({ error: 'Token expirado' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        // Buscar dados do usuário manualmente
+        const { data: userData, error: userError } = await supabaseClient
+          .from('profiles')
+          .select('id, name, email, role, agency_id')
+          .eq('id', userId)
+          .single();
+        
+        if (userError || !userData) {
+          console.error('❌ Erro ao buscar perfil do usuário:', userError?.message);
+          return new Response(JSON.stringify({ error: 'Usuário não encontrado' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        // Criar objeto de usuário compatível
+        user = {
+          id: userData.id,
+          email: userData.email || '',
+          user_metadata: { name: userData.name }
+        };
+        console.log('✅ Usuário autenticado via fallback JWT:', user.id);
+      } else {
+        console.error('❌ Não foi possível extrair user ID do token');
+        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    
+    if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -60,7 +138,22 @@ serve(async (req) => {
       });
     }
 
-    const openAIApiKey = aiConfig.openai_api_key_encrypted;
+    // Descriptografar API key usando a função RPC
+    const { data: decryptedKey, error: decryptError } = await supabaseClient.rpc('decrypt_api_key', {
+      encrypted_key: aiConfig.openai_api_key_encrypted
+    });
+
+    if (decryptError || !decryptedKey) {
+      console.error('❌ Erro ao descriptografar API key:', decryptError?.message);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to decrypt API key' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const openAIApiKey = decryptedKey;
 
     // Criar prompt para enriquecer linha editorial
     const systemPrompt = `Você é um especialista em estratégia de conteúdo digital. 
@@ -115,14 +208,23 @@ Retorne uma linha editorial enriquecida em formato de texto estruturado.
       console.error('Error updating enriched editorial:', updateError);
     }
 
+    // Buscar agency_id do cliente para o log
+    const { data: clientData } = await supabaseClient
+      .from('clients')
+      .select('agency_id')
+      .eq('id', clientId)
+      .single();
+
     // Log de uso
     await supabaseClient.from('ai_usage_logs').insert({
       user_id: user.id,
+      agency_id: clientData?.agency_id,
       client_id: clientId,
       feature: 'enrich_editorial_line',
       model_used: 'gpt-4o-mini',
       tokens_used: data.usage?.total_tokens || 0,
       cost_usd: (data.usage?.total_tokens || 0) * 0.00000015,
+      from_cache: false,
     });
 
     return new Response(JSON.stringify({ 

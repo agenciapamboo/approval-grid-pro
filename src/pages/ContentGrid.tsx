@@ -396,10 +396,8 @@ export default function ContentGrid() {
             </p>
           </div>
           {/* Botões visíveis apenas para agency_admin e team_member */}
-          {(role === 'agency_admin' || role === 'team_member') ? (
-            <>
-              {console.log('[ContentGrid] ✅ Renderizando botões para role:', role)}
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          {(role === 'agency_admin' || role === 'team_member') && (
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 onClick={() => setShowMonthlyPlanner(true)}
@@ -440,9 +438,6 @@ export default function ContentGrid() {
                 Assistente IA - Linha Editorial
               </Button>
               </div>
-            </>
-          ) : (
-            console.log('[ContentGrid] ❌ Botões NÃO renderizados - role:', role)
           )}
         </div>
 
@@ -696,10 +691,8 @@ export default function ContentGrid() {
         )}
 
         {/* Assistente de IA - Linha Editorial */}
-        {userClient?.agency_id ? (
-          <>
-            {console.log('[ContentGrid] 🎨 Renderizando EditorialLineAssistant - Agency ID:', userClient.agency_id, 'Client ID:', userClient.id, 'Open:', showEditorialAssistant)}
-            <EditorialLineAssistant
+        {userClient?.agency_id && (
+          <EditorialLineAssistant
               open={showEditorialAssistant}
               onOpenChange={setShowEditorialAssistant}
               agencyId={userClient.agency_id}
@@ -708,10 +701,7 @@ export default function ContentGrid() {
                 loadContents(userClient.id);
                 setShowEditorialAssistant(false);
               }}
-            />
-          </>
-        ) : (
-          console.log('[ContentGrid] ⚠️ EditorialLineAssistant NÃO renderizado - Agency ID:', userClient?.agency_id)
+          />
         )}
       </div>
     </AppLayout>

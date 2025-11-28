@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Edit, Trash2, Sparkles, Calendar, Hash, Image, Images } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { AIAssistantIcon } from './AIAssistantIcon';
 
 interface CarouselSlide {
   order: number;
@@ -188,12 +189,25 @@ export function PlanPostCard({
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Legenda</label>
           {isEditing ? (
-            <Textarea
-              value={editedPost.caption}
-              onChange={(e) => setEditedPost({ ...editedPost, caption: e.target.value })}
-              rows={4}
-              className="text-sm"
-            />
+            <div className="relative">
+              <Textarea
+                value={editedPost.caption}
+                onChange={(e) => setEditedPost({ ...editedPost, caption: e.target.value })}
+                rows={4}
+                className="text-sm pr-10"
+              />
+              <div className="absolute top-2 right-2">
+                <AIAssistantIcon
+                  clientId={clientId}
+                  contentType="plan_caption"
+                  context={{ 
+                    title: editedPost.title,
+                    description: editedPost.caption || ''
+                  }}
+                  onInsert={(text) => setEditedPost({ ...editedPost, caption: text })}
+                />
+              </div>
+            </div>
           ) : (
             <p className="text-sm whitespace-pre-wrap line-clamp-4">{post.caption}</p>
           )}

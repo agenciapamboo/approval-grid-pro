@@ -3,14 +3,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { AIAssistantIcon } from "./AIAssistantIcon";
 
 interface ContentCaptionProps {
   contentId: string;
   version: number;
   initialCaption?: string | null;
+  clientId?: string;
+  contentType?: 'post' | 'reels' | 'stories';
+  contentTitle?: string;
 }
 
-export function ContentCaption({ contentId, version, initialCaption }: ContentCaptionProps) {
+export function ContentCaption({ 
+  contentId, 
+  version, 
+  initialCaption,
+  clientId,
+  contentType = 'post',
+  contentTitle
+}: ContentCaptionProps) {
   const { toast } = useToast();
   const [caption, setCaption] = useState(initialCaption ?? "");
   const [editing, setEditing] = useState(false);
@@ -90,13 +101,25 @@ export function ContentCaption({ contentId, version, initialCaption }: ContentCa
     <div className="p-4 bg-muted/30">
       {editing ? (
         <div className="space-y-2">
-          <Textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Digite a legenda..."
-            rows={4}
-            className="resize-none"
-          />
+          <div className="relative">
+            <Textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Digite a legenda..."
+              rows={4}
+              className="resize-none pr-10"
+            />
+            {clientId && (
+              <div className="absolute top-2 right-2">
+                <AIAssistantIcon
+                  clientId={clientId}
+                  contentType={contentType}
+                  context={{ title: contentTitle }}
+                  onInsert={(text) => setCaption(text)}
+                />
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button size="sm" onClick={handleSave} disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
