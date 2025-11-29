@@ -4,7 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CarouselSlide {
   order: number;
-  text: string;
+  headline: string; // Frase de impacto curta para o slide
+  text: string; // Texto explicativo do slide
 }
 
 interface PlanPost {
@@ -129,6 +130,7 @@ export function useMonthlyContentPlan() {
                     console.error(`❌ Erro ao gerar texto do slide ${slideIndex + 1}:`, slideError);
                     slides.push({
                       order: slideIndex,
+                      headline: `Headline ${slideIndex + 1}`,
                       text: `Texto do slide ${slideIndex + 1} não gerado`,
                     });
                   } else {
@@ -136,6 +138,7 @@ export function useMonthlyContentPlan() {
                     const slideText = slideSuggestions[0] || `Texto do slide ${slideIndex + 1}`;
                     slides.push({
                       order: slideIndex,
+                      headline: `Headline do Slide ${slideIndex + 1}`,
                       text: slideText,
                     });
                   }
@@ -143,6 +146,7 @@ export function useMonthlyContentPlan() {
                   console.error(`❌ Erro ao gerar slide ${slideIndex + 1}:`, slideError);
                   slides.push({
                     order: slideIndex,
+                    headline: `Headline ${slideIndex + 1}`,
                     text: `Texto do slide ${slideIndex + 1} não gerado`,
                   });
                 }

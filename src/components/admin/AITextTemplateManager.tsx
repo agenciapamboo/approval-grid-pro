@@ -12,12 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, FileText, Video } from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, Video, Images } from "lucide-react";
 
 interface Template {
   id: string;
   template_name: string;
-  template_type: 'caption' | 'script';
+  template_type: 'caption' | 'script' | 'carousel';
   template_content: string;
   category: string | null;
   tone: string[] | null;
@@ -37,7 +37,7 @@ export default function AITextTemplateManager() {
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [formData, setFormData] = useState({
     template_name: "",
-    template_type: "caption" as 'caption' | 'script',
+    template_type: "caption" as 'caption' | 'script' | 'carousel',
     template_content: "",
     category: "",
     tone: [] as string[],
@@ -54,7 +54,6 @@ export default function AITextTemplateManager() {
     try {
       setLoading(true);
       
-      // Verificar role do usuário para filtrar templates
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
       
@@ -65,8 +64,6 @@ export default function AITextTemplateManager() {
         .from("ai_text_templates")
         .select("*");
       
-      // Se não for super_admin, filtrar por agency_id
-      // Super admin vê todos os templates (da agência + globais)
       if (roleData !== 'super_admin') {
         const { data: profile } = await supabase
           .from("profiles")
@@ -75,7 +72,6 @@ export default function AITextTemplateManager() {
           .single();
         
         if (profile?.agency_id) {
-          // Agency admin vê templates da própria agência + globais
           query = query.or(`agency_id.eq.${profile.agency_id},agency_id.is.null`);
         }
       }
@@ -107,7 +103,6 @@ export default function AITextTemplateManager() {
         return;
       }
 
-      // Validar URL se fornecida
       if (formData.structure_link && !formData.structure_link.match(/^https?:\/\/.+/)) {
         toast({
           title: "Link inválido",
@@ -120,7 +115,6 @@ export default function AITextTemplateManager() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Verificar se é super_admin
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -129,7 +123,6 @@ export default function AITextTemplateManager() {
 
       const isSuperAdmin = roles && roles.length > 0;
 
-      // Buscar agency_id apenas se não for super_admin
       let agencyId: string | null = null;
       if (!isSuperAdmin) {
         const { data: profile } = await supabase
@@ -175,7 +168,6 @@ export default function AITextTemplateManager() {
           created_by: user.id,
         };
 
-        // Incluir agency_id apenas se não for super_admin (super_admin pode ter NULL)
         if (agencyId) {
           insertData.agency_id = agencyId;
         }
@@ -267,6 +259,7 @@ export default function AITextTemplateManager() {
 
   const captionTemplates = templates.filter(t => t.template_type === 'caption');
   const scriptTemplates = templates.filter(t => t.template_type === 'script');
+  const carouselTemplates = templates.filter(t => t.template_type === 'carousel');
 
   return (
     <AppLayout>
@@ -294,6 +287,10 @@ export default function AITextTemplateManager() {
           <TabsTrigger value="scripts">
             <Video className="mr-2 h-4 w-4" />
             Roteiros ({scriptTemplates.length})
+          </TabsTrigger>
+          <TabsTrigger value="carousels">
+            <Images className="mr-2 h-4 w-4" />
+            Carrosséis ({carouselTemplates.length})
           </TabsTrigger>
         </TabsList>
 
@@ -333,6 +330,11 @@ export default function AITextTemplateManager() {
                               ))}
                             </div>
                           ) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={!template.agency_id ? "default" : "outline"} className="text-xs">
+                            {!template.agency_id ? "Global" : "Agência"}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={template.is_active ? "success" : "outline"}>
@@ -418,10 +420,77 @@ export default function AITextTemplateManager() {
               )}
             </CardContent>
           </Card>
-          </TabsContent>
+        </TabsContent>
+
+        <TabsContent value="carousels">
+          <Card>
+            <CardHeader>
+              <CardTitle>Templates de Carrosséis</CardTitle>
+              <CardDescription>Estruturas que a IA usará para gerar carrosséis (headline + texto por slide)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-center py-8 text-muted-foreground">Carregando...</p>
+              ) : carouselTemplates.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  Nenhum template de carrossel cadastrado. Os templates são cadastrados pelo Super Admin e ficam disponíveis para uso.
+                  <br />
+                  <span className="text-xs">Dica: ao selecionar carrossel listamos também templates do tipo roteiro.</span>
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Tom</TableHead>
+                      <TableHead>Escopo</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {carouselTemplates.map(template => (
+                      <TableRow key={template.id}>
+                        <TableCell className="font-medium">{template.template_name}</TableCell>
+                        <TableCell>{template.category || "-"}</TableCell>
+                        <TableCell>
+                          {template.tone && template.tone.length > 0 ? (
+                            <div className="flex gap-1 flex-wrap">
+                              {template.tone.map(t => (
+                                <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
+                              ))}
+                            </div>
+                          ) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={!template.agency_id ? "default" : "outline"} className="text-xs">
+                            {!template.agency_id ? "Global" : "Agência"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={template.is_active ? "success" : "outline"}>
+                            {template.is_active ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => openEditDialog(template)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(template.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         </Tabs>
 
-        {/* Dialog de criação/edição */}
         <Dialog open={showDialog} onOpenChange={(open) => {
         setShowDialog(open);
         if (!open) resetForm();
@@ -448,13 +517,14 @@ export default function AITextTemplateManager() {
             {!editingTemplate && (
               <div className="space-y-2">
                 <Label htmlFor="type">Tipo *</Label>
-                <Select value={formData.template_type} onValueChange={(value: 'caption' | 'script') => setFormData({ ...formData, template_type: value })}>
+                <Select value={formData.template_type} onValueChange={(value: 'caption' | 'script' | 'carousel') => setFormData({ ...formData, template_type: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="caption">Legenda</SelectItem>
                     <SelectItem value="script">Roteiro</SelectItem>
+                    <SelectItem value="carousel">Carrossel</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -476,11 +546,17 @@ export default function AITextTemplateManager() {
                 id="text_structure"
                 value={formData.text_structure}
                 onChange={(e) => setFormData({ ...formData, text_structure: e.target.value })}
-                placeholder="Ex: Introdução + Problema + Solução + Call-to-Action"
+                placeholder={
+                  formData.template_type === 'carousel' 
+                    ? "Ex: Cada slide deve ter: Headline curta (máx 8 palavras) + Texto explicativo (máx 2 linhas)"
+                    : "Ex: Introdução + Problema + Solução + Call-to-Action"
+                }
                 className="min-h-[100px]"
               />
               <p className="text-xs text-muted-foreground">
-                Defina a estrutura que o texto deve seguir
+                {formData.template_type === 'carousel' 
+                  ? "Defina como os slides devem ser estruturados (headline + texto)"
+                  : "Defina a estrutura que o texto deve seguir"}
               </p>
             </div>
 
@@ -490,7 +566,11 @@ export default function AITextTemplateManager() {
                 id="example"
                 value={formData.example}
                 onChange={(e) => setFormData({ ...formData, example: e.target.value })}
-                placeholder="Digite um exemplo prático de como o template seria aplicado..."
+                placeholder={
+                  formData.template_type === 'carousel'
+                    ? "Slide 1: Headline: 'Descubra o Segredo' / Texto: 'Veja como transformar...'  Slide 2: ..."
+                    : "Digite um exemplo prático de como o template seria aplicado..."
+                }
                 className="min-h-[150px] font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">

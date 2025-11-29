@@ -12,7 +12,8 @@ import { AIAssistantIcon } from './AIAssistantIcon';
 
 interface CarouselSlide {
   order: number;
-  text: string;
+  headline: string; // Frase de impacto curta para o slide
+  text: string; // Texto explicativo do slide
 }
 
 interface PlanPost {
@@ -247,26 +248,51 @@ export function PlanPostCard({
             </label>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {post.slides.map((slide, index) => (
-                <div key={slide.order} className="bg-muted/50 rounded p-2 border">
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                <div key={slide.order} className="bg-muted/50 rounded p-3 border space-y-2">
+                  <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground">
                       Slide {slide.order + 1}
                     </span>
                   </div>
-                  {isEditing ? (
-                    <Textarea
-                      value={slide.text}
-                      onChange={(e) => {
-                        const updatedSlides = [...(post.slides || [])];
-                        updatedSlides[index] = { ...slide, text: e.target.value };
-                        setEditedPost({ ...editedPost, slides: updatedSlides });
-                      }}
-                      rows={2}
-                      className="text-xs"
-                    />
-                  ) : (
-                    <p className="text-xs whitespace-pre-wrap">{slide.text}</p>
-                  )}
+                  
+                  {/* Headline */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-muted-foreground uppercase">Headline</label>
+                    {isEditing ? (
+                      <Input
+                        value={slide.headline}
+                        onChange={(e) => {
+                          const updatedSlides = [...(post.slides || [])];
+                          updatedSlides[index] = { ...slide, headline: e.target.value };
+                          setEditedPost({ ...editedPost, slides: updatedSlides });
+                        }}
+                        className="text-xs font-semibold"
+                        placeholder="Frase de impacto curta"
+                      />
+                    ) : (
+                      <p className="text-sm font-semibold">{slide.headline}</p>
+                    )}
+                  </div>
+                  
+                  {/* Text */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-medium text-muted-foreground uppercase">Texto</label>
+                    {isEditing ? (
+                      <Textarea
+                        value={slide.text}
+                        onChange={(e) => {
+                          const updatedSlides = [...(post.slides || [])];
+                          updatedSlides[index] = { ...slide, text: e.target.value };
+                          setEditedPost({ ...editedPost, slides: updatedSlides });
+                        }}
+                        rows={2}
+                        className="text-xs"
+                        placeholder="Texto explicativo do slide"
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground whitespace-pre-wrap">{slide.text}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

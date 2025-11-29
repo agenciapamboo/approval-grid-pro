@@ -511,6 +511,24 @@ serve(async (req) => {
       userPrompt += `- Descrição Adicional: ${description}\n`;
     }
 
+    // Verificar se é carrossel e ajustar prompt
+    if (contentType === 'carousel') {
+      const slideCount = context?.slideCount || 5;
+      userPrompt += `\n\nGere 1 legenda principal para o carrossel E ${slideCount} slides estruturados.
+Cada slide deve ter:
+- headline: Uma frase de impacto curta (máx 8 palavras)
+- text: Texto explicativo conciso (máx 2 linhas)
+
+IMPORTANTE: Retorne APENAS um objeto JSON válido, SEM markdown, SEM blocos de código.
+Formato exato: 
+{
+  "caption": "Legenda principal do carrossel com hashtags",
+  "slides": [
+    {"order": 0, "headline": "Headline do Slide 1", "text": "Texto explicativo do slide 1"},
+    {"order": 1, "headline": "Headline do Slide 2", "text": "Texto explicativo do slide 2"}
+  ]
+}`;
+    } else {
       userPrompt += `\n\nGere 1 legenda completa entre 100-300 palavras incluindo:
 - Gancho inicial (primeira linha chamativa)
 - Corpo do texto (conteúdo principal com storytelling)
@@ -519,6 +537,7 @@ serve(async (req) => {
 
 IMPORTANTE: Retorne APENAS um objeto JSON válido, SEM markdown, SEM blocos de código, SEM explicações.
 Formato exato: {"suggestions": ["legenda completa aqui"]}`;
+    }
 
     // Call OpenAI
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -569,7 +588,7 @@ Formato exato: {"suggestions": ["legenda completa aqui"]}`;
     }
 
     const tokensUsed = openAIData.usage?.total_tokens || 0;
-    const costUsd = (tokensUsed / 1000) * 0.0001; // Approximate cost
+    const costUsd = (tokensUsed / 1000) * 0.0001;
 
     // Cache the response (30 days)
     const expiresAt = new Date();
@@ -599,12 +618,59 @@ Formato exato: {"suggestions": ["legenda completa aqui"]}`;
       request_payload: promptData,
     });
 
-    return new Response(JSON.stringify({ 
-      suggestions: parsedResponse.suggestions,
-      fromCache: false 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    // Salvar no agency_caption_cache para ML e reaproveitamento
+    try {
+      const cacheInsert: any = {
+        agency_id: agencyId,
+        client_id: clientId,
+        content_type: contentType === 'carousel' ? 'carousel' : (contentType === 'post' ? 'caption' : 'script'),
+        title: context?.title || null,
+        pillar: context?.contentPillar || null,
+        tone: context?.toneOfVoice ? [context.toneOfVoice] : null,
+        objective: context?.objective || null,
+        template_id: context?.templateId || null,
+        created_by: user.id,
+      };
+
+      if (contentType === 'carousel' && parsedResponse.slides) {
+        // Para carrossel: salvar caption + slides estruturados
+        cacheInsert.caption = parsedResponse.caption || '';
+        cacheInsert.slides = parsedResponse.slides;
+        // Extrair hashtags da caption
+        const hashtagMatches = (parsedResponse.caption || '').match(/#\w+/g) || [];
+        cacheInsert.hashtags = hashtagMatches;
+      } else {
+        // Para caption/script normal: salvar suggestions[0]
+        cacheInsert.caption = parsedResponse.suggestions?.[0] || '';
+        // Extrair hashtags
+        const hashtagMatches = (parsedResponse.suggestions?.[0] || '').match(/#\w+/g) || [];
+        cacheInsert.hashtags = hashtagMatches;
+      }
+
+      await supabaseClient.from('agency_caption_cache').insert(cacheInsert);
+      console.log('✅ Caption salva no cache da agência para ML/reaproveitamento');
+    } catch (cacheError) {
+      console.error('⚠️ Erro ao salvar no agency_caption_cache (não fatal):', cacheError);
+      // Não falhar a função se o cache falhar
+    }
+
+    // Retornar resposta apropriada baseada no tipo
+    if (contentType === 'carousel') {
+      return new Response(JSON.stringify({ 
+        caption: parsedResponse.caption,
+        slides: parsedResponse.slides,
+        fromCache: false 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
+      return new Response(JSON.stringify({ 
+        suggestions: parsedResponse.suggestions,
+        fromCache: false 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
   } catch (error) {
     console.error('Error in generate-caption function:', error);
