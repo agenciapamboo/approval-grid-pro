@@ -128,6 +128,91 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_caption_cache: {
+        Row: {
+          agency_id: string
+          caption: string
+          client_id: string | null
+          content_type: string
+          created_at: string | null
+          created_by: string | null
+          generated_at: string | null
+          hashtags: string[] | null
+          id: string
+          is_favorite: boolean | null
+          last_used_at: string | null
+          objective: string | null
+          pillar: string | null
+          slides: Json | null
+          template_id: string | null
+          title: string | null
+          tone: string[] | null
+          used_count: number | null
+        }
+        Insert: {
+          agency_id: string
+          caption: string
+          client_id?: string | null
+          content_type: string
+          created_at?: string | null
+          created_by?: string | null
+          generated_at?: string | null
+          hashtags?: string[] | null
+          id?: string
+          is_favorite?: boolean | null
+          last_used_at?: string | null
+          objective?: string | null
+          pillar?: string | null
+          slides?: Json | null
+          template_id?: string | null
+          title?: string | null
+          tone?: string[] | null
+          used_count?: number | null
+        }
+        Update: {
+          agency_id?: string
+          caption?: string
+          client_id?: string | null
+          content_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          generated_at?: string | null
+          hashtags?: string[] | null
+          id?: string
+          is_favorite?: boolean | null
+          last_used_at?: string | null
+          objective?: string | null
+          pillar?: string | null
+          slides?: Json | null
+          template_id?: string | null
+          title?: string | null
+          tone?: string[] | null
+          used_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_caption_cache_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_caption_cache_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_caption_cache_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ai_text_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_configurations: {
         Row: {
           created_at: string | null

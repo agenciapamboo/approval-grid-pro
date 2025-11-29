@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Sparkles, Info } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Sparkles, Info, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -97,6 +99,11 @@ export function CaptionContextDialog({
 
     loadBrandTone();
     setTitle(initialTitle);
+    
+    // Reset customPrompt quando o dialog fechar
+    if (!open) {
+      setCustomPrompt("");
+    }
   }, [open, clientId, initialTitle, contentType]);
 
   const loadTemplates = useCallback(async () => {
@@ -398,10 +405,10 @@ export function CaptionContextDialog({
           <div className="space-y-2">
             <Label htmlFor="template">
               {selectedType === 'script' 
-                ? 'Template de Roteiro' 
+                ? 'Modelo de Roteiro' 
                 : selectedType === 'caption'
-                ? 'Template de Legenda'
-                : 'Template de Carrossel'} (opcional)
+                ? 'Estrutura de Texto'
+                : 'Estrutura de Carrossel'} (opcional)
             </Label>
             {templateError ? (
               <div className="text-sm text-red-600 bg-destructive/10 border border-destructive/30 rounded-lg p-3 space-y-2">
@@ -447,58 +454,57 @@ export function CaptionContextDialog({
               </div>
             ) : (
               <div className="space-y-2">
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                  <SelectTrigger id="template">
-                    <SelectValue placeholder={
-                      selectedType === 'script' 
-                        ? 'Selecione um template de roteiro ou crie novo'
-                        : selectedType === 'caption'
-                        ? 'Selecione um template de legenda ou crie novo'
-                        : 'Selecione um template de carrossel ou roteiro'
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Sem template (criar novo)</SelectItem>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selectedTemplate 
+                        ? templates.find(t => t.id === selectedTemplate)?.template_name 
+                        : "Selecione uma estrutura ou modelo"}
+                      <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-full min-w-[400px]">
+                    <DropdownMenuItem onClick={() => setSelectedTemplate("")}>
+                      Sem template (criar novo)
+                    </DropdownMenuItem>
                     {templates.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.template_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                {/* Lista de templates com hover para preview */}
-                <div className="space-y-1 mt-2">
-                  <p className="text-xs text-muted-foreground">Passe o mouse nos templates abaixo para visualizar:</p>
-                  <div className="space-y-1 max-h-40 overflow-y-auto border rounded p-2">
-                    {templates.map((template) => (
-                      <HoverCard key={template.id}>
+                      <HoverCard key={template.id} openDelay={200} closeDelay={100}>
                         <HoverCardTrigger asChild>
-                          <div 
-                            className="flex items-center justify-between p-2 rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                          <DropdownMenuItem 
                             onClick={() => setSelectedTemplate(template.id)}
+                            className="flex items-center justify-between cursor-pointer"
                           >
-                            <div>
-                              <span className="text-sm font-medium block">{template.template_name}</span>
-                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                {template.template_type === 'script' ? 'Roteiro' : template.template_type === 'caption' ? 'Legenda' : 'Carrossel'}
-                              </span>
+                            <span className="flex-1">{template.template_name}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px]">
+                                {template.template_type === 'script' ? 'Roteiro' : 
+                                 template.template_type === 'caption' ? 'Legenda' : 'Carrossel'}
+                              </Badge>
+                              <Info className="h-3 w-3 text-muted-foreground" />
                             </div>
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </div>
+                          </DropdownMenuItem>
                         </HoverCardTrigger>
-                        <HoverCardContent className="w-96 max-h-96 overflow-y-auto">
+                        <HoverCardContent side="right" className="w-96 max-h-80 overflow-y-auto">
                           <div className="space-y-2">
-                            <h4 className="font-semibold text-sm">{template.template_name}</h4>
-                            <div className="text-sm text-muted-foreground whitespace-pre-wrap border-t pt-2">
-                              {template.template_content}
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold">{template.template_name}</h4>
+                              <Badge variant="outline" className="text-[10px]">
+                                {template.template_type === 'script' ? 'Roteiro' : 
+                                 template.template_type === 'caption' ? 'Legenda' : 'Carrossel'}
+                              </Badge>
                             </div>
+                            <p className="text-xs text-muted-foreground whitespace-pre-wrap border-t pt-2">
+                              {template.template_content}
+                            </p>
                           </div>
                         </HoverCardContent>
                       </HoverCard>
                     ))}
-                  </div>
-                </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <p className="text-xs text-muted-foreground">
+                  Passe o mouse sobre cada opção para visualizar o conteúdo do template
+                </p>
               </div>
             )}
           </div>
