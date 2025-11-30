@@ -32,6 +32,15 @@ Deno.serve(async (req) => {
     sqlBackup += `-- Keep it secure and never commit to version control\n`;
     sqlBackup += `-- ========================================\n\n`;
 
+    // Mapeamento de colunas text[] por tabela
+    const textArrayColumns: Record<string, string[]> = {
+      'contents': ['channels'],
+      'agency_caption_cache': ['hashtags', 'tone'],
+      'ai_text_templates': ['tone'],
+      'client_ai_profiles': ['best_posting_times', 'content_pillars', 'keywords', 'priority_themes', 'tone_of_voice'],
+      'conversion_events': ['content_ids', 'platforms'],
+    };
+
     // Para cada tabela, buscar dados e gerar INSERTs
     for (const table of tables) {
       try {
@@ -65,7 +74,20 @@ Deno.serve(async (req) => {
             if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
             if (typeof value === 'boolean') return value ? 'true' : 'false';
             if (value instanceof Date) return `'${value.toISOString()}'`;
-            if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
+            if (typeof value === 'object') {
+              // Verificar se é coluna text[]
+              const isTextArray = textArrayColumns[table]?.includes(col);
+              
+              if (Array.isArray(value) && isTextArray) {
+                // text[] - usar sintaxe ARRAY[...]::text[]
+                if (value.length === 0) return `ARRAY[]::text[]`;
+                const arrayValues = value.map(v => `'${String(v).replace(/'/g, "''")}'`).join(',');
+                return `ARRAY[${arrayValues}]::text[]`;
+              } else {
+                // JSONB - manter sintaxe atual
+                return `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
+              }
+            }
             return value;
           });
 

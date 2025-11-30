@@ -64,6 +64,15 @@ Deno.serve(async (req) => {
     let totalRecords = 0;
     const tableStats: Record<string, number> = {};
 
+    // Mapeamento de colunas text[] por tabela
+    const textArrayColumns: Record<string, string[]> = {
+      'contents': ['channels'],
+      'agency_caption_cache': ['hashtags', 'tone'],
+      'ai_text_templates': ['tone'],
+      'client_ai_profiles': ['best_posting_times', 'content_pillars', 'keywords', 'priority_themes', 'tone_of_voice'],
+      'conversion_events': ['content_ids', 'platforms'],
+    };
+
     // Para cada tabela, exportar dados
     for (const table of tables) {
       try {
@@ -109,9 +118,19 @@ Deno.serve(async (req) => {
             if (typeof value === 'boolean') return value ? 'true' : 'false';
             if (value instanceof Date) return `'${value.toISOString()}'`;
             if (typeof value === 'object') {
-              // Arrays e JSONs
-              const jsonStr = JSON.stringify(value).replace(/'/g, "''");
-              return `'${jsonStr}'::jsonb`;
+              // Verificar se é coluna text[]
+              const isTextArray = textArrayColumns[table]?.includes(col);
+              
+              if (Array.isArray(value) && isTextArray) {
+                // text[] - usar sintaxe ARRAY[...]::text[]
+                if (value.length === 0) return `ARRAY[]::text[]`;
+                const arrayValues = value.map(v => `'${String(v).replace(/'/g, "''")}'`).join(',');
+                return `ARRAY[${arrayValues}]::text[]`;
+              } else {
+                // JSONB - manter sintaxe atual
+                const jsonStr = JSON.stringify(value).replace(/'/g, "''");
+                return `'${jsonStr}'::jsonb`;
+              }
             }
             return value;
           });
