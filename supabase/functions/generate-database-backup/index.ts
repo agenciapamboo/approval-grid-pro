@@ -22,7 +22,10 @@ Deno.serve(async (req) => {
       'platform_notifications', 'kanban_columns', 'system_settings', 'lovable_plan_config',
       'financial_snapshots', 'client_social_accounts', 'support_tickets',
       'revenue_taxes', 'operational_costs', 'consents', 'conversion_events',
-      'lgpd_pages', 'tracking_pixels', 'creative_requests'
+      'lgpd_pages', 'tracking_pixels', 'creative_requests',
+      'login_validation_attempts', 'webhook_events',
+      'ai_configurations', 'ai_text_templates', 'ai_usage_logs',
+      'briefing_templates', 'client_ai_profiles', 'team_member_functions'
     ];
 
     let sqlBackup = `-- Database Backup Generated: ${new Date().toISOString()}\n`;

@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
       // Autenticação e segurança
       'user_roles', 'role_permissions', 'client_sessions', 'two_factor_codes', 
       'token_validation_attempts', 'trusted_ips', 'security_alerts_sent',
+      'login_validation_attempts',
       
       // Configurações e permissões
       'plan_entitlements', 'plan_permissions', 'user_preferences', 'system_settings',
@@ -29,6 +30,7 @@ Deno.serve(async (req) => {
       
       // Notificações e comunicação
       'platform_notifications', 'webhooks', 'content_suggestions_feedback',
+      'webhook_events',
       
       // Suporte e tickets
       'support_tickets', 'ticket_messages', 'client_notes',
@@ -41,6 +43,13 @@ Deno.serve(async (req) => {
       
       // LGPD
       'consents', 'lgpd_pages',
+      
+      // IA (Sistema de Inteligência Artificial)
+      'ai_configurations', 'ai_text_templates', 'ai_usage_logs',
+      'briefing_templates', 'client_ai_profiles',
+      
+      // Equipe
+      'team_member_functions',
       
       // Outros
       'creative_requests', 'activity_log'
